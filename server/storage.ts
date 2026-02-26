@@ -1,38 +1,80 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { 
+  clients, assets, liabilities, cashFlows, strategies,
+  type InsertClient, type InsertAsset, type InsertLiability, 
+  type InsertCashFlow, type InsertStrategy,
+  type Client, type Asset, type Liability, type CashFlow, type Strategy
+} from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getClients(): Promise<Client[]>;
+  getClient(id: number): Promise<Client | undefined>;
+  createClient(client: InsertClient): Promise<Client>;
+  
+  getAssets(clientId: number): Promise<Asset[]>;
+  createAsset(asset: InsertAsset): Promise<Asset>;
+  
+  getLiabilities(clientId: number): Promise<Liability[]>;
+  createLiability(liability: InsertLiability): Promise<Liability>;
+  
+  getCashFlows(clientId: number): Promise<CashFlow[]>;
+  createCashFlow(cashFlow: InsertCashFlow): Promise<CashFlow>;
+  
+  getStrategies(clientId: number): Promise<Strategy[]>;
+  createStrategy(strategy: InsertStrategy): Promise<Strategy>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getClients(): Promise<Client[]> {
+    return await db.select().from(clients);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getClient(id: number): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createClient(client: InsertClient): Promise<Client> {
+    const [created] = await db.insert(clients).values(client).returning();
+    return created;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async getAssets(clientId: number): Promise<Asset[]> {
+    return await db.select().from(assets).where(eq(assets.clientId, clientId));
+  }
+
+  async createAsset(asset: InsertAsset): Promise<Asset> {
+    const [created] = await db.insert(assets).values(asset).returning();
+    return created;
+  }
+
+  async getLiabilities(clientId: number): Promise<Liability[]> {
+    return await db.select().from(liabilities).where(eq(liabilities.clientId, clientId));
+  }
+
+  async createLiability(liability: InsertLiability): Promise<Liability> {
+    const [created] = await db.insert(liabilities).values(liability).returning();
+    return created;
+  }
+
+  async getCashFlows(clientId: number): Promise<CashFlow[]> {
+    return await db.select().from(cashFlows).where(eq(cashFlows.clientId, clientId));
+  }
+
+  async createCashFlow(cashFlow: InsertCashFlow): Promise<CashFlow> {
+    const [created] = await db.insert(cashFlows).values(cashFlow).returning();
+    return created;
+  }
+
+  async getStrategies(clientId: number): Promise<Strategy[]> {
+    return await db.select().from(strategies).where(eq(strategies.clientId, clientId));
+  }
+
+  async createStrategy(strategy: InsertStrategy): Promise<Strategy> {
+    const [created] = await db.insert(strategies).values(strategy).returning();
+    return created;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
