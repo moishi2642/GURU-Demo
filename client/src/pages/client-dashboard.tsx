@@ -770,6 +770,11 @@ export default function ClientDashboard() {
     { key: "details",   label: "Details",     icon: Database },
   ];
 
+  const handleGenerate = () => {
+    generateStrategy.mutate();
+    setActiveView("strategy");
+  };
+
   return (
     <Layout>
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
@@ -779,31 +784,71 @@ export default function ClientDashboard() {
             <ChevronLeft className="w-3.5 h-3.5" /> All Clients
           </button>
         </Link>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-display font-bold text-foreground" data-testid="text-client-name">{client.name}</h1>
-            <Badge className={`${riskColor[client.riskTolerance] || "bg-secondary text-secondary-foreground"} capitalize text-xs font-semibold border-0`}>
-              {client.riskTolerance} Risk
-            </Badge>
-            <Badge variant="outline" className="text-xs">Age {client.age}</Badge>
+
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 flex-wrap mb-1">
+              <h1 className="text-2xl font-display font-bold text-foreground" data-testid="text-client-name">{client.name}</h1>
+              <Badge className={`${riskColor[client.riskTolerance] || "bg-secondary text-secondary-foreground"} capitalize text-xs font-semibold border-0`}>
+                {client.riskTolerance} Risk
+              </Badge>
+              <Badge variant="outline" className="text-xs">Age {client.age}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {strategies.length > 0
+                ? `${strategies.length} active AI recommendation${strategies.length > 1 ? "s" : ""} · Last updated today`
+                : "No AI strategy generated yet"}
+            </p>
           </div>
+
+          {/* ── Always-visible AI button ─────────────────────────────────────── */}
+          <Button
+            onClick={handleGenerate}
+            disabled={generateStrategy.isPending}
+            size="lg"
+            className={`gap-2 font-semibold shadow-lg transition-all ${
+              generateStrategy.isPending
+                ? "bg-indigo-400 text-white cursor-not-allowed"
+                : strategies.length === 0
+                  ? "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-indigo-400/30 hover:shadow-indigo-500/40 hover:scale-[1.02]"
+                  : "bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white shadow-indigo-300/30"
+            }`}
+            data-testid="button-generate-strategy"
+          >
+            {generateStrategy.isPending ? (
+              <>
+                <Activity className="w-4 h-4 animate-spin" />
+                Analyzing…
+              </>
+            ) : (
+              <>
+                <BrainCircuit className="w-4 h-4" />
+                {strategies.length === 0 ? "Run AI Analysis" : "Refresh AI Analysis"}
+              </>
+            )}
+          </Button>
         </div>
 
         {/* ── Tab Navigation ─────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-1 mt-4 border-b border-border">
+        <div className="flex items-center gap-0 mt-5 border-b border-border">
           {navItems.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setActiveView(key)}
               data-testid={`nav-${key}`}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                 activeView === key
-                  ? "border-primary text-primary"
+                  ? "border-indigo-500 text-indigo-600"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               {label}
+              {key === "strategy" && strategies.length > 0 && (
+                <span className="ml-1 bg-indigo-100 text-indigo-600 text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
+                  {strategies.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -822,6 +867,82 @@ export default function ClientDashboard() {
             <IncomeExpensePanel cashFlows={cashFlows} />
             <GuruOptimizerPanel assets={assets} cashFlows={cashFlows} />
           </div>
+
+          {/* ── GURU Insights strip (shown when strategies exist) ─────────────── */}
+          {strategies.length > 0 && !generateStrategy.isPending && (
+            <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
+                    <BrainCircuit className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-indigo-900">GURU AI Insights</p>
+                    <p className="text-xs text-indigo-500">{strategies.length} recommendations · Full analysis in Strategy tab</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveView("strategy")}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors"
+                >
+                  View all <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {strategies.slice(0, 3).map((s, i) => (
+                  <div
+                    key={s.id}
+                    className="bg-white/70 backdrop-blur-sm rounded-lg p-3.5 border border-indigo-100 hover:border-indigo-300 transition-colors cursor-pointer"
+                    onClick={() => setActiveView("strategy")}
+                    data-testid={`insight-card-${s.id}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        +{fmt(Number(s.impact), true)}/yr
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-foreground leading-snug mb-1">{s.name}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{s.recommendation}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── AI prompt card (shown when no strategies yet) ──────────────────── */}
+          {strategies.length === 0 && !generateStrategy.isPending && (
+            <div
+              className="rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/30 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/50 transition-all"
+              onClick={handleGenerate}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                  <BrainCircuit className="w-5 h-5 text-indigo-500" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-foreground">No AI analysis yet</p>
+                  <p className="text-xs text-muted-foreground">Run GURU to get balance sheet strategy and cash management recommendations</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleGenerate}
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white border-0 shadow-md shadow-indigo-300/30 flex-shrink-0"
+              >
+                <BrainCircuit className="w-4 h-4 mr-2" /> Run AI Analysis
+              </Button>
+            </div>
+          )}
+
+          {generateStrategy.isPending && (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-6 flex items-center gap-4">
+              <div className="w-8 h-8 rounded-full border-2 border-indigo-300 border-t-indigo-600 animate-spin flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-sm text-indigo-800">GURU is analyzing the balance sheet…</p>
+                <p className="text-xs text-indigo-500">Reviewing cash flows, liquidity position, and asset allocation</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -831,7 +952,7 @@ export default function ClientDashboard() {
           strategies={strategies}
           clientId={clientId}
           isPending={generateStrategy.isPending}
-          onGenerate={() => generateStrategy.mutate()}
+          onGenerate={handleGenerate}
         />
       )}
 
