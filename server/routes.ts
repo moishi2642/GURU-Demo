@@ -125,8 +125,11 @@ export async function registerRoutes(
       const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
       const totalLiabilities = liabilities.reduce((s, l) => s + Number(l.value), 0);
       const netWorth = totalAssets - totalLiabilities;
-      const monthlyInflow = cashFlows.filter(c => c.type === "inflow").reduce((s, c) => s + Number(c.amount), 0);
-      const monthlyOutflow = cashFlows.filter(c => c.type === "outflow").reduce((s, c) => s + Number(c.amount), 0);
+      // Cash flows stored as per-month events — sum = annual totals
+      const annualInflow = cashFlows.filter(c => c.type === "inflow").reduce((s, c) => s + Number(c.amount), 0);
+      const annualOutflow = cashFlows.filter(c => c.type === "outflow").reduce((s, c) => s + Number(c.amount), 0);
+      const monthlyInflow = annualInflow / 12;
+      const monthlyOutflow = annualOutflow / 12;
       const liquidAssets = assets.filter(a => ["cash", "fixed_income"].includes(a.type)).reduce((s, a) => s + Number(a.value), 0);
       const liquidityCoverageMonths = monthlyOutflow > 0 ? liquidAssets / monthlyOutflow : Infinity;
 
@@ -200,59 +203,203 @@ Respond with a JSON object with a "strategies" array. Each element must have:
 }
 
 // ── Seed Data ──────────────────────────────────────────────────────────────────
+function monthDate(year: number, month: number): Date {
+  return new Date(year, month - 1, 1);
+}
+
 async function seedDatabase() {
   const existing = await storage.getClients();
   if (existing.length > 0) return;
 
-  // Client 1 — High-net-worth, moderate risk
-  const c1 = await storage.createClient({ name: "Sarah Mitchell", email: "sarah.m@mitchellgroup.com", age: 52, riskTolerance: "moderate" });
+  // ── Client 1: Sarah & Michael Kessler ───────────────────────────────────────
+  // HNW dual-income family — exact financials from model
+  // Assets: $5,996,550 | Liabilities: $1,348,166 | Net Worth: $4,648,384
+  const c1 = await storage.createClient({
+    name: "Sarah & Michael Kessler",
+    email: "kessler.family@privatebank.com",
+    age: 44,
+    riskTolerance: "moderate",
+  });
+
   await Promise.all([
-    storage.createAsset({ clientId: c1.id, type: "equity", value: "1250000", description: "Diversified Equity Portfolio (Fidelity)" }),
-    storage.createAsset({ clientId: c1.id, type: "real_estate", value: "850000", description: "Primary Residence — Palo Alto" }),
-    storage.createAsset({ clientId: c1.id, type: "real_estate", value: "520000", description: "Investment Property — Austin TX" }),
-    storage.createAsset({ clientId: c1.id, type: "fixed_income", value: "300000", description: "US Treasury Bonds (Laddered)" }),
-    storage.createAsset({ clientId: c1.id, type: "cash", value: "85000", description: "High-Yield Savings (Marcus)" }),
-    storage.createAsset({ clientId: c1.id, type: "alternative", value: "150000", description: "Private Equity Fund III" }),
-    storage.createLiability({ clientId: c1.id, type: "mortgage", value: "480000", interestRate: "3.25", description: "Primary Residence Mortgage" }),
-    storage.createLiability({ clientId: c1.id, type: "mortgage", value: "310000", interestRate: "5.75", description: "Investment Property Mortgage" }),
-    storage.createCashFlow({ clientId: c1.id, type: "inflow", category: "salary", amount: "28000", date: new Date(), description: "Monthly Executive Compensation" }),
-    storage.createCashFlow({ clientId: c1.id, type: "inflow", category: "investments", amount: "4200", date: new Date(), description: "Rental Income (Austin)" }),
-    storage.createCashFlow({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "9500", date: new Date(), description: "Monthly Living Expenses" }),
-    storage.createCashFlow({ clientId: c1.id, type: "outflow", category: "taxes", amount: "7800", date: new Date(), description: "Federal & State Tax Withholding" }),
-    storage.createCashFlow({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "6200", date: new Date(), description: "Mortgage Payments (Both Properties)" }),
+    // Cash & Bank Accounts — $372,050
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "25050",  description: "Chase Total Checking (Main Account)" }),
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "107000", description: "Citizens Private Banking Checking (Excess)" }),
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "225000", description: "Citizens Private Bank Money Market — 3.65% yield" }),
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "15000",  description: "CapitalOne 360 Performance Savings — 3.78% yield" }),
+    // Investments — $1,894,500
+    storage.createAsset({ clientId: c1.id, type: "fixed_income", value: "135000",  description: "US Treasuries — 3.95% yield" }),
+    storage.createAsset({ clientId: c1.id, type: "equity",       value: "1201689", description: "Fidelity Taxable Brokerage — ETFs & Mutual Funds" }),
+    storage.createAsset({ clientId: c1.id, type: "equity",       value: "298311",  description: "Fidelity Taxable Brokerage — Single Stock (Goldman RSU vested)" }),
+    storage.createAsset({ clientId: c1.id, type: "alternative",  value: "9500",    description: "Crypto — BTC/ETH" }),
+    // Alternative & Illiquid — $1,165,000
+    storage.createAsset({ clientId: c1.id, type: "alternative",  value: "75000",   description: "Private Equity Fund I" }),
+    storage.createAsset({ clientId: c1.id, type: "alternative",  value: "175000",  description: "Private Equity Fund II" }),
+    storage.createAsset({ clientId: c1.id, type: "alternative",  value: "325000",  description: "Carry — PE Fund I (est. FMV)" }),
+    storage.createAsset({ clientId: c1.id, type: "alternative",  value: "510000",  description: "Carry — PE Fund II (est. FMV)" }),
+    storage.createAsset({ clientId: c1.id, type: "equity",       value: "80000",   description: "Goldman Sachs RSUs (unvested, 2-yr cliff)" }),
+    // Real Estate — $1,815,000
+    storage.createAsset({ clientId: c1.id, type: "real_estate",  value: "1525000", description: "Tribeca Condo (Primary Residence, NYC)" }),
+    storage.createAsset({ clientId: c1.id, type: "real_estate",  value: "290000",  description: "Sarasota Property (Investment, FL — rented at $2,100/mo)" }),
+    // Retirement — $1,000,000
+    storage.createAsset({ clientId: c1.id, type: "fixed_income", value: "620000",  description: "Fidelity 401(k) / Traditional IRA" }),
+    storage.createAsset({ clientId: c1.id, type: "equity",       value: "380000",  description: "Fidelity Roth IRA" }),
   ]);
 
-  // Client 2 — Growth phase, aggressive risk
+  await Promise.all([
+    // Mortgages — $1,092,000
+    storage.createLiability({ clientId: c1.id, type: "mortgage",      value: "962000", interestRate: "3.75", description: "Tribeca Condo Mortgage (30yr fixed)" }),
+    storage.createLiability({ clientId: c1.id, type: "mortgage",      value: "130000", interestRate: "5.25", description: "Sarasota Investment Property Mortgage" }),
+    // Consumer / Student Debt — $81,166
+    storage.createLiability({ clientId: c1.id, type: "credit_card",   value: "11466",  interestRate: "22.99", description: "Chase Sapphire + Amex — paid monthly" }),
+    storage.createLiability({ clientId: c1.id, type: "student_loan",  value: "69700",  interestRate: "4.50",  description: "Student Loans (Partner 1 + Partner 2)" }),
+    // Investment Debt — $175,000
+    storage.createLiability({ clientId: c1.id, type: "personal_loan", value: "125000", interestRate: "6.50",  description: "Professional Loan — PE Fund II Capital Call" }),
+    storage.createLiability({ clientId: c1.id, type: "personal_loan", value: "50000",  interestRate: "0.00",  description: "Remaining Capital Commitment — PE Fund II" }),
+  ]);
+
+  // ── Per-month cash flows: March 2026 → February 2027 ──────────────────────
+  // Pattern: salary every month, lumpy big-ticket items in specific months,
+  // year-end bonus in Dec. 11 months are net-negative; Dec is very positive.
+  // Based on: Annual salary $226,000 | Annual bonus $216,641 | Core expenses ~$24,939/mo
+
+  const cfBatch: Array<{ clientId: number; type: "inflow" | "outflow"; category: string; amount: string; date: Date; description: string }> = [];
+
+  const months = [
+    { y: 2026, m: 3 }, { y: 2026, m: 4 }, { y: 2026, m: 5 },
+    { y: 2026, m: 6 }, { y: 2026, m: 7 }, { y: 2026, m: 8 },
+    { y: 2026, m: 9 }, { y: 2026, m: 10 }, { y: 2026, m: 11 },
+    { y: 2026, m: 12 },
+    { y: 2027, m: 1 }, { y: 2027, m: 2 },
+  ];
+
+  for (const { y, m } of months) {
+    const d = monthDate(y, m);
+    // Monthly salary — both partners (after tax take-home)
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary", amount: "18813", date: d, description: "Monthly Net Salary — P1 ($13,302) + P2 ($5,511)" });
+    // Rental income from Sarasota
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "1722", date: d, description: "Sarasota Rental Income (net of mgmt fee)" });
+    // Core monthly expenses: housing, food, childcare, utilities, car, phone, insurance
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing", amount: "7793", date: d, description: "Tribeca Mortgage + Maintenance + Insurance + Utilities" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "4333", date: d, description: "Childcare / Babysitter" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "3500", date: d, description: "Food, Groceries & Dining" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "677",  date: d, description: "PE Fund II Professional Loan — Monthly Service" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "510",  date: d, description: "Student Loan Payments" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing", amount: "1243", date: d, description: "Sarasota Property Expenses (mgmt + HOA + mortgage)" });
+
+    // Lumpy: May, Jun, Jul — private school tuition ($15K/quarter)
+    if ([5, 6, 7].includes(m)) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "education", amount: "15000", date: d, description: "Private School Tuition — Q2/Q3 Installment" });
+    }
+    // Lumpy: Sep — private school tuition Q3
+    if (m === 9) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "education", amount: "15000", date: d, description: "Private School Tuition — Q3 Installment" });
+    }
+    // Lumpy: March — NYC property taxes (semi-annual)
+    if (m === 3) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "17500", date: d, description: "Tribeca Condo — NYC Property Taxes (semi-annual)" });
+    }
+    // Lumpy: August — Florida property taxes (annual)
+    if (m === 8) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "4697", date: d, description: "Sarasota Property — FL Property Taxes (annual)" });
+    }
+    // Lumpy: September — NYC property taxes (semi-annual, second installment)
+    if (m === 9) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "17500", date: d, description: "Tribeca Condo — NYC Property Taxes (semi-annual)" });
+    }
+    // Lumpy: May travel, June travel, July travel
+    if (m === 5) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel", amount: "4000", date: d, description: "Memorial Day Travel" });
+    }
+    if (m === 6) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel", amount: "1000", date: d, description: "Weekend Travel" });
+    }
+    if (m === 7) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel", amount: "12000", date: d, description: "Summer Vacation (Europe)" });
+    }
+    // Lumpy: November — estimated tax payment (Q4)
+    if (m === 11) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "30000", date: d, description: "Q4 Estimated Federal Income Tax Payment" });
+    }
+    // December — year-end bonus (both partners) — transforms the year
+    if (m === 12) {
+      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus", amount: "191556", date: d, description: "Partner 1 Year-End Bonus" });
+      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus", amount: "25085", date: d, description: "Partner 2 Year-End Bonus" });
+    }
+    // January — golf club dues (annual)
+    if (m === 1) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle", amount: "4102", date: d, description: "Golf Club Annual Dues" });
+    }
+  }
+
+  for (const cf of cfBatch) {
+    await storage.createCashFlow(cf);
+  }
+
+  // ── Client 2: James Okonkwo ──────────────────────────────────────────────────
+  // Growth phase, aggressive — startup founder with concentrated positions
   const c2 = await storage.createClient({ name: "James Okonkwo", email: "jokonkwo@venturebuilder.io", age: 38, riskTolerance: "aggressive" });
+  const c2Months = [
+    { y: 2026, m: 3 }, { y: 2026, m: 4 }, { y: 2026, m: 5 },
+    { y: 2026, m: 6 }, { y: 2026, m: 7 }, { y: 2026, m: 8 },
+    { y: 2026, m: 9 }, { y: 2026, m: 10 }, { y: 2026, m: 11 },
+    { y: 2026, m: 12 }, { y: 2027, m: 1 }, { y: 2027, m: 2 },
+  ];
   await Promise.all([
-    storage.createAsset({ clientId: c2.id, type: "equity", value: "680000", description: "Tech Concentrated Equity (FAANG + Growth)" }),
-    storage.createAsset({ clientId: c2.id, type: "alternative", value: "400000", description: "Angel Investment Portfolio (12 startups)" }),
-    storage.createAsset({ clientId: c2.id, type: "real_estate", value: "620000", description: "Primary Residence — Miami" }),
-    storage.createAsset({ clientId: c2.id, type: "cash", value: "45000", description: "Operating Account & Emergency Fund" }),
-    storage.createAsset({ clientId: c2.id, type: "alternative", value: "120000", description: "Cryptocurrency (BTC/ETH)" }),
-    storage.createLiability({ clientId: c2.id, type: "mortgage", value: "425000", interestRate: "6.5", description: "Primary Residence Mortgage" }),
-    storage.createLiability({ clientId: c2.id, type: "margin", value: "85000", interestRate: "8.25", description: "Margin Loan — Equity Portfolio" }),
-    storage.createLiability({ clientId: c2.id, type: "personal_loan", value: "35000", interestRate: "9.5", description: "Personal Loan (Business Investment)" }),
-    storage.createCashFlow({ clientId: c2.id, type: "inflow", category: "business", amount: "35000", date: new Date(), description: "Startup Consulting Income" }),
-    storage.createCashFlow({ clientId: c2.id, type: "inflow", category: "investments", amount: "2500", date: new Date(), description: "Dividend Income" }),
-    storage.createCashFlow({ clientId: c2.id, type: "outflow", category: "living_expenses", amount: "8200", date: new Date(), description: "Monthly Living & Lifestyle" }),
-    storage.createCashFlow({ clientId: c2.id, type: "outflow", category: "taxes", amount: "5500", date: new Date(), description: "Estimated Tax Payments" }),
-    storage.createCashFlow({ clientId: c2.id, type: "outflow", category: "living_expenses", amount: "4800", date: new Date(), description: "Debt Service (All Loans)" }),
+    storage.createAsset({ clientId: c2.id, type: "equity",      value: "680000",  description: "Tech Concentrated Equity (FAANG + Growth ETFs)" }),
+    storage.createAsset({ clientId: c2.id, type: "alternative", value: "400000",  description: "Angel Investment Portfolio (12 startups)" }),
+    storage.createAsset({ clientId: c2.id, type: "real_estate", value: "620000",  description: "Primary Residence — Miami, FL" }),
+    storage.createAsset({ clientId: c2.id, type: "cash",        value: "45000",   description: "Operating Account & Emergency Fund" }),
+    storage.createAsset({ clientId: c2.id, type: "alternative", value: "120000",  description: "Cryptocurrency — BTC/ETH" }),
+    storage.createAsset({ clientId: c2.id, type: "fixed_income",value: "80000",   description: "Short-term Treasuries (6-month)" }),
+    storage.createLiability({ clientId: c2.id, type: "mortgage",      value: "425000", interestRate: "6.50", description: "Primary Residence Mortgage" }),
+    storage.createLiability({ clientId: c2.id, type: "margin",        value: "85000",  interestRate: "8.25", description: "Margin Loan — Equity Portfolio" }),
+    storage.createLiability({ clientId: c2.id, type: "personal_loan", value: "35000",  interestRate: "9.50", description: "Business Investment Loan" }),
   ]);
+  // James: mostly steady, but Q2 capital calls make it lumpy, big Q4 consulting fee
+  for (const { y, m } of c2Months) {
+    const d = monthDate(y, m);
+    await storage.createCashFlow({ clientId: c2.id, type: "inflow",  category: "business",      amount: "28000", date: d, description: "Startup Consulting Retainer" });
+    await storage.createCashFlow({ clientId: c2.id, type: "inflow",  category: "investments",    amount: "1200",  date: d, description: "Dividend Income" });
+    await storage.createCashFlow({ clientId: c2.id, type: "outflow", category: "housing",        amount: "5200",  date: d, description: "Mortgage + HOA + Insurance" });
+    await storage.createCashFlow({ clientId: c2.id, type: "outflow", category: "living_expenses",amount: "6800",  date: d, description: "Living & Lifestyle Expenses" });
+    await storage.createCashFlow({ clientId: c2.id, type: "outflow", category: "living_expenses",amount: "3200",  date: d, description: "Debt Service (Margin + Business Loan)" });
+    if (m === 5) await storage.createCashFlow({ clientId: c2.id, type: "outflow", category: "investments", amount: "50000", date: d, description: "Angel Capital Call — Series A follow-on" });
+    if (m === 9) await storage.createCashFlow({ clientId: c2.id, type: "outflow", category: "investments", amount: "35000", date: d, description: "Angel Capital Call — New Seed Deal" });
+    if (m === 11) await storage.createCashFlow({ clientId: c2.id, type: "inflow",  category: "business",  amount: "120000", date: d, description: "Year-end Consulting Project Bonus" });
+  }
 
-  // Client 3 — Near retirement, conservative
+  // ── Client 3: Eleanor & Robert Chen ─────────────────────────────────────────
+  // Near-retirement, conservative — income-focused, bond-heavy
   const c3 = await storage.createClient({ name: "Eleanor & Robert Chen", email: "chen.wealth@gmail.com", age: 63, riskTolerance: "conservative" });
+  const c3Months = [
+    { y: 2026, m: 3 }, { y: 2026, m: 4 }, { y: 2026, m: 5 },
+    { y: 2026, m: 6 }, { y: 2026, m: 7 }, { y: 2026, m: 8 },
+    { y: 2026, m: 9 }, { y: 2026, m: 10 }, { y: 2026, m: 11 },
+    { y: 2026, m: 12 }, { y: 2027, m: 1 }, { y: 2027, m: 2 },
+  ];
   await Promise.all([
-    storage.createAsset({ clientId: c3.id, type: "fixed_income", value: "950000", description: "Municipal Bond Portfolio (Tax-Exempt)" }),
-    storage.createAsset({ clientId: c3.id, type: "equity", value: "420000", description: "Dividend Blue-Chip Equities" }),
-    storage.createAsset({ clientId: c3.id, type: "real_estate", value: "1100000", description: "Primary Residence — Greenwich CT" }),
-    storage.createAsset({ clientId: c3.id, type: "cash", value: "180000", description: "CD Ladder + HYSA" }),
-    storage.createAsset({ clientId: c3.id, type: "fixed_income", value: "350000", description: "Annuity (Deferred Income)" }),
-    storage.createLiability({ clientId: c3.id, type: "mortgage", value: "95000", interestRate: "2.75", description: "Remaining Mortgage Balance" }),
-    storage.createCashFlow({ clientId: c3.id, type: "inflow", category: "salary", amount: "14000", date: new Date(), description: "Combined Social Security + Pension" }),
-    storage.createCashFlow({ clientId: c3.id, type: "inflow", category: "investments", amount: "5600", date: new Date(), description: "Bond Interest & Dividend Income" }),
-    storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "living_expenses", amount: "7200", date: new Date(), description: "Monthly Living Expenses" }),
-    storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "taxes", amount: "2800", date: new Date(), description: "Income Tax & Property Tax" }),
-    storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "living_expenses", amount: "1800", date: new Date(), description: "Healthcare & Insurance Premiums" }),
+    storage.createAsset({ clientId: c3.id, type: "fixed_income", value: "950000",  description: "Municipal Bond Portfolio (Tax-Exempt, laddered)" }),
+    storage.createAsset({ clientId: c3.id, type: "equity",       value: "420000",  description: "Dividend Blue-Chip Equities (VYM, SCHD)" }),
+    storage.createAsset({ clientId: c3.id, type: "real_estate",  value: "1100000", description: "Primary Residence — Greenwich, CT" }),
+    storage.createAsset({ clientId: c3.id, type: "cash",         value: "180000",  description: "CD Ladder + High-Yield Savings" }),
+    storage.createAsset({ clientId: c3.id, type: "fixed_income", value: "350000",  description: "Deferred Income Annuity (starts age 70)" }),
+    storage.createLiability({ clientId: c3.id, type: "mortgage", value: "95000", interestRate: "2.75", description: "Remaining Primary Residence Mortgage" }),
   ]);
+  // Chen: stable and predictable, but property tax lump in Q1 and healthcare spike Q3
+  for (const { y, m } of c3Months) {
+    const d = monthDate(y, m);
+    await storage.createCashFlow({ clientId: c3.id, type: "inflow",  category: "salary",         amount: "8200",  date: d, description: "Combined Social Security Benefits" });
+    await storage.createCashFlow({ clientId: c3.id, type: "inflow",  category: "salary",         amount: "5800",  date: d, description: "Robert's Pension (Boeing)" });
+    await storage.createCashFlow({ clientId: c3.id, type: "inflow",  category: "investments",    amount: "3950",  date: d, description: "Muni Bond Interest (monthly avg)" });
+    await storage.createCashFlow({ clientId: c3.id, type: "inflow",  category: "investments",    amount: "1650",  date: d, description: "Dividend Income" });
+    await storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "housing",        amount: "2100",  date: d, description: "Mortgage + HOA" });
+    await storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "living_expenses",amount: "5800",  date: d, description: "Monthly Living Expenses" });
+    await storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "living_expenses",amount: "1900",  date: d, description: "Healthcare & Medicare Supplement" });
+    if (m === 3) await storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "taxes", amount: "14000", date: d, description: "CT Property Taxes (semi-annual)" });
+    if (m === 9) await storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "taxes", amount: "14000", date: d, description: "CT Property Taxes (semi-annual)" });
+    if (m === 7) await storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "living_expenses", amount: "8500", date: d, description: "Summer Travel & Grandchildren Visits" });
+    if (m === 12) await storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "living_expenses", amount: "6000", date: d, description: "Holiday Gifts & Charitable Giving" });
+    if (m === 4) await storage.createCashFlow({ clientId: c3.id, type: "outflow", category: "taxes", amount: "8000", date: d, description: "Federal Income Tax Balance Due" });
+  }
 }

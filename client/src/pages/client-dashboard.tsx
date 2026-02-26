@@ -42,31 +42,43 @@ function computeLiquidity(assets: Asset[], cashFlows: CashFlow[]) {
   const liquidAssets = assets.filter(a => liquidTypes.includes(a.type)).reduce((s, a) => s + Number(a.value), 0);
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
-  const annualOutflows = cashFlows
-    .filter(c => c.type === 'outflow')
-    .reduce((s, c) => s + Number(c.amount), 0) * 12;
+  // Sum actual annual outflows (stored as monthly-specific records)
+  const annualOutflows = cashFlows.filter(c => c.type === 'outflow').reduce((s, c) => s + Number(c.amount), 0);
+  const monthlyAvgOutflow = annualOutflows / 12;
 
   const coverageRatio = annualOutflows > 0 ? liquidAssets / annualOutflows : Infinity;
-  const coverageMonths = annualOutflows > 0 ? (liquidAssets / (annualOutflows / 12)) : Infinity;
+  const coverageMonths = monthlyAvgOutflow > 0 ? liquidAssets / monthlyAvgOutflow : Infinity;
 
   return { liquidAssets, totalAssets, annualOutflows, coverageRatio, coverageMonths };
 }
 
 // ─── 12-Month Cash Flow Forecast ─────────────────────────────────────────────
+// Groups stored cash flow records by month of their date field.
+// This naturally captures lumpy patterns (bonuses, taxes, tuition) instead of
+// showing a flat linear projection.
 function buildForecast(cashFlows: CashFlow[]) {
-  const monthlyInflow = cashFlows.filter(c => c.type === 'inflow').reduce((s, c) => s + Number(c.amount), 0);
-  const monthlyOutflow = cashFlows.filter(c => c.type === 'outflow').reduce((s, c) => s + Number(c.amount), 0);
-  const monthlyNet = monthlyInflow - monthlyOutflow;
+  // Build a map: "MMM yy" → { inflow, outflow }
+  const byMonth: Record<string, { inflow: number; outflow: number }> = {};
+  for (const cf of cashFlows) {
+    const key = format(new Date(cf.date), 'MMM yy');
+    if (!byMonth[key]) byMonth[key] = { inflow: 0, outflow: 0 };
+    if (cf.type === 'inflow') byMonth[key].inflow += Number(cf.amount);
+    else byMonth[key].outflow += Number(cf.amount);
+  }
 
   const now = startOfMonth(new Date());
+  let cumulative = 0;
   return Array.from({ length: 12 }, (_, i) => {
     const month = addMonths(now, i);
-    const cumulative = monthlyNet * (i + 1);
+    const key = format(month, 'MMM yy');
+    const data = byMonth[key] || { inflow: 0, outflow: 0 };
+    const net = data.inflow - data.outflow;
+    cumulative += net;
     return {
       month: format(month, 'MMM yy'),
-      inflow: monthlyInflow,
-      outflow: monthlyOutflow,
-      net: monthlyNet,
+      inflow: data.inflow,
+      outflow: data.outflow,
+      net,
       cumulative,
     };
   });
@@ -316,9 +328,13 @@ export default function ClientDashboard() {
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
   const totalLiabilities = liabilities.reduce((s, l) => s + Number(l.value), 0);
   const netWorth = totalAssets - totalLiabilities;
-  const monthlyInflow = cashFlows.filter(c => c.type === 'inflow').reduce((s, c) => s + Number(c.amount), 0);
-  const monthlyOutflow = cashFlows.filter(c => c.type === 'outflow').reduce((s, c) => s + Number(c.amount), 0);
-  const netCashFlow = monthlyInflow - monthlyOutflow;
+  // Cash flows are stored as per-month events across 12 months — sum = annual totals
+  const annualInflow  = cashFlows.filter(c => c.type === 'inflow').reduce((s, c) => s + Number(c.amount), 0);
+  const annualOutflow = cashFlows.filter(c => c.type === 'outflow').reduce((s, c) => s + Number(c.amount), 0);
+  const annualNet     = annualInflow - annualOutflow;
+  const monthlyInflow  = annualInflow  / 12;  // kept for liquidity / AI prompt compat
+  const monthlyOutflow = annualOutflow / 12;
+  const netCashFlow = annualNet / 12;          // average monthly net for display
 
   const debtRatio = totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : 0;
 
@@ -400,8 +416,8 @@ export default function ClientDashboard() {
         />
         <KPICard
           label="Annual Income"
-          value={formatCurrency(monthlyInflow * 12, true)}
-          subLabel={`${formatCurrency(monthlyOutflow * 12, true)}/yr expenses`}
+          value={formatCurrency(annualInflow, true)}
+          subLabel={`${formatCurrency(annualOutflow, true)}/yr expenses`}
           icon={Activity}
           color="amber"
         />
