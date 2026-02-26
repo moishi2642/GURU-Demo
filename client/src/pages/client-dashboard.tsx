@@ -595,12 +595,226 @@ function StrategyView({
   );
 }
 
+// ─── Balance Sheet helpers ─────────────────────────────────────────────────────
+function extractRate(description: string): string | null {
+  const m = description.match(/(\d+\.\d+)%/);
+  return m ? m[1] : null;
+}
+
+type AssetComment = { text: string; color: "red" | "orange" | "muted" };
+
+function assetComment(a: Asset, groupTotal?: number): AssetComment | null {
+  const desc = a.description.toLowerCase();
+  const val  = Number(a.value);
+  if (a.type === "cash" && desc.includes("checking") && val > 50000) return { text: "Excess", color: "red" };
+  if (a.type === "cash" && (desc.includes("money market") || desc.includes("savings")) && val > 150000)
+    return { text: "Excess", color: "red" };
+  if (a.type === "real_estate" && (desc.includes("invest") || desc.includes("rent") || desc.includes("sarasota")))
+    return { text: "Below 5%", color: "orange" };
+  if (a.type === "cash" && desc.includes("checking") && val < 30000) return { text: "Main Account", color: "muted" };
+  return null;
+}
+
+function liabComment(l: Liability): AssetComment | null {
+  const rate = parseFloat(l.interestRate);
+  if (l.type === "credit_card") return { text: "Need to review", color: "red" };
+  if (l.type === "mortgage" && (l.description.toLowerCase().includes("sarasota") || l.description.toLowerCase().includes("invest")))
+    return null;
+  if (l.type === "mortgage" && rate > 5) return { text: "Floating in 3 mo", color: "orange" };
+  return null;
+}
+
+interface BsGroup {
+  category: string;
+  items: { label: string; value: number; rate: string | null; comment: AssetComment | null }[];
+  subtotal: number;
+  avgRate: string | null;
+}
+
+function buildAssetGroups(assets: Asset[]): BsGroup[] {
+  const isRetirement = (a: Asset) => {
+    const d = a.description.toLowerCase();
+    return d.includes("401") || d.includes("ira") || d.includes("roth");
+  };
+  const isCarry = (a: Asset) => a.description.toLowerCase().includes("carry");
+  const isRSU   = (a: Asset) => a.description.toLowerCase().includes("rsu");
+  const isBrokerage = (a: Asset) =>
+    (a.type === "equity" || a.type === "fixed_income") &&
+    !isRetirement(a) && !isRSU(a) &&
+    (a.description.toLowerCase().includes("brokerage") || a.description.toLowerCase().includes("taxable") || a.description.toLowerCase().includes("fidelity"));
+
+  const checking   = assets.filter(a => a.type === "cash" && a.description.toLowerCase().includes("checking"));
+  const savingsMM  = assets.filter(a => a.type === "cash" && !a.description.toLowerCase().includes("checking"));
+  const brokerage  = assets.filter(a => isBrokerage(a));
+  const altAssets  = assets.filter(a => a.type === "alternative" && !isCarry(a));
+  const carry      = assets.filter(a => isCarry(a));
+  const rsus       = assets.filter(a => isRSU(a));
+  const realEstate = assets.filter(a => a.type === "real_estate");
+  const retirement = assets.filter(a => isRetirement(a));
+
+  const toItem = (a: Asset) => ({
+    label: a.description.split("(")[0].split("—")[0].split("–")[0].trim(),
+    value: Number(a.value),
+    rate: extractRate(a.description),
+    comment: assetComment(a),
+  });
+
+  const subtot = (arr: Asset[]) => arr.reduce((s, a) => s + Number(a.value), 0);
+  const wavgRate = (arr: Asset[]) => {
+    const total = subtot(arr);
+    if (!total) return null;
+    const weighted = arr.reduce((s, a) => {
+      const r = extractRate(a.description);
+      return s + (r ? parseFloat(r) * Number(a.value) : 0);
+    }, 0);
+    return weighted > 0 ? (weighted / total).toFixed(2) : null;
+  };
+
+  const groups: BsGroup[] = [];
+
+  if (checking.length > 0) {
+    groups.push({ category: "Checking Bank Accounts", items: checking.map(toItem), subtotal: subtot(checking), avgRate: wavgRate(checking) });
+  }
+  if (savingsMM.length > 0) {
+    groups.push({ category: "Savings & Money Market Accounts", items: savingsMM.map(toItem), subtotal: subtot(savingsMM), avgRate: wavgRate(savingsMM) });
+  }
+  const totalCash = subtot([...checking, ...savingsMM]);
+  if (totalCash > 0) {
+    groups.push({ category: "Cash", items: [], subtotal: totalCash, avgRate: wavgRate([...checking, ...savingsMM]) });
+  }
+  const investments = [...brokerage, ...altAssets];
+  if (brokerage.length > 0) {
+    groups.push({ category: "Taxable Brokerage", items: brokerage.map(toItem), subtotal: subtot(brokerage), avgRate: null });
+  }
+  if (altAssets.length > 0) {
+    groups.push({ category: "Alternative Assets", items: altAssets.map(toItem), subtotal: subtot(altAssets), avgRate: null });
+  }
+  if (investments.length > 0) {
+    groups.push({ category: "Investments", items: [], subtotal: subtot(investments), avgRate: null });
+  }
+  if (carry.length > 0) {
+    groups.push({ category: "Carry", items: carry.map(toItem), subtotal: subtot(carry), avgRate: null });
+  }
+  if (rsus.length > 0) {
+    const carryAndRSUs = [...carry, ...rsus];
+    groups.push({ category: "Carry and RSUs", items: rsus.map(toItem), subtotal: subtot(carryAndRSUs), avgRate: null });
+  }
+  if (realEstate.length > 0) {
+    groups.push({ category: "Real Estate", items: realEstate.map(toItem), subtotal: subtot(realEstate), avgRate: null });
+  }
+  if (retirement.length > 0) {
+    groups.push({ category: "Retirement", items: retirement.map(toItem), subtotal: subtot(retirement), avgRate: null });
+  }
+
+  return groups;
+}
+
+function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
+  const cc      = liabilities.filter(l => l.type === "credit_card");
+  const student = liabilities.filter(l => l.type === "student_loan");
+  const mortg   = liabilities.filter(l => l.type === "mortgage");
+  const profLoan = liabilities.filter(l => l.type === "personal_loan" && parseFloat(l.interestRate) > 0);
+  const capComm  = liabilities.filter(l => l.type === "personal_loan" && parseFloat(l.interestRate) === 0);
+
+  const subtot = (arr: Liability[]) => arr.reduce((s, l) => s + Number(l.value), 0);
+  const wavgRate = (arr: Liability[]) => {
+    const total = subtot(arr);
+    if (!total) return null;
+    const weighted = arr.reduce((s, l) => s + parseFloat(l.interestRate) * Number(l.value), 0);
+    return weighted > 0 ? (weighted / total).toFixed(2) : null;
+  };
+
+  const toItem = (l: Liability) => ({
+    label: l.description.split("(")[0].split("—")[0].split("–")[0].trim(),
+    value: Number(l.value),
+    rate: parseFloat(l.interestRate) > 0 ? parseFloat(l.interestRate).toFixed(2) : null,
+    comment: liabComment(l),
+  });
+
+  const groups: BsGroup[] = [];
+  if (cc.length)       groups.push({ category: "Credit Cards / Lines of Credit", items: cc.map(toItem), subtotal: subtot(cc), avgRate: wavgRate(cc) });
+  if (student.length)  groups.push({ category: "Student Loans", items: student.map(toItem), subtotal: subtot(student), avgRate: wavgRate(student) });
+  if (mortg.length)    groups.push({ category: "Mortgages", items: mortg.map(toItem), subtotal: subtot(mortg), avgRate: wavgRate(mortg) });
+  if (profLoan.length) groups.push({ category: "Professional Loans (Private Equity)", items: profLoan.map(toItem), subtotal: subtot(profLoan), avgRate: wavgRate(profLoan) });
+  if (capComm.length)  groups.push({ category: "Remaining Capital Commitment", items: capComm.map(toItem), subtotal: subtot(capComm), avgRate: null });
+  return groups;
+}
+
+// ─── Balance Sheet Table ───────────────────────────────────────────────────────
+function BsTable({ groups, totalLabel, totalValue, totalRate, isLiability = false }: {
+  groups: BsGroup[]; totalLabel: string; totalValue: number; totalRate?: string | null; isLiability?: boolean;
+}) {
+  const isSubtotalOnly = (g: BsGroup) => g.items.length === 0;
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden text-xs">
+      <div className="grid bg-[hsl(221,39%,24%)] text-white font-semibold" style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}>
+        <div className="px-3 py-2">{isLiability ? "Liability Category" : "Asset Category"}</div>
+        <div className="px-2 py-2 text-right">Current Balance</div>
+        <div className="px-2 py-2 text-right">{isLiability ? "Cost" : "Return"}</div>
+        <div className="px-2 py-2">Comments</div>
+      </div>
+
+      {groups.map((group, gi) => (
+        <div key={gi}>
+          {!isSubtotalOnly(group) && group.items.map((item, ii) => (
+            <div key={ii} className="grid border-t border-border hover:bg-secondary/20" style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}>
+              <div className="px-4 py-1.5 text-muted-foreground pl-5">{item.label}</div>
+              <div className="px-2 py-1.5 text-right tabular-nums font-medium">{item.value > 0 ? fmt(item.value) : "—"}</div>
+              <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+                {item.rate ? `${item.rate}%` : item.value > 0 ? <span className="italic text-muted-foreground/60">[Ret]</span> : "—"}
+              </div>
+              <div className="px-2 py-1.5">
+                {item.comment && (
+                  <span className={`font-semibold ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}>
+                    {item.comment.text}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+          <div className={`grid border-t font-semibold ${isSubtotalOnly(group) ? "bg-[hsl(221,39%,20%)] text-white" : "bg-[hsl(221,15%,88%)] text-[hsl(221,39%,20%)]"}`} style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}>
+            <div className="px-3 py-1.5">{group.category}</div>
+            <div className="px-2 py-1.5 text-right tabular-nums">{fmt(group.subtotal)}</div>
+            <div className="px-2 py-1.5 text-right tabular-nums">{group.avgRate ? `${group.avgRate}%` : isSubtotalOnly(group) ? "" : ""}</div>
+            <div className="px-2 py-1.5" />
+          </div>
+        </div>
+      ))}
+
+      <div className="grid border-t-2 border-[hsl(221,39%,24%)] bg-[hsl(43,74%,56%)] text-white font-bold" style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}>
+        <div className="px-3 py-2">{totalLabel}</div>
+        <div className="px-2 py-2 text-right tabular-nums">{fmt(totalValue)}</div>
+        <div className="px-2 py-2 text-right tabular-nums">{totalRate ? `${totalRate}%` : ""}</div>
+        <div className="px-2 py-2" />
+      </div>
+    </div>
+  );
+}
+
 // ─── Details View ─────────────────────────────────────────────────────────────
 function DetailsView({ assets, liabilities, cashFlows, clientId }: { assets: Asset[]; liabilities: Liability[]; cashFlows: CashFlow[]; clientId: number }) {
   const [tab, setTab] = useState<"bs" | "assets" | "liab" | "cf">("bs");
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
   const totalLiab   = liabilities.reduce((s, l) => s + Number(l.value), 0);
   const netWorth    = totalAssets - totalLiab;
+
+  const assetGroups = buildAssetGroups(assets);
+  const liabGroups  = buildLiabilityGroups(liabilities);
+
+  const totalAssetRate = (() => {
+    const cashAssets = assets.filter(a => a.type === "cash");
+    const weighted = cashAssets.reduce((s, a) => {
+      const r = extractRate(a.description);
+      return s + (r ? parseFloat(r) * Number(a.value) : 0);
+    }, 0);
+    return weighted > 0 ? (weighted / totalAssets * 100).toFixed(2) : null;
+  })();
+
+  const totalLiabRate = (() => {
+    const weighted = liabilities.reduce((s, l) => s + parseFloat(l.interestRate) * Number(l.value), 0);
+    return weighted > 0 ? (weighted / totalLiab).toFixed(2) : null;
+  })();
 
   return (
     <div>
@@ -624,44 +838,29 @@ function DetailsView({ assets, liabilities, cashFlows, clientId }: { assets: Ass
       </div>
 
       {tab === "bs" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <h3 className="text-sm font-bold text-foreground mb-3">Assets</h3>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="bg-secondary/40 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground grid grid-cols-3">
-                <span className="col-span-2">Account / Asset</span><span className="text-right">Value</span>
-              </div>
-              {assets.map(a => (
-                <div key={a.id} className="px-4 py-2.5 border-t border-border grid grid-cols-3 text-sm hover:bg-secondary/20">
-                  <span className="col-span-2 truncate text-foreground">{a.description}</span>
-                  <span className="text-right font-semibold tabular-nums">{fmt(Number(a.value))}</span>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <BsTable
+              groups={assetGroups}
+              totalLabel="Total Assets"
+              totalValue={totalAssets}
+              totalRate={totalAssetRate}
+            />
+            <div className="space-y-3">
+              <BsTable
+                groups={liabGroups}
+                totalLabel="Total Liabilities"
+                totalValue={totalLiab}
+                totalRate={totalLiabRate}
+                isLiability
+              />
+              <div className="border-2 border-[hsl(221,39%,24%)] rounded-lg overflow-hidden">
+                <div className="grid bg-[hsl(155,60%,35%)] text-white font-bold" style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}>
+                  <div className="px-3 py-2.5 text-base">Net Worth</div>
+                  <div className="px-2 py-2.5 text-right tabular-nums text-base">{fmt(netWorth)}</div>
+                  <div className="px-2 py-2.5" />
+                  <div className="px-2 py-2.5" />
                 </div>
-              ))}
-              <div className="px-4 py-2.5 border-t border-border grid grid-cols-3 font-bold text-sm bg-secondary/30">
-                <span className="col-span-2">Total Assets</span>
-                <span className="text-right tabular-nums">{fmt(totalAssets)}</span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-foreground mb-3">Liabilities</h3>
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="bg-secondary/40 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground grid grid-cols-3">
-                <span className="col-span-2">Obligation</span><span className="text-right">Balance</span>
-              </div>
-              {liabilities.map(l => (
-                <div key={l.id} className="px-4 py-2.5 border-t border-border grid grid-cols-3 text-sm hover:bg-secondary/20">
-                  <span className="col-span-2 truncate text-foreground">{l.description} <span className="text-xs text-muted-foreground">({l.interestRate}%)</span></span>
-                  <span className="text-right font-semibold tabular-nums text-rose-600">{fmt(Number(l.value))}</span>
-                </div>
-              ))}
-              <div className="px-4 py-2.5 border-t border-border grid grid-cols-3 font-bold text-sm bg-secondary/30">
-                <span className="col-span-2">Total Liabilities</span>
-                <span className="text-right tabular-nums text-rose-600">{fmt(totalLiab)}</span>
-              </div>
-              <div className="px-4 py-2.5 border-t-2 border-foreground grid grid-cols-3 font-bold text-sm">
-                <span className="col-span-2">Net Worth</span>
-                <span className="text-right tabular-nums text-emerald-600">{fmt(netWorth)}</span>
               </div>
             </div>
           </div>
