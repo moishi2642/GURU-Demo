@@ -20,6 +20,32 @@ import {
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
 import type { Asset, Liability, CashFlow, Strategy } from "@shared/schema";
 
+// ─── Count-up animation ───────────────────────────────────────────────────────
+function useCountUp(target: number, duration = 1600) {
+  const [current, setCurrent] = useState(0);
+  const rafRef = useRef<number>(0);
+  const startRef = useRef<number | null>(null);
+  useEffect(() => {
+    startRef.current = null;
+    const animate = (ts: number) => {
+      if (!startRef.current) startRef.current = ts;
+      const progress = Math.min((ts - startRef.current) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCurrent(target * eased);
+      if (progress < 1) rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target, duration]);
+  return current;
+}
+
+function RollingNumber({ value, isPercent = false }: { value: number; isPercent?: boolean }) {
+  const v = useCountUp(value);
+  if (isPercent) return <>{v.toFixed(1)}%</>;
+  return <>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v)}</>;
+}
+
 // ─── Market Data (kept for BrokeragePanel) ────────────────────────────────────
 interface QuoteItem {
   symbol: string;
@@ -1732,13 +1758,15 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">Live Projections</span>
                       </div>
                       {[
-                        { label: "Excess Cash",           value: fmt(excessCash),   sub: "available to redeploy" },
-                        { label: "AT Income Pickup / Yr", value: fmt(addlIncome),   sub: "projected annual gain" },
-                        { label: "Cashflow Increase",     value: `${pctIncrease}%`, sub: "vs. current yield" },
+                        { label: "Excess Cash",           rawValue: excessCash,   isPercent: false, sub: "available to redeploy" },
+                        { label: "AT Income Pickup / Yr", rawValue: addlIncome,   isPercent: false, sub: "projected annual gain" },
+                        { label: "Cashflow Increase",     rawValue: pctIncrease,  isPercent: true,  sub: "vs. current yield" },
                       ].map(s => (
                         <div key={s.label}>
                           <p className="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-0.5">{s.label}</p>
-                          <p className="text-2xl font-display font-black tabular-nums leading-none text-gray-900">{s.value}</p>
+                          <p className="text-2xl font-display font-black tabular-nums leading-none text-gray-900">
+                            <RollingNumber value={s.rawValue} isPercent={s.isPercent} />
+                          </p>
                           <p className="text-[9px] text-gray-400 mt-0.5">{s.sub}</p>
                         </div>
                       ))}
