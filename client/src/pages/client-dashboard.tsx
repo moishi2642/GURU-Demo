@@ -1530,43 +1530,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
   return (
     <div className="space-y-6">
 
-      {/* ── The GURU Method ──────────────────────────────────────────────── */}
-      <div className="rounded-xl overflow-hidden border border-border">
-        {/* Header row */}
-        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-cyan-400">The GURU Method</span>
-            <span className="text-white/40 mx-2">·</span>
-            <span className="text-sm font-semibold text-white">Financial Strategy Built on Cash Flow Projection</span>
-          </div>
-          <div className="hidden lg:flex items-center gap-4">
-            {GURU_BUCKETS_DEF.map(b => (
-              <div key={b.name} className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ background: b.accent }} />
-                <span className="text-[11px] text-slate-400 font-medium">{b.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Four bucket rows */}
-        {GURU_BUCKETS_DEF.map((b, i) => (
-          <div key={b.name} className={`grid ${i < GURU_BUCKETS_DEF.length - 1 ? "border-b border-white/10" : ""}`}
-            style={{ gridTemplateColumns: "1fr 220px" }}>
-            <div className="px-6 py-4" style={{ background: b.bg }}>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="w-2 h-2 rounded-full" style={{ background: b.accent }} />
-                <p className="text-xl font-bold text-white">{b.name}</p>
-              </div>
-              <p className="text-sm italic pl-4" style={{ color: b.accent, opacity: 0.85 }}>{b.tagline}</p>
-            </div>
-            <div className="px-5 py-4 flex items-center" style={{ background: b.dark }}>
-              <p className="text-sm text-white/80 leading-snug font-medium">{b.rule}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* ── Rebalancing Recommendation ───────────────────────────────────── */}
       {(() => {
         const reserveCurrent = reserve;
