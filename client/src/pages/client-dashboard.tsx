@@ -1341,9 +1341,15 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
                 <ReferenceLine key={i} x={wfData[i]?.name} stroke="hsl(var(--border))" strokeDasharray="4 2" />
               ))}
               <Bar dataKey="invisible" stackId="wf" fill="transparent" isAnimationActive={false} />
-              <Bar dataKey="income"  stackId="wf" fill="#10b981" radius={[3,3,0,0]} isAnimationActive={false} />
-              <Bar dataKey="coreExp" stackId="wf" fill="#ef4444" radius={[3,3,0,0]} isAnimationActive={false} />
-              <Bar dataKey="oneTime" stackId="wf" fill="#b91c1c" radius={[3,3,0,0]} isAnimationActive={false} />
+              <Bar dataKey="income"  stackId="wf" fill="#10b981" radius={[3,3,0,0]} isAnimationActive={false}>
+                <LabelList content={(p: any) => <WfLabel {...p} type="income" />} />
+              </Bar>
+              <Bar dataKey="coreExp" stackId="wf" fill="#ef4444" radius={[3,3,0,0]} isAnimationActive={false}>
+                <LabelList content={(p: any) => <WfLabel {...p} type="core" />} />
+              </Bar>
+              <Bar dataKey="oneTime" stackId="wf" fill="#b91c1c" radius={[3,3,0,0]} isAnimationActive={false}>
+                <LabelList content={(p: any) => <WfLabel {...p} type="onetime" />} />
+              </Bar>
               <Bar dataKey="balance" fill="hsl(221,39%,44%)" radius={[4,4,0,0]} isAnimationActive={false}>
                 <LabelList content={(p: any) => <WfLabel {...p} type="balance" />} />
               </Bar>
@@ -1360,27 +1366,23 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
 
       {/* P&L Detail Table */}
       <div className="border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border bg-secondary/20">
-          <p className="font-display font-bold text-sm text-foreground">Cash Flow P&L · Mar 2026 – Feb 2027</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Positive = inflow · (Negative) = outflow · Sarasota shown as property P&L</p>
-        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs min-w-[900px]">
             <thead>
-              <tr className="border-b border-border bg-secondary/10">
-                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground" style={{ minWidth: 230 }}>Line Item</th>
+              <tr className="bg-[hsl(221,39%,24%)] text-white">
+                <th className="text-left px-4 py-2.5 font-semibold" style={{ minWidth: 230 }}>Cash Flow P&L · Mar 2026 – Feb 2027</th>
                 {CF_MONTHS.map(m => (
-                  <th key={m.label} className="text-right px-1.5 py-2.5 font-semibold text-muted-foreground whitespace-nowrap" style={{ minWidth: 50 }}>{m.label}</th>
+                  <th key={m.label} className="text-right px-1.5 py-2.5 font-semibold whitespace-nowrap opacity-80" style={{ minWidth: 50 }}>{m.label}</th>
                 ))}
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground" style={{ minWidth: 70 }}>Annual</th>
+                <th className="text-right px-4 py-2.5 font-semibold opacity-80" style={{ minWidth: 70 }}>Annual</th>
               </tr>
             </thead>
             <tbody>
-              {CF_PL_ROWS.map(row => {
+              {CF_PL_ROWS.map((row, rowIdx) => {
                 if (row.kind === "group") {
                   return (
-                    <tr key={row.key} className="bg-secondary/20 border-t border-border">
-                      <td className="px-4 py-1.5 font-bold text-[10px] uppercase tracking-wider text-muted-foreground" colSpan={15}>
+                    <tr key={row.key} className="bg-[hsl(221,39%,20%)] text-white border-t border-[hsl(221,39%,30%)]">
+                      <td className="px-4 py-1.5 font-bold text-[10px] uppercase tracking-widest opacity-90" colSpan={15}>
                         {row.label}
                       </td>
                     </tr>
@@ -1389,11 +1391,12 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
                 const rowVals = vals[row.key] ?? [];
                 const annual  = rowVals.reduce((s, v) => s + v, 0);
                 if (row.kind === "item") {
+                  const stripe = rowIdx % 2 === 0 ? "bg-white dark:bg-card" : "bg-[hsl(221,39%,98%)] dark:bg-secondary/10";
                   return (
-                    <tr key={row.key} className="border-t border-border/30 hover:bg-secondary/20">
-                      <td className="px-4 py-1.5 pl-8 text-foreground/90">{row.label}</td>
+                    <tr key={row.key} className={`border-t border-border/20 hover:bg-[hsl(221,39%,95%)] dark:hover:bg-secondary/20 transition-colors ${stripe}`}>
+                      <td className="px-4 py-1.5 pl-7 text-foreground/80">{row.label}</td>
                       {rowVals.map((v, i) => (
-                        <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}>
+                        <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/25"}`}>
                           {fmtCell(v)}
                         </td>
                       ))}
@@ -1405,14 +1408,14 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
                 }
                 if (row.kind === "subtotal") {
                   return (
-                    <tr key={row.key} className="border-t border-border bg-secondary/10">
-                      <td className="px-4 py-1.5 pl-8 font-bold text-foreground">{row.label}</td>
+                    <tr key={row.key} className="border-t border-[hsl(221,39%,70%)] bg-[hsl(221,15%,88%)] dark:bg-[hsl(221,25%,22%)] text-[hsl(221,39%,20%)] dark:text-white/90">
+                      <td className="px-4 py-1.5 pl-7 font-bold">{row.label}</td>
                       {rowVals.map((v, i) => (
-                        <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}>
+                        <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold ${v > 0 ? "text-emerald-700 dark:text-emerald-400" : v < 0 ? "text-rose-600 dark:text-rose-400" : "opacity-30"}`}>
                           {fmtCell(v)}
                         </td>
                       ))}
-                      <td className={`text-right px-4 py-1.5 tabular-nums font-bold ${annual >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                      <td className={`text-right px-4 py-1.5 tabular-nums font-bold ${annual >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                         {fmtCell(annual)}
                       </td>
                     </tr>
@@ -1421,14 +1424,14 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
                 return null;
               })}
               {/* NET CASH FLOW */}
-              <tr className="border-t-2 border-border bg-secondary/30">
-                <td className="px-4 py-2.5 font-display font-black text-sm text-foreground">NET CASH FLOW</td>
+              <tr className="border-t-2 border-[hsl(221,39%,24%)] bg-[hsl(43,74%,56%)] text-white">
+                <td className="px-4 py-2.5 font-display font-black text-sm tracking-tight">NET CASH FLOW</td>
                 {netByMonth.map((v, i) => (
-                  <td key={i} className={`text-right px-1.5 py-2.5 tabular-nums font-bold ${v >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                  <td key={i} className="text-right px-1.5 py-2.5 tabular-nums font-bold">
                     {fmtCell(v)}
                   </td>
                 ))}
-                <td className={`text-right px-4 py-2.5 tabular-nums font-black text-sm ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                <td className="text-right px-4 py-2.5 tabular-nums font-black text-sm">
                   {fmtCell(annualNet)}
                 </td>
               </tr>
