@@ -1571,15 +1571,15 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
         const reserveAccts: Acct[] = assets
           .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
-          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ?? "0.01%" }));
+          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ? extractRate(a.description) + "%" : "0.01%" }));
 
         const flowAccts: Acct[] = assets
           .filter(a => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"))
-          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ?? "0.01%" }));
+          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ? extractRate(a.description) + "%" : "0.01%" }));
 
         const buildAccts: Acct[] = assets
           .filter(a => a.type === "fixed_income" && ((a.description ?? "").toLowerCase().includes("treasur") || (a.description ?? "").toLowerCase().includes("t-bill")))
-          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ?? "—" }));
+          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ? extractRate(a.description) + "%" : "—" }));
 
         const equityVal = assets.filter(a => a.type === "equity" && !(a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0);
         const retireVal = assets.filter(a => a.type === "equity" && (a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0) +
@@ -1593,20 +1593,37 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
           ...(reVal     > 0 ? [{ name: "Real Estate",                      value: reVal,     yield_: "~5%" }] : []),
         ];
 
+        const parseYieldNum = (y: string): number => {
+          const m = y.replace(/[~\[\]<>+%]/g, "").match(/(\d+\.?\d*)/);
+          return m ? parseFloat(m[1]) : 0;
+        };
+        const weightedGrossYield = (accts: Acct[], total: number): number => {
+          if (total === 0 || accts.length === 0) return 0;
+          return accts.reduce((s, a) => s + parseYieldNum(a.yield_) * a.value, 0) / total;
+        };
+
         type GBRow = {
           def: typeof GURU_BUCKETS_DEF[number];
           current: number; target: number; delta: number;
-          calc: string; subAccounts: Acct[];
+          calc: string; subAccounts: Acct[]; guruAtPct: number; bpPickup: number;
         };
+        const mkRow = (
+          def: typeof GURU_BUCKETS_DEF[number],
+          current: number, target: number, delta: number,
+          calc: string, subAccounts: Acct[], guruAtPct: number
+        ): GBRow => ({
+          def, current, target, delta, calc, subAccounts, guruAtPct,
+          bpPickup: Math.round((guruAtPct - weightedGrossYield(subAccounts, current) * 0.63) * 100),
+        });
         const rows: GBRow[] = [
-          { def: GURU_BUCKETS_DEF[0], current: reserveCurrent, target: reserveTarget, delta: reserveDelta,
-            calc: "2 months of core recurring expenses", subAccounts: reserveAccts },
-          { def: GURU_BUCKETS_DEF[1], current: flowCurrent, target: flowTarget, delta: flowDelta,
-            calc: "12 months of total anticipated outflows", subAccounts: flowAccts },
-          { def: GURU_BUCKETS_DEF[2], current: buildCurrent, target: buildTarget, delta: 0,
-            calc: "Maintain short-term reserve position", subAccounts: buildAccts },
-          { def: GURU_BUCKETS_DEF[3], current: growCurrent, target: growTarget, delta: growDelta,
-            calc: "Remaining assets — long-term compounding", subAccounts: growAccts },
+          mkRow(GURU_BUCKETS_DEF[0], reserveCurrent, reserveTarget, reserveDelta,
+            "2 months of core recurring expenses", reserveAccts, 2.38),
+          mkRow(GURU_BUCKETS_DEF[1], flowCurrent, flowTarget, flowDelta,
+            "12 months of total anticipated outflows", flowAccts, 2.71),
+          mkRow(GURU_BUCKETS_DEF[2], buildCurrent, buildTarget, 0,
+            "Maintain short-term reserve position", buildAccts, 2.66),
+          mkRow(GURU_BUCKETS_DEF[3], growCurrent, growTarget, growDelta,
+            "Remaining assets — long-term compounding", growAccts, 5.30),
         ];
 
         const deltaIcon = (d: number) => d > 0 ? "▲" : d < 0 ? "▼" : "—";
@@ -1684,22 +1701,47 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                   </div>
 
                   {/* ── GURU Suggested Balance — prominent ── */}
-                  <div className="px-5 py-4 border-t-2 flex items-start justify-between gap-4" style={{ borderColor: r.def.bg, background: r.def.bg + "12" }}>
-                    <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: r.def.bg }}>
-                        ★ GURU Suggested Balance
-                      </p>
-                      <p className="text-3xl font-display font-black tabular-nums leading-none" style={{ color: r.def.bg }}>
-                        {fmt(r.target)}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground mt-1.5 italic leading-snug">{r.calc}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0 pt-0.5">
-                      <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-bold ${deltaCls(r.delta)}`}>
-                        <span>{deltaIcon(r.delta)}</span>
-                        <span>{r.delta === 0 ? "No change" : `${fmt(Math.abs(r.delta))} ${r.delta > 0 ? "↑" : "↓"}`}</span>
+                  <div className="border-t-2" style={{ borderColor: r.def.bg, background: r.def.bg + "12" }}>
+                    {/* Row 1: target amount + status label */}
+                    <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: r.def.bg }}>
+                          ★ GURU Suggested Balance
+                        </p>
+                        <p className="text-3xl font-display font-black tabular-nums leading-none" style={{ color: r.def.bg }}>
+                          {fmt(r.target)}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-1.5 italic leading-snug">{r.calc}</p>
                       </div>
-                      <span className="text-[10px] text-muted-foreground">vs. current</span>
+                      <div className="flex-shrink-0 pt-0.5 text-right">
+                        {r.delta < 0 && <p className="text-base font-black tracking-wide text-emerald-600">Excess</p>}
+                        {r.delta > 0 && <p className="text-base font-black tracking-wide text-rose-600">Deficit</p>}
+                        {r.delta === 0 && <p className="text-base font-black tracking-wide text-muted-foreground">Balanced</p>}
+                        <p className="text-[10px] text-muted-foreground mt-0.5">vs. GURU target</p>
+                      </div>
+                    </div>
+                    {/* Row 2: move signal + basis point pickup */}
+                    <div className="px-5 pb-3.5 flex items-center justify-between gap-3 border-t border-black/[0.06]">
+                      <span className="text-[11px] text-muted-foreground leading-snug">
+                        {r.delta < 0
+                          ? <><span className="font-semibold text-foreground">{fmt(Math.abs(r.delta))}</span> available to redeploy</>
+                          : r.delta > 0
+                          ? <><span className="font-semibold text-foreground">{fmt(r.delta)}</span> needed from excess buckets</>
+                          : <span className="italic">No rebalancing needed</span>
+                        }
+                      </span>
+                      {r.bpPickup !== 0 && (
+                        <span className={`flex-shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-lg border ${
+                          r.bpPickup > 0
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-rose-50 text-rose-600 border-rose-200"
+                        }`}>
+                          {r.bpPickup > 0 ? "+" : ""}{r.bpPickup} bps AT
+                        </span>
+                      )}
+                      {r.bpPickup === 0 && (
+                        <span className="flex-shrink-0 text-xs text-muted-foreground border border-border rounded-lg px-2.5 py-1">Yield maintained</span>
+                      )}
                     </div>
                   </div>
 
