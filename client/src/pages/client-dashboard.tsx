@@ -1632,52 +1632,104 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
         return (
           <div className="space-y-5">
-            {/* ── GURU Hero Banner — matches Dashboard hero style ── */}
-            <div className="rounded-xl border shadow-sm px-6 py-5" style={{ background: "linear-gradient(to right, hsl(222,47%,10%), hsl(222,47%,14%))", borderColor: "hsl(222,47%,22%)" }}>
-              <div className="flex flex-col sm:flex-row gap-6">
-                {/* LEFT: 3 optimization stats */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">GURU Optimization Summary</p>
-                  {[
-                    { label: "Estimated Excess Cash", value: fmt(excessCash), color: "#34d399" },
-                    { label: "Additional After-Tax Income / Year", value: fmt(addlIncome), color: "#60a5fa" },
-                    { label: "% Cashflow Increase", value: `${pctIncrease}%`, color: "#f59e0b" },
-                  ].map(s => (
-                    <div key={s.label} className="flex items-center justify-between gap-4 mb-3">
-                      <span className="text-xs text-white/50 leading-tight">{s.label}</span>
-                      <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color: s.color }}>{s.value}</span>
+            {/* ── GURU Hero Banner — Before / After allocation chart ── */}
+            {(() => {
+              const barBuckets = [
+                { label: "Reserve", current: reserveCurrent, target: reserveTarget, color: GURU_BUCKETS_DEF[0].bg, accent: GURU_BUCKETS_DEF[0].accent },
+                { label: "Flow",    current: flowCurrent,    target: flowTarget,    color: GURU_BUCKETS_DEF[1].bg, accent: GURU_BUCKETS_DEF[1].accent },
+                { label: "Build",   current: buildCurrent,   target: buildTarget,   color: GURU_BUCKETS_DEF[2].bg, accent: GURU_BUCKETS_DEF[2].accent },
+                { label: "Grow",    current: growCurrent,    target: growTarget,    color: GURU_BUCKETS_DEF[3].bg, accent: GURU_BUCKETS_DEF[3].accent },
+              ];
+              const mkBar = (getValue: (b: typeof barBuckets[0]) => number) =>
+                barBuckets.map(b => ({ ...b, pct: totalAssets > 0 ? (getValue(b) / totalAssets) * 100 : 0 }));
+              const currentBar = mkBar(b => b.current);
+              const guruBar    = mkBar(b => b.target);
+
+              return (
+                <div className="rounded-xl border shadow-sm px-6 py-5" style={{ background: "linear-gradient(to right, hsl(222,47%,10%), hsl(222,47%,14%))", borderColor: "hsl(222,47%,22%)" }}>
+                  <div className="flex flex-col lg:flex-row gap-6">
+
+                    {/* ── Chart: Before / After stacked bars ── */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-4">GURU Asset Reallocation</p>
+
+                      {/* Before bar */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-widest text-white/35">Current</span>
+                          <span className="text-[10px] text-white/25 tabular-nums">{fmt(totalAssets)}</span>
+                        </div>
+                        <div className="flex rounded-md overflow-hidden h-9 gap-px">
+                          {currentBar.map(b => (
+                            <div key={b.label} className="flex items-center justify-center overflow-hidden transition-all"
+                              style={{ width: `${b.pct}%`, background: b.color, opacity: 0.75 }}>
+                              {b.pct > 6 && (
+                                <span className="text-[9px] font-bold text-white/80 px-1 truncate">{b.pct.toFixed(0)}%</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* After bar */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#60a5fa" }}>★ GURU Target</span>
+                          <span className="text-[10px] text-white/25 tabular-nums">{fmt(totalAssets)}</span>
+                        </div>
+                        <div className="flex rounded-md overflow-hidden h-9 gap-px">
+                          {guruBar.map(b => (
+                            <div key={b.label} className="flex items-center justify-center overflow-hidden transition-all"
+                              style={{ width: `${b.pct}%`, background: b.color }}>
+                              {b.pct > 6 && (
+                                <span className="text-[9px] font-bold text-white px-1 truncate">{b.pct.toFixed(0)}%</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Legend + delta arrows */}
+                      <div className="flex items-center gap-4 flex-wrap">
+                        {barBuckets.map(b => {
+                          const diff = b.target - b.current;
+                          return (
+                            <div key={b.label} className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: b.color }} />
+                              <span className="text-[10px] text-white/50">{b.label}</span>
+                              {Math.abs(diff) > 1000 && (
+                                <span className={`text-[9px] font-bold ${diff > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                  {diff > 0 ? "▲" : "▼"}{fmt(Math.abs(diff), true)}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ))}
-                </div>
-                {/* DIVIDER */}
-                <div className="hidden sm:block w-px self-stretch bg-white/10" />
-                {/* RIGHT: big headline number */}
-                <div className="sm:w-64 flex-shrink-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="rounded-lg p-1.5 bg-emerald-500/20">
-                      <TrendingUp className="w-4 h-4 text-emerald-400" />
+
+                    {/* DIVIDER */}
+                    <div className="hidden lg:block w-px self-stretch bg-white/10" />
+
+                    {/* ── 3 outcome stats ── */}
+                    <div className="lg:w-52 flex-shrink-0 flex flex-col justify-center gap-4">
+                      {[
+                        { label: "Excess Cash",         value: fmt(excessCash),    color: "#34d399", sub: "available to invest" },
+                        { label: "AT Income Pickup / Yr", value: fmt(addlIncome),  color: "#60a5fa", sub: "projected annual gain" },
+                        { label: "Cashflow Increase",   value: `${pctIncrease}%`,  color: "#f59e0b", sub: "vs. current salary" },
+                      ].map(s => (
+                        <div key={s.label}>
+                          <p className="text-[9px] uppercase tracking-widest text-white/30 font-semibold mb-0.5">{s.label}</p>
+                          <p className="text-2xl font-display font-black tabular-nums leading-none" style={{ color: s.color }}>{s.value}</p>
+                          <p className="text-[9px] text-white/25 mt-0.5">{s.sub}</p>
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Additional AT Income / Year</p>
+
                   </div>
-                  <p className="text-4xl font-extrabold tabular-nums leading-tight mb-1 text-emerald-400">{fmt(addlIncome)}</p>
-                  <p className="text-[10px] text-white/30 mb-3">GURU Optimizer · projected annual gain</p>
-                  <div className="grid grid-cols-3 gap-3 border-t border-white/10 pt-3">
-                    <div>
-                      <p className="text-[10px] text-white/30 font-medium leading-tight mb-0.5">To Invest</p>
-                      <p className="text-sm font-bold tabular-nums text-white">{fmt(totalToInvest, true)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-white/30 font-medium leading-tight mb-0.5">Excess Cash</p>
-                      <p className="text-sm font-bold tabular-nums text-emerald-400">{fmt(excessCash, true)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-white/30 font-medium leading-tight mb-0.5">CF Pickup</p>
-                      <p className="text-sm font-bold tabular-nums text-amber-400">{pctIncrease}%</p>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* 4 bucket cards — 2×2 grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
