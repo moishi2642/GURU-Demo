@@ -1275,10 +1275,18 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
   );
   const annualNet = netByMonth.reduce((s, v) => s + v, 0);
 
-  const totalIn  = cashFlows.filter(cf => cf.type === "inflow").reduce((s, cf) => s + Number(cf.amount), 0);
-  const totalOut = cashFlows.filter(cf => cf.type === "outflow").reduce((s, cf) => s + Number(cf.amount), 0);
-  const avgIn    = Math.round(totalIn / 12);
-  const avgOut   = Math.round(totalOut / 12);
+  function medianOf(arr: number[]): number {
+    const s = [...arr].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 === 0 ? Math.round((s[m - 1] + s[m]) / 2) : Math.round(s[m]);
+  }
+
+  const monthlyInflows  = CF_MONTHS.map(m => cashFlows.filter(cf => { const d = new Date(cf.date); return d.getFullYear() === m.year && d.getMonth() + 1 === m.month && cf.type === "inflow"; }).reduce((s, cf) => s + Number(cf.amount), 0));
+  const monthlyOutflows = CF_MONTHS.map(m => cashFlows.filter(cf => { const d = new Date(cf.date); return d.getFullYear() === m.year && d.getMonth() + 1 === m.month && cf.type === "outflow"; }).reduce((s, cf) => s + Number(cf.amount), 0));
+  const medianIn  = medianOf(monthlyInflows);
+  const medianOut = medianOf(monthlyOutflows);
+  const totalIn   = monthlyInflows.reduce((s, v) => s + v, 0);
+  const totalOut  = monthlyOutflows.reduce((s, v) => s + v, 0);
 
   function fmtCell(v: number): string {
     if (v === 0) return "—";
@@ -1287,16 +1295,16 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
 
   return (
     <div className="space-y-5">
-      {/* Avg Monthly Stats */}
+      {/* Median Monthly Stats */}
       <div className="grid grid-cols-3 gap-3">
         <div className="p-4 border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl" data-testid="stat-avg-inflow">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Avg Monthly Inflows</p>
-          <p className="text-2xl font-display font-black tabular-nums text-emerald-700">+{fmt(avgIn, true)}</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1">Median Monthly Inflows</p>
+          <p className="text-2xl font-display font-black tabular-nums text-emerald-700">+{fmt(medianIn, true)}</p>
           <p className="text-xs text-muted-foreground mt-1">{fmt(totalIn, true)} annually</p>
         </div>
         <div className="p-4 border border-rose-200 bg-rose-50 dark:bg-rose-950/20 rounded-xl" data-testid="stat-avg-outflow">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Avg Monthly Outflows</p>
-          <p className="text-2xl font-display font-black tabular-nums text-rose-700">({fmt(avgOut, true)})</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1">Median Monthly Outflows</p>
+          <p className="text-2xl font-display font-black tabular-nums text-rose-700">({fmt(medianOut, true)})</p>
           <p className="text-xs text-muted-foreground mt-1">{fmt(totalOut, true)} annually</p>
         </div>
         <div className={`p-4 border rounded-xl ${annualNet >= 0 ? "border-blue-200 bg-blue-50 dark:bg-blue-950/20" : "border-rose-200 bg-rose-50"}`} data-testid="stat-net">
@@ -1333,15 +1341,9 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
                 <ReferenceLine key={i} x={wfData[i]?.name} stroke="hsl(var(--border))" strokeDasharray="4 2" />
               ))}
               <Bar dataKey="invisible" stackId="wf" fill="transparent" isAnimationActive={false} />
-              <Bar dataKey="income"  stackId="wf" fill="#10b981" radius={[3,3,0,0]} isAnimationActive={false}>
-                <LabelList content={(p: any) => <WfLabel {...p} type="income" />} />
-              </Bar>
-              <Bar dataKey="coreExp" stackId="wf" fill="#ef4444" radius={[3,3,0,0]} isAnimationActive={false}>
-                <LabelList content={(p: any) => <WfLabel {...p} type="core" />} />
-              </Bar>
-              <Bar dataKey="oneTime" stackId="wf" fill="#b91c1c" radius={[3,3,0,0]} isAnimationActive={false}>
-                <LabelList content={(p: any) => <WfLabel {...p} type="onetime" />} />
-              </Bar>
+              <Bar dataKey="income"  stackId="wf" fill="#10b981" radius={[3,3,0,0]} isAnimationActive={false} />
+              <Bar dataKey="coreExp" stackId="wf" fill="#ef4444" radius={[3,3,0,0]} isAnimationActive={false} />
+              <Bar dataKey="oneTime" stackId="wf" fill="#b91c1c" radius={[3,3,0,0]} isAnimationActive={false} />
               <Bar dataKey="balance" fill="hsl(221,39%,44%)" radius={[4,4,0,0]} isAnimationActive={false}>
                 <LabelList content={(p: any) => <WfLabel {...p} type="balance" />} />
               </Bar>
