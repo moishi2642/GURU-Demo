@@ -1657,18 +1657,18 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
               const guruBar    = mkBar(b => b.target);
 
               return (
-                <div className="rounded-xl border shadow-sm px-6 py-5" style={{ background: "linear-gradient(to right, hsl(222,47%,10%), hsl(222,47%,14%))", borderColor: "hsl(222,47%,22%)" }}>
+                <div className="rounded-xl border shadow-sm px-6 py-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
                   <div className="flex flex-col lg:flex-row gap-6">
 
                     {/* ── Chart: Before / After stacked bars ── */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-4">GURU Asset Reallocation</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 mb-4">GURU Asset Reallocation</p>
 
                       {/* Before bar */}
                       <div className="mb-3">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-white/35">Current</span>
-                          <span className="text-[10px] text-white/25 tabular-nums">{fmt(totalAssets)}</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Current</span>
+                          <span className="text-[10px] text-gray-400 tabular-nums">{fmt(totalAssets)}</span>
                         </div>
                         <div className="flex rounded-md overflow-hidden h-9 gap-px">
                           {currentBar.map(b => (
@@ -1685,8 +1685,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                       {/* After bar */}
                       <div className="mb-4">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#60a5fa" }}>★ GURU Target</span>
-                          <span className="text-[10px] text-white/25 tabular-nums">{fmt(totalAssets)}</span>
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">★ GURU Target</span>
+                          <span className="text-[10px] text-gray-400 tabular-nums">{fmt(totalAssets)}</span>
                         </div>
                         <div className="flex rounded-md overflow-hidden h-9 gap-px">
                           {guruBar.map(b => (
@@ -1707,9 +1707,9 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           return (
                             <div key={b.label} className="flex items-center gap-1.5">
                               <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: b.color }} />
-                              <span className="text-[10px] text-white/50">{b.label}</span>
+                              <span className="text-[10px] text-gray-500">{b.label}</span>
                               {Math.abs(diff) > 1000 && (
-                                <span className={`text-[9px] font-bold ${diff > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                                <span className={`text-[9px] font-bold ${diff > 0 ? "text-emerald-600" : "text-rose-500"}`}>
                                   {diff > 0 ? "▲" : "▼"}{fmt(Math.abs(diff), true)}
                                 </span>
                               )}
@@ -1720,19 +1720,26 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
 
                     {/* DIVIDER */}
-                    <div className="hidden lg:block w-px self-stretch bg-white/10" />
+                    <div className="hidden lg:block w-px self-stretch bg-emerald-200" />
 
                     {/* ── 3 outcome stats ── */}
                     <div className="lg:w-52 flex-shrink-0 flex flex-col justify-center gap-4">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                        </span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">Live Projections</span>
+                      </div>
                       {[
-                        { label: "Excess Cash",         value: fmt(excessCash),    color: "#34d399", sub: "available to invest" },
-                        { label: "AT Income Pickup / Yr", value: fmt(addlIncome),  color: "#60a5fa", sub: "projected annual gain" },
-                        { label: "Cashflow Increase",   value: `${pctIncrease}%`,  color: "#f59e0b", sub: "vs. current salary" },
+                        { label: "Excess Cash",           value: fmt(excessCash),   sub: "available to redeploy" },
+                        { label: "AT Income Pickup / Yr", value: fmt(addlIncome),   sub: "projected annual gain" },
+                        { label: "Cashflow Increase",     value: `${pctIncrease}%`, sub: "vs. current yield" },
                       ].map(s => (
                         <div key={s.label}>
-                          <p className="text-[9px] uppercase tracking-widest text-white/30 font-semibold mb-0.5">{s.label}</p>
-                          <p className="text-2xl font-display font-black tabular-nums leading-none" style={{ color: s.color }}>{s.value}</p>
-                          <p className="text-[9px] text-white/25 mt-0.5">{s.sub}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-0.5">{s.label}</p>
+                          <p className="text-2xl font-display font-black tabular-nums leading-none text-gray-900">{s.value}</p>
+                          <p className="text-[9px] text-gray-400 mt-0.5">{s.sub}</p>
                         </div>
                       ))}
                     </div>
