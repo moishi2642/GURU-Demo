@@ -1535,27 +1535,24 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         </div>
       </div>
 
-      {/* ── Rebalancing Recommendation Table ────────────────────────────── */}
+      {/* ── Rebalancing Recommendation ───────────────────────────────────── */}
       {(() => {
-        // GURU 4-bucket current balances
-        const reserveCurrent = reserve; // all checking
-        const flowCurrent    = yieldBucket + brokerageCash; // savings/MM + idle brokerage cash
-        const buildCurrent   = tactical;  // treasuries
+        const reserveCurrent = reserve;
+        const flowCurrent    = yieldBucket + brokerageCash;
+        const buildCurrent   = tactical;
         const growCurrent    = totalAssets - reserveCurrent - flowCurrent - buildCurrent;
 
-        // Monthly outflows — group cashFlows by month, find minimum (core baseline)
         const moMap: Record<string, number> = {};
         cashFlows.filter(c => c.type === "outflow").forEach(c => {
           const d = new Date(c.date as string);
           const k = `${d.getFullYear()}-${d.getMonth()}`;
           moMap[k] = (moMap[k] ?? 0) + Number(c.amount);
         });
-        const moVals = Object.values(moMap);
+        const moVals      = Object.values(moMap);
         const minMonthly  = moVals.length ? Math.min(...moVals) : 18056;
         const annualOut   = cashFlows.filter(c => c.type === "outflow").reduce((s, c) => s + Number(c.amount), 0);
         const annualSalIn = cashFlows.filter(c => c.type === "inflow" && c.category === "salary").reduce((s, c) => s + Number(c.amount), 0);
 
-        // GURU targets
         const reserveTarget = Math.round(minMonthly * 2);
         const flowTarget    = annualOut;
         const buildTarget   = buildCurrent;
@@ -1563,10 +1560,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
         const reserveDelta = reserveTarget - reserveCurrent;
         const flowDelta    = flowTarget    - flowCurrent;
-        const buildDelta   = 0;
         const growDelta    = growTarget    - growCurrent;
 
-        // Top metrics
         const excessCash = Math.abs(Math.min(reserveDelta, 0)) + Math.abs(Math.min(flowDelta, 0));
         const addlIncome = Math.round(
           Math.abs(Math.min(reserveDelta, 0)) * (0.07 * 0.63 - 0.001) +
@@ -1574,104 +1569,157 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         );
         const pctIncrease = annualSalIn > 0 ? ((addlIncome / annualSalIn) * 100).toFixed(1) : "0";
 
-        const rows: {
+        type GBRow = {
           def: typeof GURU_BUCKETS_DEF[number];
-          current: number;
-          target: number;
-          delta: number;
-          calc: string;
-          product: string;
-          yield_: string;
-          atYield: string;
-        }[] = [
-          { def: GURU_BUCKETS_DEF[0], current: reserveCurrent, target: reserveTarget, delta: reserveDelta,
-            calc: "2 months of core expenses",
-            product: "Citizens Private Bank Checking",   yield_: "3.78%", atYield: "2.38%" },
-          { def: GURU_BUCKETS_DEF[1], current: flowCurrent, target: flowTarget, delta: flowDelta,
-            calc: "12 months of total anticipated outflow",
-            product: "JPMorgan 100% Treasuries MMF",     yield_: "4.30%", atYield: "2.71%" },
-          { def: GURU_BUCKETS_DEF[2], current: buildCurrent, target: buildTarget, delta: buildDelta,
-            calc: "Maintain short-term reserve position",
-            product: "US Treasuries (3–6 month ladder)",  yield_: "3.95%", atYield: "2.49%" },
-          { def: GURU_BUCKETS_DEF[3], current: growCurrent, target: growTarget, delta: growDelta,
-            calc: "Remaining assets",
-            product: "Growth Equity ETFs + PE Funds",     yield_: "[7%]",  atYield: "[4.4%]" },
-        ];
-        const totalTarget = rows.reduce((s, r) => s + r.target, 0);
-
-        const fmtDelta = (d: number) => {
-          if (d === 0) return <span className="text-muted-foreground">No Change</span>;
-          return (
-            <span className={d > 0 ? "text-emerald-700 font-semibold" : "text-rose-600 font-semibold"}>
-              {d > 0 ? `Increase by ${fmt(d)}` : `Decrease by ${fmt(Math.abs(d))}`}
-            </span>
-          );
+          current: number; target: number; delta: number;
+          calc: string; product: string; yield_: string; atYield: string;
         };
+        const rows: GBRow[] = [
+          { def: GURU_BUCKETS_DEF[0], current: reserveCurrent, target: reserveTarget, delta: reserveDelta,
+            calc: "2 months of core recurring expenses",
+            product: "Citizens Private Bank Checking", yield_: "3.78%", atYield: "2.38%" },
+          { def: GURU_BUCKETS_DEF[1], current: flowCurrent, target: flowTarget, delta: flowDelta,
+            calc: "12 months of total anticipated outflows",
+            product: "JPMorgan 100% Treasuries MMF", yield_: "4.30%", atYield: "2.71%" },
+          { def: GURU_BUCKETS_DEF[2], current: buildCurrent, target: buildTarget, delta: 0,
+            calc: "Maintain short-term reserve position",
+            product: "US Treasuries — 3–6 month ladder", yield_: "3.95%", atYield: "2.49%" },
+          { def: GURU_BUCKETS_DEF[3], current: growCurrent, target: growTarget, delta: growDelta,
+            calc: "Remaining assets — long-term compounding",
+            product: "Growth Equity ETFs + PE Funds", yield_: "[7%]", atYield: "[4.4%]" },
+        ];
+
+        const deltaIcon = (d: number) => d > 0 ? "▲" : d < 0 ? "▼" : "—";
+        const deltaCls  = (d: number) => d > 0
+          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+          : d < 0
+          ? "bg-rose-50 text-rose-600 border-rose-200"
+          : "bg-secondary/30 text-muted-foreground border-border";
 
         return (
-          <div className="space-y-4">
-            {/* Top 3 summary metrics */}
+          <div className="space-y-5">
+            {/* Section heading */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-2">
+                Recommendation for Rebalancing &amp; Product Selection
+              </span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            {/* 3 outcome KPIs */}
             <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Estimated Excess Cash", value: `Up to ${fmt(excessCash)}` },
-                { label: "Estimated Additional After-Tax Income / Year", value: `Up to ${fmt(addlIncome)}` },
-                { label: "% Increase to Annual Cashflow", value: `Up to ${pctIncrease}%` },
-              ].map(m => (
-                <div key={m.label} className="flex items-stretch rounded-xl overflow-hidden border border-border">
-                  <div className="flex-1 px-4 py-3 bg-[hsl(221,39%,22%)] flex items-center">
-                    <span className="text-sm text-white/80 font-medium leading-snug">{m.label}</span>
+              {([
+                { label: "Estimated Excess Cash", value: fmt(excessCash), sub: "available to redeploy" },
+                { label: "Additional After-Tax Income / Year", value: fmt(addlIncome), sub: "projected annual gain" },
+                { label: "% Increase to Annual Cashflow", value: `${pctIncrease}%`, sub: "vs. current salary income" },
+              ] as const).map(m => (
+                <div key={m.label} className="rounded-xl border border-border overflow-hidden flex flex-col">
+                  <div className="bg-[hsl(221,39%,22%)] px-4 py-2.5 flex-1 flex items-center">
+                    <span className="text-xs text-white/75 font-medium leading-snug">{m.label}</span>
                   </div>
-                  <div className="px-4 py-3 bg-[hsl(120,35%,78%)] flex items-center justify-center min-w-[130px]">
-                    <span className="font-bold text-[hsl(120,40%,18%)] text-base whitespace-nowrap">{m.value} ★</span>
+                  <div className="bg-[hsl(120,40%,86%)] px-4 py-3 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-display font-black text-xl text-[hsl(120,40%,18%)] tabular-nums leading-none">{m.value}</p>
+                      <p className="text-[10px] text-[hsl(120,30%,30%)] mt-0.5">{m.sub}</p>
+                    </div>
+                    <span className="text-[hsl(120,50%,35%)] text-xl font-bold">★</span>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Rebalancing table */}
-            <div className="border border-border rounded-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[900px]">
-                  <thead>
-                    <tr className="bg-[hsl(221,39%,24%)] text-white text-xs">
-                      <th className="text-left px-3 py-2.5 font-semibold w-24">Bucket</th>
-                      <th className="text-right px-3 py-2.5 font-semibold">Current Balance</th>
-                      <th className="text-right px-3 py-2.5 font-semibold">GURU Suggested Balance</th>
-                      <th className="text-left px-3 py-2.5 font-semibold">GURU Suggested Calculation</th>
-                      <th className="text-left px-3 py-2.5 font-semibold">Money to Move Today</th>
-                      <th className="text-left px-3 py-2.5 font-semibold">GURU Product Selection</th>
-                      <th className="text-right px-3 py-2.5 font-semibold">Product Yield</th>
-                      <th className="text-right px-3 py-2.5 font-semibold">Tax Effected Yield</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r, i) => (
-                      <tr key={r.def.name} className={`border-t-4 border-[hsl(0,0%,88%)] ${i % 2 === 0 ? "bg-white dark:bg-card" : "bg-[hsl(221,39%,98%)] dark:bg-secondary/10"}`}>
-                        <td className="px-0 py-0">
-                          <div className="h-full px-3 py-3 flex flex-col justify-center min-h-[60px]" style={{ background: r.def.bg }}>
-                            <span className="text-base font-bold text-white leading-tight">{r.def.name}</span>
+            {/* 4 bucket cards — 2×2 grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {rows.map(r => (
+                <div key={r.def.name} className="rounded-xl border border-border overflow-hidden flex flex-col shadow-sm">
+
+                  {/* Colored header */}
+                  <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: r.def.bg }}>
+                    <div>
+                      <span className="text-xl font-bold text-white tracking-tight">{r.def.name}</span>
+                      <span className="text-white/70 text-sm italic ml-2.5">{r.def.tagline}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-white/60 text-[10px] uppercase tracking-wide">Yield</p>
+                      <p className="text-white font-bold text-sm">{r.yield_}</p>
+                    </div>
+                  </div>
+
+                  {/* Card body */}
+                  <div className="flex-1 grid grid-cols-2 divide-x divide-border bg-card">
+
+                    {/* Left — balances */}
+                    <div className="px-5 py-4 space-y-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Current Balance</p>
+                        <p className="text-2xl font-display font-bold tabular-nums text-foreground">{fmt(r.current)}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <div className="flex-1 h-px bg-border" />
+                        <span className="text-[10px]">GURU recommends</span>
+                        <div className="flex-1 h-px bg-border" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Target Balance</p>
+                        <p className="text-2xl font-display font-bold tabular-nums" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
+                      </div>
+                      {/* Delta badge */}
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold ${deltaCls(r.delta)}`}>
+                        <span>{deltaIcon(r.delta)}</span>
+                        <span>
+                          {r.delta === 0 ? "No Change" : `${fmt(Math.abs(r.delta))} ${r.delta > 0 ? "increase" : "decrease"}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Right — product & rationale */}
+                    <div className="px-5 py-4 space-y-3 flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">GURU Product</p>
+                          <p className="text-sm font-semibold text-foreground leading-snug">{r.product}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Gross Yield</p>
+                            <p className="text-base font-bold tabular-nums text-foreground">{r.yield_}</p>
                           </div>
-                        </td>
-                        <td className="px-3 py-3 text-right tabular-nums font-semibold">{fmt(r.current)}</td>
-                        <td className="px-3 py-3 text-right tabular-nums font-bold text-[hsl(221,39%,24%)]">{fmt(r.target)}</td>
-                        <td className="px-3 py-3 text-xs text-muted-foreground leading-snug">{r.calc}</td>
-                        <td className="px-3 py-3 text-xs">{fmtDelta(r.delta)}</td>
-                        <td className="px-3 py-3 text-xs font-semibold text-foreground leading-snug">{r.product}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-xs font-medium">{r.yield_}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-xs font-medium">{r.atYield}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-4 border-[hsl(221,39%,24%)] bg-[hsl(221,15%,88%)] dark:bg-[hsl(221,25%,22%)] text-[hsl(221,39%,20%)] dark:text-white/90">
-                      <td className="px-3 py-2.5 font-bold">Total</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums font-bold">{fmt(totalAssets)}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums font-bold">{fmt(totalTarget)}</td>
-                      <td colSpan={2} className="px-3 py-2.5 text-center text-sm font-semibold text-muted-foreground">No Change</td>
-                      <td colSpan={3} />
-                    </tr>
-                  </tfoot>
-                </table>
+                          <div>
+                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">After-Tax</p>
+                            <p className="text-base font-bold tabular-nums text-foreground">{r.atYield}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-border/50">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Rationale</p>
+                        <p className="text-xs text-muted-foreground italic leading-snug">{r.calc}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Totals summary strip */}
+            <div className="rounded-xl border border-border bg-[hsl(221,15%,88%)] dark:bg-[hsl(221,25%,22%)] px-5 py-3 grid grid-cols-4 gap-4 text-[hsl(221,39%,20%)] dark:text-white/90">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">Total Assets</p>
+                <p className="font-bold text-base tabular-nums">{fmt(totalAssets)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">GURU Total</p>
+                <p className="font-bold text-base tabular-nums">{fmt(rows.reduce((s, r) => s + r.target, 0))}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">Net Redeployment</p>
+                <p className={`font-bold text-base tabular-nums ${excessCash > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
+                  {excessCash > 0 ? `${fmt(excessCash)} to Grow` : "Balanced"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">Balance Check</p>
+                <p className="font-bold text-base text-emerald-600">✓ No Change to Total</p>
               </div>
             </div>
           </div>
