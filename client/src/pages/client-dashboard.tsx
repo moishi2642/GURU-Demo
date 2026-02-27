@@ -1450,8 +1450,39 @@ const MODEL_PORTFOLIO: { category: string; current: number; target: number; acti
   { category: "Bank of America",           current: 60000,  target: 60000,  action: "hold",  ticker: "BAC" },
 ];
 
+const GURU_BUCKETS_DEF = [
+  {
+    name: "Reserve",
+    tagline: "Your safety net",
+    rule: "2-3 months of cash",
+    bg: "hsl(232,55%,62%)",
+    dark: "hsl(232,45%,55%)",
+  },
+  {
+    name: "Flow",
+    tagline: "Active cash management for what's next",
+    rule: "12 months of cash for anticipated outflow",
+    bg: "hsl(232,55%,46%)",
+    dark: "hsl(232,50%,38%)",
+  },
+  {
+    name: "Build",
+    tagline: "Disciplined saving for big goals on the horizon",
+    rule: "Large expenditure in next 3 years",
+    bg: "hsl(232,45%,30%)",
+    dark: "hsl(232,40%,22%)",
+  },
+  {
+    name: "Grow",
+    tagline: "Long-term compounded investing",
+    rule: "5 years + aggressive investment portfolio",
+    bg: "hsl(270,55%,45%)",
+    dark: "hsl(270,50%,35%)",
+  },
+] as const;
+
 function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const { reserve, yieldBucket, tactical, totalLiquid, reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
+  const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
   const forecastData = buildForecast(cashFlows);
   const cashTrough   = computeTrough(forecastData);
   const cashExcess   = totalLiquid - cashTrough;
@@ -1461,34 +1492,62 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
   const growth = assets.filter(a => a.type === "equity" || (a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"))).reduce((s, a) => s + Number(a.value), 0);
   const alts   = assets.filter(a => a.type === "alternative" || a.type === "real_estate").reduce((s, a) => s + Number(a.value), 0);
-  const retirement = assets.filter(a => a.type === "fixed_income" && (a.description ?? "").toLowerCase().includes("ira") || (a.type === "fixed_income" && (a.description ?? "").toLowerCase().includes("401"))).reduce((s, a) => s + Number(a.value), 0);
 
   const buckets = [
-    { label: "Immediate",    sublabel: "Checking — transaction accounts",   value: reserve,      color: "hsl(221,83%,53%)",  pct: (reserve / totalAssets) * 100 },
-    { label: "Short-Term",   sublabel: "Savings & money market",            value: yieldBucket,  color: "hsl(43,74%,50%)",   pct: (yieldBucket / totalAssets) * 100 },
-    { label: "Medium-Term",  sublabel: "Treasuries — 1–3 yr horizon",       value: tactical,     color: "hsl(142,71%,40%)",  pct: (tactical / totalAssets) * 100 },
-    { label: "Long-Term",    sublabel: "Equities & brokerage investments",  value: growth,       color: "hsl(262,72%,55%)",  pct: (growth / totalAssets) * 100 },
-    { label: "Alternatives", sublabel: "Real estate, PE, carry, RSUs",      value: alts,         color: "hsl(25,90%,52%)",   pct: (alts / totalAssets) * 100 },
+    { label: "Reserve",   sublabel: "Checking — transaction accounts",  value: reserve,      color: GURU_BUCKETS_DEF[0].bg, pct: (reserve / totalAssets) * 100 },
+    { label: "Flow",      sublabel: "Savings, MM & Treasuries",         value: yieldBucket + tactical, color: GURU_BUCKETS_DEF[1].bg, pct: ((yieldBucket + tactical) / totalAssets) * 100 },
+    { label: "Build",     sublabel: "Equities & brokerage investments", value: growth,       color: GURU_BUCKETS_DEF[2].bg, pct: (growth / totalAssets) * 100 },
+    { label: "Grow",      sublabel: "Real estate, PE, carry, RSUs",     value: alts,         color: GURU_BUCKETS_DEF[3].bg, pct: (alts / totalAssets) * 100 },
   ];
 
   const totalPortfolio = MODEL_PORTFOLIO.reduce((s, r) => s + r.current, 0);
 
   return (
     <div className="space-y-6">
-      {/* 5-Bucket Overview */}
+
+      {/* ── The GURU Method explanation ─────────────────────────────────── */}
+      <div className="space-y-2">
+        {/* Green header card */}
+        <div className="rounded-xl border-2 border-[hsl(120,30%,60%)] bg-[hsl(120,35%,90%)] px-6 py-5">
+          <p className="text-base font-bold text-[hsl(120,30%,20%)] underline underline-offset-2 mb-1">The GURU Method</p>
+          <p className="text-lg font-bold text-[hsl(120,20%,18%)] leading-snug mb-2">Financial Strategy Built on Cash Flow Projection</p>
+          <p className="text-sm text-[hsl(120,15%,25%)] leading-relaxed">
+            GURU categorizes your assets by four strategic buckets that are based on <strong>liquidity needs and risk tolerance</strong>. With these streamlined categories, we can determine the right cash management strategy for you and UNLOCK growth
+          </p>
+        </div>
+
+        {/* Four bucket rows */}
+        <div className="rounded-xl overflow-hidden border border-border">
+          {GURU_BUCKETS_DEF.map((b, i) => (
+            <div key={b.name} className={`grid ${i < GURU_BUCKETS_DEF.length - 1 ? "border-b-4 border-[hsl(0,0%,85%)]" : ""}`}
+              style={{ gridTemplateColumns: "1fr 220px" }}>
+              {/* Left: name + tagline */}
+              <div className="px-6 py-5" style={{ background: b.bg }}>
+                <p className="text-2xl font-bold text-white mb-0.5">{b.name}</p>
+                <p className="text-sm italic text-white/85">{b.tagline}</p>
+              </div>
+              {/* Right: rule */}
+              <div className="px-5 py-5 flex items-center" style={{ background: b.dark }}>
+                <p className="text-sm text-white/90 leading-snug font-medium">{b.rule}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Current allocation ──────────────────────────────────────────── */}
       <div className="border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-border bg-secondary/20">
-          <p className="font-display font-bold text-sm text-foreground">GURU 5-Bucket Asset Framework</p>
+          <p className="font-display font-bold text-sm text-foreground">GURU 4-Bucket Asset Framework</p>
           <p className="text-xs text-muted-foreground mt-0.5">Current allocation across {fmt(totalAssets)} total assets</p>
         </div>
         <div className="p-5 space-y-4">
-          {/* Full-width stacked bar */}
           <div className="flex h-5 rounded-full overflow-hidden w-full">
             {buckets.map(b => (
               <div key={b.label} style={{ width: `${b.pct}%`, background: b.color }} title={`${b.label}: ${b.pct.toFixed(1)}%`} />
             ))}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
             {buckets.map(b => (
               <div key={b.label} className="p-3 border border-border rounded-lg" data-testid={`bucket-${b.label.toLowerCase()}`}>
                 <div className="flex items-center gap-2 mb-2">
