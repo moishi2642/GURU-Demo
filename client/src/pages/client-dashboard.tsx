@@ -42,8 +42,14 @@ function useCountUp(target: number, duration = 1600) {
 
 function RollingNumber({ value, isPercent = false }: { value: number; isPercent?: boolean }) {
   const v = useCountUp(value);
-  if (isPercent) return <>{v.toFixed(1)}%</>;
-  return <>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v)}</>;
+  const formatted = isPercent
+    ? `${v.toFixed(1)}%`
+    : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
+  return (
+    <span className="font-mono font-bold tracking-tight text-emerald-800">
+      {formatted}<span className="animate-pulse ml-px opacity-50">_</span>
+    </span>
+  );
 }
 
 // ─── Market Data (kept for BrokeragePanel) ────────────────────────────────────
@@ -1764,7 +1770,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                       ].map(s => (
                         <div key={s.label}>
                           <p className="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-0.5">{s.label}</p>
-                          <p className="text-2xl font-display font-black tabular-nums leading-none text-gray-900">
+                          <p className="text-2xl leading-none">
                             <RollingNumber value={s.rawValue} isPercent={s.isPercent} />
                           </p>
                           <p className="text-[9px] text-gray-400 mt-0.5">{s.sub}</p>
