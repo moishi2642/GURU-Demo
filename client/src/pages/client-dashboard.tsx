@@ -50,10 +50,7 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
   const horizon = addMonths(now, 12);
 
   const items = cashFlows
-    .filter(cf => {
-      const d = new Date(cf.date);
-      return d >= now && d <= horizon;
-    })
+    .filter(cf => { const d = new Date(cf.date); return d >= now && d <= horizon; })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map(cf => ({
       date: format(new Date(cf.date), "MMM d"),
@@ -65,33 +62,79 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
 
   if (items.length === 0) return null;
 
-  const duration = Math.max(40, items.length * 6);
+  const totalIn  = items.filter(i => i.type === "inflow").reduce((s, i) => s + i.amount, 0);
+  const totalOut = items.filter(i => i.type === "outflow").reduce((s, i) => s + i.amount, 0);
+  const net      = totalIn - totalOut;
+  const rowH     = 32; // px per row
+  const visRows  = 6;
+  const duration = Math.max(20, items.length * 2.2); // seconds
+
+  const fmtAmt = (v: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0, notation: "compact" }).format(v);
 
   return (
-    <div className="flex items-center bg-[hsl(221,39%,11%)] border border-[hsl(221,39%,20%)] rounded-lg overflow-hidden text-xs mb-4 select-none" style={{ height: 36 }}>
-      <div className="flex items-center gap-1.5 px-3 border-r border-white/10 flex-shrink-0 h-full">
-        <CalendarClock className="w-3 h-3 text-amber-400" />
-        <span className="font-bold text-white/60 uppercase tracking-wider text-[10px]">Upcoming</span>
+    <div className="rounded-xl border border-[hsl(221,39%,22%)] bg-[hsl(221,39%,10%)] overflow-hidden select-none shadow-md">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/8">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          <CalendarClock className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-[11px] font-bold text-white/70 uppercase tracking-widest">Upcoming Cash Events</span>
+        </div>
+        <span className="text-[10px] text-white/30 font-medium">Next 12 months · {items.length} events · hover to pause</span>
       </div>
-      <div className="flex-1 overflow-hidden">
-        <div className="animate-ticker flex items-center" style={{ animationDuration: `${duration}s` }}>
+
+      {/* Column headers */}
+      <div className="grid text-[10px] font-bold uppercase tracking-widest text-white/30 border-b border-white/5 px-4 py-1.5"
+        style={{ gridTemplateColumns: "68px 110px 1fr 90px" }}>
+        <span>Date</span>
+        <span>Category</span>
+        <span>Description</span>
+        <span className="text-right">Amount</span>
+      </div>
+
+      {/* Scrolling rows */}
+      <div className="overflow-hidden" style={{ height: rowH * visRows }}>
+        <div className="animate-feed" style={{ animationDuration: `${duration}s` }}>
           {[...items, ...items].map((item, i) => {
             const isIn = item.type === "inflow";
-            const fmtAmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0, notation: "compact" }).format(item.amount);
-            const cat = CATEGORY_LABELS[item.category] ?? item.category;
+            const cat  = CATEGORY_LABELS[item.category] ?? item.category;
             return (
-              <div key={i} className="flex items-center gap-2 px-5 border-r border-white/10 h-full whitespace-nowrap" style={{ lineHeight: "36px" }}>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isIn ? "bg-emerald-900/50 text-emerald-400" : "bg-rose-900/40 text-rose-400"}`}>
+              <div
+                key={i}
+                className={`grid items-center px-4 border-b border-white/5 text-xs ${isIn ? "hover:bg-emerald-950/40" : "hover:bg-rose-950/40"} transition-colors`}
+                style={{ height: rowH, gridTemplateColumns: "68px 110px 1fr 90px" }}
+              >
+                <span className="text-white/40 font-medium tabular-nums">{item.date}</span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded w-fit ${isIn ? "bg-emerald-900/50 text-emerald-400" : "bg-rose-900/40 text-rose-400"}`}>
                   {isIn ? "▲" : "▼"} {cat}
                 </span>
-                <span className="text-white/60">{item.date}</span>
-                <span className="text-white/80 font-medium max-w-[160px] truncate">{item.label}</span>
-                <span className={`font-bold tabular-nums ${isIn ? "text-emerald-400" : "text-rose-400"}`}>
-                  {isIn ? "+" : "−"}{fmtAmt}
+                <span className="text-white/70 truncate pr-4">{item.label}</span>
+                <span className={`font-bold tabular-nums text-right ${isIn ? "text-emerald-400" : "text-rose-400"}`}>
+                  {isIn ? "+" : "−"}{fmtAmt(item.amount)}
                 </span>
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Summary footer */}
+      <div className="grid grid-cols-3 divide-x divide-white/8 border-t border-white/10 text-xs">
+        <div className="px-4 py-2.5">
+          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">Total Inflows</p>
+          <p className="font-bold text-emerald-400 tabular-nums">+{fmtAmt(totalIn)}</p>
+        </div>
+        <div className="px-4 py-2.5">
+          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">Total Outflows</p>
+          <p className="font-bold text-rose-400 tabular-nums">−{fmtAmt(totalOut)}</p>
+        </div>
+        <div className="px-4 py-2.5">
+          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">Net Cash Flow</p>
+          <p className={`font-bold tabular-nums ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{net >= 0 ? "+" : "−"}{fmtAmt(Math.abs(net))}</p>
         </div>
       </div>
     </div>
@@ -249,7 +292,20 @@ function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: 
                 <stop offset="95%" stopColor={BLUE} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <Area type="monotone" dataKey="value" stroke={BLUE} strokeWidth={1.5} fill="url(#nwGrad)" dot={false} />
+            <Area
+              type="monotone" dataKey="value" stroke={BLUE} strokeWidth={1.5} fill="url(#nwGrad)"
+              dot={(props: any) => {
+                const { cx, cy, index } = props;
+                if (index !== trendData.length - 1) return <g key={index} />;
+                return (
+                  <g key="nw-live">
+                    <circle cx={cx} cy={cy} r={10} fill={BLUE} opacity={0.15} style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
+                    <circle cx={cx} cy={cy} r={4}  fill={BLUE} stroke="white" strokeWidth={1.5} />
+                  </g>
+                );
+              }}
+              activeDot={{ r: 5, stroke: "white", strokeWidth: 2 }}
+            />
             <RechartsTooltip formatter={(v: number) => [fmt(v), "Net Worth"]} contentStyle={{ fontSize: 11 }} />
           </AreaChart>
         </ResponsiveContainer>
@@ -401,15 +457,27 @@ function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
               animationEasing="ease-out"
               dot={(props: any) => {
                 const { cx, cy, index } = props;
-                if (index !== data.length - 1) return <g key={index} />;
-                const arrowChar = isPositive ? "▲" : "▼";
-                const col = isPositive ? "hsl(142,71%,35%)" : "hsl(0,72%,50%)";
-                return (
-                  <g key="end-dot">
-                    <circle cx={cx} cy={cy} r={5} fill={isPositive ? GREEN : RED} stroke="white" strokeWidth={2} />
-                    <text x={cx + 8} y={cy + 4} fill={col} fontSize={8} fontWeight="800">{arrowChar} {fmtK(finalVal)}</text>
-                  </g>
-                );
+                if (index === 0) {
+                  const liveCol = isPositive ? GREEN : RED;
+                  return (
+                    <g key="cf-live">
+                      <circle cx={cx} cy={cy} r={11} fill={liveCol} opacity={0.12} style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
+                      <circle cx={cx} cy={cy} r={4.5} fill={liveCol} stroke="white" strokeWidth={1.5} />
+                      <text x={cx} y={cy - 11} textAnchor="middle" fill={liveCol} fontSize={8} fontWeight="800">NOW</text>
+                    </g>
+                  );
+                }
+                if (index === data.length - 1) {
+                  const arrowChar = isPositive ? "▲" : "▼";
+                  const col = isPositive ? "hsl(142,71%,35%)" : "hsl(0,72%,50%)";
+                  return (
+                    <g key="end-dot">
+                      <circle cx={cx} cy={cy} r={5} fill={isPositive ? GREEN : RED} stroke="white" strokeWidth={2} />
+                      <text x={cx + 8} y={cy + 4} fill={col} fontSize={8} fontWeight="800">{arrowChar} {fmtK(finalVal)}</text>
+                    </g>
+                  );
+                }
+                return <g key={index} />;
               }}
             />
           </ComposedChart>
