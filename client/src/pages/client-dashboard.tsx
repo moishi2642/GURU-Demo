@@ -1199,61 +1199,123 @@ function WfLabel(props: { x?: number; y?: number; width?: number; value?: number
   );
 }
 
+type PLRowDef =
+  | { key: string; kind: "group";    label: string }
+  | { key: string; kind: "item";     label: string; descs: string[] }
+  | { key: string; kind: "subtotal"; label: string; sumOf: string[] };
+
+const CF_PL_ROWS: PLRowDef[] = [
+  { key: "g_income",   kind: "group",    label: "EARNED INCOME" },
+  { key: "salary",     kind: "item",     label: "Monthly Net Salary — P1 + P2",        descs: ["Monthly Net Salary"] },
+  { key: "bonus_p1",   kind: "item",     label: "Partner 1 Year-End Bonus",             descs: ["Partner 1 Year-End"] },
+  { key: "bonus_p2",   kind: "item",     label: "Partner 2 Year-End Bonus",             descs: ["Partner 2 Year-End"] },
+  { key: "sub_income", kind: "subtotal", label: "Total Earned Income",                  sumOf: ["salary","bonus_p1","bonus_p2"] },
+  { key: "g_tribeca",  kind: "group",    label: "TRIBECA — PRIMARY RESIDENCE" },
+  { key: "trib_exp",   kind: "item",     label: "Mortgage + Maintenance + Insurance + Utilities", descs: ["Tribeca Mortgage"] },
+  { key: "nyc_tax",    kind: "item",     label: "NYC Property Taxes (semi-annual)",     descs: ["NYC Property Taxes"] },
+  { key: "sub_trib",   kind: "subtotal", label: "Net Tribeca",                          sumOf: ["trib_exp","nyc_tax"] },
+  { key: "g_sara",     kind: "group",    label: "SARASOTA — INVESTMENT PROPERTY" },
+  { key: "sara_in",    kind: "item",     label: "Rental Income (net of mgmt fee)",      descs: ["Sarasota Rental Income"] },
+  { key: "sara_exp",   kind: "item",     label: "Property Expenses (mgmt + HOA + mortgage)", descs: ["Sarasota Property Expenses"] },
+  { key: "fl_tax",     kind: "item",     label: "FL Property Taxes (annual)",           descs: ["FL Property Taxes"] },
+  { key: "sub_sara",   kind: "subtotal", label: "Net Sarasota",                         sumOf: ["sara_in","sara_exp","fl_tax"] },
+  { key: "g_living",   kind: "group",    label: "LIVING EXPENSES" },
+  { key: "childcare",  kind: "item",     label: "Childcare / Babysitter",               descs: ["Childcare"] },
+  { key: "food",       kind: "item",     label: "Food, Groceries & Dining",             descs: ["Food, Groceries"] },
+  { key: "sub_living", kind: "subtotal", label: "Total Living Expenses",                sumOf: ["childcare","food"] },
+  { key: "g_edu",      kind: "group",    label: "EDUCATION" },
+  { key: "tuition",    kind: "item",     label: "Private School Tuition (quarterly)",   descs: ["Tuition"] },
+  { key: "g_debt",     kind: "group",    label: "DEBT SERVICE" },
+  { key: "pe_loan",    kind: "item",     label: "PE Fund II Professional Loan",         descs: ["PE Fund II Professional"] },
+  { key: "student",    kind: "item",     label: "Student Loan Payments",                descs: ["Student Loan"] },
+  { key: "sub_debt",   kind: "subtotal", label: "Total Debt Service",                   sumOf: ["pe_loan","student"] },
+  { key: "g_tax",      kind: "group",    label: "TAXES" },
+  { key: "fed_tax",    kind: "item",     label: "Q4 Estimated Federal Income Tax",      descs: ["Estimated Federal"] },
+  { key: "g_travel",   kind: "group",    label: "TRAVEL & LIFESTYLE" },
+  { key: "trav_mem",   kind: "item",     label: "Memorial Day Travel",                  descs: ["Memorial Day"] },
+  { key: "trav_wknd",  kind: "item",     label: "Weekend Travel",                       descs: ["Weekend Travel"] },
+  { key: "trav_sum",   kind: "item",     label: "Summer Vacation (Europe)",             descs: ["Summer Vacation"] },
+  { key: "golf",       kind: "item",     label: "Golf Club Annual Dues",                descs: ["Golf Club"] },
+  { key: "sub_travel", kind: "subtotal", label: "Total Travel & Lifestyle",             sumOf: ["trav_mem","trav_wknd","trav_sum","golf"] },
+];
+
+const CF_MONTHS = [
+  {label:"Mar",year:2026,month:3},{label:"Apr",year:2026,month:4},{label:"May",year:2026,month:5},
+  {label:"Jun",year:2026,month:6},{label:"Jul",year:2026,month:7},{label:"Aug",year:2026,month:8},
+  {label:"Sep",year:2026,month:9},{label:"Oct",year:2026,month:10},{label:"Nov",year:2026,month:11},
+  {label:"Dec",year:2026,month:12},{label:"Jan",year:2027,month:1},{label:"Feb",year:2027,month:2},
+];
+
 function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
   const { reserve } = cashBuckets(assets);
   const startBalance = reserve;
   const wfData = buildWaterfallData(cashFlows, startBalance);
 
-  // Monthly detail table (excluding interest income)
-  const months: { label: string; year: number; month: number }[] = [
-    {label:"Mar '26",year:2026,month:3},{label:"Apr '26",year:2026,month:4},{label:"May '26",year:2026,month:5},
-    {label:"Jun '26",year:2026,month:6},{label:"Jul '26",year:2026,month:7},{label:"Aug '26",year:2026,month:8},
-    {label:"Sep '26",year:2026,month:9},{label:"Oct '26",year:2026,month:10},{label:"Nov '26",year:2026,month:11},
-    {label:"Dec '26",year:2026,month:12},{label:"Jan '27",year:2027,month:1},{label:"Feb '27",year:2027,month:2},
-  ];
-
-  const monthlyData = months.map(({ label, year, month }) => {
-    const mFlows = cashFlows.filter(cf => {
+  function monthVal(descs: string[], year: number, month: number): number {
+    return cashFlows.filter(cf => {
       const d = new Date(cf.date);
-      return d.getFullYear() === year && d.getMonth() + 1 === month;
-    });
-    const inflows  = mFlows.filter(cf => cf.type === "inflow");
-    const outflows = mFlows.filter(cf => cf.type === "outflow");
-    const netIn    = inflows.reduce((s, cf) => s + Number(cf.amount), 0);
-    const netOut   = outflows.reduce((s, cf) => s + Number(cf.amount), 0);
-    return { label, inflows, outflows, netIn, netOut, net: netIn - netOut };
-  });
+      return d.getFullYear() === year && d.getMonth() + 1 === month
+        && descs.some(dm => cf.description.toLowerCase().includes(dm.toLowerCase()));
+    }).reduce((s, cf) => s + (cf.type === "inflow" ? Number(cf.amount) : -Number(cf.amount)), 0);
+  }
 
-  const annualIn  = monthlyData.reduce((s, m) => s + m.netIn, 0);
-  const annualOut = monthlyData.reduce((s, m) => s + m.netOut, 0);
+  const vals: Record<string, number[]> = {};
+  for (const row of CF_PL_ROWS) {
+    if (row.kind === "item") {
+      vals[row.key] = CF_MONTHS.map(m => monthVal(row.descs, m.year, m.month));
+    } else if (row.kind === "subtotal") {
+      vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
+    } else {
+      vals[row.key] = CF_MONTHS.map(() => 0);
+    }
+  }
 
-  // Narrative bullets from the image
-  const yearlyNet = annualIn - annualOut;
-  const peakDraw  = Math.min(...wfData.filter(d => d.type === "balance").map(d => d.running));
-  const drawPct   = Math.round(((startBalance - peakDraw) / startBalance) * 100);
+  const netByMonth = CF_MONTHS.map((_, mi) =>
+    CF_PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + (vals[r.key]?.[mi] ?? 0), 0)
+  );
+  const annualNet = netByMonth.reduce((s, v) => s + v, 0);
+
+  const totalIn  = cashFlows.filter(cf => cf.type === "inflow").reduce((s, cf) => s + Number(cf.amount), 0);
+  const totalOut = cashFlows.filter(cf => cf.type === "outflow").reduce((s, cf) => s + Number(cf.amount), 0);
+  const avgIn    = Math.round(totalIn / 12);
+  const avgOut   = Math.round(totalOut / 12);
+
+  function fmtCell(v: number): string {
+    if (v === 0) return "—";
+    return v > 0 ? `+${fmt(v)}` : `(${fmt(Math.abs(v))})`;
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Narrative callout */}
-      <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-5">
-        <h3 className="font-display font-bold text-base text-foreground mb-3">Cash Management: The Overlooked Problem of the High Net Worth</h3>
-        <ul className="space-y-1.5 text-sm text-foreground/80">
-          <li className="flex gap-2"><span className="text-emerald-600 font-bold flex-shrink-0">•</span><span>Annually you are saving <strong>{fmt(Math.max(0, yearlyNet))}</strong></span></li>
-          <li className="flex gap-2"><span className="text-rose-600 font-bold flex-shrink-0">•</span><span>However, over the course of the year you will <strong>drain at least {drawPct > 0 ? drawPct : 60}% of your immediate cash</strong> due to expenses and large cash outflows</span></li>
-          <li className="flex gap-2"><span className="text-amber-600 font-bold flex-shrink-0">•</span><span><strong>This unpredictability leads to stagnant cash.</strong> Traditional mindset would say to just hold cash in a checking account and wait for the next large cash inflow to invest</span></li>
-        </ul>
+    <div className="space-y-5">
+      {/* Avg Monthly Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="p-4 border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl" data-testid="stat-avg-inflow">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Avg Monthly Inflows</p>
+          <p className="text-2xl font-display font-black tabular-nums text-emerald-700">+{fmt(avgIn, true)}</p>
+          <p className="text-xs text-muted-foreground mt-1">{fmt(totalIn, true)} annually</p>
+        </div>
+        <div className="p-4 border border-rose-200 bg-rose-50 dark:bg-rose-950/20 rounded-xl" data-testid="stat-avg-outflow">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Avg Monthly Outflows</p>
+          <p className="text-2xl font-display font-black tabular-nums text-rose-700">({fmt(avgOut, true)})</p>
+          <p className="text-xs text-muted-foreground mt-1">{fmt(totalOut, true)} annually</p>
+        </div>
+        <div className={`p-4 border rounded-xl ${annualNet >= 0 ? "border-blue-200 bg-blue-50 dark:bg-blue-950/20" : "border-rose-200 bg-rose-50"}`} data-testid="stat-net">
+          <p className="text-xs font-medium text-muted-foreground mb-1">12-Month Net</p>
+          <p className={`text-2xl font-display font-black tabular-nums ${annualNet >= 0 ? "text-blue-700" : "text-rose-700"}`}>
+            {annualNet >= 0 ? "+" : ""}{fmt(Math.abs(annualNet), true)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">Incl. year-end bonuses</p>
+        </div>
       </div>
 
       {/* Waterfall Chart */}
       <div className="border border-border rounded-xl overflow-hidden">
-        <div className="px-5 pt-4 pb-2 border-b border-border flex items-center justify-between">
-          <div>
-            <p className="font-display font-bold text-base text-foreground">12-Month Cashflow Waterfall</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Quarterly view · Starting from checking balance · {fmt(startBalance)} beginning</p>
-          </div>
+        <div className="px-5 pt-4 pb-2 border-b border-border">
+          <p className="font-display font-bold text-base text-foreground">12-Month Cashflow Waterfall</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Quarterly view · Starting from checking balance · {fmt(startBalance)} beginning</p>
         </div>
         <div className="p-4 bg-card">
-          <ResponsiveContainer width="100%" height={320}>
+          <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={wfData} margin={{ top: 30, right: 20, left: 20, bottom: 20 }} barCategoryGap="8%">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
@@ -1267,13 +1329,11 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
                 contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid hsl(var(--border))" }}
                 itemStyle={{ padding: "2px 0" }}
               />
-              {/* Quarter boundary reference lines */}
               {[3, 7, 11].map(i => (
                 <ReferenceLine key={i} x={wfData[i]?.name} stroke="hsl(var(--border))" strokeDasharray="4 2" />
               ))}
-              {/* Waterfall bars — stacked */}
               <Bar dataKey="invisible" stackId="wf" fill="transparent" isAnimationActive={false} />
-              <Bar dataKey="income" stackId="wf" fill="#10b981" radius={[3,3,0,0]} isAnimationActive={false}>
+              <Bar dataKey="income"  stackId="wf" fill="#10b981" radius={[3,3,0,0]} isAnimationActive={false}>
                 <LabelList content={(p: any) => <WfLabel {...p} type="income" />} />
               </Bar>
               <Bar dataKey="coreExp" stackId="wf" fill="#ef4444" radius={[3,3,0,0]} isAnimationActive={false}>
@@ -1282,13 +1342,11 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
               <Bar dataKey="oneTime" stackId="wf" fill="#b91c1c" radius={[3,3,0,0]} isAnimationActive={false}>
                 <LabelList content={(p: any) => <WfLabel {...p} type="onetime" />} />
               </Bar>
-              {/* Balance bars — separate */}
               <Bar dataKey="balance" fill="hsl(221,39%,44%)" radius={[4,4,0,0]} isAnimationActive={false}>
                 <LabelList content={(p: any) => <WfLabel {...p} type="balance" />} />
               </Bar>
             </ComposedChart>
           </ResponsiveContainer>
-          {/* Legend */}
           <div className="flex gap-4 justify-center mt-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />Income</span>
             <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-500 inline-block" />Core Expenses</span>
@@ -1298,83 +1356,78 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
         </div>
       </div>
 
-      {/* Monthly Detail Table */}
+      {/* P&L Detail Table */}
       <div className="border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-border bg-secondary/20">
-          <p className="font-display font-bold text-sm text-foreground">Monthly Cash Flow Detail</p>
+          <p className="font-display font-bold text-sm text-foreground">Cash Flow P&L · Mar 2026 – Feb 2027</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Positive = inflow · (Negative) = outflow · Sarasota shown as property P&L</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-[700px]">
+          <table className="w-full text-xs min-w-[900px]">
             <thead>
               <tr className="border-b border-border bg-secondary/10">
-                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">Description</th>
-                {monthlyData.map(m => (
-                  <th key={m.label} className="text-right px-2 py-2.5 font-semibold text-muted-foreground whitespace-nowrap">{m.label}</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground" style={{ minWidth: 230 }}>Line Item</th>
+                {CF_MONTHS.map(m => (
+                  <th key={m.label} className="text-right px-1.5 py-2.5 font-semibold text-muted-foreground whitespace-nowrap" style={{ minWidth: 50 }}>{m.label}</th>
                 ))}
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">Annual</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground" style={{ minWidth: 70 }}>Annual</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/50">
-              {/* Inflow rows */}
-              <tr className="bg-emerald-50/50 dark:bg-emerald-950/10">
-                <td className="px-4 py-1.5 font-bold text-emerald-700 text-xs uppercase tracking-wide" colSpan={14}>Inflows</td>
-              </tr>
-              {(() => {
-                const allInDescriptions = Array.from(new Set(monthlyData.flatMap(m => m.inflows.map(f => f.description))));
-                return allInDescriptions.map(desc => (
-                  <tr key={desc} className="hover:bg-secondary/20">
-                    <td className="px-4 py-1.5 text-foreground">{desc}</td>
-                    {monthlyData.map(m => {
-                      const f = m.inflows.find(f => f.description === desc);
-                      return <td key={m.label} className="text-right px-2 py-1.5 text-emerald-700 font-medium tabular-nums">{f ? `+${fmt(Number(f.amount))}` : "—"}</td>;
-                    })}
-                    <td className="text-right px-4 py-1.5 text-emerald-700 font-bold tabular-nums">
-                      {fmt(monthlyData.reduce((s, m) => s + (m.inflows.find(f => f.description === desc) ? Number(m.inflows.find(f => f.description === desc)!.amount) : 0), 0))}
-                    </td>
-                  </tr>
-                ));
-              })()}
-              <tr className="bg-emerald-100/60 dark:bg-emerald-900/20 font-bold">
-                <td className="px-4 py-1.5 text-emerald-800">Total Inflows</td>
-                {monthlyData.map(m => <td key={m.label} className="text-right px-2 py-1.5 text-emerald-700 tabular-nums">+{fmt(m.netIn)}</td>)}
-                <td className="text-right px-4 py-1.5 text-emerald-700 tabular-nums">+{fmt(annualIn)}</td>
-              </tr>
-
-              {/* Outflow rows */}
-              <tr className="bg-rose-50/50 dark:bg-rose-950/10">
-                <td className="px-4 py-1.5 font-bold text-rose-700 text-xs uppercase tracking-wide" colSpan={14}>Outflows</td>
-              </tr>
-              {(() => {
-                const allOutDescriptions = Array.from(new Set(monthlyData.flatMap(m => m.outflows.map(f => f.description))));
-                return allOutDescriptions.map(desc => (
-                  <tr key={desc} className="hover:bg-secondary/20">
-                    <td className="px-4 py-1.5 text-foreground">{desc}</td>
-                    {monthlyData.map(m => {
-                      const f = m.outflows.find(f => f.description === desc);
-                      return <td key={m.label} className="text-right px-2 py-1.5 text-rose-600 font-medium tabular-nums">{f ? `(${fmt(Number(f.amount))})` : "—"}</td>;
-                    })}
-                    <td className="text-right px-4 py-1.5 text-rose-600 font-bold tabular-nums">
-                      ({fmt(monthlyData.reduce((s, m) => s + (m.outflows.find(f => f.description === desc) ? Number(m.outflows.find(f => f.description === desc)!.amount) : 0), 0))})
-                    </td>
-                  </tr>
-                ));
-              })()}
-              <tr className="bg-rose-100/60 dark:bg-rose-900/20 font-bold">
-                <td className="px-4 py-1.5 text-rose-800">Total Outflows</td>
-                {monthlyData.map(m => <td key={m.label} className="text-right px-2 py-1.5 text-rose-700 tabular-nums">({fmt(m.netOut)})</td>)}
-                <td className="text-right px-4 py-1.5 text-rose-700 tabular-nums">({fmt(annualOut)})</td>
-              </tr>
-
-              {/* Net */}
-              <tr className="border-t-2 border-border font-bold bg-secondary/20">
-                <td className="px-4 py-2 text-foreground">Net Cash Flow</td>
-                {monthlyData.map(m => (
-                  <td key={m.label} className={`text-right px-2 py-2 tabular-nums font-bold ${m.net >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
-                    {m.net >= 0 ? "+" : ""}{m.net >= 0 ? fmt(m.net) : `(${fmt(Math.abs(m.net))})`}
+            <tbody>
+              {CF_PL_ROWS.map(row => {
+                if (row.kind === "group") {
+                  return (
+                    <tr key={row.key} className="bg-secondary/20 border-t border-border">
+                      <td className="px-4 py-1.5 font-bold text-[10px] uppercase tracking-wider text-muted-foreground" colSpan={15}>
+                        {row.label}
+                      </td>
+                    </tr>
+                  );
+                }
+                const rowVals = vals[row.key] ?? [];
+                const annual  = rowVals.reduce((s, v) => s + v, 0);
+                if (row.kind === "item") {
+                  return (
+                    <tr key={row.key} className="border-t border-border/30 hover:bg-secondary/20">
+                      <td className="px-4 py-1.5 pl-8 text-foreground/90">{row.label}</td>
+                      {rowVals.map((v, i) => (
+                        <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}>
+                          {fmtCell(v)}
+                        </td>
+                      ))}
+                      <td className={`text-right px-4 py-1.5 tabular-nums font-semibold ${annual > 0 ? "text-emerald-700" : annual < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                        {fmtCell(annual)}
+                      </td>
+                    </tr>
+                  );
+                }
+                if (row.kind === "subtotal") {
+                  return (
+                    <tr key={row.key} className="border-t border-border bg-secondary/10">
+                      <td className="px-4 py-1.5 pl-8 font-bold text-foreground">{row.label}</td>
+                      {rowVals.map((v, i) => (
+                        <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}>
+                          {fmtCell(v)}
+                        </td>
+                      ))}
+                      <td className={`text-right px-4 py-1.5 tabular-nums font-bold ${annual >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                        {fmtCell(annual)}
+                      </td>
+                    </tr>
+                  );
+                }
+                return null;
+              })}
+              {/* NET CASH FLOW */}
+              <tr className="border-t-2 border-border bg-secondary/30">
+                <td className="px-4 py-2.5 font-display font-black text-sm text-foreground">NET CASH FLOW</td>
+                {netByMonth.map((v, i) => (
+                  <td key={i} className={`text-right px-1.5 py-2.5 tabular-nums font-bold ${v >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                    {fmtCell(v)}
                   </td>
                 ))}
-                <td className={`text-right px-4 py-2 tabular-nums font-bold ${annualIn - annualOut >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
-                  {annualIn - annualOut >= 0 ? "+" : ""}{fmt(Math.abs(annualIn - annualOut))}
+                <td className={`text-right px-4 py-2.5 tabular-nums font-black text-sm ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                  {fmtCell(annualNet)}
                 </td>
               </tr>
             </tbody>
