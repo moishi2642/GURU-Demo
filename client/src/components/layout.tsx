@@ -11,7 +11,7 @@ export function Layout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+    <div className="dark min-h-screen bg-background flex flex-col md:flex-row">
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <aside className="w-full md:w-60 bg-[hsl(222,47%,10%)] flex flex-col shadow-2xl z-10 flex-shrink-0">
         {/* Logo */}
