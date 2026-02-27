@@ -82,7 +82,7 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
   const duration = Math.max(20, items.length * 2.2); // seconds
 
   const fmtAmt = (v: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0, notation: "compact" }).format(v);
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
 
   return (
     <div className="rounded-xl border border-[hsl(221,39%,22%)] bg-[hsl(221,39%,10%)] overflow-hidden select-none shadow-md">
@@ -94,7 +94,7 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
           <CalendarClock className="w-3.5 h-3.5 text-amber-400" />
-          <span className="text-[11px] font-bold text-white/70 uppercase tracking-widest">Upcoming Cash Events</span>
+          <span className="text-[11px] font-bold text-white/70 uppercase tracking-widest">Cashflow Forecast</span>
         </div>
         <span className="text-[10px] text-white/30 font-medium">Next 12 months · {items.length} events · hover to pause</span>
       </div>
