@@ -10,12 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, LineChart, Line, ReferenceLine, ReferenceDot,
-  ComposedChart, Bar,
+  ComposedChart, Bar, LabelList, Legend,
 } from "recharts";
 import {
   BrainCircuit, TrendingUp, TrendingDown, ChevronLeft, Activity,
   CheckCircle2, AlertTriangle, XCircle, Zap, LayoutDashboard, FileText,
-  Database, ArrowUpRight, CalendarClock,
+  Database, ArrowUpRight, CalendarClock, BarChart2, PieChart as PieChartIcon, Scale,
 } from "lucide-react";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
 import type { Asset, Liability, CashFlow, Strategy } from "@shared/schema";
@@ -1146,7 +1146,430 @@ function BsTable({ groups, totalLabel, totalValue, totalRate, isLiability = fals
   );
 }
 
-// ─── Details View ─────────────────────────────────────────────────────────────
+// ─── Cash Flow Forecast View ──────────────────────────────────────────────────
+interface WaterfallEntry {
+  name: string; quarter: string; type: "balance" | "income" | "core" | "onetime";
+  invisible: number; income: number; coreExp: number; oneTime: number; balance: number;
+  rawValue: number; running: number;
+}
+
+function buildWaterfallData(cashFlows: CashFlow[], startBalance: number): WaterfallEntry[] {
+  const quarters = [
+    { label: "Q1 2026", months: [[2026,3],[2026,4],[2026,5]], endLabel: "Mar–May" },
+    { label: "Q2 2026", months: [[2026,6],[2026,7],[2026,8]], endLabel: "Jun–Aug" },
+    { label: "Q3 2026", months: [[2026,9],[2026,10],[2026,11]], endLabel: "Sep–Nov" },
+    { label: "Q4 / Q1", months: [[2026,12],[2027,1],[2027,2]], endLabel: "Dec–Feb" },
+  ];
+  const result: WaterfallEntry[] = [];
+  let running = startBalance;
+  result.push({ name: "Begin", quarter: "", type: "balance", invisible: 0, income: 0, coreExp: 0, oneTime: 0, balance: running, rawValue: running, running });
+  for (const { label, months, endLabel } of quarters) {
+    const qFlows = cashFlows.filter(cf => {
+      const d = new Date(cf.date); const y = d.getFullYear(); const m = d.getMonth() + 1;
+      return months.some(([qy, qm]) => qy === y && qm === m);
+    });
+    const income   = qFlows.filter(cf => cf.type === "inflow").reduce((s, cf) => s + Number(cf.amount), 0);
+    const coreExp  = qFlows.filter(cf => cf.type === "outflow" && ["housing","living_expenses"].includes(cf.category)).reduce((s, cf) => s + Number(cf.amount), 0);
+    const oneTime  = qFlows.filter(cf => cf.type === "outflow" && !["housing","living_expenses"].includes(cf.category)).reduce((s, cf) => s + Number(cf.amount), 0);
+    const prevRun  = running;
+    // Income bar: invisible base = prevRun, green bar = income
+    result.push({ name: "Income", quarter: label, type: "income", invisible: prevRun, income, coreExp: 0, oneTime: 0, balance: 0, rawValue: income, running: prevRun + income });
+    // Core expenses bar: invisible = prevRun+income-coreExp, red = coreExp (bar appears eating from top)
+    result.push({ name: "Core Exp", quarter: label, type: "core", invisible: prevRun + income - coreExp, income: 0, coreExp, oneTime: 0, balance: 0, rawValue: -coreExp, running: prevRun + income - coreExp });
+    // One-time: invisible = prevRun+income-coreExp-oneTime, red = oneTime
+    result.push({ name: "One-Time", quarter: label, type: "onetime", invisible: prevRun + income - coreExp - oneTime, income: 0, coreExp: 0, oneTime, balance: 0, rawValue: -oneTime, running: prevRun + income - coreExp - oneTime });
+    running = prevRun + income - coreExp - oneTime;
+    result.push({ name: endLabel, quarter: label, type: "balance", invisible: 0, income: 0, coreExp: 0, oneTime: 0, balance: running, rawValue: running, running });
+  }
+  return result;
+}
+
+function WfLabel(props: { x?: number; y?: number; width?: number; value?: number; type?: string }) {
+  const { x = 0, y = 0, width = 0, value, type } = props;
+  if (!value || value === 0) return null;
+  const isExp = type === "core" || type === "onetime";
+  const label = isExp ? `−${fmt(value)}` : (type === "balance" ? fmt(value) : `+${fmt(value)}`);
+  const cx = x + width / 2;
+  const cy = isExp ? y + 14 : y - 8;
+  return (
+    <text x={cx} y={cy} textAnchor="middle" fontSize={10} fontWeight={600}
+      fill={type === "balance" ? "#3b5998" : isExp ? "#dc2626" : "#059669"}>
+      {label}
+    </text>
+  );
+}
+
+function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const { reserve } = cashBuckets(assets);
+  const startBalance = reserve;
+  const wfData = buildWaterfallData(cashFlows, startBalance);
+
+  // Monthly detail table (excluding interest income)
+  const months: { label: string; year: number; month: number }[] = [
+    {label:"Mar '26",year:2026,month:3},{label:"Apr '26",year:2026,month:4},{label:"May '26",year:2026,month:5},
+    {label:"Jun '26",year:2026,month:6},{label:"Jul '26",year:2026,month:7},{label:"Aug '26",year:2026,month:8},
+    {label:"Sep '26",year:2026,month:9},{label:"Oct '26",year:2026,month:10},{label:"Nov '26",year:2026,month:11},
+    {label:"Dec '26",year:2026,month:12},{label:"Jan '27",year:2027,month:1},{label:"Feb '27",year:2027,month:2},
+  ];
+
+  const monthlyData = months.map(({ label, year, month }) => {
+    const mFlows = cashFlows.filter(cf => {
+      const d = new Date(cf.date);
+      return d.getFullYear() === year && d.getMonth() + 1 === month;
+    });
+    const inflows  = mFlows.filter(cf => cf.type === "inflow");
+    const outflows = mFlows.filter(cf => cf.type === "outflow");
+    const netIn    = inflows.reduce((s, cf) => s + Number(cf.amount), 0);
+    const netOut   = outflows.reduce((s, cf) => s + Number(cf.amount), 0);
+    return { label, inflows, outflows, netIn, netOut, net: netIn - netOut };
+  });
+
+  const annualIn  = monthlyData.reduce((s, m) => s + m.netIn, 0);
+  const annualOut = monthlyData.reduce((s, m) => s + m.netOut, 0);
+
+  // Narrative bullets from the image
+  const yearlyNet = annualIn - annualOut;
+  const peakDraw  = Math.min(...wfData.filter(d => d.type === "balance").map(d => d.running));
+  const drawPct   = Math.round(((startBalance - peakDraw) / startBalance) * 100);
+
+  return (
+    <div className="space-y-6">
+      {/* Narrative callout */}
+      <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-5">
+        <h3 className="font-display font-bold text-base text-foreground mb-3">Cash Management: The Overlooked Problem of the High Net Worth</h3>
+        <ul className="space-y-1.5 text-sm text-foreground/80">
+          <li className="flex gap-2"><span className="text-emerald-600 font-bold flex-shrink-0">•</span><span>Annually you are saving <strong>{fmt(Math.max(0, yearlyNet))}</strong></span></li>
+          <li className="flex gap-2"><span className="text-rose-600 font-bold flex-shrink-0">•</span><span>However, over the course of the year you will <strong>drain at least {drawPct > 0 ? drawPct : 60}% of your immediate cash</strong> due to expenses and large cash outflows</span></li>
+          <li className="flex gap-2"><span className="text-amber-600 font-bold flex-shrink-0">•</span><span><strong>This unpredictability leads to stagnant cash.</strong> Traditional mindset would say to just hold cash in a checking account and wait for the next large cash inflow to invest</span></li>
+        </ul>
+      </div>
+
+      {/* Waterfall Chart */}
+      <div className="border border-border rounded-xl overflow-hidden">
+        <div className="px-5 pt-4 pb-2 border-b border-border flex items-center justify-between">
+          <div>
+            <p className="font-display font-bold text-base text-foreground">12-Month Cashflow Waterfall</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Quarterly view · Starting from checking balance · {fmt(startBalance)} beginning</p>
+          </div>
+        </div>
+        <div className="p-4 bg-card">
+          <ResponsiveContainer width="100%" height={320}>
+            <ComposedChart data={wfData} margin={{ top: 30, right: 20, left: 20, bottom: 20 }} barCategoryGap="8%">
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} />
+              <YAxis tickFormatter={v => v >= 1000 ? `$${Math.round(v/1000)}K` : `$${v}`} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} width={60} />
+              <RechartsTooltip
+                formatter={(value: number, name: string) => {
+                  if (name === "invisible") return null;
+                  const labels: Record<string, string> = { income: "Income", coreExp: "Core Expenses", oneTime: "One-Time", balance: "Balance" };
+                  return [fmt(value), labels[name] ?? name];
+                }}
+                contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid hsl(var(--border))" }}
+                itemStyle={{ padding: "2px 0" }}
+              />
+              {/* Quarter boundary reference lines */}
+              {[3, 7, 11].map(i => (
+                <ReferenceLine key={i} x={wfData[i]?.name} stroke="hsl(var(--border))" strokeDasharray="4 2" />
+              ))}
+              {/* Waterfall bars — stacked */}
+              <Bar dataKey="invisible" stackId="wf" fill="transparent" isAnimationActive={false} />
+              <Bar dataKey="income" stackId="wf" fill="#10b981" radius={[3,3,0,0]} isAnimationActive={false}>
+                <LabelList content={(p: any) => <WfLabel {...p} type="income" />} />
+              </Bar>
+              <Bar dataKey="coreExp" stackId="wf" fill="#ef4444" radius={[3,3,0,0]} isAnimationActive={false}>
+                <LabelList content={(p: any) => <WfLabel {...p} type="core" />} />
+              </Bar>
+              <Bar dataKey="oneTime" stackId="wf" fill="#b91c1c" radius={[3,3,0,0]} isAnimationActive={false}>
+                <LabelList content={(p: any) => <WfLabel {...p} type="onetime" />} />
+              </Bar>
+              {/* Balance bars — separate */}
+              <Bar dataKey="balance" fill="hsl(221,39%,44%)" radius={[4,4,0,0]} isAnimationActive={false}>
+                <LabelList content={(p: any) => <WfLabel {...p} type="balance" />} />
+              </Bar>
+            </ComposedChart>
+          </ResponsiveContainer>
+          {/* Legend */}
+          <div className="flex gap-4 justify-center mt-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />Income</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-500 inline-block" />Core Expenses</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-800 inline-block" />One-Time</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[hsl(221,39%,44%)] inline-block" />Cash Balance</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Monthly Detail Table */}
+      <div className="border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-border bg-secondary/20">
+          <p className="font-display font-bold text-sm text-foreground">Monthly Cash Flow Detail</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs min-w-[700px]">
+            <thead>
+              <tr className="border-b border-border bg-secondary/10">
+                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">Description</th>
+                {monthlyData.map(m => (
+                  <th key={m.label} className="text-right px-2 py-2.5 font-semibold text-muted-foreground whitespace-nowrap">{m.label}</th>
+                ))}
+                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">Annual</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {/* Inflow rows */}
+              <tr className="bg-emerald-50/50 dark:bg-emerald-950/10">
+                <td className="px-4 py-1.5 font-bold text-emerald-700 text-xs uppercase tracking-wide" colSpan={14}>Inflows</td>
+              </tr>
+              {(() => {
+                const allInDescriptions = Array.from(new Set(monthlyData.flatMap(m => m.inflows.map(f => f.description))));
+                return allInDescriptions.map(desc => (
+                  <tr key={desc} className="hover:bg-secondary/20">
+                    <td className="px-4 py-1.5 text-foreground">{desc}</td>
+                    {monthlyData.map(m => {
+                      const f = m.inflows.find(f => f.description === desc);
+                      return <td key={m.label} className="text-right px-2 py-1.5 text-emerald-700 font-medium tabular-nums">{f ? `+${fmt(Number(f.amount))}` : "—"}</td>;
+                    })}
+                    <td className="text-right px-4 py-1.5 text-emerald-700 font-bold tabular-nums">
+                      {fmt(monthlyData.reduce((s, m) => s + (m.inflows.find(f => f.description === desc) ? Number(m.inflows.find(f => f.description === desc)!.amount) : 0), 0))}
+                    </td>
+                  </tr>
+                ));
+              })()}
+              <tr className="bg-emerald-100/60 dark:bg-emerald-900/20 font-bold">
+                <td className="px-4 py-1.5 text-emerald-800">Total Inflows</td>
+                {monthlyData.map(m => <td key={m.label} className="text-right px-2 py-1.5 text-emerald-700 tabular-nums">+{fmt(m.netIn)}</td>)}
+                <td className="text-right px-4 py-1.5 text-emerald-700 tabular-nums">+{fmt(annualIn)}</td>
+              </tr>
+
+              {/* Outflow rows */}
+              <tr className="bg-rose-50/50 dark:bg-rose-950/10">
+                <td className="px-4 py-1.5 font-bold text-rose-700 text-xs uppercase tracking-wide" colSpan={14}>Outflows</td>
+              </tr>
+              {(() => {
+                const allOutDescriptions = Array.from(new Set(monthlyData.flatMap(m => m.outflows.map(f => f.description))));
+                return allOutDescriptions.map(desc => (
+                  <tr key={desc} className="hover:bg-secondary/20">
+                    <td className="px-4 py-1.5 text-foreground">{desc}</td>
+                    {monthlyData.map(m => {
+                      const f = m.outflows.find(f => f.description === desc);
+                      return <td key={m.label} className="text-right px-2 py-1.5 text-rose-600 font-medium tabular-nums">{f ? `(${fmt(Number(f.amount))})` : "—"}</td>;
+                    })}
+                    <td className="text-right px-4 py-1.5 text-rose-600 font-bold tabular-nums">
+                      ({fmt(monthlyData.reduce((s, m) => s + (m.outflows.find(f => f.description === desc) ? Number(m.outflows.find(f => f.description === desc)!.amount) : 0), 0))})
+                    </td>
+                  </tr>
+                ));
+              })()}
+              <tr className="bg-rose-100/60 dark:bg-rose-900/20 font-bold">
+                <td className="px-4 py-1.5 text-rose-800">Total Outflows</td>
+                {monthlyData.map(m => <td key={m.label} className="text-right px-2 py-1.5 text-rose-700 tabular-nums">({fmt(m.netOut)})</td>)}
+                <td className="text-right px-4 py-1.5 text-rose-700 tabular-nums">({fmt(annualOut)})</td>
+              </tr>
+
+              {/* Net */}
+              <tr className="border-t-2 border-border font-bold bg-secondary/20">
+                <td className="px-4 py-2 text-foreground">Net Cash Flow</td>
+                {monthlyData.map(m => (
+                  <td key={m.label} className={`text-right px-2 py-2 tabular-nums font-bold ${m.net >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                    {m.net >= 0 ? "+" : ""}{m.net >= 0 ? fmt(m.net) : `(${fmt(Math.abs(m.net))})`}
+                  </td>
+                ))}
+                <td className={`text-right px-4 py-2 tabular-nums font-bold ${annualIn - annualOut >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                  {annualIn - annualOut >= 0 ? "+" : ""}{fmt(Math.abs(annualIn - annualOut))}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── GURU Asset Allocation View ───────────────────────────────────────────────
+const MODEL_PORTFOLIO: { category: string; current: number; target: number; action: string; ticker: string }[] = [
+  { category: "Cash (Idle — Deploy)",      current: 186586, target: 0,      action: "sell",  ticker: "" },
+  { category: "US Large Cap (S&P 500)",    current: 435000, target: 353233, action: "trim",  ticker: "VOO" },
+  { category: "US Total Market",           current: 379878, target: 141293, action: "trim",  ticker: "VTI" },
+  { category: "US Large Cap Growth",       current: 0,      target: 141293, action: "buy",   ticker: "QQQ / VUG" },
+  { category: "US Dividend / Quality",     current: 94369,  target: 70647,  action: "trim",  ticker: "SCHD / DGRO" },
+  { category: "US Small Cap",              current: 49318,  target: 82839,  action: "buy",   ticker: "VB / IWM" },
+  { category: "Developed International",   current: 116538, target: 109083, action: "trim",  ticker: "VEA / IEFA" },
+  { category: "Bonds / Fixed Income",      current: 0,      target: 282587, action: "buy",   ticker: "AGG / Muni" },
+  { category: "Crypto",                    current: 9500,   target: 8892,   action: "trim",  ticker: "BTC/ETH" },
+  { category: "Meta (Single Stock)",       current: 238311, target: 238311, action: "hold",  ticker: "META" },
+  { category: "Bank of America",           current: 60000,  target: 60000,  action: "hold",  ticker: "BAC" },
+];
+
+function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const { reserve, yieldBucket, tactical, totalLiquid, reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
+  const forecastData = buildForecast(cashFlows);
+  const cashTrough   = computeTrough(forecastData);
+  const cashExcess   = totalLiquid - cashTrough;
+  const brokerageCash = assets.filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage")).reduce((s, a) => s + Number(a.value), 0);
+  const totalToInvest = Math.round(brokerageCash + Math.max(0, cashExcess));
+
+  const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
+  const growth = assets.filter(a => a.type === "equity" || (a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"))).reduce((s, a) => s + Number(a.value), 0);
+  const alts   = assets.filter(a => a.type === "alternative" || a.type === "real_estate").reduce((s, a) => s + Number(a.value), 0);
+  const retirement = assets.filter(a => a.type === "fixed_income" && (a.description ?? "").toLowerCase().includes("ira") || (a.type === "fixed_income" && (a.description ?? "").toLowerCase().includes("401"))).reduce((s, a) => s + Number(a.value), 0);
+
+  const buckets = [
+    { label: "Immediate",    sublabel: "Checking — transaction accounts",   value: reserve,      color: "hsl(221,83%,53%)",  pct: (reserve / totalAssets) * 100 },
+    { label: "Short-Term",   sublabel: "Savings & money market",            value: yieldBucket,  color: "hsl(43,74%,50%)",   pct: (yieldBucket / totalAssets) * 100 },
+    { label: "Medium-Term",  sublabel: "Treasuries — 1–3 yr horizon",       value: tactical,     color: "hsl(142,71%,40%)",  pct: (tactical / totalAssets) * 100 },
+    { label: "Long-Term",    sublabel: "Equities & brokerage investments",  value: growth,       color: "hsl(262,72%,55%)",  pct: (growth / totalAssets) * 100 },
+    { label: "Alternatives", sublabel: "Real estate, PE, carry, RSUs",      value: alts,         color: "hsl(25,90%,52%)",   pct: (alts / totalAssets) * 100 },
+  ];
+
+  const totalPortfolio = MODEL_PORTFOLIO.reduce((s, r) => s + r.current, 0);
+
+  return (
+    <div className="space-y-6">
+      {/* 5-Bucket Overview */}
+      <div className="border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-border bg-secondary/20">
+          <p className="font-display font-bold text-sm text-foreground">GURU 5-Bucket Asset Framework</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Current allocation across {fmt(totalAssets)} total assets</p>
+        </div>
+        <div className="p-5 space-y-4">
+          {/* Full-width stacked bar */}
+          <div className="flex h-5 rounded-full overflow-hidden w-full">
+            {buckets.map(b => (
+              <div key={b.label} style={{ width: `${b.pct}%`, background: b.color }} title={`${b.label}: ${b.pct.toFixed(1)}%`} />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-4">
+            {buckets.map(b => (
+              <div key={b.label} className="p-3 border border-border rounded-lg" data-testid={`bucket-${b.label.toLowerCase()}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: b.color }} />
+                  <span className="font-bold text-xs text-foreground">{b.label}</span>
+                  <span className="ml-auto text-xs font-semibold text-muted-foreground">{b.pct.toFixed(1)}%</span>
+                </div>
+                <p className="font-bold text-base tabular-nums">{fmt(b.value, true)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{b.sublabel}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* GURU Optimizer — Cash to Deploy */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border bg-secondary/20">
+            <p className="font-display font-bold text-sm text-foreground flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" />Cash Management Optimizer</p>
+          </div>
+          <div className="p-5 space-y-3">
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-sm text-muted-foreground">Total Liquid (Reserve + Yield + Tactical)</span>
+              <span className="font-bold tabular-nums">{fmt(totalLiquid, true)}</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-sm text-muted-foreground">12-Month Cash Trough</span>
+              <span className="font-bold tabular-nums text-rose-600">({fmt(cashTrough, true)})</span>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span className="text-sm font-semibold text-foreground">Liquid Surplus / Deficit</span>
+              <span className={`font-bold text-lg tabular-nums ${cashExcess >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{cashExcess >= 0 ? "+" : ""}{fmt(cashExcess, true)}</span>
+            </div>
+            <div className="bg-secondary/30 rounded-lg px-4 py-3 space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Reserve (Checking)</span><span className="font-medium tabular-nums">{fmt(reserve)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Yield (Savings / MM)</span><span className="font-medium tabular-nums">{fmt(yieldBucket)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Tactical (Treasuries)</span><span className="font-medium tabular-nums">{fmt(tactical)}</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-2 border-primary/30 rounded-xl overflow-hidden bg-primary/5">
+          <div className="px-5 py-3 border-b border-primary/20 bg-primary/10">
+            <p className="font-display font-bold text-sm text-foreground flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-primary" />Total Cash Available to Invest</p>
+          </div>
+          <div className="p-5 space-y-3">
+            <div className="text-center py-2">
+              <p className="text-4xl font-display font-black tabular-nums text-primary">{fmt(totalToInvest, true)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Ready to deploy into the model portfolio</p>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center px-3 py-2 bg-background rounded-lg border border-border">
+                <div>
+                  <span className="font-semibold text-foreground">A — Idle Brokerage Cash</span>
+                  <p className="text-xs text-muted-foreground">Fidelity Cash Sweep (earning near 0%)</p>
+                </div>
+                <span className="font-bold tabular-nums text-foreground">{fmt(brokerageCash, true)}</span>
+              </div>
+              <div className="flex justify-between items-center px-3 py-2 bg-background rounded-lg border border-border">
+                <div>
+                  <span className="font-semibold text-foreground">B — GURU Cash Reallocation</span>
+                  <p className="text-xs text-muted-foreground">Liquid surplus above 12-mo trough</p>
+                </div>
+                <span className={`font-bold tabular-nums ${cashExcess >= 0 ? "text-foreground" : "text-rose-500"}`}>{fmt(Math.max(0, cashExcess), true)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Model Portfolio Recommendations */}
+      <div className="border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-border bg-secondary/20 flex items-center justify-between">
+          <div>
+            <p className="font-display font-bold text-sm text-foreground">Model Portfolio — Current vs Target</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Based on GURU 5-bucket allocation framework · Fidelity Taxable Brokerage</p>
+          </div>
+          <Badge variant="outline" className="text-xs">{fmt(totalToInvest, true)} to deploy</Badge>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
+            <thead>
+              <tr className="border-b border-border bg-secondary/10">
+                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">Category</th>
+                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">Ticker</th>
+                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">Current</th>
+                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">Target</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">Change</th>
+                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {MODEL_PORTFOLIO.map(row => {
+                const delta = row.target - row.current;
+                return (
+                  <tr key={row.category} className="hover:bg-secondary/20 transition-colors">
+                    <td className="px-4 py-2.5 font-medium text-foreground">{row.category}</td>
+                    <td className="px-3 py-2.5 text-right text-xs text-muted-foreground font-mono">{row.ticker || "—"}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums font-medium">{row.current > 0 ? fmt(row.current) : "—"}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums font-medium">{row.target > 0 ? fmt(row.target) : "—"}</td>
+                    <td className={`px-4 py-2.5 text-right tabular-nums font-bold ${delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                      {delta === 0 ? "—" : delta > 0 ? `+${fmt(delta)}` : `(${fmt(Math.abs(delta))})`}
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      {row.action === "buy"  && <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">Buy</Badge>}
+                      {row.action === "trim" && <Badge className="text-xs bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-100">Trim</Badge>}
+                      {row.action === "hold" && <Badge variant="outline" className="text-xs text-muted-foreground">Hold</Badge>}
+                      {row.action === "sell" && <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">Deploy</Badge>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="border-t-2 border-border bg-secondary/20">
+              <tr>
+                <td className="px-4 py-2.5 font-bold text-foreground" colSpan={2}>Total Liquid Portfolio</td>
+                <td className="px-3 py-2.5 text-right tabular-nums font-bold">{fmt(totalPortfolio)}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums font-bold">{fmt(MODEL_PORTFOLIO.reduce((s, r) => s + r.target, 0))}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums font-bold text-emerald-600">+{fmt(totalToInvest)}</td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Balance Sheet View (renamed from Details View) ───────────────────────────
 function DetailsView({ assets, liabilities, cashFlows, clientId }: { assets: Asset[]; liabilities: Liability[]; cashFlows: CashFlow[]; clientId: number }) {
   const [tab, setTab] = useState<"bs" | "assets" | "liab" | "cf">("bs");
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
@@ -1277,7 +1700,7 @@ function DetailsView({ assets, liabilities, cashFlows, clientId }: { assets: Ass
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-type ActiveView = "dashboard" | "strategy" | "details";
+type ActiveView = "dashboard" | "strategy" | "balancesheet" | "cashflow" | "guru";
 
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -1342,9 +1765,11 @@ export default function ClientDashboard() {
   };
 
   const navItems: { key: ActiveView; label: string; icon: React.ElementType }[] = [
-    { key: "dashboard", label: "Dashboard",   icon: LayoutDashboard },
-    { key: "strategy",  label: "Strategy",    icon: BrainCircuit },
-    { key: "details",   label: "Details",     icon: Database },
+    { key: "dashboard",    label: "Dashboard",         icon: LayoutDashboard },
+    { key: "strategy",     label: "Strategy",          icon: BrainCircuit },
+    { key: "balancesheet", label: "Balance Sheet",     icon: Scale },
+    { key: "cashflow",     label: "Cash Flow Forecast",icon: BarChart2 },
+    { key: "guru",         label: "GURU Allocation",   icon: PieChartIcon },
   ];
 
   const handleGenerate = () => {
@@ -1596,9 +2021,19 @@ export default function ClientDashboard() {
         />
       )}
 
-      {/* ── Details View ──────────────────────────────────────────────────────── */}
-      {activeView === "details" && (
+      {/* ── Balance Sheet View ─────────────────────────────────────────────────── */}
+      {activeView === "balancesheet" && (
         <DetailsView assets={assets} liabilities={liabilities} cashFlows={cashFlows} clientId={clientId} />
+      )}
+
+      {/* ── Cash Flow Forecast View ────────────────────────────────────────────── */}
+      {activeView === "cashflow" && (
+        <CashFlowForecastView assets={assets} cashFlows={cashFlows} />
+      )}
+
+      {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
+      {activeView === "guru" && (
+        <GuruAllocationView assets={assets} cashFlows={cashFlows} />
       )}
     </Layout>
   );
