@@ -239,8 +239,9 @@ function cashBuckets(assets: Asset[]) {
     const val  = Number(a.value);
     const lbl  = (a.description ?? "").split("(")[0].split("—")[0].split("–")[0].trim();
     if (a.type === "cash") {
-      if (desc.includes("checking")) { reserve += val;      reserveItems.push({ label: lbl, value: val }); }
-      else                            { yieldBucket += val;  yieldItems.push({ label: lbl, value: val }); }
+      if (desc.includes("checking"))   { reserve += val;      reserveItems.push({ label: lbl, value: val }); }
+      else if (desc.includes("brokerage")) { growth += val;  growthItems.push({ label: lbl, value: val }); }
+      else                             { yieldBucket += val;  yieldItems.push({ label: lbl, value: val }); }
     } else if (a.type === "fixed_income") {
       if (desc.includes("treasur") || desc.includes("t-bill") || desc.includes("short")) {
         tactical += val; tacticalItems.push({ label: lbl, value: val });
@@ -808,7 +809,7 @@ function GuruOptimizerPanel({ assets, cashFlows }: { assets: Asset[]; cashFlows:
   const additionalCashIncome = Math.round(reserve * 0.036); // ~3.6% money market rate on Reserve cash
 
   // Investment optimization: cash sitting in brokerage + excess bank cash
-  const brokerageCash = assets.filter(a => a.type === "cash" && ((a.description ?? "").toLowerCase()).includes("money market")).reduce((s, a) => s + Number(a.value), 0);
+  const brokerageCash = assets.filter(a => a.type === "cash" && ((a.description ?? "").toLowerCase()).includes("brokerage")).reduce((s, a) => s + Number(a.value), 0);
   const totalToInvest = Math.round(brokerageCash + Math.max(0, cashExcess));
   const investPctIncrease = assets.filter(a => ["equity", "alternative"].includes(a.type)).reduce((s, a) => s + Number(a.value), 0);
   const investPct = investPctIncrease > 0 ? Math.round((totalToInvest / investPctIncrease) * 100) : 0;
@@ -1322,7 +1323,7 @@ export default function ClientDashboard() {
 
   // GURU Optimizer "Total Cash to Invest" = A (idle acct cash) + B (liquid surplus) — mirrors G29
   const brokerageCashTop  = assets
-    .filter(a => a.type === "cash" && ((a.description ?? "").toLowerCase()).includes("money market"))
+    .filter(a => a.type === "cash" && ((a.description ?? "").toLowerCase()).includes("brokerage"))
     .reduce((s, a) => s + Number(a.value), 0);
   const totalToInvestTop  = Math.round(brokerageCashTop + Math.max(0, cashExcessTop));
 

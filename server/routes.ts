@@ -296,16 +296,20 @@ async function seedDatabase() {
 
   await Promise.all([
     // Cash & Bank Accounts — $372,050
-    storage.createAsset({ clientId: c1.id, type: "cash", value: "25050",  description: "Chase Total Checking (Main Account)" }),
-    storage.createAsset({ clientId: c1.id, type: "cash", value: "107000", description: "Citizens Private Banking Checking (Excess)" }),
-    storage.createAsset({ clientId: c1.id, type: "cash", value: "225000", description: "Citizens Private Bank Money Market — 3.65% yield" }),
-    storage.createAsset({ clientId: c1.id, type: "cash", value: "15000",  description: "CapitalOne 360 Performance Savings — 3.78% yield" }),
-    // Investments — $1,894,500
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "25050",     description: "Chase Total Checking (Main Account)" }),
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "107000",    description: "Citizens Private Banking Checking (Excess)" }),
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "225000",    description: "Citizens Private Bank Money Market — 3.65% yield" }),
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "15000",     description: "CapitalOne 360 Performance Savings — 3.78% yield" }),
+    // Brokerage Cash (Idle) — A in GURU Optimizer
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "186586",    description: "Fidelity Taxable Brokerage — Cash Sweep (Idle)" }),
+    // Investments — $1,509,500 liquid + $186,586 cash
     storage.createAsset({ clientId: c1.id, type: "fixed_income", value: "135000",  description: "US Treasuries — 3.95% yield" }),
-    storage.createAsset({ clientId: c1.id, type: "equity",       value: "1201689", description: "Fidelity Taxable Brokerage — ETFs & Mutual Funds" }),
-    storage.createAsset({ clientId: c1.id, type: "equity",       value: "298311",  description: "Fidelity Taxable Brokerage — Single Stock (Goldman RSU vested)" }),
-    storage.createAsset({ clientId: c1.id, type: "alternative",  value: "9500",    description: "Crypto — BTC/ETH" }),
-    // Alternative & Illiquid — $1,165,000
+    storage.createAsset({ clientId: c1.id, type: "equity",       value: "814877",  description: "Fidelity Taxable Brokerage — ETFs & Mutual Funds (US)" }),
+    storage.createAsset({ clientId: c1.id, type: "equity",       value: "116538",  description: "Fidelity Taxable Brokerage — International Index Fund" }),
+    storage.createAsset({ clientId: c1.id, type: "equity",       value: "238311",  description: "Fidelity Taxable Brokerage — Meta (Single Stock)" }),
+    storage.createAsset({ clientId: c1.id, type: "equity",       value: "60000",   description: "Fidelity Taxable Brokerage — Bank of America (Single Stock)" }),
+    storage.createAsset({ clientId: c1.id, type: "alternative",  value: "9500",    description: "Coinbase — Crypto (BTC/ETH)" }),
+    // Alternative & Illiquid — $1,080,000
     storage.createAsset({ clientId: c1.id, type: "alternative",  value: "75000",   description: "Private Equity Fund I" }),
     storage.createAsset({ clientId: c1.id, type: "alternative",  value: "175000",  description: "Private Equity Fund II" }),
     storage.createAsset({ clientId: c1.id, type: "alternative",  value: "325000",  description: "Carry — PE Fund I (est. FMV)" }),
@@ -320,9 +324,9 @@ async function seedDatabase() {
   ]);
 
   await Promise.all([
-    // Mortgages — $1,092,000
-    storage.createLiability({ clientId: c1.id, type: "mortgage",      value: "962000", interestRate: "3.75", description: "Tribeca Condo Mortgage (30yr fixed)" }),
-    storage.createLiability({ clientId: c1.id, type: "mortgage",      value: "130000", interestRate: "5.25", description: "Sarasota Investment Property Mortgage" }),
+    // Mortgages — $1,092,000 (from balance sheet)
+    storage.createLiability({ clientId: c1.id, type: "mortgage",      value: "945000", interestRate: "3.15", description: "Tribeca Condo Mortgage (30yr fixed @ 3.15%)" }),
+    storage.createLiability({ clientId: c1.id, type: "mortgage",      value: "147000", interestRate: "2.55", description: "Sarasota Investment Property Mortgage (@ 2.55%)" }),
     // Consumer / Student Debt — $81,166
     storage.createLiability({ clientId: c1.id, type: "credit_card",   value: "11466",  interestRate: "22.99", description: "Chase Sapphire + Amex — paid monthly" }),
     storage.createLiability({ clientId: c1.id, type: "student_loan",  value: "69700",  interestRate: "4.50",  description: "Student Loans (Partner 1 + Partner 2)" }),
