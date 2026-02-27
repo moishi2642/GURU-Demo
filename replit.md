@@ -60,9 +60,26 @@ Three realistic client profiles are seeded on first run:
 - **If 429 rate-limited**: Run `curl -s -c /tmp/yf2.txt "https://fc.yahoo.com/" -L -o /dev/null && curl -s -b /tmp/yf2.txt "https://query2.finance.yahoo.com/v1/test/getcrumb"` to get a fresh crumb, then write it to the cache file
 - **BrokeragePanel**: Shows live SPY % change and live GS stock price inline with holdings
 
+## GURU Method — 5 Strategic Bucket Framework
+
+All asset categorization uses the `GURU_BUCKETS` constant defined in `client-dashboard.tsx`:
+
+| Bucket | Key | Color | Description |
+|---|---|---|---|
+| **Reserve** | `reserve` | Blue | Instantly available transaction accounts (checking) |
+| **Yield** | `yield` | Amber | Penalty-free, higher-yielding accounts (savings, MM) |
+| **Tactical** | `tactical` | Emerald | 1–2 days to settle or committed for a term (T-bills) |
+| **Growth** | `growth` | Violet | Long-horizon investments — equities, bonds, retirement |
+| **Alternatives** | `alternatives` | Orange | Real estate, PE, RSUs — strategic illiquid assets |
+
+- **Liquid** = Reserve + Yield + Tactical (used in 12-month sufficiency check)
+- `cashBuckets(assets)` → returns `{ reserve, yieldBucket, tactical, growth, alts, totalLiquid, ...items }`
+- `liquidityTag(a)` → returns `{ label, tagCls }` from GURU_BUCKETS for badge rendering in NetWorthPanel
+- Legacy aliases (`immediate`, `shortTerm`, `mediumTerm`) are preserved in `cashBuckets()` return value for backward compat
+
 ## Development Notes
 
 - All numeric values stored as `numeric` (Drizzle) which returns strings — always coerce with `Number()`
 - Cash flow forecast is computed client-side from monthly averages (monthly * 12 projected)
-- Liquidity coverage uses `cash` + `fixed_income` as liquid asset types
+- Asset descriptions may be undefined in edge cases — always use `(a.description ?? "").toLowerCase()`
 - AI strategies are accumulated (not replaced) — each generation appends to existing strategies

@@ -159,6 +159,16 @@ const GREEN = "hsl(142, 71%, 40%)";
 const RED   = "hsl(0, 78%, 55%)";
 const BLUE  = "hsl(221, 83%, 53%)";
 
+// ─── GURU Method: 5 Strategic Bucket Definitions ─────────────────────────────
+const GURU_BUCKETS = {
+  reserve:      { label: "Reserve",      short: "Instantly available transaction accounts",                          color: "hsl(221,83%,53%)",  tagCls: "bg-blue-100   text-blue-700"    },
+  yield:        { label: "Yield",        short: "Penalty-free, higher-yielding accounts",                            color: "hsl(43,74%,50%)",   tagCls: "bg-amber-100  text-amber-700"   },
+  tactical:     { label: "Tactical",     short: "1–2 days to settle or committed for a term",                        color: "hsl(142,71%,40%)",  tagCls: "bg-emerald-100 text-emerald-700" },
+  growth:       { label: "Growth",       short: "Long-horizon investments — higher return potential",                 color: "hsl(262,72%,55%)",  tagCls: "bg-violet-100 text-violet-700"  },
+  alternatives: { label: "Alternatives", short: "Real estate, private equity, RSUs — strategic illiquid assets",    color: "hsl(25,90%,52%)",   tagCls: "bg-orange-100 text-orange-700"  },
+} as const;
+type GuroBucket = keyof typeof GURU_BUCKETS;
+
 // ─── Computations ─────────────────────────────────────────────────────────────
 function buildMonthMap(cashFlows: CashFlow[]) {
   const map: Record<string, { inflow: number; outflow: number }> = {};
@@ -196,28 +206,48 @@ function buildNWTrend(netWorth: number) {
 }
 
 function cashBuckets(assets: Asset[]) {
-  let immediate = 0, shortTerm = 0, mediumTerm = 0;
-  const immediateItems: { label: string; value: number }[] = [];
-  const shortItems:     { label: string; value: number }[] = [];
-  const mediumItems:    { label: string; value: number }[] = [];
+  let reserve = 0, yieldBucket = 0, tactical = 0, growth = 0, alts = 0;
+  const reserveItems:  { label: string; value: number }[] = [];
+  const yieldItems:    { label: string; value: number }[] = [];
+  const tacticalItems: { label: string; value: number }[] = [];
+  const growthItems:   { label: string; value: number }[] = [];
+  const altItems:      { label: string; value: number }[] = [];
 
   for (const a of assets) {
-    const desc = a.description.toLowerCase();
+    const desc = (a.description ?? "").toLowerCase();
     const val  = Number(a.value);
+    const lbl  = (a.description ?? "").split("(")[0].split("—")[0].split("–")[0].trim();
     if (a.type === "cash") {
-      if (desc.includes("checking")) {
-        immediate += val;
-        immediateItems.push({ label: a.description.split("(")[0].trim(), value: val });
+      if (desc.includes("checking")) { reserve += val;      reserveItems.push({ label: lbl, value: val }); }
+      else                            { yieldBucket += val;  yieldItems.push({ label: lbl, value: val }); }
+    } else if (a.type === "fixed_income") {
+      if (desc.includes("treasur") || desc.includes("t-bill") || desc.includes("short")) {
+        tactical += val; tacticalItems.push({ label: lbl, value: val });
       } else {
-        shortTerm += val;
-        shortItems.push({ label: a.description.split("—")[0].trim(), value: val });
+        growth += val; growthItems.push({ label: lbl, value: val });
       }
-    } else if (a.type === "fixed_income" && (desc.includes("treasur") || desc.includes("t-bill"))) {
-      mediumTerm += val;
-      mediumItems.push({ label: a.description.split("—")[0].trim(), value: val });
+    } else if (a.type === "equity") {
+      if (desc.includes("rsu") || desc.includes("unvested") || desc.includes("carry")) {
+        alts += val; altItems.push({ label: lbl, value: val });
+      } else {
+        growth += val; growthItems.push({ label: lbl, value: val });
+      }
+    } else if (a.type === "alternative") {
+      alts += val; altItems.push({ label: lbl, value: val });
+    } else if (a.type === "real_estate") {
+      alts += val; altItems.push({ label: lbl, value: val });
     }
   }
-  return { immediate, shortTerm, mediumTerm, immediateItems, shortItems, mediumItems };
+
+  const totalLiquid = reserve + yieldBucket + tactical;
+  // Backward-compat aliases
+  return {
+    reserve, yieldBucket, tactical, growth, alts, totalLiquid,
+    reserveItems, yieldItems, tacticalItems, growthItems, altItems,
+    // legacy aliases
+    immediate: reserve, shortTerm: yieldBucket, mediumTerm: tactical,
+    immediateItems: reserveItems, shortItems: yieldItems, mediumItems: tacticalItems,
+  };
 }
 
 function computeTrough(forecastData: ReturnType<typeof buildForecast>) {
@@ -226,38 +256,31 @@ function computeTrough(forecastData: ReturnType<typeof buildForecast>) {
 }
 
 // ─── Panel 1: Net Worth ────────────────────────────────────────────────────────
-// Liquidity score: lower = more liquid
-const LIQUIDITY_LABELS: [number, string, string][] = [
-  [1, "Checking",     "bg-emerald-100 text-emerald-700"],
-  [2, "Cash / MM",    "bg-emerald-50  text-emerald-600"],
-  [3, "Fixed Income", "bg-blue-50     text-blue-600"],
-  [4, "Brokerage",    "bg-indigo-50   text-indigo-600"],
-  [5, "Crypto",       "bg-purple-50   text-purple-600"],
-  [6, "Retirement",   "bg-amber-50    text-amber-600"],
-  [7, "RSUs",         "bg-orange-50   text-orange-600"],
-  [8, "Alternatives", "bg-slate-100   text-slate-600"],
-  [9, "Real Estate",  "bg-rose-50     text-rose-600"],
-];
-
+// Liquidity score: lower = more liquid. Maps to GURU 5-bucket system.
 function liquidityScore(a: Asset): number {
-  const desc = a.description.toLowerCase();
+  const desc = (a.description ?? "").toLowerCase();
   if (a.type === "cash") return desc.includes("checking") ? 1 : 2;
-  if (a.type === "fixed_income") return 3;
+  if (a.type === "fixed_income") return desc.includes("treasur") || desc.includes("t-bill") || desc.includes("short") ? 3 : 4;
   if (a.type === "equity") {
-    if (desc.includes("401") || desc.includes("ira") || desc.includes("roth")) return 6;
-    if (desc.includes("rsu") || desc.includes("unvested")) return 7;
+    if (desc.includes("401") || desc.includes("ira") || desc.includes("roth")) return 4;
+    if (desc.includes("rsu") || desc.includes("unvested") || desc.includes("carry")) return 5;
     return 4;
   }
-  if (a.type === "alternative") {
-    if (desc.includes("crypto") || desc.includes("btc") || desc.includes("eth")) return 5;
-    return 8;
-  }
-  if (a.type === "real_estate") return 9;
-  return 8;
+  if (a.type === "alternative") return 5;
+  if (a.type === "real_estate") return 5;
+  return 4;
 }
 
-function liquidityTag(score: number) {
-  return LIQUIDITY_LABELS.find(([s]) => s === score) ?? LIQUIDITY_LABELS[LIQUIDITY_LABELS.length - 1];
+function liquidityTag(a: Asset): { label: string; tagCls: string } {
+  const score = liquidityScore(a);
+  const desc  = (a.description ?? "").toLowerCase();
+  if (score === 1) return GURU_BUCKETS.reserve;
+  if (score === 2) return GURU_BUCKETS.yield;
+  if (score === 3) return GURU_BUCKETS.tactical;
+  // score 4 = growth; score 5 = alternatives
+  if (a.type === "equity" && !desc.includes("rsu") && !desc.includes("unvested") && !desc.includes("carry")) return GURU_BUCKETS.growth;
+  if (a.type === "fixed_income") return GURU_BUCKETS.growth;
+  return GURU_BUCKETS.alternatives;
 }
 
 function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: Liability[] }) {
@@ -327,12 +350,11 @@ function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: 
           {view === "assets" ? (
             <>
               {sortedAssets.slice(0, 9).map(a => {
-                const score = liquidityScore(a);
-                const [, tagLabel, tagCls] = liquidityTag(score);
+                const tag   = liquidityTag(a);
                 const label = a.description.split("(")[0].split("—")[0].trim();
                 return (
                   <div key={a.id} className="flex justify-between items-center text-xs py-0.5 gap-1">
-                    <span className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${tagCls}`}>{tagLabel}</span>
+                    <span className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${tag.tagCls}`}>{tag.label}</span>
                     <span className="text-muted-foreground truncate flex-1" title={label}>{label}</span>
                     <span className="font-semibold tabular-nums flex-shrink-0">{fmt(Number(a.value))}</span>
                   </div>
@@ -492,93 +514,113 @@ function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
   );
 }
 
-// ─── Panel 3: Cash Management Monitor ────────────────────────────────────────
+// ─── Panel 3: GURU Method — Cash Management ───────────────────────────────────
+const GURU_BUCKET_ORDER: GuroBucket[] = ["reserve", "yield", "tactical", "growth", "alternatives"];
+
 function CashManagementPanel({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const [bucket, setBucket] = useState<"immediate" | "short" | "medium">("immediate");
-  const { immediate, shortTerm, mediumTerm, immediateItems, shortItems, mediumItems } = cashBuckets(assets);
-  const totalLiquid = immediate + shortTerm + mediumTerm;
+  const [active, setActive] = useState<GuroBucket>("reserve");
+  const { reserve, yieldBucket, tactical, growth, alts,
+          reserveItems, yieldItems, tacticalItems, growthItems, altItems,
+          totalLiquid } = cashBuckets(assets);
+
+  const bucketValues: Record<GuroBucket, number> = {
+    reserve, yield: yieldBucket, tactical, growth, alternatives: alts,
+  };
+  const bucketItems: Record<GuroBucket, { label: string; value: number }[]> = {
+    reserve: reserveItems, yield: yieldItems, tactical: tacticalItems,
+    growth: growthItems, alternatives: altItems,
+  };
 
   const forecastData = buildForecast(cashFlows);
-  const cashTrough = computeTrough(forecastData);
+  const cashTrough   = computeTrough(forecastData);
   const isSufficient = totalLiquid >= cashTrough;
+  const totalAll     = reserve + yieldBucket + tactical + growth + alts;
 
-  const donutData = [
-    { name: "Immediate", value: immediate, color: "hsl(221, 83%, 53%)" },
-    { name: "Short-Term", value: shortTerm, color: "hsl(43, 74%, 56%)" },
-    { name: "Medium-Term", value: mediumTerm, color: "hsl(142, 71%, 40%)" },
-  ].filter(d => d.value > 0);
+  const donutData = GURU_BUCKET_ORDER.map(k => ({
+    name: GURU_BUCKETS[k].label, value: bucketValues[k], color: GURU_BUCKETS[k].color,
+  })).filter(d => d.value > 0);
 
-  const bucketItems = bucket === "immediate" ? immediateItems : bucket === "short" ? shortItems : mediumItems;
-  const bucketTotal = bucket === "immediate" ? immediate : bucket === "short" ? shortTerm : mediumTerm;
+  const activeItems = bucketItems[active] ?? [];
+  const activeTotal = bucketValues[active] ?? 0;
+  const isLiquid    = active === "reserve" || active === "yield" || active === "tactical";
 
   return (
-    <div className={PANEL_CLS}>
-      <div className="px-4 pt-4 pb-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Cash Management Monitor</p>
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold mb-2 ${isSufficient ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+    <div className={PANEL_CLS + " flex flex-col"}>
+      <div className="px-4 pt-4 pb-2 border-b border-border">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">The GURU Method</p>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold ${isSufficient ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
           {isSufficient ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-          {isSufficient ? "SUFFICIENT FUNDS FOR 12 MONTHS" : "CASH SHORTFALL — ACTION NEEDED"}
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-          <div>
-            <p className="text-muted-foreground">Cash req'd (12 months)</p>
-            <p className="font-bold text-rose-600 text-sm">{fmt(cashTrough)}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Funds to cover</p>
-            <p className="font-bold text-emerald-600 text-sm">{fmt(totalLiquid)}</p>
-          </div>
+          {isSufficient ? "LIQUID RESERVES SUFFICIENT" : "CASH SHORTFALL — ACTION NEEDED"}
         </div>
       </div>
 
-      <div className="flex items-center px-4 pb-2 gap-3">
-        <div style={{ width: 100, height: 100, flexShrink: 0 }}>
+      {/* Donut + legend */}
+      <div className="flex items-center px-3 py-2 gap-2">
+        <div style={{ width: 88, height: 88, flexShrink: 0 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={donutData} cx="50%" cy="50%" innerRadius={28} outerRadius={44} dataKey="value" paddingAngle={3}>
+              <Pie data={donutData} cx="50%" cy="50%" innerRadius={24} outerRadius={40} dataKey="value" paddingAngle={2}>
                 {donutData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
               <RechartsTooltip formatter={(v: number, n: string) => [fmt(v), n]} contentStyle={{ fontSize: 10 }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex flex-col gap-1 text-xs">
-          {donutData.map(d => (
-            <div key={d.name} className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-              <span className="text-muted-foreground">{d.name}</span>
-              <span className="font-semibold ml-auto pl-2">{fmt(d.value, true)}</span>
-            </div>
-          ))}
+        <div className="flex-1 space-y-0.5 text-xs min-w-0">
+          {GURU_BUCKET_ORDER.map(k => {
+            const v = bucketValues[k];
+            if (!v) return null;
+            const pct = totalAll > 0 ? Math.round((v / totalAll) * 100) : 0;
+            return (
+              <button key={k} onClick={() => setActive(k)}
+                className={`w-full flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-colors text-left ${active === k ? "bg-secondary" : "hover:bg-secondary/50"}`}
+                data-testid={`bucket-${k}`}
+              >
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[k].color }} />
+                <span className={`font-bold flex-shrink-0 ${active === k ? "text-foreground" : "text-muted-foreground"}`}>{GURU_BUCKETS[k].label}</span>
+                <span className="text-muted-foreground ml-auto tabular-nums flex-shrink-0">{pct}%</span>
+                <span className="font-semibold tabular-nums flex-shrink-0">{fmt(v, true)}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="px-4 pb-4">
-        <div className="flex gap-1 mb-2">
-          {(["immediate", "short", "medium"] as const).map(b => (
-            <button
-              key={b}
-              onClick={() => setBucket(b)}
-              className={`flex-1 text-xs py-1 rounded border transition-colors ${bucket === b ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-secondary"}`}
-              data-testid={`bucket-${b}`}
-            >
-              {b === "immediate" ? "Immediate" : b === "short" ? "Short-Term" : "Medium-Term"}
-            </button>
-          ))}
+      {/* Active bucket detail */}
+      <div className="px-3 pb-3 flex-1">
+        <div className={`rounded-lg px-3 py-2 mb-2 border ${GURU_BUCKETS[active].tagCls.split(" ").map(c => c.replace("text-", "border-").replace("700", "200").replace("bg-", "bg-")).join(" ")}`} style={{ borderColor: GURU_BUCKETS[active].color + "40" }}>
+          <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: GURU_BUCKETS[active].color }}>{GURU_BUCKETS[active].label}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{GURU_BUCKETS[active].short}</p>
         </div>
-        <div className="space-y-1">
-          {bucketItems.map(item => (
-            <div key={item.label} className="flex justify-between text-xs">
+        <div className="space-y-0.5">
+          {activeItems.map((item, i) => (
+            <div key={`${item.label}-${i}`} className="flex justify-between text-xs">
               <span className="text-muted-foreground truncate pr-2">{item.label}</span>
               <span className="font-semibold tabular-nums">{fmt(item.value)}</span>
             </div>
           ))}
-          {bucketItems.length > 0 && (
+          {activeItems.length > 0 && (
             <div className="flex justify-between text-xs font-bold border-t border-border pt-1 mt-1">
-              <span>Total</span><span>{fmt(bucketTotal)}</span>
+              <span>{GURU_BUCKETS[active].label} Total</span>
+              <span>{fmt(activeTotal)}</span>
             </div>
           )}
-          {bucketItems.length === 0 && <p className="text-xs text-muted-foreground italic">No assets in this bucket</p>}
+          {activeItems.length === 0 && <p className="text-xs text-muted-foreground italic">No assets in this bucket</p>}
+          {!isLiquid && (
+            <p className="text-[10px] text-muted-foreground mt-1 italic">Not included in 12-month liquidity calculation</p>
+          )}
+        </div>
+      </div>
+
+      {/* Liquidity vs trough footer */}
+      <div className="grid grid-cols-2 divide-x divide-border border-t border-border text-xs">
+        <div className="px-3 py-2">
+          <p className="text-muted-foreground">Liquid (R+Y+T)</p>
+          <p className="font-bold text-emerald-600">{fmt(totalLiquid, true)}</p>
+        </div>
+        <div className="px-3 py-2">
+          <p className="text-muted-foreground">12-Mo Required</p>
+          <p className="font-bold text-rose-600">{fmt(cashTrough, true)}</p>
         </div>
       </div>
     </div>
@@ -592,8 +634,8 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
   const spyQuote = quotes?.find(q => q.symbol === "SPY");
 
   const brokerageTypes = ["equity", "fixed_income", "alternative"];
-  const brokerageAssets = assets.filter(a => brokerageTypes.includes(a.type) && !a.description.toLowerCase().includes("carry") && !a.description.toLowerCase().includes("rsu"));
-  const retirementAssets = assets.filter(a => a.description.toLowerCase().includes("401") || a.description.toLowerCase().includes("ira") || a.description.toLowerCase().includes("roth"));
+  const brokerageAssets = assets.filter(a => brokerageTypes.includes(a.type) && !((a.description ?? "").toLowerCase()).includes("carry") && !((a.description ?? "").toLowerCase()).includes("rsu"));
+  const retirementAssets = assets.filter(a => ((a.description ?? "").toLowerCase()).includes("401") || ((a.description ?? "").toLowerCase()).includes("ira") || ((a.description ?? "").toLowerCase()).includes("roth"));
   const totalBrok = brokerageAssets.reduce((s, a) => s + Number(a.value), 0);
   const totalRet  = retirementAssets.reduce((s, a) => s + Number(a.value), 0);
   const total     = totalBrok + totalRet;
@@ -658,7 +700,7 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
       <div className="border-t border-border mx-4 mb-3" />
       <div className="px-4 pb-4 space-y-1">
         {[...brokerageAssets, ...retirementAssets].slice(0, 5).map(a => {
-          const isGS = a.description.toLowerCase().includes("goldman") || a.description.toLowerCase().includes("rsu");
+          const isGS = ((a.description ?? "").toLowerCase()).includes("goldman") || ((a.description ?? "").toLowerCase()).includes("rsu");
           const livePrice = isGS && gsQuote ? gsQuote : null;
           const gsUp = (gsQuote?.changePercent ?? 0) >= 0;
           return (
@@ -726,17 +768,16 @@ function IncomeExpensePanel({ cashFlows }: { cashFlows: CashFlow[] }) {
 
 // ─── Panel 6: GURU Optimizer ─────────────────────────────────────────────────
 function GuruOptimizerPanel({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const { immediate, shortTerm, mediumTerm } = cashBuckets(assets);
-  const totalLiquid = immediate + shortTerm + mediumTerm;
+  const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
   const forecastData = buildForecast(cashFlows);
   const cashTrough = computeTrough(forecastData);
   const cashExcess = totalLiquid - cashTrough;
 
   // Idle cash in checking earning near-zero → yield improvement
-  const additionalCashIncome = Math.round(immediate * 0.036); // ~3.6% money market rate
+  const additionalCashIncome = Math.round(reserve * 0.036); // ~3.6% money market rate on Reserve cash
 
   // Investment optimization: cash sitting in brokerage + excess bank cash
-  const brokerageCash = assets.filter(a => a.type === "cash" && a.description.toLowerCase().includes("money market")).reduce((s, a) => s + Number(a.value), 0);
+  const brokerageCash = assets.filter(a => a.type === "cash" && ((a.description ?? "").toLowerCase()).includes("money market")).reduce((s, a) => s + Number(a.value), 0);
   const totalToInvest = Math.round(brokerageCash + Math.max(0, cashExcess));
   const investPctIncrease = assets.filter(a => ["equity", "alternative"].includes(a.type)).reduce((s, a) => s + Number(a.value), 0);
   const investPct = investPctIncrease > 0 ? Math.round((totalToInvest / investPctIncrease) * 100) : 0;
@@ -885,7 +926,7 @@ function extractRate(description: string): string | null {
 type AssetComment = { text: string; color: "red" | "orange" | "muted" };
 
 function assetComment(a: Asset, groupTotal?: number): AssetComment | null {
-  const desc = a.description.toLowerCase();
+  const desc = ((a.description ?? "").toLowerCase());
   const val  = Number(a.value);
   if (a.type === "cash" && desc.includes("checking") && val > 50000) return { text: "Excess", color: "red" };
   if (a.type === "cash" && (desc.includes("money market") || desc.includes("savings")) && val > 150000)
@@ -914,18 +955,18 @@ interface BsGroup {
 
 function buildAssetGroups(assets: Asset[]): BsGroup[] {
   const isRetirement = (a: Asset) => {
-    const d = a.description.toLowerCase();
+    const d = ((a.description ?? "").toLowerCase());
     return d.includes("401") || d.includes("ira") || d.includes("roth");
   };
-  const isCarry = (a: Asset) => a.description.toLowerCase().includes("carry");
-  const isRSU   = (a: Asset) => a.description.toLowerCase().includes("rsu");
+  const isCarry = (a: Asset) => ((a.description ?? "").toLowerCase()).includes("carry");
+  const isRSU   = (a: Asset) => ((a.description ?? "").toLowerCase()).includes("rsu");
   const isBrokerage = (a: Asset) =>
     (a.type === "equity" || a.type === "fixed_income") &&
     !isRetirement(a) && !isRSU(a) &&
-    (a.description.toLowerCase().includes("brokerage") || a.description.toLowerCase().includes("taxable") || a.description.toLowerCase().includes("fidelity"));
+    (((a.description ?? "").toLowerCase()).includes("brokerage") || ((a.description ?? "").toLowerCase()).includes("taxable") || ((a.description ?? "").toLowerCase()).includes("fidelity"));
 
-  const checking   = assets.filter(a => a.type === "cash" && a.description.toLowerCase().includes("checking"));
-  const savingsMM  = assets.filter(a => a.type === "cash" && !a.description.toLowerCase().includes("checking"));
+  const checking   = assets.filter(a => a.type === "cash" && ((a.description ?? "").toLowerCase()).includes("checking"));
+  const savingsMM  = assets.filter(a => a.type === "cash" && !((a.description ?? "").toLowerCase()).includes("checking"));
   const brokerage  = assets.filter(a => isBrokerage(a));
   const altAssets  = assets.filter(a => a.type === "alternative" && !isCarry(a));
   const carry      = assets.filter(a => isCarry(a));
@@ -1243,8 +1284,7 @@ export default function ClientDashboard() {
   const _forecastData  = buildForecast(cashFlows);
   const annualNetTop   = _forecastData.reduce((s, d) => s + d.net, 0);
   const monthlyAvgTop  = Math.round(annualNetTop / 12);
-  const { immediate: immTop, shortTerm: stTop, mediumTerm: mtTop } = cashBuckets(assets);
-  const totalLiquidTop = immTop + stTop + mtTop;
+  const { totalLiquid: totalLiquidTop } = cashBuckets(assets);
   const cashTroughTop  = computeTrough(_forecastData);
   const cashExcessTop  = totalLiquidTop - cashTroughTop;
   const isPositiveTop  = cashExcessTop >= 0;
