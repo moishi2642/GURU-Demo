@@ -14,12 +14,12 @@ import {
 import {
   BrainCircuit, TrendingUp, TrendingDown, ChevronLeft, Activity,
   CheckCircle2, AlertTriangle, XCircle, Zap, LayoutDashboard, FileText,
-  Database, ArrowUpRight, Radio,
+  Database, ArrowUpRight, CalendarClock,
 } from "lucide-react";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
 import type { Asset, Liability, CashFlow, Strategy } from "@shared/schema";
 
-// ─── Market Data ───────────────────────────────────────────────────────────────
+// ─── Market Data (kept for BrokeragePanel) ────────────────────────────────────
 interface QuoteItem {
   symbol: string;
   shortName: string;
@@ -29,16 +29,6 @@ interface QuoteItem {
   marketState: string;
 }
 
-const TICKER_DISPLAY: Record<string, string> = {
-  "SPY":     "S&P 500",
-  "QQQ":     "NASDAQ",
-  "^DJI":    "DOW",
-  "GS":      "Goldman Sachs",
-  "^TNX":    "10Y Yield",
-  "BTC-USD": "BTC",
-  "^VIX":    "VIX",
-};
-
 function useMarketQuotes() {
   return useQuery<QuoteItem[]>({
     queryKey: ["/api/market/quotes"],
@@ -47,71 +37,62 @@ function useMarketQuotes() {
   });
 }
 
-// ─── Live Ticker Bar ───────────────────────────────────────────────────────────
-function MarketTicker() {
-  const { data: quotes, isLoading, dataUpdatedAt } = useMarketQuotes();
-  const [lastUpdate, setLastUpdate] = useState<string>("");
+// ─── Cash Flow Upcoming Events Ticker ─────────────────────────────────────────
+const CATEGORY_LABELS: Record<string, string> = {
+  salary: "Salary", investments: "Investment Income", housing: "Housing",
+  living_expenses: "Living", taxes: "Taxes", education: "Education",
+  travel: "Travel", lifestyle: "Lifestyle", bonus: "Bonus", other: "Other",
+};
 
-  useEffect(() => {
-    if (dataUpdatedAt) {
-      setLastUpdate(format(new Date(dataUpdatedAt), "HH:mm:ss"));
-    }
-  }, [dataUpdatedAt]);
+function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
+  const now = new Date();
+  const horizon = addMonths(now, 12);
 
-  const fmtPrice = (q: QuoteItem) => {
-    if (q.price == null) return "—";
-    if (q.symbol === "^TNX") return `${q.price.toFixed(2)}%`;
-    if (q.symbol === "^VIX")  return q.price.toFixed(2);
-    if (q.symbol === "BTC-USD") return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(q.price);
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(q.price);
-  };
+  const items = cashFlows
+    .filter(cf => {
+      const d = new Date(cf.date);
+      return d >= now && d <= horizon;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map(cf => ({
+      date: format(new Date(cf.date), "MMM d"),
+      label: cf.description.split("(")[0].split("—")[0].split("–")[0].trim(),
+      amount: Number(cf.amount),
+      type: cf.type as "inflow" | "outflow",
+      category: cf.category,
+    }));
 
-  const items = quotes ?? [];
-  const duration = Math.max(20, items.length * 7);
+  if (items.length === 0) return null;
+
+  const duration = Math.max(40, items.length * 6);
 
   return (
-    <div className="flex items-center bg-[hsl(221,39%,14%)] border border-[hsl(221,39%,22%)] rounded-lg overflow-hidden text-xs mb-4 select-none" style={{ height: 36 }}>
-      {/* Live badge */}
+    <div className="flex items-center bg-[hsl(221,39%,11%)] border border-[hsl(221,39%,20%)] rounded-lg overflow-hidden text-xs mb-4 select-none" style={{ height: 36 }}>
       <div className="flex items-center gap-1.5 px-3 border-r border-white/10 flex-shrink-0 h-full">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot" />
-        <span className="font-bold text-white/70 uppercase tracking-wider text-[10px]">Live</span>
+        <CalendarClock className="w-3 h-3 text-amber-400" />
+        <span className="font-bold text-white/60 uppercase tracking-wider text-[10px]">Upcoming</span>
       </div>
-
-      {isLoading ? (
-        <div className="flex items-center px-4 gap-2 text-white/40">
-          <Activity className="w-3 h-3 animate-spin" />
-          <span>Fetching market data…</span>
+      <div className="flex-1 overflow-hidden">
+        <div className="animate-ticker flex items-center" style={{ animationDuration: `${duration}s` }}>
+          {[...items, ...items].map((item, i) => {
+            const isIn = item.type === "inflow";
+            const fmtAmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0, notation: "compact" }).format(item.amount);
+            const cat = CATEGORY_LABELS[item.category] ?? item.category;
+            return (
+              <div key={i} className="flex items-center gap-2 px-5 border-r border-white/10 h-full whitespace-nowrap" style={{ lineHeight: "36px" }}>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isIn ? "bg-emerald-900/50 text-emerald-400" : "bg-rose-900/40 text-rose-400"}`}>
+                  {isIn ? "▲" : "▼"} {cat}
+                </span>
+                <span className="text-white/60">{item.date}</span>
+                <span className="text-white/80 font-medium max-w-[160px] truncate">{item.label}</span>
+                <span className={`font-bold tabular-nums ${isIn ? "text-emerald-400" : "text-rose-400"}`}>
+                  {isIn ? "+" : "−"}{fmtAmt}
+                </span>
+              </div>
+            );
+          })}
         </div>
-      ) : items.length === 0 ? (
-        <div className="px-4 text-white/40">Market data unavailable</div>
-      ) : (
-        <div className="flex-1 overflow-hidden">
-          <div className="animate-ticker" style={{ animationDuration: `${duration}s` }}>
-            {[...items, ...items].map((q, i) => {
-              const up = (q.change ?? 0) >= 0;
-              const label = TICKER_DISPLAY[q.symbol] ?? q.shortName ?? q.symbol;
-              return (
-                <div key={i} className="flex items-center gap-2 px-5 border-r border-white/10 h-full" style={{ lineHeight: "36px" }}>
-                  <span className="text-white/50 font-semibold">{label}</span>
-                  <span className="text-white font-bold tabular-nums">{fmtPrice(q)}</span>
-                  {q.changePercent != null && (
-                    <span className={`font-semibold tabular-nums ${up ? "text-emerald-400" : "text-rose-400"}`}>
-                      {up ? "▲" : "▼"} {Math.abs(q.changePercent).toFixed(2)}%
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {lastUpdate && (
-        <div className="flex items-center gap-1 px-3 border-l border-white/10 flex-shrink-0 text-white/30 text-[10px]">
-          <Radio className="w-2.5 h-2.5" />
-          {lastUpdate}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -1180,7 +1161,7 @@ export default function ClientDashboard() {
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
       {activeView === "dashboard" && (
         <div className="space-y-4">
-          <MarketTicker />
+          <CashFlowTicker cashFlows={cashFlows} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <NetWorthPanel assets={assets} liabilities={liabilities} />
             <CashFlowForecastPanel cashFlows={cashFlows} />
