@@ -7,6 +7,7 @@ import { AddAssetModal, AddLiabilityModal, AddCashFlowModal } from "@/components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, LineChart, Line, ReferenceLine, ReferenceDot,
@@ -1485,7 +1486,43 @@ const GURU_BUCKETS_DEF = [
   },
 ] as const;
 
+type BucketProduct = {
+  name: string; institution: string; type: string;
+  grossYield: string; atYield: string; pickup: string; isGuru: boolean;
+};
+const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
+  Reserve: [
+    { name: "Citizens Private Bank Checking",  institution: "Citizens Bank",    type: "High-Yield Checking", grossYield: "3.78%", atYield: "2.38%", pickup: "+3.67%", isGuru: true  },
+    { name: "JPMorgan Private Client Checking", institution: "J.P. Morgan",     type: "High-Yield Checking", grossYield: "3.50%", atYield: "2.21%", pickup: "+3.39%", isGuru: false },
+    { name: "Bank of America Private Checking", institution: "BofA",            type: "High-Yield Checking", grossYield: "2.85%", atYield: "1.80%", pickup: "+2.74%", isGuru: false },
+    { name: "Citi Priority Checking",           institution: "Citibank",        type: "High-Yield Checking", grossYield: "3.00%", atYield: "1.89%", pickup: "+2.89%", isGuru: false },
+    { name: "Wells Fargo Premier Checking",     institution: "Wells Fargo",     type: "High-Yield Checking", grossYield: "2.50%", atYield: "1.58%", pickup: "+2.39%", isGuru: false },
+  ],
+  Flow: [
+    { name: "JPMorgan 100% Treasuries MMF",     institution: "J.P. Morgan",    type: "Money Market Fund",   grossYield: "4.30%", atYield: "2.71%", pickup: "+0.65%", isGuru: true  },
+    { name: "BlackRock Liquid Federal Trust",   institution: "BlackRock",      type: "Money Market Fund",   grossYield: "4.27%", atYield: "2.69%", pickup: "+0.62%", isGuru: false },
+    { name: "Fidelity Government MMF (SPRXX)",  institution: "Fidelity",       type: "Money Market Fund",   grossYield: "4.25%", atYield: "2.68%", pickup: "+0.60%", isGuru: false },
+    { name: "Vanguard Federal MMF (VMFXX)",     institution: "Vanguard",       type: "Money Market Fund",   grossYield: "4.22%", atYield: "2.66%", pickup: "+0.57%", isGuru: false },
+    { name: "Schwab Value Advantage MMF",       institution: "Schwab",         type: "Money Market Fund",   grossYield: "4.18%", atYield: "2.63%", pickup: "+0.53%", isGuru: false },
+  ],
+  Build: [
+    { name: "US Treasuries 3–6 Month Ladder",  institution: "US Treasury",    type: "T-Bill Ladder",       grossYield: "4.22%", atYield: "2.66%", pickup: "+0.27%", isGuru: true  },
+    { name: "US Treasury 3-Month Bill",         institution: "US Treasury",    type: "Treasury Bill",       grossYield: "4.28%", atYield: "2.70%", pickup: "+0.33%", isGuru: false },
+    { name: "US Treasury 6-Month Bill",         institution: "US Treasury",    type: "Treasury Bill",       grossYield: "4.18%", atYield: "2.63%", pickup: "+0.23%", isGuru: false },
+    { name: "US Treasury 12-Month Note",        institution: "US Treasury",    type: "Treasury Note",       grossYield: "4.05%", atYield: "2.55%", pickup: "+0.10%", isGuru: false },
+    { name: "TIPS (Inflation-Protected)",        institution: "US Treasury",    type: "TIPS",                grossYield: "2.1%+CPI", atYield: "—",   pickup: "Inflation hedge", isGuru: false },
+  ],
+  Grow: [
+    { name: "S&P 500 / Total Market ETF (VOO/VTI)", institution: "Vanguard",  type: "Index ETF",           grossYield: "[7.5%]", atYield: "[5.3%]", pickup: "Cap gains tax rate", isGuru: true  },
+    { name: "MSCI World ETF (VT)",               institution: "Vanguard",      type: "Index ETF",           grossYield: "[7.0%]", atYield: "[4.9%]", pickup: "Global diversification", isGuru: false },
+    { name: "PE Co-Investment",                  institution: "Advisor Sourced", type: "Private Equity",    grossYield: "[15%+]", atYield: "[10%+]", pickup: "Illiquidity premium", isGuru: false },
+    { name: "Private Credit Fund",               institution: "Advisor Sourced", type: "Private Credit",    grossYield: "[9.5%]", atYield: "[6.0%]", pickup: "+2–3% vs. liquid", isGuru: false },
+    { name: "Real Assets / Infrastructure",      institution: "Advisor Sourced", type: "Real Assets",       grossYield: "[8.5%]", atYield: "[5.9%]", pickup: "Inflation protection", isGuru: false },
+  ],
+};
+
 function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const [productModal, setProductModal] = useState<string | null>(null);
   const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
   const forecastData = buildForecast(cashFlows);
   const cashTrough   = computeTrough(forecastData);
@@ -1711,6 +1748,24 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                       </div>
                     </div>
                   </div>
+
+                  {/* Card footer — GURU suggested balance + products button */}
+                  <div className="border-t border-border px-5 py-2.5 flex items-center justify-between bg-secondary/10">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">GURU Suggested Balance</span>
+                      <span className="text-sm font-bold tabular-nums ml-1" style={{ color: r.def.bg }}>{fmt(r.target)}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-7 gap-1.5"
+                      onClick={() => setProductModal(r.def.name)}
+                      data-testid={`btn-products-${r.def.name.toLowerCase()}`}
+                    >
+                      <span>Products Available</span>
+                      <span className="text-muted-foreground">↗</span>
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1737,6 +1792,80 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
               </div>
             </div>
           </div>
+        );
+      })()}
+
+      {/* Products Available Dialog */}
+      {(() => {
+        const bucket = GURU_BUCKETS_DEF.find(b => b.name === productModal);
+        const products = productModal ? (BUCKET_PRODUCTS[productModal] ?? []) : [];
+        return (
+          <Dialog open={productModal !== null} onOpenChange={open => !open && setProductModal(null)}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  {bucket && (
+                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: bucket.accent }} />
+                  )}
+                  <span>{productModal} Bucket — Products &amp; Yield Pickup</span>
+                </DialogTitle>
+              </DialogHeader>
+
+              {bucket && (
+                <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-white font-medium" style={{ background: bucket.bg }}>
+                  <span style={{ color: bucket.accent }}>●</span>
+                  <span>{bucket.rule}</span>
+                  <span className="ml-auto opacity-60">Ranked highest to lowest yield</span>
+                </div>
+              )}
+
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-900 text-white text-xs">
+                      <th className="text-left px-4 py-2.5 font-semibold">Product</th>
+                      <th className="text-left px-3 py-2.5 font-semibold">Institution</th>
+                      <th className="text-left px-3 py-2.5 font-semibold">Type</th>
+                      <th className="text-right px-3 py-2.5 font-semibold">Gross Yield</th>
+                      <th className="text-right px-3 py-2.5 font-semibold">After-Tax</th>
+                      <th className="text-left px-3 py-2.5 font-semibold">Yield Pickup</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((p, i) => (
+                      <tr key={p.name} className={`border-t border-border ${i % 2 === 0 ? "bg-card" : "bg-secondary/10"}`}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">{p.name}</span>
+                            {p.isGuru && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white" style={{ background: bucket?.bg }}>
+                                GURU ★
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-muted-foreground text-xs">{p.institution}</td>
+                        <td className="px-3 py-3 text-muted-foreground text-xs">{p.type}</td>
+                        <td className="px-3 py-3 text-right font-bold tabular-nums">{p.grossYield}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{p.atYield}</td>
+                        <td className="px-3 py-3">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                            p.pickup.startsWith("+") ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-secondary/30 text-muted-foreground"
+                          }`}>
+                            {p.pickup}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Yield pickup shown vs. current client holding in this bucket. After-tax computed at 37% ordinary income rate; equity returns use long-term cap gains rate. All projected returns are estimates.
+              </p>
+            </DialogContent>
+          </Dialog>
         );
       })()}
 
