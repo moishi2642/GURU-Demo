@@ -58,8 +58,10 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
   const now = new Date();
   const horizon = addMonths(now, 12);
 
-  const items = cashFlows
-    .filter(cf => { const d = new Date(cf.date); return d >= now && d <= horizon && isChunkyEvent(cf); })
+  const all12 = cashFlows.filter(cf => { const d = new Date(cf.date); return d >= now && d <= horizon; });
+
+  const items = all12
+    .slice()
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map(cf => ({
       date: format(new Date(cf.date), "MMM d"),
@@ -71,8 +73,9 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
 
   if (items.length === 0) return null;
 
-  const totalIn  = items.filter(i => i.type === "inflow").reduce((s, i) => s + i.amount, 0);
-  const totalOut = items.filter(i => i.type === "outflow").reduce((s, i) => s + i.amount, 0);
+  // Footer totals always reflect ALL 12-month flows, not just visible rows
+  const totalIn  = all12.filter(c => c.type === "inflow").reduce((s, c) => s + Number(c.amount), 0);
+  const totalOut = all12.filter(c => c.type === "outflow").reduce((s, c) => s + Number(c.amount), 0);
   const net      = totalIn - totalOut;
   const rowH     = 32; // px per row
   const visRows  = 6;
@@ -134,15 +137,15 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
       {/* Summary footer */}
       <div className="grid grid-cols-3 divide-x divide-white/8 border-t border-white/10 text-xs">
         <div className="px-4 py-2.5">
-          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">Total Inflows</p>
+          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">12-Mo Inflows</p>
           <p className="font-bold text-emerald-400 tabular-nums">+{fmtAmt(totalIn)}</p>
         </div>
         <div className="px-4 py-2.5">
-          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">Total Outflows</p>
+          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">12-Mo Outflows</p>
           <p className="font-bold text-rose-400 tabular-nums">−{fmtAmt(totalOut)}</p>
         </div>
         <div className="px-4 py-2.5">
-          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">Net Cash Flow</p>
+          <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">12-Mo Net</p>
           <p className={`font-bold tabular-nums ${net >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{net >= 0 ? "+" : "−"}{fmtAmt(Math.abs(net))}</p>
         </div>
       </div>
