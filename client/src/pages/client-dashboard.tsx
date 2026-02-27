@@ -1170,6 +1170,19 @@ export default function ClientDashboard() {
   }
 
   const { client, assets, liabilities, cashFlows, strategies } = data;
+
+  // ── Top-level cash metrics (shared across banner + panels) ──────────────────
+  const _forecastData  = buildForecast(cashFlows);
+  const annualNetTop   = _forecastData.reduce((s, d) => s + d.net, 0);
+  const monthlyAvgTop  = Math.round(annualNetTop / 12);
+  const { immediate: immTop, shortTerm: stTop, mediumTerm: mtTop } = cashBuckets(assets);
+  const totalLiquidTop = immTop + stTop + mtTop;
+  const cashTroughTop  = computeTrough(_forecastData);
+  const cashExcessTop  = totalLiquidTop - cashTroughTop;
+  const isPositiveTop  = cashExcessTop >= 0;
+  const minCumTop      = Math.min(..._forecastData.map(d => d.cumulative));
+  const troughMonthTop = _forecastData.find(d => d.cumulative === minCumTop)?.month ?? "";
+
   const riskColor: Record<string, string> = {
     conservative: "bg-blue-100 text-blue-700",
     moderate: "bg-amber-100 text-amber-700",
@@ -1270,6 +1283,56 @@ export default function ClientDashboard() {
       {activeView === "dashboard" && (
         <div className="space-y-4">
           <CashFlowTicker cashFlows={cashFlows} />
+
+          {/* ── Cash Position Hero Banner ────────────────────────────────────── */}
+          <div className={`rounded-xl border shadow-sm px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-8 ${isPositiveTop ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-r from-rose-50 to-orange-50 border-rose-200"}`}>
+            {/* Primary KPI */}
+            <div className="flex items-center gap-4">
+              <div className={`rounded-xl p-3 ${isPositiveTop ? "bg-emerald-100" : "bg-rose-100"}`}>
+                {isPositiveTop
+                  ? <TrendingUp className="w-7 h-7 text-emerald-600" />
+                  : <TrendingDown className="w-7 h-7 text-rose-600" />}
+              </div>
+              <div>
+                <p className={`text-xs font-bold uppercase tracking-wider ${isPositiveTop ? "text-emerald-700" : "text-rose-700"}`}>
+                  {isPositiveTop ? "Cash Available to Invest" : "Cash Shortfall — Action Required"}
+                </p>
+                <p className={`text-4xl font-extrabold leading-tight tabular-nums ${isPositiveTop ? "text-emerald-700" : "text-rose-700"}`} data-testid="kpi-cash-excess">
+                  {isPositiveTop ? "+" : ""}{fmt(cashExcessTop)}
+                </p>
+                <p className={`text-xs mt-0.5 ${isPositiveTop ? "text-emerald-600" : "text-rose-600"}`}>
+                  Liquid assets minus 12-month cash requirement{cashTroughTop > 0 ? ` (trough ${troughMonthTop})` : ""}
+                </p>
+              </div>
+            </div>
+
+            {/* Dividers + Secondary stats */}
+            <div className="flex flex-wrap gap-x-8 gap-y-2 sm:border-l sm:border-current/20 sm:pl-8">
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">12-Mo Net Cash Flow</p>
+                <p className={`text-xl font-bold tabular-nums ${annualNetTop >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {annualNetTop >= 0 ? "+" : ""}{fmt(annualNetTop, true)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Monthly Average</p>
+                <p className={`text-xl font-bold tabular-nums ${monthlyAvgTop >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {monthlyAvgTop >= 0 ? "+" : ""}{fmtK(monthlyAvgTop)}/mo
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Total Liquid Assets</p>
+                <p className="text-xl font-bold tabular-nums text-foreground">{fmt(totalLiquidTop, true)}</p>
+              </div>
+              {cashTroughTop > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">12-Mo Cash Required</p>
+                  <p className="text-xl font-bold tabular-nums text-foreground">{fmt(cashTroughTop, true)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <NetWorthPanel assets={assets} liabilities={liabilities} />
             <CashFlowForecastPanel cashFlows={cashFlows} />
