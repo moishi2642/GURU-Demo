@@ -1535,89 +1535,148 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         </div>
       </div>
 
-      {/* ── Current allocation ──────────────────────────────────────────── */}
-      <div className="border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border bg-secondary/20">
-          <p className="font-display font-bold text-sm text-foreground">GURU 4-Bucket Asset Framework</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Current allocation across {fmt(totalAssets)} total assets</p>
-        </div>
-        <div className="p-5 space-y-4">
-          <div className="flex h-5 rounded-full overflow-hidden w-full">
-            {buckets.map(b => (
-              <div key={b.label} style={{ width: `${b.pct}%`, background: b.color }} title={`${b.label}: ${b.pct.toFixed(1)}%`} />
-            ))}
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-            {buckets.map(b => (
-              <div key={b.label} className="p-3 border border-border rounded-lg" data-testid={`bucket-${b.label.toLowerCase()}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: b.color }} />
-                  <span className="font-bold text-xs text-foreground">{b.label}</span>
-                  <span className="ml-auto text-xs font-semibold text-muted-foreground">{b.pct.toFixed(1)}%</span>
-                </div>
-                <p className="font-bold text-base tabular-nums">{fmt(b.value, true)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{b.sublabel}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* ── Rebalancing Recommendation Table ────────────────────────────── */}
+      {(() => {
+        // GURU 4-bucket current balances
+        const reserveCurrent = reserve; // all checking
+        const flowCurrent    = yieldBucket + brokerageCash; // savings/MM + idle brokerage cash
+        const buildCurrent   = tactical;  // treasuries
+        const growCurrent    = totalAssets - reserveCurrent - flowCurrent - buildCurrent;
 
-      {/* GURU Optimizer — Cash to Deploy */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="border border-border rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-border bg-secondary/20">
-            <p className="font-display font-bold text-sm text-foreground flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" />Cash Management Optimizer</p>
-          </div>
-          <div className="p-5 space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-sm text-muted-foreground">Total Liquid (Reserve + Yield + Tactical)</span>
-              <span className="font-bold tabular-nums">{fmt(totalLiquid, true)}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-sm text-muted-foreground">12-Month Cash Trough</span>
-              <span className="font-bold tabular-nums text-rose-600">({fmt(cashTrough, true)})</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-sm font-semibold text-foreground">Liquid Surplus / Deficit</span>
-              <span className={`font-bold text-lg tabular-nums ${cashExcess >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{cashExcess >= 0 ? "+" : ""}{fmt(cashExcess, true)}</span>
-            </div>
-            <div className="bg-secondary/30 rounded-lg px-4 py-3 space-y-1 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Reserve (Checking)</span><span className="font-medium tabular-nums">{fmt(reserve)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Yield (Savings / MM)</span><span className="font-medium tabular-nums">{fmt(yieldBucket)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Tactical (Treasuries)</span><span className="font-medium tabular-nums">{fmt(tactical)}</span></div>
-            </div>
-          </div>
-        </div>
+        // Monthly outflows — group cashFlows by month, find minimum (core baseline)
+        const moMap: Record<string, number> = {};
+        cashFlows.filter(c => c.type === "outflow").forEach(c => {
+          const d = new Date(c.date as string);
+          const k = `${d.getFullYear()}-${d.getMonth()}`;
+          moMap[k] = (moMap[k] ?? 0) + Number(c.amount);
+        });
+        const moVals = Object.values(moMap);
+        const minMonthly  = moVals.length ? Math.min(...moVals) : 18056;
+        const annualOut   = cashFlows.filter(c => c.type === "outflow").reduce((s, c) => s + Number(c.amount), 0);
+        const annualSalIn = cashFlows.filter(c => c.type === "inflow" && c.category === "salary").reduce((s, c) => s + Number(c.amount), 0);
 
-        <div className="border-2 border-primary/30 rounded-xl overflow-hidden bg-primary/5">
-          <div className="px-5 py-3 border-b border-primary/20 bg-primary/10">
-            <p className="font-display font-bold text-sm text-foreground flex items-center gap-2"><ArrowUpRight className="w-4 h-4 text-primary" />Total Cash Available to Invest</p>
-          </div>
-          <div className="p-5 space-y-3">
-            <div className="text-center py-2">
-              <p className="text-4xl font-display font-black tabular-nums text-primary">{fmt(totalToInvest, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Ready to deploy into the model portfolio</p>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between items-center px-3 py-2 bg-background rounded-lg border border-border">
-                <div>
-                  <span className="font-semibold text-foreground">A — Idle Brokerage Cash</span>
-                  <p className="text-xs text-muted-foreground">Fidelity Cash Sweep (earning near 0%)</p>
+        // GURU targets
+        const reserveTarget = Math.round(minMonthly * 2);
+        const flowTarget    = annualOut;
+        const buildTarget   = buildCurrent;
+        const growTarget    = totalAssets - reserveTarget - flowTarget - buildTarget;
+
+        const reserveDelta = reserveTarget - reserveCurrent;
+        const flowDelta    = flowTarget    - flowCurrent;
+        const buildDelta   = 0;
+        const growDelta    = growTarget    - growCurrent;
+
+        // Top metrics
+        const excessCash = Math.abs(Math.min(reserveDelta, 0)) + Math.abs(Math.min(flowDelta, 0));
+        const addlIncome = Math.round(
+          Math.abs(Math.min(reserveDelta, 0)) * (0.07 * 0.63 - 0.001) +
+          Math.abs(Math.min(flowDelta, 0))    * (0.07 * 0.63 - 0.043 * 0.63)
+        );
+        const pctIncrease = annualSalIn > 0 ? ((addlIncome / annualSalIn) * 100).toFixed(1) : "0";
+
+        const rows: {
+          def: typeof GURU_BUCKETS_DEF[number];
+          current: number;
+          target: number;
+          delta: number;
+          calc: string;
+          product: string;
+          yield_: string;
+          atYield: string;
+        }[] = [
+          { def: GURU_BUCKETS_DEF[0], current: reserveCurrent, target: reserveTarget, delta: reserveDelta,
+            calc: "2 months of core expenses",
+            product: "Citizens Private Bank Checking",   yield_: "3.78%", atYield: "2.38%" },
+          { def: GURU_BUCKETS_DEF[1], current: flowCurrent, target: flowTarget, delta: flowDelta,
+            calc: "12 months of total anticipated outflow",
+            product: "JPMorgan 100% Treasuries MMF",     yield_: "4.30%", atYield: "2.71%" },
+          { def: GURU_BUCKETS_DEF[2], current: buildCurrent, target: buildTarget, delta: buildDelta,
+            calc: "Maintain short-term reserve position",
+            product: "US Treasuries (3–6 month ladder)",  yield_: "3.95%", atYield: "2.49%" },
+          { def: GURU_BUCKETS_DEF[3], current: growCurrent, target: growTarget, delta: growDelta,
+            calc: "Remaining assets",
+            product: "Growth Equity ETFs + PE Funds",     yield_: "[7%]",  atYield: "[4.4%]" },
+        ];
+        const totalTarget = rows.reduce((s, r) => s + r.target, 0);
+
+        const fmtDelta = (d: number) => {
+          if (d === 0) return <span className="text-muted-foreground">No Change</span>;
+          return (
+            <span className={d > 0 ? "text-emerald-700 font-semibold" : "text-rose-600 font-semibold"}>
+              {d > 0 ? `Increase by ${fmt(d)}` : `Decrease by ${fmt(Math.abs(d))}`}
+            </span>
+          );
+        };
+
+        return (
+          <div className="space-y-4">
+            {/* Top 3 summary metrics */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: "Estimated Excess Cash", value: `Up to ${fmt(excessCash)}` },
+                { label: "Estimated Additional After-Tax Income / Year", value: `Up to ${fmt(addlIncome)}` },
+                { label: "% Increase to Annual Cashflow", value: `Up to ${pctIncrease}%` },
+              ].map(m => (
+                <div key={m.label} className="flex items-stretch rounded-xl overflow-hidden border border-border">
+                  <div className="flex-1 px-4 py-3 bg-[hsl(221,39%,22%)] flex items-center">
+                    <span className="text-sm text-white/80 font-medium leading-snug">{m.label}</span>
+                  </div>
+                  <div className="px-4 py-3 bg-[hsl(120,35%,78%)] flex items-center justify-center min-w-[130px]">
+                    <span className="font-bold text-[hsl(120,40%,18%)] text-base whitespace-nowrap">{m.value} ★</span>
+                  </div>
                 </div>
-                <span className="font-bold tabular-nums text-foreground">{fmt(brokerageCash, true)}</span>
-              </div>
-              <div className="flex justify-between items-center px-3 py-2 bg-background rounded-lg border border-border">
-                <div>
-                  <span className="font-semibold text-foreground">B — GURU Cash Reallocation</span>
-                  <p className="text-xs text-muted-foreground">Liquid surplus above 12-mo trough</p>
-                </div>
-                <span className={`font-bold tabular-nums ${cashExcess >= 0 ? "text-foreground" : "text-rose-500"}`}>{fmt(Math.max(0, cashExcess), true)}</span>
+              ))}
+            </div>
+
+            {/* Rebalancing table */}
+            <div className="border border-border rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[900px]">
+                  <thead>
+                    <tr className="bg-[hsl(221,39%,24%)] text-white text-xs">
+                      <th className="text-left px-3 py-2.5 font-semibold w-24">Bucket</th>
+                      <th className="text-right px-3 py-2.5 font-semibold">Current Balance</th>
+                      <th className="text-right px-3 py-2.5 font-semibold">GURU Suggested Balance</th>
+                      <th className="text-left px-3 py-2.5 font-semibold">GURU Suggested Calculation</th>
+                      <th className="text-left px-3 py-2.5 font-semibold">Money to Move Today</th>
+                      <th className="text-left px-3 py-2.5 font-semibold">GURU Product Selection</th>
+                      <th className="text-right px-3 py-2.5 font-semibold">Product Yield</th>
+                      <th className="text-right px-3 py-2.5 font-semibold">Tax Effected Yield</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, i) => (
+                      <tr key={r.def.name} className={`border-t-4 border-[hsl(0,0%,88%)] ${i % 2 === 0 ? "bg-white dark:bg-card" : "bg-[hsl(221,39%,98%)] dark:bg-secondary/10"}`}>
+                        <td className="px-0 py-0">
+                          <div className="h-full px-3 py-3 flex flex-col justify-center min-h-[60px]" style={{ background: r.def.bg }}>
+                            <span className="text-base font-bold text-white leading-tight">{r.def.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-right tabular-nums font-semibold">{fmt(r.current)}</td>
+                        <td className="px-3 py-3 text-right tabular-nums font-bold text-[hsl(221,39%,24%)]">{fmt(r.target)}</td>
+                        <td className="px-3 py-3 text-xs text-muted-foreground leading-snug">{r.calc}</td>
+                        <td className="px-3 py-3 text-xs">{fmtDelta(r.delta)}</td>
+                        <td className="px-3 py-3 text-xs font-semibold text-foreground leading-snug">{r.product}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-xs font-medium">{r.yield_}</td>
+                        <td className="px-3 py-3 text-right tabular-nums text-xs font-medium">{r.atYield}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-4 border-[hsl(221,39%,24%)] bg-[hsl(221,15%,88%)] dark:bg-[hsl(221,25%,22%)] text-[hsl(221,39%,20%)] dark:text-white/90">
+                      <td className="px-3 py-2.5 font-bold">Total</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-bold">{fmt(totalAssets)}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-bold">{fmt(totalTarget)}</td>
+                      <td colSpan={2} className="px-3 py-2.5 text-center text-sm font-semibold text-muted-foreground">No Change</td>
+                      <td colSpan={3} />
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Model Portfolio Recommendations */}
       <div className="border border-border rounded-xl overflow-hidden">
