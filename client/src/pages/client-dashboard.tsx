@@ -45,12 +45,21 @@ const CATEGORY_LABELS: Record<string, string> = {
   travel: "Travel", lifestyle: "Lifestyle", bonus: "Bonus", other: "Other",
 };
 
+// Only show meaningful, non-recurring events in the live feed
+const CHUNKY_ALWAYS = new Set(["taxes", "education", "bonus", "travel", "lifestyle"]);
+function isChunkyEvent(cf: CashFlow): boolean {
+  if (CHUNKY_ALWAYS.has(cf.category)) return true;
+  // Capital calls, large investment events (not routine dividend/rental income)
+  if (cf.category === "investments" && Number(cf.amount) >= 5_000) return true;
+  return false;
+}
+
 function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
   const now = new Date();
   const horizon = addMonths(now, 12);
 
   const items = cashFlows
-    .filter(cf => { const d = new Date(cf.date); return d >= now && d <= horizon; })
+    .filter(cf => { const d = new Date(cf.date); return d >= now && d <= horizon && isChunkyEvent(cf); })
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map(cf => ({
       date: format(new Date(cf.date), "MMM d"),
@@ -195,14 +204,23 @@ function buildForecast(cashFlows: CashFlow[]) {
   });
 }
 
-function buildNWTrend(netWorth: number) {
-  const now = startOfMonth(new Date());
-  const seed = [0.87, 0.89, 0.90, 0.91, 0.915, 0.93, 0.935, 0.94, 0.945, 0.95, 0.96, 0.97, 0.98, 0.985, 0.99, 0.995, 0.997, 1.0];
-  const wobble = [0.01, -0.008, 0.006, -0.004, 0.009, -0.005, 0.007, 0.003, -0.006, 0.005, -0.003, 0.008, -0.002, 0.004, 0.002, -0.001, 0.003, 0];
-  return seed.map((s, i) => ({
-    month: format(subMonths(now, seed.length - 1 - i), "MMM yy"),
-    value: Math.round(netWorth * (s + wobble[i])),
-  }));
+function buildNWProjection(netWorth: number, cashFlows: CashFlow[], assets: Asset[]) {
+  const annualSurplus = buildForecast(cashFlows).reduce((s, d) => s + d.net, 0);
+  // Growth assets (equity + alternatives + real estate) compound at conservative 6.5% annually
+  const growthValue = assets
+    .filter(a => ["equity", "alternative", "real_estate"].includes(a.type))
+    .reduce((s, a) => s + Number(a.value), 0);
+  const GROWTH_RATE = 0.065;
+  const now = new Date();
+  return Array.from({ length: 6 }, (_, i) => {
+    const assetGrowth = growthValue * (Math.pow(1 + GROWTH_RATE, i) - 1);
+    const cashAccum   = annualSurplus * i;
+    return {
+      label: i === 0 ? "Now" : `${i}Y`,
+      year:  format(addMonths(now, i * 12), "yyyy"),
+      value: Math.round(netWorth + assetGrowth + cashAccum),
+    };
+  });
 }
 
 function cashBuckets(assets: Asset[]) {
@@ -283,12 +301,13 @@ function liquidityTag(a: Asset): { label: string; tagCls: string } {
   return GURU_BUCKETS.alternatives;
 }
 
-function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: Liability[] }) {
+function NetWorthPanel({ assets, liabilities, cashFlows }: { assets: Asset[]; liabilities: Liability[]; cashFlows: CashFlow[] }) {
   const [view, setView] = useState<"assets" | "liabilities">("assets");
-  const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
-  const totalLiab   = liabilities.reduce((s, l) => s + Number(l.value), 0);
-  const netWorth    = totalAssets - totalLiab;
-  const trendData   = buildNWTrend(netWorth);
+  const totalAssets  = assets.reduce((s, a) => s + Number(a.value), 0);
+  const totalLiab    = liabilities.reduce((s, l) => s + Number(l.value), 0);
+  const netWorth     = totalAssets - totalLiab;
+  const projData     = buildNWProjection(netWorth, cashFlows, assets);
+  const projYear5    = projData[projData.length - 1].value;
 
   // Assets sorted by liquidity (most liquid first)
   const sortedAssets = [...assets].sort((a, b) => liquidityScore(a) - liquidityScore(b));
@@ -302,33 +321,42 @@ function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: 
 
   return (
     <div className={PANEL_CLS}>
-      <div className="px-4 pt-4 pb-0">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Net Worth</p>
-        <p className="text-2xl font-bold text-foreground" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
+      <div className="px-4 pt-4 pb-0 flex items-start justify-between">
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">Net Worth <span className="text-muted-foreground/60 font-normal normal-case tracking-normal">· Today</span></p>
+          <p className="text-2xl font-bold text-foreground" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">5-Year Projection</p>
+          <p className="text-base font-bold text-blue-600">{fmt(projYear5, true)}</p>
+        </div>
       </div>
-      <div className="h-24 px-1 mt-1">
+      <div className="h-28 px-1 mt-1">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+          <AreaChart data={projData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={BLUE} stopOpacity={0.25} />
+                <stop offset="5%" stopColor={BLUE} stopOpacity={0.2} />
                 <stop offset="95%" stopColor={BLUE} stopOpacity={0} />
               </linearGradient>
             </defs>
+            <XAxis dataKey="label" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} />
             <Area
-              type="monotone" dataKey="value" stroke={BLUE} strokeWidth={1.5} fill="url(#nwGrad)"
+              type="monotone" dataKey="value" stroke={BLUE} strokeWidth={2} fill="url(#nwGrad)"
               dot={(props: any) => {
                 const { cx, cy, index } = props;
-                if (index !== trendData.length - 1) return <g key={index} />;
-                return (
-                  <g key="nw-live">
-                    <circle cx={cx} cy={cy} r={10} fill={BLUE} opacity={0.15} style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
-                    <circle cx={cx} cy={cy} r={4}  fill={BLUE} stroke="white" strokeWidth={1.5} />
+                if (index === 0) return (
+                  <g key="nw-now">
+                    <circle cx={cx} cy={cy} r={10} fill={BLUE} opacity={0.12} style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
+                    <circle cx={cx} cy={cy} r={3.5} fill={BLUE} stroke="white" strokeWidth={1.5} />
                   </g>
                 );
+                if (index === projData.length - 1) return <circle key="nw-end" cx={cx} cy={cy} r={3.5} fill={BLUE} stroke="white" strokeWidth={1.5} />;
+                return <g key={index} />;
               }}
               activeDot={{ r: 5, stroke: "white", strokeWidth: 2 }}
             />
+            <ReferenceLine x="Now" stroke={BLUE} strokeDasharray="3 3" strokeOpacity={0.4} />
             <RechartsTooltip formatter={(v: number) => [fmt(v), "Net Worth"]} contentStyle={{ fontSize: 11 }} />
           </AreaChart>
         </ResponsiveContainer>
@@ -1282,14 +1310,20 @@ export default function ClientDashboard() {
 
   // ── Top-level cash metrics (shared across banner + panels) ──────────────────
   const _forecastData  = buildForecast(cashFlows);
-  const annualNetTop   = _forecastData.reduce((s, d) => s + d.net, 0);
-  const monthlyAvgTop  = Math.round(annualNetTop / 12);
-  const { totalLiquid: totalLiquidTop } = cashBuckets(assets);
+  const { reserve: reserveTop, yieldBucket: yieldTop, tactical: tacticalTop, totalLiquid: totalLiquidTop } = cashBuckets(assets);
   const cashTroughTop  = computeTrough(_forecastData);
   const cashExcessTop  = totalLiquidTop - cashTroughTop;
   const isPositiveTop  = cashExcessTop >= 0;
   const minCumTop      = Math.min(..._forecastData.map(d => d.cumulative));
   const troughMonthTop = _forecastData.find(d => d.cumulative === minCumTop)?.month ?? "";
+
+  // Next month's net cash flow
+  const _nextMonthDate = addMonths(new Date(), 1);
+  const _nextMonthFlows = cashFlows.filter(cf => {
+    const d = new Date(cf.date);
+    return d.getFullYear() === _nextMonthDate.getFullYear() && d.getMonth() === _nextMonthDate.getMonth();
+  });
+  const nextMonthNet = _nextMonthFlows.reduce((s, c) => s + (c.type === "inflow" ? 1 : -1) * Number(c.amount), 0);
 
   const riskColor: Record<string, string> = {
     conservative: "bg-blue-100 text-blue-700",
@@ -1393,56 +1427,69 @@ export default function ClientDashboard() {
           <CashFlowTicker cashFlows={cashFlows} />
 
           {/* ── Cash Position Hero Banner ────────────────────────────────────── */}
-          <div className={`rounded-xl border shadow-sm px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-8 ${isPositiveTop ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-r from-rose-50 to-orange-50 border-rose-200"}`}>
-            {/* Primary KPI */}
-            <div className="flex items-center gap-4">
-              <div className={`rounded-xl p-3 ${isPositiveTop ? "bg-emerald-100" : "bg-rose-100"}`}>
-                {isPositiveTop
-                  ? <TrendingUp className="w-7 h-7 text-emerald-600" />
-                  : <TrendingDown className="w-7 h-7 text-rose-600" />}
+          <div className={`rounded-xl border shadow-sm px-6 py-5 ${isPositiveTop ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-r from-rose-50 to-orange-50 border-rose-200"}`}>
+            <div className="flex flex-col sm:flex-row gap-6">
+              {/* LEFT: Where cash is sitting */}
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Cash Allocation</p>
+                {[
+                  { key: "reserve",  label: "Reserve",  value: reserveTop,  color: GURU_BUCKETS.reserve.color  },
+                  { key: "yield",    label: "Yield",    value: yieldTop,    color: GURU_BUCKETS.yield.color    },
+                  { key: "tactical", label: "Tactical", value: tacticalTop, color: GURU_BUCKETS.tactical.color },
+                ].map(b => {
+                  const pct = totalLiquidTop > 0 ? (b.value / totalLiquidTop) * 100 : 0;
+                  return (
+                    <div key={b.key} className="flex items-center gap-3 mb-2.5">
+                      <span className="text-xs font-semibold w-16 flex-shrink-0" style={{ color: b.color }}>{b.label}</span>
+                      <div className="flex-1 h-1.5 bg-black/10 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: b.color }} />
+                      </div>
+                      <span className="text-xs font-bold tabular-nums w-20 text-right text-foreground">{fmt(b.value, true)}</span>
+                    </div>
+                  );
+                })}
               </div>
-              <div>
-                <p className={`text-xs font-bold uppercase tracking-wider ${isPositiveTop ? "text-emerald-700" : "text-rose-700"}`}>
-                  {isPositiveTop ? "Cash Available to Invest" : "Cash Shortfall — Action Required"}
-                </p>
-                <p className={`text-4xl font-extrabold leading-tight tabular-nums ${isPositiveTop ? "text-emerald-700" : "text-rose-700"}`} data-testid="kpi-cash-excess">
+
+              {/* DIVIDER */}
+              <div className={`hidden sm:block w-px self-stretch ${isPositiveTop ? "bg-emerald-200" : "bg-rose-200"}`} />
+
+              {/* RIGHT: Cash Available headline + 3 supporting stats */}
+              <div className="sm:w-72 flex-shrink-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className={`rounded-lg p-1.5 ${isPositiveTop ? "bg-emerald-100" : "bg-rose-100"}`}>
+                    {isPositiveTop
+                      ? <TrendingUp className="w-4 h-4 text-emerald-600" />
+                      : <TrendingDown className="w-4 h-4 text-rose-600" />}
+                  </div>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${isPositiveTop ? "text-emerald-700" : "text-rose-700"}`}>
+                    {isPositiveTop ? "Cash Available to Invest" : "Cash Shortfall"}
+                  </p>
+                </div>
+                <p className={`text-4xl font-extrabold leading-tight tabular-nums mb-4 ${isPositiveTop ? "text-emerald-700" : "text-rose-700"}`} data-testid="kpi-cash-excess">
                   {isPositiveTop ? "+" : ""}{fmt(cashExcessTop)}
                 </p>
-                <p className={`text-xs mt-0.5 ${isPositiveTop ? "text-emerald-600" : "text-rose-600"}`}>
-                  Liquid assets minus 12-month cash requirement{cashTroughTop > 0 ? ` (trough ${troughMonthTop})` : ""}
-                </p>
-              </div>
-            </div>
-
-            {/* Dividers + Secondary stats */}
-            <div className="flex flex-wrap gap-x-8 gap-y-2 sm:border-l sm:border-current/20 sm:pl-8">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">12-Mo Net Cash Flow</p>
-                <p className={`text-xl font-bold tabular-nums ${annualNetTop >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {annualNetTop >= 0 ? "+" : ""}{fmt(annualNetTop, true)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Monthly Average</p>
-                <p className={`text-xl font-bold tabular-nums ${monthlyAvgTop >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {monthlyAvgTop >= 0 ? "+" : ""}{fmtK(monthlyAvgTop)}/mo
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Total Liquid Assets</p>
-                <p className="text-xl font-bold tabular-nums text-foreground">{fmt(totalLiquidTop, true)}</p>
-              </div>
-              {cashTroughTop > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">12-Mo Cash Required</p>
-                  <p className="text-xl font-bold tabular-nums text-foreground">{fmt(cashTroughTop, true)}</p>
+                <div className={`grid grid-cols-3 gap-3 border-t pt-3 ${isPositiveTop ? "border-emerald-200" : "border-rose-200"}`}>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">Total Liquid</p>
+                    <p className="text-sm font-bold tabular-nums text-foreground">{fmt(totalLiquidTop, true)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">12-Mo Req'd</p>
+                    <p className="text-sm font-bold tabular-nums text-foreground">{fmt(cashTroughTop, true)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">Next Month</p>
+                    <p className={`text-sm font-bold tabular-nums ${nextMonthNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {nextMonthNet >= 0 ? "+" : ""}{fmtK(nextMonthNet)}/mo
+                    </p>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <NetWorthPanel assets={assets} liabilities={liabilities} />
+            <NetWorthPanel assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
             <CashFlowForecastPanel cashFlows={cashFlows} />
             <CashManagementPanel assets={assets} cashFlows={cashFlows} />
           </div>
