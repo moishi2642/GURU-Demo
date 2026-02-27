@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, LineChart, Line, ReferenceLine,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, LineChart, Line, ReferenceLine, ReferenceDot,
+  ComposedChart, Bar,
 } from "recharts";
 import {
   BrainCircuit, TrendingUp, TrendingDown, ChevronLeft, Activity,
@@ -182,6 +183,40 @@ function computeTrough(forecastData: ReturnType<typeof buildForecast>) {
 }
 
 // ─── Panel 1: Net Worth ────────────────────────────────────────────────────────
+// Liquidity score: lower = more liquid
+const LIQUIDITY_LABELS: [number, string, string][] = [
+  [1, "Checking",     "bg-emerald-100 text-emerald-700"],
+  [2, "Cash / MM",    "bg-emerald-50  text-emerald-600"],
+  [3, "Fixed Income", "bg-blue-50     text-blue-600"],
+  [4, "Brokerage",    "bg-indigo-50   text-indigo-600"],
+  [5, "Crypto",       "bg-purple-50   text-purple-600"],
+  [6, "Retirement",   "bg-amber-50    text-amber-600"],
+  [7, "RSUs",         "bg-orange-50   text-orange-600"],
+  [8, "Alternatives", "bg-slate-100   text-slate-600"],
+  [9, "Real Estate",  "bg-rose-50     text-rose-600"],
+];
+
+function liquidityScore(a: Asset): number {
+  const desc = a.description.toLowerCase();
+  if (a.type === "cash") return desc.includes("checking") ? 1 : 2;
+  if (a.type === "fixed_income") return 3;
+  if (a.type === "equity") {
+    if (desc.includes("401") || desc.includes("ira") || desc.includes("roth")) return 6;
+    if (desc.includes("rsu") || desc.includes("unvested")) return 7;
+    return 4;
+  }
+  if (a.type === "alternative") {
+    if (desc.includes("crypto") || desc.includes("btc") || desc.includes("eth")) return 5;
+    return 8;
+  }
+  if (a.type === "real_estate") return 9;
+  return 8;
+}
+
+function liquidityTag(score: number) {
+  return LIQUIDITY_LABELS.find(([s]) => s === score) ?? LIQUIDITY_LABELS[LIQUIDITY_LABELS.length - 1];
+}
+
 function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: Liability[] }) {
   const [view, setView] = useState<"assets" | "liabilities">("assets");
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
@@ -189,22 +224,15 @@ function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: 
   const netWorth    = totalAssets - totalLiab;
   const trendData   = buildNWTrend(netWorth);
 
-  // Asset category rollup
-  const assetGroups: Record<string, number> = {};
-  for (const a of assets) {
-    const label = a.description.split("(")[0].split("—")[0].trim();
-    assetGroups[label] = (assetGroups[label] || 0) + Number(a.value);
-  }
-  // Liability rollup
+  // Assets sorted by liquidity (most liquid first)
+  const sortedAssets = [...assets].sort((a, b) => liquidityScore(a) - liquidityScore(b));
+
+  // Liability rollup sorted by value
   const liabGroups: Record<string, number> = {};
   for (const l of liabilities) {
     const label = l.description.split("(")[0].split("—")[0].trim();
     liabGroups[label] = (liabGroups[label] || 0) + Number(l.value);
   }
-
-  const rows = view === "assets"
-    ? Object.entries(assetGroups).sort((a, b) => b[1] - a[1]).slice(0, 9)
-    : Object.entries(liabGroups).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className={PANEL_CLS}>
@@ -240,18 +268,39 @@ function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: 
           >Liabilities</button>
         </div>
         <div className="space-y-0.5 max-h-40 overflow-y-auto">
-          {rows.map(([label, value]) => (
-            <div key={label} className="flex justify-between items-center text-xs py-0.5">
-              <span className="text-muted-foreground truncate pr-2" style={{ maxWidth: "65%" }}>{label}</span>
-              <span className={`font-semibold tabular-nums ${view === "liabilities" ? "text-rose-600" : "text-foreground"}`}>
-                {view === "liabilities" ? "-" : ""}{fmt(value)}
-              </span>
-            </div>
-          ))}
-          <div className="flex justify-between items-center text-xs py-1 border-t border-border mt-1 font-bold">
-            <span>Total {view === "assets" ? "Assets" : "Liabilities"}</span>
-            <span className={view === "liabilities" ? "text-rose-600" : ""}>{view === "liabilities" ? "-" : ""}{fmt(view === "assets" ? totalAssets : totalLiab)}</span>
-          </div>
+          {view === "assets" ? (
+            <>
+              {sortedAssets.slice(0, 9).map(a => {
+                const score = liquidityScore(a);
+                const [, tagLabel, tagCls] = liquidityTag(score);
+                const label = a.description.split("(")[0].split("—")[0].trim();
+                return (
+                  <div key={a.id} className="flex justify-between items-center text-xs py-0.5 gap-1">
+                    <span className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${tagCls}`}>{tagLabel}</span>
+                    <span className="text-muted-foreground truncate flex-1" title={label}>{label}</span>
+                    <span className="font-semibold tabular-nums flex-shrink-0">{fmt(Number(a.value))}</span>
+                  </div>
+                );
+              })}
+              <div className="flex justify-between items-center text-xs py-1 border-t border-border mt-1 font-bold">
+                <span>Total Assets</span>
+                <span>{fmt(totalAssets)}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              {Object.entries(liabGroups).sort((a, b) => b[1] - a[1]).map(([label, value]) => (
+                <div key={label} className="flex justify-between items-center text-xs py-0.5">
+                  <span className="text-muted-foreground truncate pr-2" style={{ maxWidth: "65%" }}>{label}</span>
+                  <span className="font-semibold tabular-nums text-rose-600">-{fmt(value)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between items-center text-xs py-1 border-t border-border mt-1 font-bold">
+                <span>Total Liabilities</span>
+                <span className="text-rose-600">-{fmt(totalLiab)}</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -262,55 +311,114 @@ function NetWorthPanel({ assets, liabilities }: { assets: Asset[]; liabilities: 
 function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
   const data = buildForecast(cashFlows);
   const annualNet = data.reduce((s, d) => s + d.net, 0);
-  const cashTrough = computeTrough(data);
   const minVal = Math.min(...data.map(d => d.cumulative));
   const maxVal = Math.max(...data.map(d => d.cumulative));
+  const troughIdx = data.findIndex(d => d.cumulative === minVal);
+  const troughMonth = data[troughIdx]?.month ?? "";
+  const hasTrough = minVal < 0;
   const range = maxVal - minVal || 1;
   const zeroOffset = `${Math.max(0, Math.min(100, ((maxVal / range) * 100))).toFixed(1)}%`;
+  const finalVal = data[data.length - 1]?.cumulative ?? 0;
+  const isPositive = annualNet >= 0;
 
   return (
     <div className={PANEL_CLS}>
       <div className="px-4 pt-4 pb-1">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Projected Cumulative Cash Flow</p>
-            <p className={`text-xl font-bold ${annualNet >= 0 ? "text-emerald-600" : "text-rose-600"}`} data-testid="kpi-annual-net">
-              {fmt(annualNet, true)}
-            </p>
-            <p className="text-xs text-muted-foreground">{annualNet >= 0 ? "Cash Surplus (12 months)" : "Cash Deficit (12 months)"}</p>
-          </div>
-          {cashTrough > 0 && (
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Cash trough</p>
-              <p className="text-sm font-bold text-rose-600">-{fmt(cashTrough, true)}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">12-Month Cash Flow</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              {isPositive
+                ? <TrendingUp className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                : <TrendingDown className="w-5 h-5 text-rose-500 flex-shrink-0" />}
+              <p className={`text-xl font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`} data-testid="kpi-annual-net">
+                {isPositive ? "+" : ""}{fmt(annualNet, true)}
+              </p>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {isPositive ? "Net surplus over 12 months" : "Net deficit over 12 months"}
+            </p>
+          </div>
+          <div className="text-right text-xs text-muted-foreground mt-0.5">
+            <p>Monthly avg</p>
+            <p className={`font-bold text-sm ${annualNet / 12 >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {annualNet / 12 >= 0 ? "+" : ""}{fmtK(Math.round(annualNet / 12))}/mo
+            </p>
+          </div>
         </div>
       </div>
-      <div className="px-1 pb-3" style={{ height: 200 }}>
+      <div className="px-1 pb-2" style={{ height: 198 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 30, right: 48, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="cfGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset={zeroOffset} stopColor={GREEN} stopOpacity={0.3} />
-                <stop offset={zeroOffset} stopColor={RED}   stopOpacity={0.25} />
+                <stop offset={zeroOffset} stopColor={GREEN} stopOpacity={0.28} />
+                <stop offset={zeroOffset} stopColor={RED}   stopOpacity={0.22} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
             <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={fmtK} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} width={44} />
             <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
+            {hasTrough && (
+              <ReferenceLine
+                x={troughMonth}
+                stroke="hsl(0,72%,65%)"
+                strokeDasharray="5 3"
+                strokeWidth={1.5}
+                label={(props: any) => {
+                  const vb = props?.viewBox;
+                  if (!vb) return null;
+                  const { x, y } = vb;
+                  return (
+                    <g>
+                      <rect x={x - 33} y={y - 34} width={66} height={28} rx={4} fill="hsl(0,80%,97%)" stroke="hsl(0,80%,80%)" strokeWidth={1} />
+                      <text x={x} y={y - 22} textAnchor="middle" fill="hsl(0,72%,50%)" fontSize={8} fontWeight="700">TROUGH</text>
+                      <text x={x} y={y - 11} textAnchor="middle" fill="hsl(0,72%,45%)" fontSize={9} fontWeight="800">{fmt(minVal, true)}</text>
+                      <polygon points={`${x - 5},${y - 6} ${x + 5},${y - 6} ${x},${y}`} fill="hsl(0,80%,80%)" />
+                    </g>
+                  );
+                }}
+              />
+            )}
             <RechartsTooltip
-              formatter={(v: number) => [fmt(v), "Cumulative Net"]}
+              formatter={(v: number, name: string) => [fmt(v), name === "cumulative" ? "Cumulative Net" : "Monthly Net"]}
               contentStyle={{ fontSize: 11 }}
             />
-            <Area type="monotone" dataKey="cumulative" stroke={annualNet >= 0 ? GREEN : RED} strokeWidth={2} fill="url(#cfGrad)" dot={false} />
-          </AreaChart>
+            <Bar dataKey="net" radius={[2, 2, 0, 0]} maxBarSize={12}>
+              {data.map((d, i) => (
+                <Cell key={i} fill={d.net >= 0 ? "hsl(142,60%,55%)" : "hsl(0,72%,60%)"} fillOpacity={0.4} />
+              ))}
+            </Bar>
+            <Area
+              type="monotone" dataKey="cumulative"
+              stroke={isPositive ? GREEN : RED}
+              strokeWidth={2.5}
+              fill="url(#cfGrad)"
+              activeDot={{ r: 4, stroke: "white", strokeWidth: 2 }}
+              isAnimationActive={true}
+              animationDuration={900}
+              animationEasing="ease-out"
+              dot={(props: any) => {
+                const { cx, cy, index } = props;
+                if (index !== data.length - 1) return <g key={index} />;
+                const arrowChar = isPositive ? "▲" : "▼";
+                const col = isPositive ? "hsl(142,71%,35%)" : "hsl(0,72%,50%)";
+                return (
+                  <g key="end-dot">
+                    <circle cx={cx} cy={cy} r={5} fill={isPositive ? GREEN : RED} stroke="white" strokeWidth={2} />
+                    <text x={cx + 8} y={cy + 4} fill={col} fontSize={8} fontWeight="800">{arrowChar} {fmtK(finalVal)}</text>
+                  </g>
+                );
+              }}
+            />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
       <div className="flex px-4 pb-3 gap-4 text-xs">
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Cash Surplus</span>
-        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> Cash Deficit</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Surplus</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> Deficit</span>
+        {hasTrough && <span className="flex items-center gap-1 ml-auto text-rose-500 font-semibold">Trough at {troughMonth}</span>}
       </div>
     </div>
   );
