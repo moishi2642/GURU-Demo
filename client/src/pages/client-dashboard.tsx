@@ -1187,14 +1187,12 @@ function buildWaterfallData(cashFlows: CashFlow[], startBalance: number): Waterf
 function WfLabel(props: { x?: number; y?: number; width?: number; value?: number; type?: string }) {
   const { x = 0, y = 0, width = 0, value, type } = props;
   if (!value || value === 0) return null;
-  const isExp = type === "core" || type === "onetime";
-  const label = isExp ? `−${fmt(value)}` : (type === "balance" ? fmt(value) : `+${fmt(value)}`);
   const cx = x + width / 2;
-  const cy = isExp ? y + 14 : y - 8;
+  const cy = y - 10;
   return (
-    <text x={cx} y={cy} textAnchor="middle" fontSize={10} fontWeight={600}
-      fill={type === "balance" ? "#3b5998" : isExp ? "#dc2626" : "#059669"}>
-      {label}
+    <text x={cx} y={cy} textAnchor="middle" fontSize={11} fontWeight={700}
+      fill="hsl(221,39%,28%)">
+      {fmt(value)}
     </text>
   );
 }
@@ -1341,25 +1339,19 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
                 <ReferenceLine key={i} x={wfData[i]?.name} stroke="hsl(var(--border))" strokeDasharray="4 2" />
               ))}
               <Bar dataKey="invisible" stackId="wf" fill="transparent" isAnimationActive={false} />
-              <Bar dataKey="income"  stackId="wf" fill="#10b981" radius={[3,3,0,0]} isAnimationActive={false}>
-                <LabelList content={(p: any) => <WfLabel {...p} type="income" />} />
-              </Bar>
-              <Bar dataKey="coreExp" stackId="wf" fill="#ef4444" radius={[3,3,0,0]} isAnimationActive={false}>
-                <LabelList content={(p: any) => <WfLabel {...p} type="core" />} />
-              </Bar>
-              <Bar dataKey="oneTime" stackId="wf" fill="#b91c1c" radius={[3,3,0,0]} isAnimationActive={false}>
-                <LabelList content={(p: any) => <WfLabel {...p} type="onetime" />} />
-              </Bar>
-              <Bar dataKey="balance" fill="hsl(221,39%,44%)" radius={[4,4,0,0]} isAnimationActive={false}>
+              <Bar dataKey="income"  stackId="wf" fill="#1a6b3a" radius={[3,3,0,0]} isAnimationActive={false} />
+              <Bar dataKey="coreExp" stackId="wf" fill="#c0392b" radius={[3,3,0,0]} isAnimationActive={false} />
+              <Bar dataKey="oneTime" stackId="wf" fill="#922b21" radius={[3,3,0,0]} isAnimationActive={false} />
+              <Bar dataKey="balance" fill="hsl(221,39%,38%)" radius={[4,4,0,0]} isAnimationActive={false}>
                 <LabelList content={(p: any) => <WfLabel {...p} type="balance" />} />
               </Bar>
             </ComposedChart>
           </ResponsiveContainer>
           <div className="flex gap-4 justify-center mt-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />Income</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-rose-500 inline-block" />Core Expenses</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-800 inline-block" />One-Time</span>
-            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[hsl(221,39%,44%)] inline-block" />Cash Balance</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#1a6b3a" }} />Income</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#c0392b" }} />Core Expenses</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm inline-block" style={{ background: "#922b21" }} />One-Time</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[hsl(221,39%,38%)] inline-block" />Cash Balance</span>
           </div>
         </div>
       </div>
