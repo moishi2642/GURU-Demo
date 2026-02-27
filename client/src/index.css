@@ -17,10 +17,10 @@
   --font-mono: 'Menlo', monospace;
   --radius: 0.5rem;
 
-  /* Background: very light warm white */
-  --background: 210 33% 98%;
+  /* Background: light blue-gray like a professional dashboard */
+  --background: 214 22% 93%;
   --foreground: 222 47% 11%;
-  --border: 214 32% 91%;
+  --border: 214 25% 86%;
 
   /* Card: pure white */
   --card: 0 0% 100%;
