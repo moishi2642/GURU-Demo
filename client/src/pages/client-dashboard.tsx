@@ -1716,43 +1716,45 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <p className="text-xs text-muted-foreground italic">No accounts mapped to this bucket</p>
                       )}
                     </div>
-                    {/* Current total row */}
-                    <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
-                      <span className="text-xs font-bold text-foreground uppercase tracking-wide">Current Total</span>
-                      <span className="text-base font-bold tabular-nums text-foreground">{fmt(r.current)}</span>
+                    {/* Current Total → GURU Balance — compact secondary comparison */}
+                    <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-0.5">Current Total</p>
+                        <p className="text-sm font-bold tabular-nums text-foreground">{fmt(r.current)}</p>
+                      </div>
+                      <span className="text-muted-foreground/40 text-base">→</span>
+                      <div className="text-right">
+                        <p className="text-[9px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: r.def.bg }}>★ GURU Balance</p>
+                        <p className="text-sm font-bold tabular-nums" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* ── GURU Suggested Balance — two equal columns ── */}
-                  <div className="border-t-2" style={{ borderColor: r.def.bg, background: r.def.bg + "12" }}>
-                    <div className="px-5 pt-4 pb-3 grid grid-cols-2 gap-4">
-                      {/* Left: Target */}
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest font-bold mb-1.5" style={{ color: r.def.bg }}>★ GURU Balance</p>
-                        <p className="text-3xl font-display font-black tabular-nums leading-none" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
-                      </div>
-                      {/* Right: Move amount — same size */}
-                      <div className="text-right">
-                        <p className={`text-[10px] uppercase tracking-widest font-bold mb-1.5 ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                          {r.delta < 0 ? "Excess" : r.delta > 0 ? "Deficit" : "Balanced"}
+                  {/* ── HERO: Amount to Deploy + Yield Pickup ── */}
+                  <div className="border-t-2" style={{ borderColor: r.def.bg }}>
+                    <div className="grid grid-cols-2 divide-x divide-black/8" style={{ background: r.def.bg + "10" }}>
+                      {/* Left: Amount to Deploy — most important */}
+                      <div className="px-5 pt-4 pb-4">
+                        <p className={`text-[9px] uppercase tracking-widest font-black mb-2 ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                          {r.delta < 0 ? "▼ To Redeploy" : r.delta > 0 ? "▲ Needed" : "Balanced"}
                         </p>
-                        <p className={`text-3xl font-display font-black tabular-nums leading-none ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                        <p className={`text-4xl font-display font-black tabular-nums leading-none ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
                           {r.delta !== 0 ? fmt(Math.abs(r.delta)) : "—"}
                         </p>
+                        <p className="text-[9px] text-muted-foreground mt-2 leading-tight">
+                          {r.delta < 0 ? "available to redeploy" : r.delta > 0 ? "needed from excess" : "no action needed"}
+                        </p>
                       </div>
-                    </div>
-                    {/* bps strip */}
-                    <div className="px-5 pb-3 flex items-center justify-between gap-3 border-t border-black/[0.06] pt-2.5">
-                      <span className="text-[10px] text-muted-foreground">
-                        {r.delta < 0 ? "available to redeploy" : r.delta > 0 ? "needed from excess buckets" : "No rebalancing needed"}
-                      </span>
-                      <span className={`flex-shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-lg border ${
-                        r.bpPickup > 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : r.bpPickup < 0 ? "bg-rose-50 text-rose-600 border-rose-200"
-                        : "bg-secondary/30 text-muted-foreground border-border"
-                      }`}>
-                        {r.bpPickup !== 0 ? `${r.bpPickup > 0 ? "+" : ""}${r.bpPickup} bps AT` : "Yield maintained"}
-                      </span>
+                      {/* Right: Yield Pickup — most important */}
+                      <div className="px-5 pt-4 pb-4">
+                        <p className={`text-[9px] uppercase tracking-widest font-black mb-2 ${r.bpPickup > 0 ? "text-emerald-600" : r.bpPickup < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                          Yield Pickup
+                        </p>
+                        <p className={`text-4xl font-display font-black tabular-nums leading-none ${r.bpPickup > 0 ? "text-emerald-600" : r.bpPickup < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                          {r.bpPickup !== 0 ? `${r.bpPickup > 0 ? "+" : ""}${r.bpPickup}` : "—"}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground mt-2 leading-tight">after-tax basis points</p>
+                      </div>
                     </div>
                   </div>
 
