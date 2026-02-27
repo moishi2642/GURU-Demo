@@ -51,6 +51,15 @@ Three realistic client profiles are seeded on first run:
 - **James Okonkwo** (38, aggressive) — Growth phase, startup income, concentrated tech + angel investments
 - **Eleanor & Robert Chen** (63, conservative) — Near-retirement, income-focused, bond-heavy portfolio
 
+## Live Market Data
+
+- **Ticker bar**: Bloomberg-style scrolling marquee: SPY, QQQ, ^DJI, GS, ^TNX, BTC-USD, ^VIX
+- **Backend proxy**: `GET /api/market/quotes` fetches from Yahoo Finance query2 API using cookie+crumb auth
+- **Auth flow**: `fc.yahoo.com` → cookies → `query2.finance.yahoo.com/v1/test/getcrumb` → crumb → quote endpoint
+- **Persistence**: Auth cached in `/tmp/guru-yahoo-auth.json` (survives restarts, 1hr TTL)
+- **If 429 rate-limited**: Run `curl -s -c /tmp/yf2.txt "https://fc.yahoo.com/" -L -o /dev/null && curl -s -b /tmp/yf2.txt "https://query2.finance.yahoo.com/v1/test/getcrumb"` to get a fresh crumb, then write it to the cache file
+- **BrokeragePanel**: Shows live SPY % change and live GS stock price inline with holdings
+
 ## Development Notes
 
 - All numeric values stored as `numeric` (Drizzle) which returns strings — always coerce with `Number()`

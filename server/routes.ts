@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import { readFileSync, writeFileSync } from "fs";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
@@ -40,6 +41,78 @@ export async function registerRoutes(
       storage.getStrategies(id),
     ]);
     res.json({ client, assets, liabilities, cashFlows, strategies });
+  });
+
+  // ── Market Data Proxy ─────────────────────────────────────────────────────
+  const YAHOO_AUTH_FILE = "/tmp/guru-yahoo-auth.json";
+  let _yahooAuth: { cookies: string; crumb: string; expiresAt: number } | null = null;
+
+  function loadCachedAuth() {
+    try { const d = JSON.parse(readFileSync(YAHOO_AUTH_FILE, "utf8")); return d.expiresAt > Date.now() ? d : null; } catch { return null; }
+  }
+
+  async function getYahooAuth() {
+    if (_yahooAuth && Date.now() < _yahooAuth.expiresAt) return _yahooAuth;
+    const fromFile = loadCachedAuth();
+    if (fromFile) { _yahooAuth = fromFile; return _yahooAuth; }
+    const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+    const cookieResp = await fetch("https://fc.yahoo.com/", { redirect: "follow", headers: { "User-Agent": UA } });
+    const rawCookies: string[] = [];
+    try {
+      const sc = (cookieResp.headers as any).getSetCookie?.();
+      if (Array.isArray(sc)) rawCookies.push(...sc);
+    } catch { /* ignore */ }
+    if (rawCookies.length === 0) {
+      const raw = cookieResp.headers.get("set-cookie");
+      if (raw) rawCookies.push(...raw.split(/,(?=[^ ])/));
+    }
+    const cookies = rawCookies.map(c => c.split(";")[0].trim()).join("; ");
+
+    const crumbResp = await fetch("https://query2.finance.yahoo.com/v1/test/getcrumb", {
+      headers: { "User-Agent": UA, "Cookie": cookies },
+    });
+    if (crumbResp.status === 429) throw new Error("Yahoo rate-limited");
+    const crumb = await crumbResp.text();
+    if (!crumb || crumb.includes('"error"') || crumb.includes("Too Many")) throw new Error(`Yahoo crumb: ${crumb.substring(0, 80)}`);
+
+    _yahooAuth = { cookies, crumb, expiresAt: Date.now() + 3_600_000 };
+    try { writeFileSync(YAHOO_AUTH_FILE, JSON.stringify(_yahooAuth)); } catch { /* ignore */ }
+    console.log("[yahoo/auth] refreshed crumb OK:", crumb.substring(0, 20));
+    return _yahooAuth;
+  }
+
+  app.get("/api/market/quotes", async (req, res) => {
+    const symbols = (req.query.symbols as string) || "SPY,QQQ,^DJI,GS,^TNX,BTC-USD,^VIX";
+    const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36";
+    try {
+      const { cookies, crumb } = await getYahooAuth();
+      const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}&crumb=${encodeURIComponent(crumb)}`;
+      const response = await fetch(url, {
+        headers: { "User-Agent": UA, "Cookie": cookies, "Accept": "application/json" },
+      });
+      if (!response.ok) {
+        _yahooAuth = null;
+        throw new Error(`Yahoo: ${response.status}`);
+      }
+      const data = await response.json() as any;
+      const results = (data?.quoteResponse?.result || []).map((q: any) => ({
+        symbol: q.symbol,
+        shortName: q.shortName || q.displayName || q.symbol,
+        price: q.regularMarketPrice ?? null,
+        change: q.regularMarketChange ?? null,
+        changePercent: q.regularMarketChangePercent ?? null,
+        open: q.regularMarketOpen ?? null,
+        high: q.regularMarketDayHigh ?? null,
+        low: q.regularMarketDayLow ?? null,
+        volume: q.regularMarketVolume ?? null,
+        marketState: q.marketState ?? "CLOSED",
+      }));
+      res.json(results);
+    } catch (err) {
+      console.error("[market/quotes]", err);
+      res.status(502).json({ error: "Market data unavailable" });
+    }
   });
 
   app.post(api.clients.create.path, async (req, res) => {

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { useClientDashboard, useGenerateStrategy } from "@/hooks/use-clients";
 import { AddAssetModal, AddLiabilityModal, AddCashFlowModal } from "@/components/financial-forms";
@@ -13,10 +14,107 @@ import {
 import {
   BrainCircuit, TrendingUp, TrendingDown, ChevronLeft, Activity,
   CheckCircle2, AlertTriangle, XCircle, Zap, LayoutDashboard, FileText,
-  Database, ArrowUpRight,
+  Database, ArrowUpRight, Radio,
 } from "lucide-react";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
 import type { Asset, Liability, CashFlow, Strategy } from "@shared/schema";
+
+// ─── Market Data ───────────────────────────────────────────────────────────────
+interface QuoteItem {
+  symbol: string;
+  shortName: string;
+  price: number | null;
+  change: number | null;
+  changePercent: number | null;
+  marketState: string;
+}
+
+const TICKER_DISPLAY: Record<string, string> = {
+  "SPY":     "S&P 500",
+  "QQQ":     "NASDAQ",
+  "^DJI":    "DOW",
+  "GS":      "Goldman Sachs",
+  "^TNX":    "10Y Yield",
+  "BTC-USD": "BTC",
+  "^VIX":    "VIX",
+};
+
+function useMarketQuotes() {
+  return useQuery<QuoteItem[]>({
+    queryKey: ["/api/market/quotes"],
+    refetchInterval: 30_000,
+    staleTime: 25_000,
+  });
+}
+
+// ─── Live Ticker Bar ───────────────────────────────────────────────────────────
+function MarketTicker() {
+  const { data: quotes, isLoading, dataUpdatedAt } = useMarketQuotes();
+  const [lastUpdate, setLastUpdate] = useState<string>("");
+
+  useEffect(() => {
+    if (dataUpdatedAt) {
+      setLastUpdate(format(new Date(dataUpdatedAt), "HH:mm:ss"));
+    }
+  }, [dataUpdatedAt]);
+
+  const fmtPrice = (q: QuoteItem) => {
+    if (q.price == null) return "—";
+    if (q.symbol === "^TNX") return `${q.price.toFixed(2)}%`;
+    if (q.symbol === "^VIX")  return q.price.toFixed(2);
+    if (q.symbol === "BTC-USD") return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(q.price);
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(q.price);
+  };
+
+  const items = quotes ?? [];
+  const duration = Math.max(20, items.length * 7);
+
+  return (
+    <div className="flex items-center bg-[hsl(221,39%,14%)] border border-[hsl(221,39%,22%)] rounded-lg overflow-hidden text-xs mb-4 select-none" style={{ height: 36 }}>
+      {/* Live badge */}
+      <div className="flex items-center gap-1.5 px-3 border-r border-white/10 flex-shrink-0 h-full">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot" />
+        <span className="font-bold text-white/70 uppercase tracking-wider text-[10px]">Live</span>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center px-4 gap-2 text-white/40">
+          <Activity className="w-3 h-3 animate-spin" />
+          <span>Fetching market data…</span>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="px-4 text-white/40">Market data unavailable</div>
+      ) : (
+        <div className="flex-1 overflow-hidden">
+          <div className="animate-ticker" style={{ animationDuration: `${duration}s` }}>
+            {[...items, ...items].map((q, i) => {
+              const up = (q.change ?? 0) >= 0;
+              const label = TICKER_DISPLAY[q.symbol] ?? q.shortName ?? q.symbol;
+              return (
+                <div key={i} className="flex items-center gap-2 px-5 border-r border-white/10 h-full" style={{ lineHeight: "36px" }}>
+                  <span className="text-white/50 font-semibold">{label}</span>
+                  <span className="text-white font-bold tabular-nums">{fmtPrice(q)}</span>
+                  {q.changePercent != null && (
+                    <span className={`font-semibold tabular-nums ${up ? "text-emerald-400" : "text-rose-400"}`}>
+                      {up ? "▲" : "▼"} {Math.abs(q.changePercent).toFixed(2)}%
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {lastUpdate && (
+        <div className="flex items-center gap-1 px-3 border-l border-white/10 flex-shrink-0 text-white/30 text-[10px]">
+          <Radio className="w-2.5 h-2.5" />
+          {lastUpdate}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Formatting Helpers ────────────────────────────────────────────────────────
 const fmt = (v: number, compact = false) => {
@@ -332,6 +430,10 @@ function CashManagementPanel({ assets, cashFlows }: { assets: Asset[]; cashFlows
 
 // ─── Panel 4: Brokerage + Retirement ─────────────────────────────────────────
 function BrokeragePanel({ assets }: { assets: Asset[] }) {
+  const { data: quotes } = useMarketQuotes();
+  const gsQuote = quotes?.find(q => q.symbol === "GS");
+  const spyQuote = quotes?.find(q => q.symbol === "SPY");
+
   const brokerageTypes = ["equity", "fixed_income", "alternative"];
   const brokerageAssets = assets.filter(a => brokerageTypes.includes(a.type) && !a.description.toLowerCase().includes("carry") && !a.description.toLowerCase().includes("rsu"));
   const retirementAssets = assets.filter(a => a.description.toLowerCase().includes("401") || a.description.toLowerCase().includes("ira") || a.description.toLowerCase().includes("roth"));
@@ -347,6 +449,8 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
   const pieData = Object.entries(typeMap).map(([name, value]) => ({ name, value }));
   const PIE_COLORS = ["hsl(221,83%,53%)", "hsl(142,71%,40%)", "hsl(0,84%,60%)", "hsl(43,74%,56%)"];
 
+  const spyUp = (spyQuote?.changePercent ?? 0) >= 0;
+
   return (
     <div className={PANEL_CLS}>
       <div className="px-4 pt-4 pb-2">
@@ -356,10 +460,20 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
           <span>Brokerage <span className="font-semibold text-foreground">{fmt(totalBrok, true)}</span></span>
           <span>Retirement <span className="font-semibold text-foreground">{fmt(totalRet, true)}</span></span>
         </div>
-        <div className="flex gap-4 text-xs mt-1">
-          <span className="text-emerald-600 font-semibold flex items-center gap-0.5"><ArrowUpRight className="w-3 h-3" />4.32% YTD</span>
-          <span className="text-muted-foreground">vs. Index 3.84%</span>
-        </div>
+        {spyQuote ? (
+          <div className="flex items-center gap-3 text-xs mt-1">
+            <span className={`font-semibold flex items-center gap-0.5 ${spyUp ? "text-emerald-600" : "text-rose-600"}`}>
+              {spyUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              S&P {spyUp ? "+" : ""}{spyQuote.changePercent?.toFixed(2)}% today
+            </span>
+            <span className="text-muted-foreground/50">·</span>
+            <span className="text-muted-foreground">SPY ${spyQuote.price?.toFixed(2)}</span>
+          </div>
+        ) : (
+          <div className="flex gap-4 text-xs mt-1">
+            <span className="text-emerald-600 font-semibold flex items-center gap-0.5"><ArrowUpRight className="w-3 h-3" />4.32% YTD</span>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2 px-4 pb-3">
         <div style={{ width: 110, height: 110, flexShrink: 0 }}>
@@ -386,12 +500,22 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
       </div>
       <div className="border-t border-border mx-4 mb-3" />
       <div className="px-4 pb-4 space-y-1">
-        {[...brokerageAssets, ...retirementAssets].slice(0, 5).map(a => (
-          <div key={a.id} className="flex justify-between text-xs">
-            <span className="text-muted-foreground truncate pr-2">{a.description.split("(")[0].split("—")[0].trim()}</span>
-            <span className="font-semibold tabular-nums">{fmt(Number(a.value), true)}</span>
-          </div>
-        ))}
+        {[...brokerageAssets, ...retirementAssets].slice(0, 5).map(a => {
+          const isGS = a.description.toLowerCase().includes("goldman") || a.description.toLowerCase().includes("rsu");
+          const livePrice = isGS && gsQuote ? gsQuote : null;
+          const gsUp = (gsQuote?.changePercent ?? 0) >= 0;
+          return (
+            <div key={a.id} className="flex justify-between items-center text-xs gap-1">
+              <span className="text-muted-foreground truncate pr-1 flex-1">{a.description.split("(")[0].split("—")[0].trim()}</span>
+              {livePrice && (
+                <span className={`font-semibold flex-shrink-0 ${gsUp ? "text-emerald-600" : "text-rose-600"}`}>
+                  GS ${livePrice.price?.toFixed(2)}
+                </span>
+              )}
+              <span className="font-semibold tabular-nums flex-shrink-0">{fmt(Number(a.value), true)}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1056,6 +1180,7 @@ export default function ClientDashboard() {
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
       {activeView === "dashboard" && (
         <div className="space-y-4">
+          <MarketTicker />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <NetWorthPanel assets={assets} liabilities={liabilities} />
             <CashFlowForecastPanel cashFlows={cashFlows} />
