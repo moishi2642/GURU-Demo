@@ -1564,44 +1564,59 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         );
         const pctIncrease = annualSalIn > 0 ? ((addlIncome / annualSalIn) * 100).toFixed(1) : "0";
 
+        // ── Sub-accounts per bucket (computed from assets) ──────────────
+        type Acct = { name: string; value: number; yield_: string };
+        const shortName = (desc: string | null | undefined) =>
+          (desc ?? "").split("(")[0].split("—")[0].split("–")[0].trim();
+
+        const reserveAccts: Acct[] = assets
+          .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
+          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ?? "0.01%" }));
+
+        const flowAccts: Acct[] = assets
+          .filter(a => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"))
+          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ?? "0.01%" }));
+
+        const buildAccts: Acct[] = assets
+          .filter(a => a.type === "fixed_income" && ((a.description ?? "").toLowerCase().includes("treasur") || (a.description ?? "").toLowerCase().includes("t-bill")))
+          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ?? "—" }));
+
+        const equityVal = assets.filter(a => a.type === "equity" && !(a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0);
+        const retireVal = assets.filter(a => a.type === "equity" && (a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0) +
+                          assets.filter(a => a.type === "fixed_income" && ((a.description ?? "").toLowerCase().includes("ira") || (a.description ?? "").toLowerCase().includes("401"))).reduce((s, a) => s + Number(a.value), 0);
+        const altVal    = assets.filter(a => a.type === "alternative").reduce((s, a) => s + Number(a.value), 0);
+        const reVal     = assets.filter(a => a.type === "real_estate").reduce((s, a) => s + Number(a.value), 0);
+        const growAccts: Acct[] = [
+          ...(equityVal > 0 ? [{ name: "Equities (ETFs, Stocks & RSUs)", value: equityVal, yield_: "~7%" }] : []),
+          ...(retireVal > 0 ? [{ name: "Retirement Accounts (401k / IRA)", value: retireVal, yield_: "~6%" }] : []),
+          ...(altVal    > 0 ? [{ name: "Private Equity & Alternatives",   value: altVal,    yield_: "[15%+]" }] : []),
+          ...(reVal     > 0 ? [{ name: "Real Estate",                      value: reVal,     yield_: "~5%" }] : []),
+        ];
+
         type GBRow = {
           def: typeof GURU_BUCKETS_DEF[number];
           current: number; target: number; delta: number;
-          calc: string; product: string; yield_: string; atYield: string;
+          calc: string; subAccounts: Acct[];
         };
         const rows: GBRow[] = [
           { def: GURU_BUCKETS_DEF[0], current: reserveCurrent, target: reserveTarget, delta: reserveDelta,
-            calc: "2 months of core recurring expenses",
-            product: "Citizens Private Bank Checking", yield_: "3.78%", atYield: "2.38%" },
+            calc: "2 months of core recurring expenses", subAccounts: reserveAccts },
           { def: GURU_BUCKETS_DEF[1], current: flowCurrent, target: flowTarget, delta: flowDelta,
-            calc: "12 months of total anticipated outflows",
-            product: "JPMorgan 100% Treasuries MMF", yield_: "4.30%", atYield: "2.71%" },
+            calc: "12 months of total anticipated outflows", subAccounts: flowAccts },
           { def: GURU_BUCKETS_DEF[2], current: buildCurrent, target: buildTarget, delta: 0,
-            calc: "Maintain short-term reserve position",
-            product: "US Treasuries — 3–6 month ladder", yield_: "3.95%", atYield: "2.49%" },
+            calc: "Maintain short-term reserve position", subAccounts: buildAccts },
           { def: GURU_BUCKETS_DEF[3], current: growCurrent, target: growTarget, delta: growDelta,
-            calc: "Remaining assets — long-term compounding",
-            product: "Growth Equity ETFs + PE Funds", yield_: "[7%]", atYield: "[4.4%]" },
+            calc: "Remaining assets — long-term compounding", subAccounts: growAccts },
         ];
 
         const deltaIcon = (d: number) => d > 0 ? "▲" : d < 0 ? "▼" : "—";
         const deltaCls  = (d: number) => d > 0
           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-          : d < 0
-          ? "bg-rose-50 text-rose-600 border-rose-200"
+          : d < 0 ? "bg-rose-50 text-rose-600 border-rose-200"
           : "bg-secondary/30 text-muted-foreground border-border";
 
         return (
           <div className="space-y-5">
-            {/* Section heading */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-[11px] font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 px-2">
-                Recommendation for Rebalancing &amp; Product Selection
-              </span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-
             {/* 3 outcome KPIs */}
             <div className="grid grid-cols-3 gap-3">
               {([
@@ -1629,79 +1644,67 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
               {rows.map(r => (
                 <div key={r.def.name} className="rounded-xl overflow-hidden flex flex-col shadow-sm border border-border">
 
-                  {/* Colored header with accent dot + yield chip */}
+                  {/* ── Colored header ── */}
                   <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: r.def.bg }}>
                     <div className="flex items-center gap-2.5">
                       <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
                       <div>
-                        <span className="text-xl font-bold text-white tracking-tight leading-none">{r.def.name}</span>
+                        <p className="text-xl font-bold text-white tracking-tight leading-none">{r.def.name}</p>
                         <p className="text-xs italic mt-0.5" style={{ color: r.def.accent, opacity: 0.9 }}>{r.def.tagline}</p>
                       </div>
                     </div>
-                    <div className="rounded-lg px-2.5 py-1 text-right" style={{ background: r.def.dark }}>
-                      <p className="text-[9px] uppercase tracking-wide" style={{ color: r.def.accent }}>Yield</p>
-                      <p className="text-white font-bold text-sm leading-none">{r.yield_}</p>
+                    <p className="text-xs font-medium text-white/60 text-right max-w-[130px] leading-snug">{r.def.rule}</p>
+                  </div>
+
+                  {/* ── Current Holdings table ── */}
+                  <div className="bg-card px-5 pt-4 pb-3">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2.5">Current Holdings</p>
+                    <div className="space-y-1.5">
+                      {r.subAccounts.map(acct => (
+                        <div key={acct.name} className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+                            <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
+                            <span className="truncate">{acct.name}</span>
+                          </span>
+                          <div className="flex items-center gap-4 flex-shrink-0 tabular-nums">
+                            <span className="text-[11px] text-muted-foreground w-12 text-right">{acct.yield_}</span>
+                            <span className="text-xs font-semibold text-foreground w-24 text-right">{fmt(acct.value)}</span>
+                          </div>
+                        </div>
+                      ))}
+                      {r.subAccounts.length === 0 && (
+                        <p className="text-xs text-muted-foreground italic">No accounts mapped to this bucket</p>
+                      )}
+                    </div>
+                    {/* Current total row */}
+                    <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
+                      <span className="text-xs font-bold text-foreground uppercase tracking-wide">Current Total</span>
+                      <span className="text-base font-bold tabular-nums text-foreground">{fmt(r.current)}</span>
                     </div>
                   </div>
 
-                  {/* Card body */}
-                  <div className="flex-1 grid grid-cols-2 divide-x divide-border bg-card">
-
-                    {/* Left — balances */}
-                    <div className="px-5 py-4 space-y-3">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Current Balance</p>
-                        <p className="text-2xl font-display font-bold tabular-nums text-foreground">{fmt(r.current)}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex-1 h-px bg-border" />
-                        <span className="text-[9px] uppercase tracking-widest font-bold" style={{ color: r.def.bg }}>GURU recommends</span>
-                        <div className="flex-1 h-px bg-border" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Target Balance</p>
-                        <p className="text-2xl font-display font-bold tabular-nums" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
-                      </div>
-                      {/* Delta badge */}
-                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${deltaCls(r.delta)}`}>
+                  {/* ── GURU Suggested Balance — prominent ── */}
+                  <div className="px-5 py-4 border-t-2 flex items-start justify-between gap-4" style={{ borderColor: r.def.bg, background: r.def.bg + "12" }}>
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: r.def.bg }}>
+                        ★ GURU Suggested Balance
+                      </p>
+                      <p className="text-3xl font-display font-black tabular-nums leading-none" style={{ color: r.def.bg }}>
+                        {fmt(r.target)}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-1.5 italic leading-snug">{r.calc}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0 pt-0.5">
+                      <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-bold ${deltaCls(r.delta)}`}>
                         <span>{deltaIcon(r.delta)}</span>
-                        <span>
-                          {r.delta === 0 ? "No Change" : `${fmt(Math.abs(r.delta))} ${r.delta > 0 ? "increase" : "decrease"}`}
-                        </span>
+                        <span>{r.delta === 0 ? "No change" : `${fmt(Math.abs(r.delta))} ${r.delta > 0 ? "↑" : "↓"}`}</span>
                       </div>
-                    </div>
-
-                    {/* Right — product & rationale */}
-                    <div className="px-5 py-4 flex flex-col justify-between gap-3">
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">GURU Product</p>
-                          <p className="text-sm font-semibold text-foreground leading-snug">{r.product}</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="rounded-lg px-2 py-1.5 bg-secondary/40">
-                            <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Gross</p>
-                            <p className="text-sm font-bold tabular-nums text-foreground">{r.yield_}</p>
-                          </div>
-                          <div className="rounded-lg px-2 py-1.5 bg-secondary/40">
-                            <p className="text-[9px] uppercase tracking-widest text-muted-foreground">After-Tax</p>
-                            <p className="text-sm font-bold tabular-nums text-foreground">{r.atYield}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="pt-2 border-t border-border/50">
-                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-0.5">Rationale</p>
-                        <p className="text-xs text-muted-foreground italic leading-snug">{r.calc}</p>
-                      </div>
+                      <span className="text-[10px] text-muted-foreground">vs. current</span>
                     </div>
                   </div>
 
-                  {/* Card footer — GURU suggested balance + products button */}
-                  <div className="border-t border-border px-5 py-2.5 flex items-center justify-between bg-secondary/10">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">GURU Suggested Balance</span>
-                      <span className="text-sm font-bold tabular-nums ml-1" style={{ color: r.def.bg }}>{fmt(r.target)}</span>
-                    </div>
+                  {/* ── Products button ── */}
+                  <div className="border-t border-border px-5 py-2.5 flex items-center justify-end bg-secondary/10">
                     <Button
                       size="sm"
                       variant="outline"
