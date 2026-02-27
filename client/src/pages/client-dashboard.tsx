@@ -1437,20 +1437,6 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
 }
 
 // ─── GURU Asset Allocation View ───────────────────────────────────────────────
-const MODEL_PORTFOLIO: { category: string; current: number; target: number; action: string; ticker: string }[] = [
-  { category: "Cash (Idle — Deploy)",      current: 186586, target: 0,      action: "sell",  ticker: "" },
-  { category: "US Large Cap (S&P 500)",    current: 435000, target: 353233, action: "trim",  ticker: "VOO" },
-  { category: "US Total Market",           current: 379878, target: 141293, action: "trim",  ticker: "VTI" },
-  { category: "US Large Cap Growth",       current: 0,      target: 141293, action: "buy",   ticker: "QQQ / VUG" },
-  { category: "US Dividend / Quality",     current: 94369,  target: 70647,  action: "trim",  ticker: "SCHD / DGRO" },
-  { category: "US Small Cap",              current: 49318,  target: 82839,  action: "buy",   ticker: "VB / IWM" },
-  { category: "Developed International",   current: 116538, target: 109083, action: "trim",  ticker: "VEA / IEFA" },
-  { category: "Bonds / Fixed Income",      current: 0,      target: 282587, action: "buy",   ticker: "AGG / Muni" },
-  { category: "Crypto",                    current: 9500,   target: 8892,   action: "trim",  ticker: "BTC/ETH" },
-  { category: "Meta (Single Stock)",       current: 238311, target: 238311, action: "hold",  ticker: "META" },
-  { category: "Bank of America",           current: 60000,  target: 60000,  action: "hold",  ticker: "BAC" },
-];
-
 const GURU_BUCKETS_DEF = [
   {
     name: "Reserve",
@@ -1540,8 +1526,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
     { label: "Build",     sublabel: "Equities & brokerage investments", value: growth,       color: GURU_BUCKETS_DEF[2].bg, pct: (growth / totalAssets) * 100 },
     { label: "Grow",      sublabel: "Real estate, PE, carry, RSUs",     value: alts,         color: GURU_BUCKETS_DEF[3].bg, pct: (alts / totalAssets) * 100 },
   ];
-
-  const totalPortfolio = MODEL_PORTFOLIO.reduce((s, r) => s + r.current, 0);
 
   return (
     <div className="space-y-6">
@@ -1869,61 +1853,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         );
       })()}
 
-      {/* Model Portfolio Recommendations */}
-      <div className="border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-border bg-secondary/20 flex items-center justify-between">
-          <div>
-            <p className="font-display font-bold text-sm text-foreground">Model Portfolio — Current vs Target</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Based on GURU 5-bucket allocation framework · Fidelity Taxable Brokerage</p>
-          </div>
-          <Badge variant="outline" className="text-xs">{fmt(totalToInvest, true)} to deploy</Badge>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[600px]">
-            <thead>
-              <tr className="border-b border-border bg-secondary/10">
-                <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">Category</th>
-                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">Ticker</th>
-                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">Current</th>
-                <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground">Target</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-muted-foreground">Change</th>
-                <th className="text-center px-3 py-2.5 font-semibold text-muted-foreground">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {MODEL_PORTFOLIO.map(row => {
-                const delta = row.target - row.current;
-                return (
-                  <tr key={row.category} className="hover:bg-secondary/20 transition-colors">
-                    <td className="px-4 py-2.5 font-medium text-foreground">{row.category}</td>
-                    <td className="px-3 py-2.5 text-right text-xs text-muted-foreground font-mono">{row.ticker || "—"}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-medium">{row.current > 0 ? fmt(row.current) : "—"}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums font-medium">{row.target > 0 ? fmt(row.target) : "—"}</td>
-                    <td className={`px-4 py-2.5 text-right tabular-nums font-bold ${delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                      {delta === 0 ? "—" : delta > 0 ? `+${fmt(delta)}` : `(${fmt(Math.abs(delta))})`}
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      {row.action === "buy"  && <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">Buy</Badge>}
-                      {row.action === "trim" && <Badge className="text-xs bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-100">Trim</Badge>}
-                      {row.action === "hold" && <Badge variant="outline" className="text-xs text-muted-foreground">Hold</Badge>}
-                      {row.action === "sell" && <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">Deploy</Badge>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="border-t-2 border-border bg-secondary/20">
-              <tr>
-                <td className="px-4 py-2.5 font-bold text-foreground" colSpan={2}>Total Liquid Portfolio</td>
-                <td className="px-3 py-2.5 text-right tabular-nums font-bold">{fmt(totalPortfolio)}</td>
-                <td className="px-3 py-2.5 text-right tabular-nums font-bold">{fmt(MODEL_PORTFOLIO.reduce((s, r) => s + r.target, 0))}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums font-bold text-emerald-600">+{fmt(totalToInvest)}</td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }
