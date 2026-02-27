@@ -1427,8 +1427,6 @@ export default function ClientDashboard() {
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
       {activeView === "dashboard" && (
         <div className="space-y-4">
-          <CashFlowTicker cashFlows={cashFlows} />
-
           {/* ── Cash Position Hero Banner ────────────────────────────────────── */}
           <div className={`rounded-xl border shadow-sm px-6 py-5 ${isPositiveTop ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-r from-rose-50 to-orange-50 border-rose-200"}`}>
             <div className="flex flex-col sm:flex-row gap-6">
@@ -1490,6 +1488,8 @@ export default function ClientDashboard() {
               </div>
             </div>
           </div>
+
+          <CashFlowTicker cashFlows={cashFlows} />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <NetWorthPanel assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
