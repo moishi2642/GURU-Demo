@@ -1312,13 +1312,19 @@ export default function ClientDashboard() {
   const { client, assets, liabilities, cashFlows, strategies } = data;
 
   // ── Top-level cash metrics (shared across banner + panels) ──────────────────
-  const _forecastData  = buildForecast(cashFlows);
+  const _forecastData    = buildForecast(cashFlows);
   const { reserve: reserveTop, yieldBucket: yieldTop, tactical: tacticalTop, totalLiquid: totalLiquidTop } = cashBuckets(assets);
-  const cashTroughTop  = computeTrough(_forecastData);
-  const cashExcessTop  = totalLiquidTop - cashTroughTop;
-  const isPositiveTop  = cashExcessTop >= 0;
-  const minCumTop      = Math.min(..._forecastData.map(d => d.cumulative));
-  const troughMonthTop = _forecastData.find(d => d.cumulative === minCumTop)?.month ?? "";
+  const cashTroughTop    = computeTrough(_forecastData);
+  const cashExcessTop    = totalLiquidTop - cashTroughTop;            // liquid surplus / deficit
+  const isPositiveTop    = cashExcessTop >= 0;
+  const minCumTop        = Math.min(..._forecastData.map(d => d.cumulative));
+  const troughMonthTop   = _forecastData.find(d => d.cumulative === minCumTop)?.month ?? "";
+
+  // GURU Optimizer "Total Cash to Invest" = A (idle acct cash) + B (liquid surplus) — mirrors G29
+  const brokerageCashTop  = assets
+    .filter(a => a.type === "cash" && ((a.description ?? "").toLowerCase()).includes("money market"))
+    .reduce((s, a) => s + Number(a.value), 0);
+  const totalToInvestTop  = Math.round(brokerageCashTop + Math.max(0, cashExcessTop));
 
   // Next month's net cash flow
   const _nextMonthDate = addMonths(new Date(), 1);
@@ -1457,32 +1463,31 @@ export default function ClientDashboard() {
               {/* RIGHT: Cash Available headline + 3 supporting stats */}
               <div className="sm:w-72 flex-shrink-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className={`rounded-lg p-1.5 ${isPositiveTop ? "bg-emerald-100" : "bg-rose-100"}`}>
-                    {isPositiveTop
-                      ? <TrendingUp className="w-4 h-4 text-emerald-600" />
-                      : <TrendingDown className="w-4 h-4 text-rose-600" />}
+                  <div className="rounded-lg p-1.5 bg-emerald-100">
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
                   </div>
-                  <p className={`text-[10px] font-bold uppercase tracking-widest ${isPositiveTop ? "text-emerald-700" : "text-rose-700"}`}>
-                    {isPositiveTop ? "Cash Available to Invest" : "Cash Shortfall"}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                    Total Cash to Invest
                   </p>
                 </div>
-                <p className={`text-4xl font-extrabold leading-tight tabular-nums mb-4 ${isPositiveTop ? "text-emerald-700" : "text-rose-700"}`} data-testid="kpi-cash-excess">
-                  {isPositiveTop ? "+" : ""}{fmt(cashExcessTop)}
+                <p className="text-4xl font-extrabold leading-tight tabular-nums mb-1 text-emerald-700" data-testid="kpi-cash-excess">
+                  {fmt(totalToInvestTop)}
                 </p>
+                <p className="text-[10px] text-muted-foreground mb-3">GURU Optimizer · A + B</p>
                 <div className={`grid grid-cols-3 gap-3 border-t pt-3 ${isPositiveTop ? "border-emerald-200" : "border-rose-200"}`}>
                   <div>
-                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">Total Liquid</p>
-                    <p className="text-sm font-bold tabular-nums text-foreground">{fmt(totalLiquidTop, true)}</p>
+                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">A: Idle Cash</p>
+                    <p className="text-sm font-bold tabular-nums text-foreground">{fmt(brokerageCashTop, true)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">B: Liquid Surplus</p>
+                    <p className={`text-sm font-bold tabular-nums ${cashExcessTop >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {cashExcessTop >= 0 ? "+" : ""}{fmt(cashExcessTop, true)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">12-Mo Req'd</p>
                     <p className="text-sm font-bold tabular-nums text-foreground">{fmt(cashTroughTop, true)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">Next Month</p>
-                    <p className={`text-sm font-bold tabular-nums ${nextMonthNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {nextMonthNet >= 0 ? "+" : ""}{fmtK(nextMonthNet)}/mo
-                    </p>
                   </div>
                 </div>
               </div>
