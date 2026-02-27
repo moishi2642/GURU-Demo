@@ -40,11 +40,14 @@ function useCountUp(target: number, duration = 1600) {
   return current;
 }
 
-function RollingNumber({ value, isPercent = false }: { value: number; isPercent?: boolean }) {
+function RollingNumber({ value, format = "currency", prefix = "" }: {
+  value: number; format?: "currency" | "percent" | "raw"; prefix?: string;
+}) {
   const v = useCountUp(value);
-  const formatted = isPercent
-    ? `${v.toFixed(1)}%`
-    : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
+  let formatted: string;
+  if (format === "percent") formatted = `${v.toFixed(1)}%`;
+  else if (format === "raw")  formatted = `${prefix}${Math.round(v)}`;
+  else formatted = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
   return (
     <span className="font-mono font-bold tracking-tight text-emerald-800">
       {formatted}<span className="animate-blink ml-px">.</span>
@@ -1764,14 +1767,14 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">Live Projections</span>
                       </div>
                       {[
-                        { label: "Excess Cash",           rawValue: excessCash,   isPercent: false, sub: "available to redeploy" },
-                        { label: "AT Income Pickup / Yr", rawValue: addlIncome,   isPercent: false, sub: "projected annual gain" },
-                        { label: "Cashflow Increase",     rawValue: pctIncrease,  isPercent: true,  sub: "vs. current yield" },
+                        { label: "Excess Cash",           rawValue: excessCash,   fmt: "currency" as const, sub: "available to redeploy" },
+                        { label: "AT Income Pickup / Yr", rawValue: addlIncome,   fmt: "currency" as const, sub: "projected annual gain" },
+                        { label: "Cashflow Increase",     rawValue: pctIncrease,  fmt: "percent"  as const, sub: "vs. current yield" },
                       ].map(s => (
                         <div key={s.label}>
                           <p className="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-0.5">{s.label}</p>
                           <p className="text-2xl leading-none">
-                            <RollingNumber value={s.rawValue} isPercent={s.isPercent} />
+                            <RollingNumber value={s.rawValue} format={s.fmt} />
                           </p>
                           <p className="text-[9px] text-gray-400 mt-0.5">{s.sub}</p>
                         </div>
@@ -1820,44 +1823,50 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <p className="text-xs text-muted-foreground italic">No accounts mapped to this bucket</p>
                       )}
                     </div>
-                    {/* Current Total → GURU Balance — compact secondary comparison */}
-                    <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-0.5">Current Total</p>
-                        <p className="text-sm font-bold tabular-nums text-foreground">{fmt(r.current)}</p>
-                      </div>
-                      <span className="text-muted-foreground/40 text-base">→</span>
+                    {/* Current Total → AI Target — stacked right-aligned */}
+                    <div className="mt-3 pt-2.5 border-t border-border flex items-end justify-between gap-3">
+                      <p className="text-[9px] text-muted-foreground italic pb-0.5">{r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""}</p>
                       <div className="text-right">
-                        <p className="text-[9px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: r.def.bg }}>★ GURU Balance</p>
+                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-0.5">Current Total</p>
+                        <p className="text-sm font-bold tabular-nums text-foreground mb-2">{fmt(r.current)}</p>
+                        <p className="text-[9px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: r.def.bg }}>★ AI Target</p>
                         <p className="text-sm font-bold tabular-nums" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* ── HERO: Amount to Deploy + Yield Pickup ── */}
+                  {/* ── HERO: AI Target | To Redeploy | Yield Pickup ── */}
                   <div className="border-t-2" style={{ borderColor: r.def.bg }}>
-                    <div className="grid grid-cols-2 divide-x divide-black/8" style={{ background: r.def.bg + "10" }}>
-                      {/* Left: Amount to Deploy — most important */}
-                      <div className="px-5 pt-4 pb-4">
-                        <p className={`text-[9px] uppercase tracking-widest font-black mb-2 ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                          {r.delta < 0 ? "▼ To Redeploy" : r.delta > 0 ? "▲ Needed" : "Balanced"}
-                        </p>
-                        <p className={`text-4xl font-display font-black tabular-nums leading-none ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                          {r.delta !== 0 ? fmt(Math.abs(r.delta)) : "—"}
-                        </p>
-                        <p className="text-[9px] text-muted-foreground mt-2 leading-tight">
-                          {r.delta < 0 ? "available to redeploy" : r.delta > 0 ? "needed from excess" : "no action needed"}
+                    <div className="grid grid-cols-3 divide-x divide-black/8" style={{ background: r.def.bg + "10" }}>
+                      {/* AI Target */}
+                      <div className="px-4 pt-3 pb-3">
+                        <p className="text-[9px] uppercase tracking-widest font-bold mb-1.5" style={{ color: r.def.bg }}>★ AI Target</p>
+                        <p className="text-xl leading-none">
+                          <RollingNumber value={r.target} format="currency" />
                         </p>
                       </div>
-                      {/* Right: Yield Pickup — most important */}
-                      <div className="px-5 pt-4 pb-4">
-                        <p className={`text-[9px] uppercase tracking-widest font-black mb-2 ${r.bpPickup > 0 ? "text-emerald-600" : r.bpPickup < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                      {/* To Redeploy */}
+                      <div className="px-4 pt-3 pb-3">
+                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-1.5 ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                          {r.delta < 0 ? "▼ To Redeploy" : r.delta > 0 ? "▲ Needed" : "Balanced"}
+                        </p>
+                        <p className="text-xl leading-none">
+                          {r.delta !== 0
+                            ? <RollingNumber value={Math.abs(r.delta)} format="currency" />
+                            : <span className="font-mono font-bold text-muted-foreground">—</span>}
+                        </p>
+                      </div>
+                      {/* Yield Pickup */}
+                      <div className="px-4 pt-3 pb-3">
+                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-1.5 ${r.bpPickup > 0 ? "text-emerald-600" : r.bpPickup < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
                           Yield Pickup
                         </p>
-                        <p className={`text-4xl font-display font-black tabular-nums leading-none ${r.bpPickup > 0 ? "text-emerald-600" : r.bpPickup < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                          {r.bpPickup !== 0 ? `${r.bpPickup > 0 ? "+" : ""}${r.bpPickup}` : "—"}
+                        <p className="text-xl leading-none">
+                          {r.bpPickup !== 0
+                            ? <RollingNumber value={Math.abs(r.bpPickup)} format="raw" prefix={r.bpPickup > 0 ? "+" : "-"} />
+                            : <span className="font-mono font-bold text-muted-foreground">—</span>}
                         </p>
-                        <p className="text-[9px] text-muted-foreground mt-2 leading-tight">after-tax basis points</p>
+                        <p className="text-[9px] text-muted-foreground mt-1">after-tax bps</p>
                       </div>
                     </div>
                   </div>
