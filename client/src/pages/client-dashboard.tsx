@@ -1441,23 +1441,23 @@ const GURU_BUCKETS_DEF = [
     name: "Reserve",
     tagline: "Your safety net",
     rule: "2-3 months of cash",
-    bg: "#1e3a5f",
-    dark: "#152d4a",
-    accent: "#4a9eff",
+    bg: "#1e40af",
+    dark: "#1e3a8a",
+    accent: "#93c5fd",
   },
   {
     name: "Flow",
     tagline: "Active cash management for what's next",
     rule: "12 months of cash for anticipated outflow",
-    bg: "#0e6b7a",
-    dark: "#0a5260",
-    accent: "#3dd6f5",
+    bg: "#0e7490",
+    dark: "#0c4a6e",
+    accent: "#22d3ee",
   },
   {
     name: "Build",
     tagline: "Disciplined saving for big goals on the horizon",
     rule: "Large expenditure in next 3 years",
-    bg: "#5b21b6",
+    bg: "#6d28d9",
     dark: "#4c1d95",
     accent: "#c084fc",
   },
@@ -1465,9 +1465,9 @@ const GURU_BUCKETS_DEF = [
     name: "Grow",
     tagline: "Long-term compounded investing",
     rule: "5 years + aggressive investment portfolio",
-    bg: "#166534",
-    dark: "#14532d",
-    accent: "#4ade80",
+    bg: "#075985",
+    dark: "#0c4a6e",
+    accent: "#38bdf8",
   },
 ] as const;
 
@@ -1640,8 +1640,19 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 { label: "Build",   current: buildCurrent,   target: buildTarget,   color: GURU_BUCKETS_DEF[2].bg, accent: GURU_BUCKETS_DEF[2].accent },
                 { label: "Grow",    current: growCurrent,    target: growTarget,    color: GURU_BUCKETS_DEF[3].bg, accent: GURU_BUCKETS_DEF[3].accent },
               ];
-              const mkBar = (getValue: (b: typeof barBuckets[0]) => number) =>
-                barBuckets.map(b => ({ ...b, pct: totalAssets > 0 ? (getValue(b) / totalAssets) * 100 : 0 }));
+              // Log-scale normalization so small buckets (Reserve ~2%, Build ~2%) remain legible
+              const mkBar = (getValue: (b: typeof barBuckets[0]) => number) => {
+                const raw = barBuckets.map(b => ({
+                  ...b,
+                  pct: totalAssets > 0 ? (getValue(b) / totalAssets) * 100 : 0,
+                }));
+                const logVals = raw.map(b => b.pct > 0 ? Math.log(1 + b.pct) : 0);
+                const logTotal = logVals.reduce((s, v) => s + v, 0);
+                return raw.map((b, i) => ({
+                  ...b,
+                  displayPct: logTotal > 0 ? (logVals[i] / logTotal) * 100 : 0,
+                }));
+              };
               const currentBar = mkBar(b => b.current);
               const guruBar    = mkBar(b => b.target);
 
@@ -1662,9 +1673,9 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <div className="flex rounded-md overflow-hidden h-9 gap-px">
                           {currentBar.map(b => (
                             <div key={b.label} className="flex items-center justify-center overflow-hidden transition-all"
-                              style={{ width: `${b.pct}%`, background: b.color, opacity: 0.75 }}>
-                              {b.pct > 6 && (
-                                <span className="text-[9px] font-bold text-white/80 px-1 truncate">{b.pct.toFixed(0)}%</span>
+                              style={{ width: `${b.displayPct}%`, background: b.color, opacity: 0.7 }}>
+                              {b.displayPct > 9 && (
+                                <span className="text-[9px] font-bold text-white/90 px-1 truncate">{b.pct.toFixed(0)}%</span>
                               )}
                             </div>
                           ))}
@@ -1680,8 +1691,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <div className="flex rounded-md overflow-hidden h-9 gap-px">
                           {guruBar.map(b => (
                             <div key={b.label} className="flex items-center justify-center overflow-hidden transition-all"
-                              style={{ width: `${b.pct}%`, background: b.color }}>
-                              {b.pct > 6 && (
+                              style={{ width: `${b.displayPct}%`, background: b.color }}>
+                              {b.displayPct > 9 && (
                                 <span className="text-[9px] font-bold text-white px-1 truncate">{b.pct.toFixed(0)}%</span>
                               )}
                             </div>
