@@ -7,7 +7,6 @@ import { AddAssetModal, AddLiabilityModal, AddCashFlowModal } from "@/components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid, LineChart, Line, ReferenceLine, ReferenceDot,
@@ -1508,7 +1507,6 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
 };
 
 function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const [productModal, setProductModal] = useState<string | null>(null);
   const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
   const forecastData = buildForecast(cashFlows);
   const cashTrough   = computeTrough(forecastData);
@@ -1634,26 +1632,51 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
         return (
           <div className="space-y-5">
-            {/* 3 outcome KPIs */}
-            <div className="grid grid-cols-3 gap-3">
-              {([
-                { label: "Estimated Excess Cash", value: fmt(excessCash), sub: "available to redeploy", icon: "💰" },
-                { label: "Additional After-Tax Income / Year", value: fmt(addlIncome), sub: "projected annual gain", icon: "📈" },
-                { label: "% Increase to Annual Cashflow", value: `${pctIncrease}%`, sub: "vs. current salary income", icon: "⭐" },
-              ] as const).map(m => (
-                <div key={m.label} className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col shadow-sm">
-                  <div className="bg-slate-900 px-4 py-3 flex-1 flex items-center min-h-[52px]">
-                    <span className="text-xs text-slate-300 font-medium leading-snug">{m.label}</span>
-                  </div>
-                  <div className="bg-cyan-50 dark:bg-cyan-950 px-4 py-3 flex items-center justify-between gap-2">
-                    <div>
-                      <p className="font-display font-black text-xl text-cyan-900 dark:text-cyan-100 tabular-nums leading-none">{m.value}</p>
-                      <p className="text-[10px] text-cyan-700 dark:text-cyan-400 mt-0.5">{m.sub}</p>
+            {/* ── GURU Hero Banner — matches Dashboard hero style ── */}
+            <div className="rounded-xl border shadow-sm px-6 py-5" style={{ background: "linear-gradient(to right, hsl(222,47%,10%), hsl(222,47%,14%))", borderColor: "hsl(222,47%,22%)" }}>
+              <div className="flex flex-col sm:flex-row gap-6">
+                {/* LEFT: 3 optimization stats */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">GURU Optimization Summary</p>
+                  {[
+                    { label: "Estimated Excess Cash", value: fmt(excessCash), color: "#34d399" },
+                    { label: "Additional After-Tax Income / Year", value: fmt(addlIncome), color: "#60a5fa" },
+                    { label: "% Cashflow Increase", value: `${pctIncrease}%`, color: "#f59e0b" },
+                  ].map(s => (
+                    <div key={s.label} className="flex items-center justify-between gap-4 mb-3">
+                      <span className="text-xs text-white/50 leading-tight">{s.label}</span>
+                      <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color: s.color }}>{s.value}</span>
                     </div>
-                    <span className="text-lg">{m.icon}</span>
+                  ))}
+                </div>
+                {/* DIVIDER */}
+                <div className="hidden sm:block w-px self-stretch bg-white/10" />
+                {/* RIGHT: big headline number */}
+                <div className="sm:w-64 flex-shrink-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="rounded-lg p-1.5 bg-emerald-500/20">
+                      <TrendingUp className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Additional AT Income / Year</p>
+                  </div>
+                  <p className="text-4xl font-extrabold tabular-nums leading-tight mb-1 text-emerald-400">{fmt(addlIncome)}</p>
+                  <p className="text-[10px] text-white/30 mb-3">GURU Optimizer · projected annual gain</p>
+                  <div className="grid grid-cols-3 gap-3 border-t border-white/10 pt-3">
+                    <div>
+                      <p className="text-[10px] text-white/30 font-medium leading-tight mb-0.5">To Invest</p>
+                      <p className="text-sm font-bold tabular-nums text-white">{fmt(totalToInvest, true)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-white/30 font-medium leading-tight mb-0.5">Excess Cash</p>
+                      <p className="text-sm font-bold tabular-nums text-emerald-400">{fmt(excessCash, true)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-white/30 font-medium leading-tight mb-0.5">CF Pickup</p>
+                      <p className="text-sm font-bold tabular-nums text-amber-400">{pctIncrease}%</p>
+                    </div>
                   </div>
                 </div>
-              ))}
+              </div>
             </div>
 
             {/* 4 bucket cards — 2×2 grid */}
@@ -1700,63 +1723,88 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                   </div>
 
-                  {/* ── GURU Suggested Balance — prominent ── */}
+                  {/* ── GURU Suggested Balance — two equal columns ── */}
                   <div className="border-t-2" style={{ borderColor: r.def.bg, background: r.def.bg + "12" }}>
-                    {/* Row 1: target amount + status label */}
-                    <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: r.def.bg }}>
-                          ★ GURU Suggested Balance
-                        </p>
-                        <p className="text-3xl font-display font-black tabular-nums leading-none" style={{ color: r.def.bg }}>
-                          {fmt(r.target)}
-                        </p>
+                    <div className="px-5 pt-4 pb-3 grid grid-cols-2 gap-4">
+                      {/* Left: Target */}
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest font-bold mb-1.5" style={{ color: r.def.bg }}>★ GURU Balance</p>
+                        <p className="text-3xl font-display font-black tabular-nums leading-none" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
                       </div>
-                      <div className="flex-shrink-0 pt-0.5 text-right">
-                        {r.delta < 0 && <p className="text-base font-black tracking-wide text-emerald-600">Excess</p>}
-                        {r.delta > 0 && <p className="text-base font-black tracking-wide text-rose-600">Deficit</p>}
-                        {r.delta === 0 && <p className="text-base font-black tracking-wide text-muted-foreground">Balanced</p>}
-                        <p className="text-[10px] text-muted-foreground mt-0.5">vs. GURU target</p>
+                      {/* Right: Move amount — same size */}
+                      <div className="text-right">
+                        <p className={`text-[10px] uppercase tracking-widest font-bold mb-1.5 ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                          {r.delta < 0 ? "Excess" : r.delta > 0 ? "Deficit" : "Balanced"}
+                        </p>
+                        <p className={`text-3xl font-display font-black tabular-nums leading-none ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                          {r.delta !== 0 ? fmt(Math.abs(r.delta)) : "—"}
+                        </p>
                       </div>
                     </div>
-                    {/* Row 2: move signal + basis point pickup */}
-                    <div className="px-5 pb-3.5 flex items-center justify-between gap-3 border-t border-black/[0.06]">
-                      <span className="text-[11px] text-muted-foreground leading-snug">
-                        {r.delta < 0
-                          ? <><span className="font-semibold text-foreground">{fmt(Math.abs(r.delta))}</span> available to redeploy</>
-                          : r.delta > 0
-                          ? <><span className="font-semibold text-foreground">{fmt(r.delta)}</span> needed from excess buckets</>
-                          : <span className="italic">No rebalancing needed</span>
-                        }
+                    {/* bps strip */}
+                    <div className="px-5 pb-3 flex items-center justify-between gap-3 border-t border-black/[0.06] pt-2.5">
+                      <span className="text-[10px] text-muted-foreground">
+                        {r.delta < 0 ? "available to redeploy" : r.delta > 0 ? "needed from excess buckets" : "No rebalancing needed"}
                       </span>
-                      {r.bpPickup !== 0 && (
-                        <span className={`flex-shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-lg border ${
-                          r.bpPickup > 0
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-rose-50 text-rose-600 border-rose-200"
-                        }`}>
-                          {r.bpPickup > 0 ? "+" : ""}{r.bpPickup} bps AT
-                        </span>
-                      )}
-                      {r.bpPickup === 0 && (
-                        <span className="flex-shrink-0 text-xs text-muted-foreground border border-border rounded-lg px-2.5 py-1">Yield maintained</span>
-                      )}
+                      <span className={`flex-shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-lg border ${
+                        r.bpPickup > 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : r.bpPickup < 0 ? "bg-rose-50 text-rose-600 border-rose-200"
+                        : "bg-secondary/30 text-muted-foreground border-border"
+                      }`}>
+                        {r.bpPickup !== 0 ? `${r.bpPickup > 0 ? "+" : ""}${r.bpPickup} bps AT` : "Yield maintained"}
+                      </span>
                     </div>
                   </div>
 
-                  {/* ── Products button ── */}
-                  <div className="border-t border-border px-5 py-2.5 flex items-center justify-end bg-secondary/10">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-xs h-7 gap-1.5"
-                      onClick={() => setProductModal(r.def.name)}
-                      data-testid={`btn-products-${r.def.name.toLowerCase()}`}
-                    >
-                      <span>Products Available</span>
-                      <span className="text-muted-foreground">↗</span>
-                    </Button>
-                  </div>
+                  {/* ── Products scrolling ticker + Execute ── */}
+                  {(() => {
+                    const prods = BUCKET_PRODUCTS[r.def.name] ?? [];
+                    const rowH = 30;
+                    const visRows = 3;
+                    const dur = Math.max(14, prods.length * 3);
+                    return (
+                      <div className="border-t border-[hsl(221,39%,22%)] bg-[hsl(221,39%,10%)] overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/8">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">Available Products</span>
+                          <span className="text-[9px] text-white/25">hover to pause</span>
+                        </div>
+                        <div className="grid px-4 py-1 border-b border-white/5 text-[9px] font-bold uppercase tracking-widest text-white/20"
+                          style={{ gridTemplateColumns: "1fr 72px 52px 52px" }}>
+                          <span>Product</span>
+                          <span>Type</span>
+                          <span className="text-right">AT Yield</span>
+                          <span className="text-right">Pickup</span>
+                        </div>
+                        <div className="overflow-hidden" style={{ height: rowH * visRows }}>
+                          <div className="animate-feed" style={{ animationDuration: `${dur}s` }}>
+                            {[...prods, ...prods].map((p, i) => (
+                              <div key={i} className="grid items-center px-4" style={{ gridTemplateColumns: "1fr 72px 52px 52px", height: rowH }}>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  {p.isGuru && (
+                                    <span className="text-[8px] font-black text-white px-1 py-0.5 rounded flex-shrink-0 leading-none" style={{ background: r.def.bg }}>★</span>
+                                  )}
+                                  <span className="text-[11px] text-white/75 truncate">{p.name}</span>
+                                </div>
+                                <span className="text-[9px] text-white/35 truncate">{p.type}</span>
+                                <span className="text-[11px] font-bold text-emerald-400 text-right tabular-nums">{p.atYield}</span>
+                                <span className={`text-[10px] text-right font-semibold ${p.pickup.startsWith("+") ? "text-emerald-400" : "text-white/40"}`}>{p.pickup}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="px-4 py-2 border-t border-white/8 flex items-center justify-between">
+                          <span className="text-[9px] text-white/25">{prods.length} products available</span>
+                          <Button
+                            size="sm"
+                            className="h-6 text-[11px] gap-1 px-3 bg-white/10 hover:bg-white/15 text-white border border-white/15"
+                            data-testid={`btn-execute-${r.def.name.toLowerCase()}`}
+                          >
+                            Execute <ArrowUpRight className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
@@ -1786,79 +1834,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         );
       })()}
 
-      {/* Products Available Dialog */}
-      {(() => {
-        const bucket = GURU_BUCKETS_DEF.find(b => b.name === productModal);
-        const products = productModal ? (BUCKET_PRODUCTS[productModal] ?? []) : [];
-        return (
-          <Dialog open={productModal !== null} onOpenChange={open => !open && setProductModal(null)}>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-3">
-                  {bucket && (
-                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: bucket.accent }} />
-                  )}
-                  <span>{productModal} Bucket — Products &amp; Yield Pickup</span>
-                </DialogTitle>
-              </DialogHeader>
-
-              {bucket && (
-                <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-white font-medium" style={{ background: bucket.bg }}>
-                  <span style={{ color: bucket.accent }}>●</span>
-                  <span>{bucket.rule}</span>
-                  <span className="ml-auto opacity-60">Ranked highest to lowest yield</span>
-                </div>
-              )}
-
-              <div className="overflow-x-auto rounded-xl border border-border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-900 text-white text-xs">
-                      <th className="text-left px-4 py-2.5 font-semibold">Product</th>
-                      <th className="text-left px-3 py-2.5 font-semibold">Institution</th>
-                      <th className="text-left px-3 py-2.5 font-semibold">Type</th>
-                      <th className="text-right px-3 py-2.5 font-semibold">Gross Yield</th>
-                      <th className="text-right px-3 py-2.5 font-semibold">After-Tax</th>
-                      <th className="text-left px-3 py-2.5 font-semibold">Yield Pickup</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {products.map((p, i) => (
-                      <tr key={p.name} className={`border-t border-border ${i % 2 === 0 ? "bg-card" : "bg-secondary/10"}`}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground">{p.name}</span>
-                            {p.isGuru && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white" style={{ background: bucket?.bg }}>
-                                GURU ★
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 text-muted-foreground text-xs">{p.institution}</td>
-                        <td className="px-3 py-3 text-muted-foreground text-xs">{p.type}</td>
-                        <td className="px-3 py-3 text-right font-bold tabular-nums">{p.grossYield}</td>
-                        <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{p.atYield}</td>
-                        <td className="px-3 py-3">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
-                            p.pickup.startsWith("+") ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-secondary/30 text-muted-foreground"
-                          }`}>
-                            {p.pickup}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Yield pickup shown vs. current client holding in this bucket. After-tax computed at 37% ordinary income rate; equity returns use long-term cap gains rate. All projected returns are estimates.
-              </p>
-            </DialogContent>
-          </Dialog>
-        );
-      })()}
 
     </div>
   );
