@@ -47,7 +47,7 @@ function RollingNumber({ value, isPercent = false }: { value: number; isPercent?
     : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
   return (
     <span className="font-mono font-bold tracking-tight text-emerald-800">
-      {formatted}<span className="animate-pulse ml-px opacity-40">,</span>
+      {formatted}<span className="animate-blink ml-px">.</span>
     </span>
   );
 }
