@@ -1711,7 +1711,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <p className="text-3xl font-display font-black tabular-nums leading-none" style={{ color: r.def.bg }}>
                           {fmt(r.target)}
                         </p>
-                        <p className="text-[11px] text-muted-foreground mt-1.5 italic leading-snug">{r.calc}</p>
                       </div>
                       <div className="flex-shrink-0 pt-0.5 text-right">
                         {r.delta < 0 && <p className="text-base font-black tracking-wide text-emerald-600">Excess</p>}
