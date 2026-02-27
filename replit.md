@@ -46,10 +46,8 @@ An AI-powered wealth advisor platform that aggregates a unified view of end clie
 8. **Add Assets / Liabilities / Cash Flows** — Modal forms to build out client profiles
 
 ## Seed Data
-Three realistic client profiles are seeded on first run:
-- **Sarah Mitchell** (52, moderate risk) — $3.15M assets, $790K liabilities, HNW executive profile
-- **James Okonkwo** (38, aggressive) — Growth phase, startup income, concentrated tech + angel investments
-- **Eleanor & Robert Chen** (63, conservative) — Near-retirement, income-focused, bond-heavy portfolio
+One demo client is seeded on first run (only if the database is empty):
+- **Sarah & Michael Kessler** (44, moderate risk) — HNW dual-income family, $5.99M assets, $1.35M liabilities
 
 ## Live Market Data
 
