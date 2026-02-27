@@ -75,9 +75,33 @@ All asset categorization uses the `GURU_BUCKETS` constant defined in `client-das
 - `liquidityTag(a)` → returns `{ label, tagCls }` from GURU_BUCKETS for badge rendering in NetWorthPanel
 - Legacy aliases (`immediate`, `shortTerm`, `mediumTerm`) are preserved in `cashBuckets()` return value for backward compat
 
+## Dashboard Layout (client-dashboard.tsx)
+
+### Hero Banner (2-column)
+- **Left**: "Cash Allocation" — horizontal progress bars for Reserve / Yield / Tactical showing each bucket's share of `totalLiquid` and exact dollar value
+- **Right**: "Cash Available to Invest" + large `cashExcessTop` (liquid − 12-mo trough) + 3 sub-stats: Total Liquid, 12-Mo Req'd, Next Month net
+
+### 6-Panel Grid (3-column)
+1. `NetWorthPanel` — today's net worth + 5-year forward projection chart (Now/1Y/2Y/3Y/4Y/5Y XAxis), pulsing dot at Now
+2. `CashFlowForecastPanel` — 12-month bar + area cumulative chart with trough marker
+3. `CashManagementPanel` — "The GURU Method" 5-bucket donut with clickable legend, active description card, liquidity footer
+4. `NetWorthPanel` (balance sheet tab) — assets vs liabilities breakdown with GURU badges
+5. `BrokeragePanel` — live GS price, SPY % change, holdings breakdown
+6. `GuruOptimizerPanel` — AI-generated strategies with impact scores
+
+### Key Helpers
+- `buildNWProjection(netWorth, cashFlows, assets)` → 6-point array `{ label, year, value }` using 6.5% growth on equity/RE/alts + annual surplus
+- `cashBuckets(assets)` → `{ reserve, yieldBucket, tactical, growth, alts, totalLiquid, ...items }`
+- `buildForecast(cashFlows)` → 12-month forecast with cumulative net
+- `computeTrough(forecastData)` → worst cumulative position = the 12-month cash requirement figure
+- `isChunkyEvent(cf)` → filters CashFlowTicker to taxes, education, bonus, travel, lifestyle, investments ≥ $5K
+- `liquidityTag(a)` → GURU bucket label + CSS class for NetWorthPanel badges
+
 ## Development Notes
 
 - All numeric values stored as `numeric` (Drizzle) which returns strings — always coerce with `Number()`
 - Cash flow forecast is computed client-side from monthly averages (monthly * 12 projected)
 - Asset descriptions may be undefined in edge cases — always use `(a.description ?? "").toLowerCase()`
 - AI strategies are accumulated (not replaced) — each generation appends to existing strategies
+- `cashFlows` prop must be passed to `NetWorthPanel` — it uses it for the 5-year projection
+- Hero banner variables: `reserveTop`, `yieldTop`, `tacticalTop`, `totalLiquidTop`, `cashTroughTop`, `cashExcessTop`, `isPositiveTop`, `nextMonthNet`
