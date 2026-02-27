@@ -1455,29 +1455,33 @@ const GURU_BUCKETS_DEF = [
     name: "Reserve",
     tagline: "Your safety net",
     rule: "2-3 months of cash",
-    bg: "hsl(232,55%,62%)",
-    dark: "hsl(232,45%,55%)",
+    bg: "#1e3a5f",
+    dark: "#152d4a",
+    accent: "#4a9eff",
   },
   {
     name: "Flow",
     tagline: "Active cash management for what's next",
     rule: "12 months of cash for anticipated outflow",
-    bg: "hsl(232,55%,46%)",
-    dark: "hsl(232,50%,38%)",
+    bg: "#0e6b7a",
+    dark: "#0a5260",
+    accent: "#3dd6f5",
   },
   {
     name: "Build",
     tagline: "Disciplined saving for big goals on the horizon",
     rule: "Large expenditure in next 3 years",
-    bg: "hsl(232,45%,30%)",
-    dark: "hsl(232,40%,22%)",
+    bg: "#5b21b6",
+    dark: "#4c1d95",
+    accent: "#c084fc",
   },
   {
     name: "Grow",
     tagline: "Long-term compounded investing",
     rule: "5 years + aggressive investment portfolio",
-    bg: "hsl(270,55%,45%)",
-    dark: "hsl(270,50%,35%)",
+    bg: "#166534",
+    dark: "#14532d",
+    accent: "#4ade80",
   },
 ] as const;
 
@@ -1507,28 +1511,41 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
       {/* ── The GURU Method explanation ─────────────────────────────────── */}
       <div className="space-y-2">
-        {/* Green header card */}
-        <div className="rounded-xl border-2 border-[hsl(120,30%,60%)] bg-[hsl(120,35%,90%)] px-6 py-5">
-          <p className="text-base font-bold text-[hsl(120,30%,20%)] underline underline-offset-2 mb-1">The GURU Method</p>
-          <p className="text-lg font-bold text-[hsl(120,20%,18%)] leading-snug mb-2">Financial Strategy Built on Cash Flow Projection</p>
-          <p className="text-sm text-[hsl(120,15%,25%)] leading-relaxed">
-            GURU categorizes your assets by four strategic buckets that are based on <strong>liquidity needs and risk tolerance</strong>. With these streamlined categories, we can determine the right cash management strategy for you and UNLOCK growth
-          </p>
+        {/* Dark header card */}
+        <div className="rounded-xl bg-slate-900 px-6 py-5 flex gap-5 items-start">
+          <div className="flex-1">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-400 mb-1.5">The GURU Method</p>
+            <p className="text-lg font-bold text-white leading-snug mb-2">Financial Strategy Built on Cash Flow Projection</p>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              GURU categorizes your assets into four strategic buckets based on <span className="text-white font-semibold">liquidity needs and risk tolerance</span>. With these categories, we determine the right cash management strategy and unlock growth.
+            </p>
+          </div>
+          <div className="hidden lg:flex flex-col gap-1 pt-1 shrink-0">
+            {GURU_BUCKETS_DEF.map(b => (
+              <div key={b.name} className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: b.accent }} />
+                <span className="text-xs text-slate-400 font-medium">{b.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Four bucket rows */}
         <div className="rounded-xl overflow-hidden border border-border">
           {GURU_BUCKETS_DEF.map((b, i) => (
-            <div key={b.name} className={`grid ${i < GURU_BUCKETS_DEF.length - 1 ? "border-b-4 border-[hsl(0,0%,85%)]" : ""}`}
+            <div key={b.name} className={`grid ${i < GURU_BUCKETS_DEF.length - 1 ? "border-b border-white/10" : ""}`}
               style={{ gridTemplateColumns: "1fr 220px" }}>
               {/* Left: name + tagline */}
-              <div className="px-6 py-5" style={{ background: b.bg }}>
-                <p className="text-2xl font-bold text-white mb-0.5">{b.name}</p>
-                <p className="text-sm italic text-white/85">{b.tagline}</p>
+              <div className="px-6 py-4" style={{ background: b.bg }}>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: b.accent }} />
+                  <p className="text-xl font-bold text-white">{b.name}</p>
+                </div>
+                <p className="text-sm italic pl-4" style={{ color: b.accent, opacity: 0.85 }}>{b.tagline}</p>
               </div>
               {/* Right: rule */}
-              <div className="px-5 py-5 flex items-center" style={{ background: b.dark }}>
-                <p className="text-sm text-white/90 leading-snug font-medium">{b.rule}</p>
+              <div className="px-5 py-4 flex items-center" style={{ background: b.dark }}>
+                <p className="text-sm text-white/80 leading-snug font-medium">{b.rule}</p>
               </div>
             </div>
           ))}
@@ -1601,7 +1618,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
             {/* Section heading */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-border" />
-              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-2">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 px-2">
                 Recommendation for Rebalancing &amp; Product Selection
               </span>
               <div className="flex-1 h-px bg-border" />
@@ -1610,20 +1627,20 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
             {/* 3 outcome KPIs */}
             <div className="grid grid-cols-3 gap-3">
               {([
-                { label: "Estimated Excess Cash", value: fmt(excessCash), sub: "available to redeploy" },
-                { label: "Additional After-Tax Income / Year", value: fmt(addlIncome), sub: "projected annual gain" },
-                { label: "% Increase to Annual Cashflow", value: `${pctIncrease}%`, sub: "vs. current salary income" },
+                { label: "Estimated Excess Cash", value: fmt(excessCash), sub: "available to redeploy", icon: "💰" },
+                { label: "Additional After-Tax Income / Year", value: fmt(addlIncome), sub: "projected annual gain", icon: "📈" },
+                { label: "% Increase to Annual Cashflow", value: `${pctIncrease}%`, sub: "vs. current salary income", icon: "⭐" },
               ] as const).map(m => (
-                <div key={m.label} className="rounded-xl border border-border overflow-hidden flex flex-col">
-                  <div className="bg-[hsl(221,39%,22%)] px-4 py-2.5 flex-1 flex items-center">
-                    <span className="text-xs text-white/75 font-medium leading-snug">{m.label}</span>
+                <div key={m.label} className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col shadow-sm">
+                  <div className="bg-slate-900 px-4 py-3 flex-1 flex items-center min-h-[52px]">
+                    <span className="text-xs text-slate-300 font-medium leading-snug">{m.label}</span>
                   </div>
-                  <div className="bg-[hsl(120,40%,86%)] px-4 py-3 flex items-center justify-between gap-2">
+                  <div className="bg-cyan-50 dark:bg-cyan-950 px-4 py-3 flex items-center justify-between gap-2">
                     <div>
-                      <p className="font-display font-black text-xl text-[hsl(120,40%,18%)] tabular-nums leading-none">{m.value}</p>
-                      <p className="text-[10px] text-[hsl(120,30%,30%)] mt-0.5">{m.sub}</p>
+                      <p className="font-display font-black text-xl text-cyan-900 dark:text-cyan-100 tabular-nums leading-none">{m.value}</p>
+                      <p className="text-[10px] text-cyan-700 dark:text-cyan-400 mt-0.5">{m.sub}</p>
                     </div>
-                    <span className="text-[hsl(120,50%,35%)] text-xl font-bold">★</span>
+                    <span className="text-lg">{m.icon}</span>
                   </div>
                 </div>
               ))}
@@ -1632,17 +1649,20 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
             {/* 4 bucket cards — 2×2 grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {rows.map(r => (
-                <div key={r.def.name} className="rounded-xl border border-border overflow-hidden flex flex-col shadow-sm">
+                <div key={r.def.name} className="rounded-xl overflow-hidden flex flex-col shadow-sm border border-border">
 
-                  {/* Colored header */}
+                  {/* Colored header with accent dot + yield chip */}
                   <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: r.def.bg }}>
-                    <div>
-                      <span className="text-xl font-bold text-white tracking-tight">{r.def.name}</span>
-                      <span className="text-white/70 text-sm italic ml-2.5">{r.def.tagline}</span>
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
+                      <div>
+                        <span className="text-xl font-bold text-white tracking-tight leading-none">{r.def.name}</span>
+                        <p className="text-xs italic mt-0.5" style={{ color: r.def.accent, opacity: 0.9 }}>{r.def.tagline}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-white/60 text-[10px] uppercase tracking-wide">Yield</p>
-                      <p className="text-white font-bold text-sm">{r.yield_}</p>
+                    <div className="rounded-lg px-2.5 py-1 text-right" style={{ background: r.def.dark }}>
+                      <p className="text-[9px] uppercase tracking-wide" style={{ color: r.def.accent }}>Yield</p>
+                      <p className="text-white font-bold text-sm leading-none">{r.yield_}</p>
                     </div>
                   </div>
 
@@ -1655,9 +1675,9 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Current Balance</p>
                         <p className="text-2xl font-display font-bold tabular-nums text-foreground">{fmt(r.current)}</p>
                       </div>
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
                         <div className="flex-1 h-px bg-border" />
-                        <span className="text-[10px]">GURU recommends</span>
+                        <span className="text-[9px] uppercase tracking-widest font-bold" style={{ color: r.def.bg }}>GURU recommends</span>
                         <div className="flex-1 h-px bg-border" />
                       </div>
                       <div>
@@ -1665,7 +1685,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <p className="text-2xl font-display font-bold tabular-nums" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
                       </div>
                       {/* Delta badge */}
-                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold ${deltaCls(r.delta)}`}>
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${deltaCls(r.delta)}`}>
                         <span>{deltaIcon(r.delta)}</span>
                         <span>
                           {r.delta === 0 ? "No Change" : `${fmt(Math.abs(r.delta))} ${r.delta > 0 ? "increase" : "decrease"}`}
@@ -1674,25 +1694,25 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
 
                     {/* Right — product & rationale */}
-                    <div className="px-5 py-4 space-y-3 flex flex-col justify-between">
+                    <div className="px-5 py-4 flex flex-col justify-between gap-3">
                       <div className="space-y-3">
                         <div>
                           <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">GURU Product</p>
                           <p className="text-sm font-semibold text-foreground leading-snug">{r.product}</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Gross Yield</p>
-                            <p className="text-base font-bold tabular-nums text-foreground">{r.yield_}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="rounded-lg px-2 py-1.5 bg-secondary/40">
+                            <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Gross</p>
+                            <p className="text-sm font-bold tabular-nums text-foreground">{r.yield_}</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">After-Tax</p>
-                            <p className="text-base font-bold tabular-nums text-foreground">{r.atYield}</p>
+                          <div className="rounded-lg px-2 py-1.5 bg-secondary/40">
+                            <p className="text-[9px] uppercase tracking-widest text-muted-foreground">After-Tax</p>
+                            <p className="text-sm font-bold tabular-nums text-foreground">{r.atYield}</p>
                           </div>
                         </div>
                       </div>
                       <div className="pt-2 border-t border-border/50">
-                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Rationale</p>
+                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-0.5">Rationale</p>
                         <p className="text-xs text-muted-foreground italic leading-snug">{r.calc}</p>
                       </div>
                     </div>
@@ -1702,24 +1722,24 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
             </div>
 
             {/* Totals summary strip */}
-            <div className="rounded-xl border border-border bg-[hsl(221,15%,88%)] dark:bg-[hsl(221,25%,22%)] px-5 py-3 grid grid-cols-4 gap-4 text-[hsl(221,39%,20%)] dark:text-white/90">
+            <div className="rounded-xl bg-slate-900 px-5 py-3.5 grid grid-cols-4 gap-4 text-white">
               <div>
-                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">Total Assets</p>
+                <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-0.5">Total Assets</p>
                 <p className="font-bold text-base tabular-nums">{fmt(totalAssets)}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">GURU Total</p>
+                <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-0.5">GURU Total</p>
                 <p className="font-bold text-base tabular-nums">{fmt(rows.reduce((s, r) => s + r.target, 0))}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">Net Redeployment</p>
-                <p className={`font-bold text-base tabular-nums ${excessCash > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
-                  {excessCash > 0 ? `${fmt(excessCash)} to Grow` : "Balanced"}
+                <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-0.5">Net Redeployment</p>
+                <p className="font-bold text-base tabular-nums text-cyan-400">
+                  {excessCash > 0 ? `${fmt(excessCash)} → Grow` : "Balanced"}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest opacity-60 mb-0.5">Balance Check</p>
-                <p className="font-bold text-base text-emerald-600">✓ No Change to Total</p>
+                <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-0.5">Balance Check</p>
+                <p className="font-bold text-base text-emerald-400">✓ Zero Net Change</p>
               </div>
             </div>
           </div>
