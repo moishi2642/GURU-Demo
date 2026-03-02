@@ -50,7 +50,7 @@ function RollingNumber({ value, format = "currency", prefix = "" }: {
   else formatted = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
   return (
     <span className="font-mono font-bold tracking-tight text-emerald-800 inline-flex items-center">
-      {formatted}<span className="animate-blink ml-px">.</span>
+      {formatted}<span className="animate-blink ml-px text-[10px] opacity-25">.</span>
     </span>
   );
 }
@@ -1787,141 +1787,144 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
             })()}
 
             {/* 4 bucket cards — 2×2 grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {rows.map(r => (
-                <div key={r.def.name} className="rounded-xl overflow-hidden flex flex-col shadow-sm border border-border">
+            <div className="space-y-3">
+              {rows.map(r => {
+                const prods = BUCKET_PRODUCTS[r.def.name] ?? [];
+                const rowH = 28;
+                const visRows = 5;
+                const dur = Math.max(14, prods.length * 3);
+                const maxVal = Math.max(r.current, r.target, 1);
+                const currentPct = (r.current / maxVal) * 100;
+                const targetPct  = (r.target  / maxVal) * 100;
+                return (
+                <div key={r.def.name} className="rounded-xl overflow-hidden flex shadow-sm border border-border">
 
-                  {/* ── Colored header ── */}
-                  <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: r.def.bg }}>
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
-                      <div>
-                        <p className="text-xl font-bold text-white tracking-tight leading-none">{r.def.name}</p>
-                        <p className="text-xs italic mt-0.5" style={{ color: r.def.accent, opacity: 0.9 }}>{r.def.tagline}</p>
+                  {/* ── LEFT: Header + Accounts ── */}
+                  <div className="w-72 flex-shrink-0 flex flex-col border-r border-border">
+                    <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: r.def.bg }}>
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base font-bold text-white leading-none">{r.def.name}</p>
+                        <p className="text-[10px] italic mt-0.5 truncate" style={{ color: r.def.accent, opacity: 0.85 }}>{r.def.tagline}</p>
+                      </div>
+                      <p className="text-[10px] text-white/50 text-right leading-snug max-w-[90px] flex-shrink-0">{r.def.rule}</p>
+                    </div>
+                    <div className="bg-card px-4 pt-3 pb-3 flex-1 flex flex-col">
+                      <div className="space-y-1.5 flex-1">
+                        {r.subAccounts.map(acct => (
+                          <div key={acct.name} className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
+                              <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
+                              <span className="truncate">{acct.name}</span>
+                            </span>
+                            <div className="flex items-center gap-3 flex-shrink-0 tabular-nums">
+                              <span className="text-[10px] text-muted-foreground">{acct.yield_}</span>
+                              <span className="text-[11px] font-semibold text-foreground">{fmt(acct.value)}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {r.subAccounts.length === 0 && <p className="text-xs text-muted-foreground italic">No accounts mapped</p>}
+                      </div>
+                      <div className="mt-2.5 pt-2 border-t border-border flex items-end justify-between">
+                        <p className="text-[9px] text-muted-foreground italic">{r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""}</p>
+                        <div className="text-right">
+                          <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">Current</p>
+                          <p className="text-xs font-bold tabular-nums text-foreground mb-1.5">{fmt(r.current)}</p>
+                          <p className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: r.def.bg }}>★ AI Target</p>
+                          <p className="text-xs font-bold tabular-nums" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-xs font-medium text-white/60 text-right max-w-[130px] leading-snug">{r.def.rule}</p>
                   </div>
 
-                  {/* ── Current Holdings table ── */}
-                  <div className="bg-card px-5 pt-4 pb-3">
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2.5">Current Holdings</p>
-                    <div className="space-y-1.5">
-                      {r.subAccounts.map(acct => (
-                        <div key={acct.name} className="flex items-center justify-between gap-2">
-                          <span className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
-                            <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
-                            <span className="truncate">{acct.name}</span>
-                          </span>
-                          <div className="flex items-center gap-4 flex-shrink-0 tabular-nums">
-                            <span className="text-[11px] text-muted-foreground w-12 text-right">{acct.yield_}</span>
-                            <span className="text-xs font-semibold text-foreground w-24 text-right">{fmt(acct.value)}</span>
+                  {/* ── MIDDLE: Visual + Metrics ── */}
+                  <div className="flex-1 px-5 py-4 bg-card flex flex-col gap-4">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-3">Allocation Shift</p>
+                      <div className="space-y-2.5">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] text-muted-foreground">Current</span>
+                            <span className="text-[9px] tabular-nums text-muted-foreground font-mono">{fmt(r.current)}</span>
+                          </div>
+                          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: r.def.bg + "18" }}>
+                            <div className="h-full rounded-full" style={{ width: `${currentPct}%`, background: r.def.bg, opacity: 0.4 }} />
                           </div>
                         </div>
-                      ))}
-                      {r.subAccounts.length === 0 && (
-                        <p className="text-xs text-muted-foreground italic">No accounts mapped to this bucket</p>
-                      )}
-                    </div>
-                    {/* Current Total → AI Target — stacked right-aligned */}
-                    <div className="mt-3 pt-2.5 border-t border-border flex items-end justify-between gap-3">
-                      <p className="text-[9px] text-muted-foreground italic pb-0.5">{r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""}</p>
-                      <div className="text-right">
-                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-0.5">Current Total</p>
-                        <p className="text-sm font-bold tabular-nums text-foreground mb-2">{fmt(r.current)}</p>
-                        <p className="text-[9px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: r.def.bg }}>★ AI Target</p>
-                        <p className="text-sm font-bold tabular-nums" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] font-semibold" style={{ color: r.def.bg }}>★ AI Target</span>
+                            <span className="text-[9px] tabular-nums font-mono font-semibold" style={{ color: r.def.bg }}>{fmt(r.target)}</span>
+                          </div>
+                          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: r.def.bg + "18" }}>
+                            <div className="h-full rounded-full" style={{ width: `${targetPct}%`, background: r.def.bg }} />
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* ── HERO: AI Target | To Redeploy | Yield Pickup ── */}
-                  <div className="border-t-2" style={{ borderColor: r.def.bg }}>
-                    <div className="grid grid-cols-3 divide-x divide-black/8" style={{ background: r.def.bg + "10" }}>
-                      {/* AI Target */}
-                      <div className="px-4 pt-3 pb-3">
-                        <p className="text-[9px] uppercase tracking-widest font-bold mb-1.5" style={{ color: r.def.bg }}>★ AI Target</p>
-                        <p className="text-xl leading-none">
-                          <RollingNumber value={r.target} format="currency" />
-                        </p>
+                    <div className="grid grid-cols-3 gap-3 pt-3 border-t" style={{ borderColor: r.def.bg + "30" }}>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: r.def.bg }}>★ AI Target</p>
+                        <p className="text-base leading-none"><RollingNumber value={r.target} format="currency" /></p>
                       </div>
-                      {/* To Redeploy */}
-                      <div className="px-4 pt-3 pb-3">
-                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-1.5 ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                      <div>
+                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-1 ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
                           {r.delta < 0 ? "▼ To Redeploy" : r.delta > 0 ? "▲ Needed" : "Balanced"}
                         </p>
-                        <p className="text-xl leading-none">
-                          {r.delta !== 0
-                            ? <RollingNumber value={Math.abs(r.delta)} format="currency" />
-                            : <span className="font-mono font-bold text-muted-foreground">—</span>}
+                        <p className="text-base leading-none">
+                          {r.delta !== 0 ? <RollingNumber value={Math.abs(r.delta)} format="currency" /> : <span className="font-mono font-bold text-muted-foreground">—</span>}
                         </p>
                       </div>
-                      {/* Yield Pickup */}
-                      <div className="px-4 pt-3 pb-3">
-                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-1.5 ${r.bpPickup > 0 ? "text-emerald-600" : r.bpPickup < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                      <div>
+                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-1 ${r.bpPickup > 0 ? "text-emerald-600" : r.bpPickup < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
                           Yield Pickup
                         </p>
-                        <p className="text-xl leading-none">
-                          {r.bpPickup !== 0
-                            ? <RollingNumber value={Math.abs(r.bpPickup)} format="raw" prefix={r.bpPickup > 0 ? "+" : "-"} />
-                            : <span className="font-mono font-bold text-muted-foreground">—</span>}
+                        <p className="text-base leading-none">
+                          {r.bpPickup !== 0 ? <RollingNumber value={Math.abs(r.bpPickup)} format="raw" prefix={r.bpPickup > 0 ? "+" : "-"} /> : <span className="font-mono font-bold text-muted-foreground">—</span>}
                         </p>
-                        <p className="text-[9px] text-muted-foreground mt-1">after-tax bps</p>
+                        <p className="text-[9px] text-muted-foreground mt-0.5">after-tax bps</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* ── Products scrolling ticker + Execute ── */}
-                  {(() => {
-                    const prods = BUCKET_PRODUCTS[r.def.name] ?? [];
-                    const rowH = 30;
-                    const visRows = 3;
-                    const dur = Math.max(14, prods.length * 3);
-                    return (
-                      <div className="border-t border-[hsl(221,39%,22%)] bg-[hsl(221,39%,10%)] overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/8">
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">Available Products</span>
-                          <span className="text-[9px] text-white/25">hover to pause</span>
-                        </div>
-                        <div className="grid px-4 py-1 border-b border-white/5 text-[9px] font-bold uppercase tracking-widest text-white/20"
-                          style={{ gridTemplateColumns: "1fr 72px 52px 52px" }}>
-                          <span>Product</span>
-                          <span>Type</span>
-                          <span className="text-right">AT Yield</span>
-                          <span className="text-right">Pickup</span>
-                        </div>
-                        <div className="overflow-hidden" style={{ height: rowH * visRows }}>
-                          <div className="animate-feed" style={{ animationDuration: `${dur}s` }}>
-                            {[...prods, ...prods].map((p, i) => (
-                              <div key={i} className="grid items-center px-4" style={{ gridTemplateColumns: "1fr 72px 52px 52px", height: rowH }}>
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  {p.isGuru && (
-                                    <span className="text-[8px] font-black text-white px-1 py-0.5 rounded flex-shrink-0 leading-none" style={{ background: r.def.bg }}>★</span>
-                                  )}
-                                  <span className="text-[11px] text-white/75 truncate">{p.name}</span>
-                                </div>
-                                <span className="text-[9px] text-white/35 truncate">{p.type}</span>
-                                <span className="text-[11px] font-bold text-emerald-400 text-right tabular-nums">{p.atYield}</span>
-                                <span className={`text-[10px] text-right font-semibold ${p.pickup.startsWith("+") ? "text-emerald-400" : "text-white/40"}`}>{p.pickup}</span>
-                              </div>
-                            ))}
+                  {/* ── RIGHT: Products ticker ── */}
+                  <div className="w-52 flex-shrink-0 flex flex-col border-l border-[hsl(221,39%,22%)] bg-[hsl(221,39%,10%)]">
+                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/8">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">Products</span>
+                      <span className="text-[9px] text-white/20">hover to pause</span>
+                    </div>
+                    <div className="grid px-3 py-1 border-b border-white/5 text-[8px] font-bold uppercase tracking-widest text-white/20"
+                      style={{ gridTemplateColumns: "1fr 46px 40px" }}>
+                      <span>Name</span>
+                      <span className="text-right">AT Yld</span>
+                      <span className="text-right">+Bps</span>
+                    </div>
+                    <div className="overflow-hidden" style={{ height: rowH * visRows }}>
+                      <div className="animate-feed" style={{ animationDuration: `${dur}s` }}>
+                        {[...prods, ...prods].map((p, i) => (
+                          <div key={i} className="grid items-center px-3 gap-1" style={{ gridTemplateColumns: "1fr 46px 40px", height: rowH }}>
+                            <div className="flex items-center gap-1 min-w-0">
+                              {p.isGuru && <span className="text-[7px] font-black text-white px-0.5 rounded flex-shrink-0 leading-none" style={{ background: r.def.bg }}>★</span>}
+                              <span className="text-[10px] text-white/70 truncate">{p.name}</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-400 text-right tabular-nums">{p.atYield}</span>
+                            <span className={`text-[9px] text-right font-semibold ${p.pickup.startsWith("+") ? "text-emerald-400" : "text-white/40"}`}>{p.pickup}</span>
                           </div>
-                        </div>
-                        <div className="px-4 py-2 border-t border-white/8 flex items-center justify-between">
-                          <span className="text-[9px] text-white/25">{prods.length} products available</span>
-                          <Button
-                            size="sm"
-                            className="h-6 text-[11px] gap-1 px-3 bg-white/10 hover:bg-white/15 text-white border border-white/15"
-                            data-testid={`btn-execute-${r.def.name.toLowerCase()}`}
-                          >
-                            Execute <ArrowUpRight className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        ))}
                       </div>
-                    );
-                  })()}
+                    </div>
+                    <div className="px-3 py-2 border-t border-white/8 flex items-center justify-between">
+                      <span className="text-[9px] text-white/25">{prods.length} products</span>
+                      <Button size="sm" className="h-6 text-[11px] gap-1 px-3 bg-white/10 hover:bg-white/15 text-white border border-white/15"
+                        data-testid={`btn-execute-${r.def.name.toLowerCase()}`}>
+                        Execute <ArrowUpRight className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Totals summary strip */}
