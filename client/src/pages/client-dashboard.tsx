@@ -49,7 +49,7 @@ function RollingNumber({ value, format = "currency", prefix = "" }: {
   else if (format === "raw")  formatted = `${prefix}${Math.round(v)}`;
   else formatted = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
   return (
-    <span className="font-mono font-bold tracking-tight text-emerald-800">
+    <span className="font-mono font-bold tracking-tight text-emerald-800 inline-flex items-center">
       {formatted}<span className="animate-blink ml-px">.</span>
     </span>
   );
