@@ -1474,7 +1474,7 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
 // ─── GURU Asset Allocation View ───────────────────────────────────────────────
 const GURU_BUCKETS_DEF = [
   {
-    name: "Reserve",
+    name: "Operating Cash",
     tagline: "Your safety net",
     rule: "2-3 months of cash",
     bg: "#1a3a8a",
@@ -1482,7 +1482,7 @@ const GURU_BUCKETS_DEF = [
     accent: "#93c5fd",
   },
   {
-    name: "Flow",
+    name: "Reserve",
     tagline: "Active cash management for what's next",
     rule: "12 months of cash for anticipated outflow",
     bg: "#7c5200",
@@ -1512,14 +1512,14 @@ type BucketProduct = {
   grossYield: string; atYield: string; pickup: string; isGuru: boolean;
 };
 const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
-  Reserve: [
+  "Operating Cash": [
     { name: "Citizens Private Bank Checking",  institution: "Citizens Bank",    type: "High-Yield Checking", grossYield: "3.78%", atYield: "2.38%", pickup: "+3.67%", isGuru: true  },
     { name: "JPMorgan Private Client Checking", institution: "J.P. Morgan",     type: "High-Yield Checking", grossYield: "3.50%", atYield: "2.21%", pickup: "+3.39%", isGuru: false },
     { name: "Bank of America Private Checking", institution: "BofA",            type: "High-Yield Checking", grossYield: "2.85%", atYield: "1.80%", pickup: "+2.74%", isGuru: false },
     { name: "Citi Priority Checking",           institution: "Citibank",        type: "High-Yield Checking", grossYield: "3.00%", atYield: "1.89%", pickup: "+2.89%", isGuru: false },
     { name: "Wells Fargo Premier Checking",     institution: "Wells Fargo",     type: "High-Yield Checking", grossYield: "2.50%", atYield: "1.58%", pickup: "+2.39%", isGuru: false },
   ],
-  Flow: [
+  Reserve: [
     { name: "JPMorgan 100% Treasuries MMF",     institution: "J.P. Morgan",    type: "Money Market Fund",   grossYield: "4.30%", atYield: "2.71%", pickup: "+0.65%", isGuru: true  },
     { name: "BlackRock Liquid Federal Trust",   institution: "BlackRock",      type: "Money Market Fund",   grossYield: "4.27%", atYield: "2.69%", pickup: "+0.62%", isGuru: false },
     { name: "Fidelity Government MMF (SPRXX)",  institution: "Fidelity",       type: "Money Market Fund",   grossYield: "4.25%", atYield: "2.68%", pickup: "+0.60%", isGuru: false },
@@ -1555,8 +1555,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
   const alts   = assets.filter(a => a.type === "alternative" || a.type === "real_estate").reduce((s, a) => s + Number(a.value), 0);
 
   const buckets = [
-    { label: "Reserve",   sublabel: "Checking — transaction accounts",  value: reserve,      color: GURU_BUCKETS_DEF[0].bg, pct: (reserve / totalAssets) * 100 },
-    { label: "Flow",      sublabel: "Savings, MM & Treasuries",         value: yieldBucket + tactical, color: GURU_BUCKETS_DEF[1].bg, pct: ((yieldBucket + tactical) / totalAssets) * 100 },
+    { label: "Operating Cash", sublabel: "Checking — transaction accounts",  value: reserve,      color: GURU_BUCKETS_DEF[0].bg, pct: (reserve / totalAssets) * 100 },
+    { label: "Reserve",        sublabel: "Savings, MM & Treasuries",         value: yieldBucket + tactical, color: GURU_BUCKETS_DEF[1].bg, pct: ((yieldBucket + tactical) / totalAssets) * 100 },
     { label: "Build",     sublabel: "Equities & brokerage investments", value: growth,       color: GURU_BUCKETS_DEF[2].bg, pct: (growth / totalAssets) * 100 },
     { label: "Grow",      sublabel: "Real estate, PE, carry, RSUs",     value: alts,         color: GURU_BUCKETS_DEF[3].bg, pct: (alts / totalAssets) * 100 },
   ];
@@ -1671,10 +1671,10 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
             {/* ── Portfolio Overview Hero ── */}
             {(() => {
               const HERO_COLORS: Record<string, { bg: string; accent: string }> = {
-                Reserve: { bg: "#1d4ed8", accent: "#93c5fd" },
-                Flow:    { bg: "#047857", accent: "#6ee7b7" },
-                Build:   { bg: "#ca8a04", accent: "#fde68a" },
-                Grow:    { bg: "#5b21b6", accent: "#c084fc" },
+                "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd" },
+                Reserve:          { bg: "#047857", accent: "#6ee7b7" },
+                Build:            { bg: "#ca8a04", accent: "#fde68a" },
+                Grow:             { bg: "#5b21b6", accent: "#c084fc" },
               };
               return (
               <div className="rounded-xl border border-border bg-card p-6">
@@ -1690,7 +1690,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     <p className="text-xs text-muted-foreground mt-1">Across {assets.length} accounts</p>
                     {/* Stacked allocation bar — real proportions */}
                     <div className="flex mt-4 h-2.5 rounded-full overflow-hidden gap-px">
-                      {(["Reserve","Flow","Build","Grow"] as const).map((name, i) => {
+                      {(["Operating Cash","Reserve","Build","Grow"] as const).map((name, i) => {
                         const val = [reserveCurrent, flowCurrent, buildCurrent, growCurrent][i];
                         return (
                           <div key={name} style={{
@@ -2403,7 +2403,7 @@ export default function ClientDashboard() {
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Cash Allocation</p>
                 {[
-                  { key: "reserve",  label: "Reserve",  value: reserveTop,  color: GURU_BUCKETS.reserve.color  },
+                  { key: "reserve",  label: "Operating Cash",  value: reserveTop,  color: GURU_BUCKETS.reserve.color  },
                   { key: "yield",    label: "Yield",    value: yieldTop,    color: GURU_BUCKETS.yield.color    },
                   { key: "tactical", label: "Tactical", value: tacticalTop, color: GURU_BUCKETS.tactical.color },
                 ].map(b => {
