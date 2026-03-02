@@ -1707,7 +1707,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 <div className="grid grid-cols-4 gap-3">
                   {rows.map(r => {
                     const hc       = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
-                    const fmtK     = (v: number) => `$${Math.round(v / 1000).toLocaleString()}K`;
+                    const fmtK     = (v: number) => `$${Math.round(v).toLocaleString()}`;
                     const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
                     const pctTotal  = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
                     const isSurplus = r.delta < -5000;
