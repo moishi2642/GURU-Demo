@@ -1502,150 +1502,113 @@ function BucketExecutionPanel({
     ? `$${(v / 1_000_000).toFixed(2)}M`
     : `$${Math.round(v).toLocaleString()}`;
 
-  const maxVal      = Math.max(totalAssets, current, target, 1);
-  const currentPct  = (current / maxVal) * 100;
-  const targetPct   = (target  / maxVal) * 100;
-  const progressPct = target > 0 ? Math.min((current / target) * 100, 100) : 100;
-  const priorityLabel = bucketName === "Operating Cash" || bucketName === "Reserve" ? "HIGH"
-    : bucketName === "Build" ? "MEDIUM" : "LOW";
-  const priorityColor = priorityLabel === "HIGH" ? "#f43f5e" : priorityLabel === "MEDIUM" ? "#f59e0b" : "#22c55e";
-
   return (
-    <div className="w-72 flex-shrink-0 border-l border-r border-slate-700 bg-slate-800 flex flex-col">
-      <div className="flex-1 px-5 pt-4 pb-3 flex flex-col gap-4">
+    <div className="w-72 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
+      <div className="flex-1 p-5 flex flex-col gap-4">
 
-        {/* Current bar */}
-        <div>
-          <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400 mb-3">Position vs Target</p>
-          <div className="mb-1.5">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Current</span>
-              <span className="text-[10px] font-black text-white tabular-nums">{fmtD(current)}</span>
-            </div>
-            <div className="h-5 bg-slate-700 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: bgColor }}
-                initial={{ width: 0 }}
-                animate={{ width: `${currentPct}%` }}
-                transition={{ duration: 1.2, ease: "easeOut" }}
-              />
+        {/* Status + Δ vs Target */}
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Status</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+              <span className="text-xs font-black" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
           </div>
-
-          {/* Delta badge */}
-          <div className="flex justify-center my-2">
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tabular-nums border ${
-              isBalanced   ? "bg-emerald-950/60 text-emerald-400 border-emerald-700"
-              : needsFunding ? "bg-rose-950/60 text-rose-400 border-rose-700"
-              : "bg-teal-950/60 text-teal-400 border-teal-700"
-            }`}>
-              {isBalanced ? "✓ ON TARGET" : (needsFunding ? "▲ " : "▼ ") + fmtD(Math.abs(delta))}
+          <div className="text-right">
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Δ vs Target</p>
+            <span className="text-xs font-black tabular-nums" style={{ color: statusColor }}>
+              {isBalanced ? "—" : (needsFunding ? "+" : "−") + fmtD(Math.abs(delta))}
             </span>
-          </div>
-
-          {/* GURU Target bar */}
-          <div className="mb-1.5">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: accentColor }}>GURU Target</span>
-              <span className="text-[10px] font-black tabular-nums" style={{ color: accentColor }}>{fmtD(target)}</span>
-            </div>
-            <div className="h-5 bg-slate-700 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full opacity-75"
-                style={{ background: accentColor }}
-                initial={{ width: 0 }}
-                animate={{ width: `${targetPct}%` }}
-                transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-              />
-            </div>
-          </div>
-
-          {/* Progress to target */}
-          <div className="mt-2.5">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[8px] uppercase tracking-wider text-slate-500">Progress to Target</span>
-              <span className="text-[8px] font-bold text-slate-400 tabular-nums">{progressPct.toFixed(0)}%</span>
-            </div>
-            <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{ background: `linear-gradient(to right, ${bgColor}, ${accentColor})` }}
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 1.4, ease: "easeOut", delay: 0.5 }}
-              />
-            </div>
           </div>
         </div>
 
-        {/* 2×2 metrics grid */}
+        {/* Current / Target row */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-slate-700 rounded-lg px-3 py-2">
-            <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-0.5">Status</p>
-            <div className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
-              <span className="text-[9px] font-black leading-none" style={{ color: statusColor }}>{statusLabel}</span>
+          <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Current</p>
+            <p className="text-sm font-black tabular-nums text-foreground">{fmtD(current)}</p>
+            <p className="text-[9px] text-muted-foreground tabular-nums">{avgYield.toFixed(2)}% yield</p>
+          </div>
+          <div className="rounded-lg border px-3 py-2" style={{ borderColor: bgColor + "40", background: bgColor + "10" }}>
+            <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: bgColor }}>GURU Target</p>
+            <p className="text-sm font-black tabular-nums" style={{ color: bgColor }}>{fmtD(target)}</p>
+            <p className="text-[9px] tabular-nums" style={{ color: bgColor, opacity: 0.7 }}>
+              {bpPickup > 0 ? `+${bpPickup}bps pickup` : "optimal"}
+            </p>
+          </div>
+        </div>
+
+        {/* Transfer input */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Transfer Amount</p>
+            {suggested > 0 && (
+              <button
+                onClick={() => { setAmount(String(Math.round(suggested))); setStaged(false); }}
+                className="text-[9px] font-semibold underline underline-offset-2 tabular-nums"
+                style={{ color: bgColor }}
+              >
+                Use {fmtD(suggested)}
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
+            <input
+              type="number"
+              value={amount}
+              onChange={e => { setAmount(e.target.value); setStaged(false); }}
+              placeholder="0"
+              className="w-full pl-6 pr-3 py-2 text-sm font-semibold tabular-nums rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2"
+            />
+          </div>
+          {parsedAmt > 0 && (
+            <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
+              New balance: <span className="font-semibold text-foreground">{fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Routing */}
+        <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Route</p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">From</p>
+              <select
+                value={fromAccount}
+                onChange={e => { setFromAccount(e.target.value); setStaged(false); }}
+                className="w-full text-[11px] font-semibold text-foreground bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
+              >
+                {BUCKET_NAMES.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
             </div>
-          </div>
-          <div className="bg-slate-700 rounded-lg px-3 py-2">
-            <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-0.5">Priority</p>
-            <span className="text-[10px] font-black" style={{ color: priorityColor }}>{priorityLabel}</span>
-          </div>
-          <div className="bg-slate-700 rounded-lg px-3 py-2">
-            <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-0.5">Current Yield</p>
-            <span className="text-[10px] font-black text-white tabular-nums">{avgYield.toFixed(2)}%</span>
-          </div>
-          <div className="bg-slate-700 rounded-lg px-3 py-2">
-            <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-0.5">Yield Pickup</p>
-            <span className="text-[10px] font-black tabular-nums" style={{ color: bpPickup > 0 ? "#34d399" : "#64748b" }}>
-              {bpPickup > 0 ? `+${bpPickup}bps` : "—"}
-            </span>
+            <span className="text-muted-foreground flex-shrink-0 mt-4 text-sm">→</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">To</p>
+              <select
+                value={toAccount}
+                onChange={e => { setToAccount(e.target.value); setStaged(false); }}
+                className="w-full text-[11px] font-semibold bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                style={{ color: bgColor, borderColor: bgColor + "60", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
+              >
+                {BUCKET_NAMES.filter(n => n !== fromAccount).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
           </div>
         </div>
 
       </div>
 
-      {/* Route + Stage */}
-      <div className="border-t border-slate-700 px-5 py-3 flex flex-col gap-2.5">
-        <p className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Route Transfer</p>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-0.5">From</p>
-            <select
-              value={fromAccount}
-              onChange={e => { setFromAccount(e.target.value); setStaged(false); }}
-              className="w-full text-[11px] font-semibold text-white bg-slate-700 border border-slate-600 rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer"
-              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "20px" }}
-            >
-              {BUCKET_NAMES.map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <span className="text-slate-500 flex-shrink-0 mt-4 text-sm">→</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-0.5">To</p>
-            <select
-              value={toAccount}
-              onChange={e => { setToAccount(e.target.value); setStaged(false); }}
-              className="w-full text-[11px] font-semibold text-white bg-slate-700 border border-slate-600 rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer"
-              style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "20px" }}
-            >
-              {BUCKET_NAMES.filter(n => n !== fromAccount).map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-        </div>
-        <input
-          type="number"
-          value={amount}
-          onChange={e => { setAmount(e.target.value); setStaged(false); }}
-          placeholder="Amount"
-          className="w-full px-3 py-1.5 text-sm font-semibold tabular-nums rounded-lg border border-slate-600 bg-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
-        />
+      {/* Stage button */}
+      <div className="px-5 pb-4">
         <button
-          onClick={() => setStaged(s => !s)}
+          onClick={() => setStaged(true)}
           disabled={parsedAmt <= 0}
-          className="w-full py-2 rounded-lg text-[11px] font-black uppercase tracking-widest text-white transition-all disabled:opacity-30"
-          style={{ background: staged ? accentColor : bgColor }}
+          className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
+          style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
         >
           {staged ? "✓ Staged" : "Stage Transfer"}
         </button>
