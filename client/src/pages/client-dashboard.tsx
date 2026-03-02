@@ -1865,12 +1865,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           <span className="text-[9px] font-mono font-bold text-white/70 drop-shadow-sm">{fmt(r.current)}</span>
                         </div>
                       </div>
-                      {/* Below bar: AI target label + delta */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <span className="inline-block w-[2px] h-3 rounded-sm flex-shrink-0" style={{ background: r.def.bg }} />
-                          <span className="text-[9px] font-semibold" style={{ color: r.def.bg }}>★ AI Target: {fmt(r.target)}</span>
-                        </div>
+                      {/* Below bar: delta only */}
+                      <div className="flex items-center justify-end">
                         <span className={`text-[9px] font-bold tabular-nums ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
                           {r.delta < 0 ? `▼ ${fmt(Math.abs(r.delta))} to redeploy` : r.delta > 0 ? `▲ ${fmt(Math.abs(r.delta))} needed` : "Balanced"}
                         </span>
