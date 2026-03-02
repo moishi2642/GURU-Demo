@@ -15,7 +15,7 @@ import {
 import {
   BrainCircuit, TrendingUp, TrendingDown, ChevronLeft, Activity,
   CheckCircle2, AlertTriangle, XCircle, Zap, LayoutDashboard, FileText,
-  Database, ArrowUpRight, CalendarClock, BarChart2, PieChart as PieChartIcon, Scale, AlertCircle,
+  Database, ArrowUpRight, CalendarClock, BarChart2, PieChart as PieChartIcon, Scale, AlertCircle, Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
@@ -1595,6 +1595,101 @@ function BucketExecutionPanel({
   );
 }
 
+// ─── Bucket Product Panel (right column of each bucket row) ──────────────────
+function BucketProductPanel({
+  bgColor, accentColor, products,
+}: {
+  bgColor: string; accentColor: string; products: BucketProduct[];
+}) {
+  const top3 = products.slice(0, 3);
+  const defaultSelected = top3.findIndex(p => p.isGuru);
+  const [selected, setSelected] = useState<Set<number>>(
+    new Set(defaultSelected >= 0 ? [defaultSelected] : top3.length > 0 ? [0] : [])
+  );
+  const [staged, setStaged] = useState(false);
+
+  function toggle(i: number) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
+    setStaged(false);
+  }
+
+  return (
+    <div className="w-60 flex-shrink-0 flex flex-col border-l border-border bg-card">
+      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
+        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Recommended Products</p>
+        <span className="text-[9px] text-muted-foreground tabular-nums">{selected.size} selected</span>
+      </div>
+
+      <div className="flex-1 px-3 py-3 flex flex-col gap-2">
+        {top3.map((p, i) => {
+          const checked = selected.has(i);
+          return (
+            <button
+              key={i}
+              onClick={() => toggle(i)}
+              className="w-full rounded-lg border text-left transition-all p-3"
+              style={{
+                borderColor: checked ? bgColor + "60" : undefined,
+                background: checked ? bgColor + "0d" : undefined,
+              }}
+            >
+              <div className="flex items-start gap-2.5">
+                <div
+                  className="w-4 h-4 rounded flex-shrink-0 mt-0.5 flex items-center justify-center border-2 transition-colors"
+                  style={{
+                    background: checked ? bgColor : "transparent",
+                    borderColor: checked ? bgColor : "#94a3b8",
+                  }}
+                >
+                  {checked && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  {p.isGuru && (
+                    <span
+                      className="inline-block text-[7px] font-black px-1 py-px rounded text-white leading-none mb-1"
+                      style={{ background: bgColor }}
+                    >
+                      ★ GURU
+                    </span>
+                  )}
+                  <p className="text-[11px] font-semibold text-foreground leading-snug truncate">{p.name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-bold text-emerald-600 tabular-nums">{p.atYield}</span>
+                    <span
+                      className="text-[9px] font-semibold tabular-nums"
+                      style={{ color: p.pickup.startsWith("+") ? bgColor : "#94a3b8" }}
+                    >
+                      {p.pickup}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+        {top3.length === 0 && (
+          <p className="text-xs text-muted-foreground italic mt-2">No products mapped</p>
+        )}
+      </div>
+
+      <div className="px-3 pb-4">
+        <button
+          onClick={() => setStaged(true)}
+          disabled={selected.size === 0}
+          className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
+          style={{ background: bgColor }}
+        >
+          {staged ? `✓ ${selected.size} Staged` : `Stage ${selected.size} Selected`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── GURU Asset Allocation View ───────────────────────────────────────────────
 const GURU_BUCKETS_DEF = [
   {
@@ -1973,9 +2068,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
             <div className="space-y-3">
               {rows.map(r => {
                 const prods = BUCKET_PRODUCTS[r.def.name] ?? [];
-                const rowH = 28;
-                const visRows = 5;
-                const dur = Math.max(14, prods.length * 3);
                 return (
                 <div key={r.def.name} className="rounded-xl overflow-hidden flex shadow-sm border border-border">
 
@@ -2041,40 +2133,12 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     );
                   })()}
 
-                  {/* ── RIGHT: Products ticker ── */}
-                  <div className="w-52 flex-shrink-0 flex flex-col border-l border-[hsl(221,39%,22%)] bg-[hsl(221,39%,10%)]">
-                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/8">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">Products</span>
-                      <span className="text-[9px] text-white/20">hover to pause</span>
-                    </div>
-                    <div className="grid px-3 py-1 border-b border-white/5 text-[8px] font-bold uppercase tracking-widest text-white/20"
-                      style={{ gridTemplateColumns: "1fr 46px 40px" }}>
-                      <span>Name</span>
-                      <span className="text-right">AT Yld</span>
-                      <span className="text-right">+Bps</span>
-                    </div>
-                    <div className="overflow-hidden" style={{ height: rowH * visRows }}>
-                      <div className="animate-feed" style={{ animationDuration: `${dur}s` }}>
-                        {[...prods, ...prods].map((p, i) => (
-                          <div key={i} className="grid items-center px-3 gap-1" style={{ gridTemplateColumns: "1fr 46px 40px", height: rowH }}>
-                            <div className="flex items-center gap-1 min-w-0">
-                              {p.isGuru && <span className="text-[7px] font-black text-white px-0.5 rounded flex-shrink-0 leading-none" style={{ background: r.def.bg }}>★</span>}
-                              <span className="text-[10px] text-white/70 truncate">{p.name}</span>
-                            </div>
-                            <span className="text-[10px] font-bold text-emerald-400 text-right tabular-nums">{p.atYield}</span>
-                            <span className={`text-[9px] text-right font-semibold ${p.pickup.startsWith("+") ? "text-emerald-400" : "text-white/40"}`}>{p.pickup}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="px-3 py-2 border-t border-white/8 flex items-center justify-between">
-                      <span className="text-[9px] text-white/25">{prods.length} products</span>
-                      <Button size="sm" className="h-6 text-[11px] gap-1 px-3 bg-white/10 hover:bg-white/15 text-white border border-white/15"
-                        data-testid={`btn-execute-${r.def.name.toLowerCase()}`}>
-                        Execute <ArrowUpRight className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
+                  {/* ── RIGHT: Products panel ── */}
+                  <BucketProductPanel
+                    bgColor={r.def.bg}
+                    accentColor={r.def.accent}
+                    products={prods}
+                  />
 
                 </div>
                 );
