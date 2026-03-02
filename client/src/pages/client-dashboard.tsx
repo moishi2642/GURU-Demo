@@ -1632,7 +1632,7 @@ function BucketProductPanel({
   }
 
   return (
-    <div className="w-60 flex-shrink-0 flex flex-col border-l border-border bg-card">
+    <div className="w-80 flex-shrink-0 flex flex-col border-l border-border bg-card">
       <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
         <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Recommended Products</p>
         <span className="text-[9px] text-muted-foreground tabular-nums">{selected.size} selected</span>
