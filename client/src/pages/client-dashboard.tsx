@@ -1471,6 +1471,130 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
   );
 }
 
+// ─── Bucket Execution Panel (middle column of each bucket row) ────────────────
+function BucketExecutionPanel({
+  bucketName, current, target, delta, accentColor, bgColor,
+  avgYield, bpPickup, totalAssets,
+}: {
+  bucketName: string; current: number; target: number; delta: number;
+  accentColor: string; bgColor: string; avgYield: number; bpPickup: number; totalAssets: number;
+}) {
+  const suggested = Math.abs(delta);
+  const [amount, setAmount] = useState(suggested > 0 ? String(Math.round(suggested)) : "");
+  const [staged, setStaged] = useState(false);
+
+  const needsFunding = delta > 1000;
+  const isSurplus    = delta < -1000;
+  const isBalanced   = !needsFunding && !isSurplus;
+
+  const statusLabel = isBalanced ? "BALANCED" : needsFunding ? "NEEDS FUNDING" : "SURPLUS";
+  const statusColor = isBalanced ? "#22c55e" : needsFunding ? "#f43f5e" : "#10b981";
+
+  const fromLabel = needsFunding ? "Grow" : bucketName;
+  const toLabel   = needsFunding ? bucketName : "Build / Grow";
+
+  const parsedAmt = parseFloat(amount.replace(/[^0-9.]/g, "")) || 0;
+  const newBalance = needsFunding ? current + parsedAmt : current - parsedAmt;
+  const fmtD = (v: number) => v >= 1_000_000
+    ? `$${(v / 1_000_000).toFixed(2)}M`
+    : `$${Math.round(v).toLocaleString()}`;
+
+  return (
+    <div className="flex-1 border-l border-r border-border bg-card flex flex-col">
+      <div className="flex-1 p-5 flex flex-col gap-4">
+
+        {/* Status + current vs target */}
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Status</p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+              <span className="text-xs font-black" style={{ color: statusColor }}>{statusLabel}</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Δ vs Target</p>
+            <span className="text-xs font-black tabular-nums" style={{ color: statusColor }}>
+              {isBalanced ? "—" : (needsFunding ? "+" : "−") + fmtD(Math.abs(delta))}
+            </span>
+          </div>
+        </div>
+
+        {/* Current / Target row */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Current</p>
+            <p className="text-sm font-black tabular-nums text-foreground">{fmtD(current)}</p>
+            <p className="text-[9px] text-muted-foreground tabular-nums">{avgYield.toFixed(2)}% yield</p>
+          </div>
+          <div className="rounded-lg border px-3 py-2" style={{ borderColor: bgColor + "40", background: bgColor + "10" }}>
+            <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: bgColor }}>GURU Target</p>
+            <p className="text-sm font-black tabular-nums" style={{ color: bgColor }}>{fmtD(target)}</p>
+            <p className="text-[9px] tabular-nums" style={{ color: bgColor, opacity: 0.7 }}>
+              {bpPickup > 0 ? `+${bpPickup}bps pickup` : "optimal"}
+            </p>
+          </div>
+        </div>
+
+        {/* Transfer input */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Transfer Amount</p>
+            {suggested > 0 && (
+              <button
+                onClick={() => { setAmount(String(Math.round(suggested))); setStaged(false); }}
+                className="text-[9px] font-semibold underline underline-offset-2 tabular-nums"
+                style={{ color: bgColor }}
+              >
+                Use {fmtD(suggested)}
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
+            <input
+              type="number"
+              value={amount}
+              onChange={e => { setAmount(e.target.value); setStaged(false); }}
+              placeholder="0"
+              className="w-full pl-6 pr-3 py-2 text-sm font-semibold tabular-nums rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2"
+              style={{ focusRingColor: bgColor } as React.CSSProperties}
+            />
+          </div>
+          {parsedAmt > 0 && (
+            <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
+              New balance: <span className="font-semibold text-foreground">{fmtD(newBalance)}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Routing */}
+        <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Route</p>
+          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <span className="truncate">{fromLabel}</span>
+            <span className="text-muted-foreground flex-shrink-0">→</span>
+            <span className="truncate">{toLabel}</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Stage button */}
+      <div className="px-5 pb-4">
+        <button
+          onClick={() => setStaged(true)}
+          disabled={parsedAmt <= 0}
+          className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
+          style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
+        >
+          {staged ? "✓ Staged" : "Stage Transfer"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── GURU Asset Allocation View ───────────────────────────────────────────────
 const GURU_BUCKETS_DEF = [
   {
@@ -1862,9 +1986,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 const rowH = 28;
                 const visRows = 5;
                 const dur = Math.max(14, prods.length * 3);
-                const maxVal = Math.max(r.current, r.target, 1);
-                const currentPct = (r.current / maxVal) * 100;
-                const targetPct  = (r.target  / maxVal) * 100;
                 return (
                 <div key={r.def.name} className="rounded-xl overflow-hidden flex shadow-sm border border-border">
 
@@ -1911,149 +2032,22 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                   </div>
 
-                  {/* ── MIDDLE: dual bars + 2×2 grid ── */}
+                  {/* ── MIDDLE: execution panel ── */}
                   {(() => {
-                    const delta         = r.target - r.current;
-                    const needsFunding  = delta > 0;
-                    const isBalanced    = Math.abs(delta) < 1000;
-                    const progressPct   = Math.min((r.current / Math.max(r.target, 1)) * 100, 100);
-                    const maxVal        = Math.max(r.current, r.target, 1);
-                    const avgYield      = weightedGrossYield(r.subAccounts, r.current);
-                    const yieldBps      = r.bpPickup;
-                    const yieldDollars  = Math.round((Math.abs(yieldBps) / 10000) * r.current);
+                    const avgYield = weightedGrossYield(r.subAccounts, r.current);
                     return (
-                      <div className="flex-1 border-l border-r border-border bg-card">
-                        <div className="p-5">
-
-                          {/* Current bar */}
-                          <div className="mb-4">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Current</span>
-                              <span className="text-sm font-semibold text-foreground tabular-nums">${(r.current / 1000).toFixed(0)}K</span>
-                            </div>
-                            <div className="relative h-8 bg-muted rounded border border-border">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${(r.current / maxVal) * 100}%` }}
-                                transition={{ duration: 1, delay: 0.2 }}
-                                className="h-full rounded flex items-center justify-end px-2"
-                                style={{ backgroundColor: r.def.accent + "dd" }}
-                              >
-                                <span className="text-[10px] font-semibold text-white drop-shadow">
-                                  {totalAssets > 0 ? ((r.current / totalAssets) * 100).toFixed(1) : "0"}%
-                                </span>
-                              </motion.div>
-                            </div>
-                          </div>
-
-                          {/* Delta badge */}
-                          <div className="flex items-center justify-center my-3">
-                            {isBalanced ? (
-                              <div className="flex items-center gap-2 text-emerald-600">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                <span className="text-xs font-semibold">BALANCED</span>
-                              </div>
-                            ) : needsFunding ? (
-                              <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.8 }}
-                                className="flex items-center gap-2"
-                              >
-                                <span className="text-rose-500 text-xs font-semibold">▲ +${(Math.abs(delta) / 1000).toFixed(0)}K NEEDED</span>
-                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                              </motion.div>
-                            ) : (
-                              <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.8 }}
-                                className="flex items-center gap-2"
-                              >
-                                <span className="text-emerald-600 text-xs font-semibold">▼ ${(Math.abs(delta) / 1000).toFixed(0)}K SURPLUS</span>
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              </motion.div>
-                            )}
-                          </div>
-
-                          {/* GURU Target bar — bucket color gradient */}
-                          <div className="mb-4">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] uppercase tracking-wider font-semibold flex items-center gap-1" style={{ color: r.def.bg }}>
-                                <Activity className="w-3 h-3" />
-                                GURU Target
-                              </span>
-                              <span className="text-sm font-semibold tabular-nums" style={{ color: r.def.bg }}>${(r.target / 1000).toFixed(0)}K</span>
-                            </div>
-                            <div className="relative h-8 rounded border border-border bg-muted">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${(r.target / maxVal) * 100}%` }}
-                                transition={{ duration: 1, delay: 0.5 }}
-                                className="h-full rounded flex items-center justify-end px-2"
-                                style={{ background: `linear-gradient(to right, ${r.def.dark}, ${r.def.bg})` }}
-                              >
-                                <span className="text-[10px] font-semibold text-white drop-shadow">
-                                  {totalAssets > 0 ? ((r.target / totalAssets) * 100).toFixed(1) : "0"}%
-                                </span>
-                              </motion.div>
-                            </div>
-                          </div>
-
-                          {/* Progress to target */}
-                          <div className="mb-4 pb-4 border-b border-border">
-                            <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-                              <span>Progress to Target</span>
-                              <span className="font-semibold tabular-nums">{progressPct.toFixed(0)}%</span>
-                            </div>
-                            <div className="h-1 bg-muted rounded-full overflow-hidden border border-border">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progressPct}%` }}
-                                transition={{ duration: 1, delay: 1 }}
-                                className="h-full rounded-full"
-                                style={{ background: isBalanced ? "#22c55e" : r.def.bg }}
-                              />
-                            </div>
-                          </div>
-
-                          {/* 2×2 metrics grid */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="border border-border bg-secondary/40 p-2.5 rounded-lg">
-                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-semibold">Status</div>
-                              <div className={`text-xs font-semibold ${isBalanced ? "text-emerald-600" : needsFunding ? "text-rose-500" : "text-emerald-600"}`}>
-                                {isBalanced ? "BALANCED" : needsFunding ? "UNDERFUNDED" : "SURPLUS"}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">
-                                {isBalanced ? "No action needed" : needsFunding ? "Requires funding" : "Ready to redeploy"}
-                              </div>
-                            </div>
-                            <div className="border border-border bg-secondary/40 p-2.5 rounded-lg">
-                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-semibold">Priority</div>
-                              <div className="text-xs font-semibold text-foreground">
-                                {Math.abs(delta) > 300000 ? "HIGH" : Math.abs(delta) > 100000 ? "MEDIUM" : "LOW"}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">Execution: T+2</div>
-                            </div>
-                            <div className="border border-border bg-secondary/40 p-2.5 rounded-lg">
-                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-semibold">Current Yield</div>
-                              <div className="text-xs font-semibold text-foreground tabular-nums">{avgYield.toFixed(2)}%</div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">Weighted average</div>
-                            </div>
-                            <div className="border border-border bg-secondary/40 p-2.5 rounded-lg">
-                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-semibold flex items-center gap-1">
-                                Yield Pickup
-                                {yieldBps > 50 && <AlertCircle className="w-3 h-3 text-orange-500" />}
-                              </div>
-                              <div className={`text-xs font-semibold tabular-nums ${yieldBps > 50 ? "text-orange-500" : "text-emerald-600"}`}>
-                                {yieldBps >= 0 ? "+" : ""}{yieldBps} bps
-                              </div>
-                              <div className="text-[10px] text-emerald-600 mt-0.5 font-medium">{fmt(yieldDollars)}/yr</div>
-                            </div>
-                          </div>
-
-                        </div>
-                      </div>
+                      <BucketExecutionPanel
+                        key={r.def.name}
+                        bucketName={r.def.name}
+                        current={r.current}
+                        target={r.target}
+                        delta={r.delta}
+                        accentColor={r.def.accent}
+                        bgColor={r.def.bg}
+                        avgYield={avgYield}
+                        bpPickup={r.bpPickup}
+                        totalAssets={totalAssets}
+                      />
                     );
                   })()}
 
