@@ -1810,28 +1810,38 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                       <p className="text-[10px] text-white/50 text-right leading-snug max-w-[90px] flex-shrink-0">{r.def.rule}</p>
                     </div>
                     <div className="bg-card px-4 pt-3 pb-3 flex-1 flex flex-col">
+                      {/* Column headers */}
+                      <div className="grid mb-2" style={{ gridTemplateColumns: "1fr 48px 88px" }}>
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Current Accounts</span>
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Yield</span>
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Balance</span>
+                      </div>
                       <div className="space-y-1.5 flex-1">
                         {r.subAccounts.map(acct => (
-                          <div key={acct.name} className="flex items-center justify-between gap-2">
+                          <div key={acct.name} className="grid items-center gap-1" style={{ gridTemplateColumns: "1fr 48px 88px" }}>
                             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
                               <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
                               <span className="truncate">{acct.name}</span>
                             </span>
-                            <div className="flex items-center gap-3 flex-shrink-0 tabular-nums">
-                              <span className="text-[10px] text-muted-foreground">{acct.yield_}</span>
-                              <span className="text-[11px] font-semibold text-foreground">{fmt(acct.value)}</span>
-                            </div>
+                            <span className="text-[10px] text-muted-foreground text-right tabular-nums">{acct.yield_}</span>
+                            <span className="text-[11px] font-semibold text-foreground text-right tabular-nums">{fmt(acct.value)}</span>
                           </div>
                         ))}
                         {r.subAccounts.length === 0 && <p className="text-xs text-muted-foreground italic">No accounts mapped</p>}
                       </div>
-                      <div className="mt-2.5 pt-2 border-t border-border flex items-end justify-between">
-                        <p className="text-[9px] text-muted-foreground italic">{r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""}</p>
-                        <div className="text-right">
-                          <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">Current</p>
-                          <p className="text-xs font-bold tabular-nums text-foreground mb-1.5">{fmt(r.current)}</p>
+                      {/* Weighted avg yield + totals footer */}
+                      <div className="mt-2.5 pt-2 border-t border-border">
+                        <div className="grid items-center" style={{ gridTemplateColumns: "1fr 48px 88px" }}>
+                          <p className="text-[9px] text-muted-foreground italic">{r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""}</p>
+                          <span className="text-[10px] font-bold tabular-nums text-right" style={{ color: r.def.bg }}>
+                            {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
+                          </span>
+                          <span className="text-xs font-bold tabular-nums text-foreground text-right">{fmt(r.current)}</span>
+                        </div>
+                        <div className="grid items-center mt-1.5" style={{ gridTemplateColumns: "1fr 48px 88px" }}>
                           <p className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: r.def.bg }}>★ AI Target</p>
-                          <p className="text-xs font-bold tabular-nums" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
+                          <span />
+                          <span className="text-xs font-bold tabular-nums text-right" style={{ color: r.def.bg }}>{fmt(r.target)}</span>
                         </div>
                       </div>
                     </div>
