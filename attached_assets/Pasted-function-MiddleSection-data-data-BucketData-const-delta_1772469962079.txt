@@ -1,0 +1,179 @@
+function MiddleSection({ data }: { data: BucketData }) {
+  const delta = data.aiTarget - data.current;
+  const needsFunding = delta > 0;
+  const hasSurplus = delta < 0;
+  const isBalanced = Math.abs(delta) < 1000;
+  
+  const avgYield = data.accounts.reduce((sum, acc) => 
+    sum + (acc.yield * acc.balance / data.current), 0
+  );
+  const targetYield = data.recommendedProducts[0]?.atYield || avgYield;
+  const yieldPickupBps = Math.round((targetYield - avgYield) * 100);
+  const deltaPercent = ((delta / data.current) * 100).toFixed(1);
+  
+  const progressPercent = Math.min((data.current / data.aiTarget) * 100, 100);
+  const maxValue = Math.max(data.current, data.aiTarget);
+
+  return (
+    <div className="flex-1 border-l border-r border-slate-600 bg-slate-700">
+      {/* Visual Comparison */}
+      <div className="p-5">
+        {/* Current Bar */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider">Current</span>
+            <span className="text-sm font-mono text-white">
+              ${(data.current / 1000).toFixed(0)}K
+            </span>
+          </div>
+          <div className="relative h-8 bg-slate-800 rounded border border-slate-600">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${(data.current / maxValue) * 100}%` }}
+              transition={{ duration: 1, delay: 0.2 }}
+              className="h-full rounded flex items-center justify-end px-2"
+              style={{ backgroundColor: data.bucket.accent }}
+            >
+              <span className="text-[10px] font-mono font-semibold text-white">
+                {((data.current / 5893000) * 100).toFixed(1)}%
+              </span>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Delta Arrow */}
+        <div className="flex items-center justify-center my-3">
+          {isBalanced ? (
+            <div className="flex items-center gap-2 text-green-400">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              <span className="text-xs font-medium">BALANCED</span>
+            </div>
+          ) : needsFunding ? (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="flex items-center gap-2"
+            >
+              <div className="text-red-400 text-xs font-mono">
+                ▼ +${Math.abs(delta / 1000).toFixed(0)}K GAP
+              </div>
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="flex items-center gap-2"
+            >
+              <div className="text-blue-400 text-xs font-mono">
+                ▲ ${Math.abs(delta / 1000).toFixed(0)}K SURPLUS
+              </div>
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+            </motion.div>
+          )}
+        </div>
+
+        {/* Target Bar */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] text-orange-400 uppercase tracking-wider flex items-center gap-1">
+              <Activity className="w-3 h-3" />
+              GURU Target
+            </span>
+            <span className="text-sm font-mono text-orange-400">
+              ${(data.aiTarget / 1000).toFixed(0)}K
+            </span>
+          </div>
+          <div className="relative h-8 bg-slate-800 rounded border border-orange-500/30">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${(data.aiTarget / maxValue) * 100}%` }}
+              transition={{ duration: 1, delay: 0.5 }}
+              className="h-full rounded flex items-center justify-end px-2 bg-gradient-to-r from-orange-600 to-orange-500"
+            >
+              <span className="text-[10px] font-mono font-semibold text-white">
+                {((data.aiTarget / 5893000) * 100).toFixed(1)}%
+              </span>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Progress Indicator */}
+        <div className="mb-4 pb-4 border-b border-slate-600">
+          <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+            <span>Progress to Target</span>
+            <span className="font-mono">{progressPercent.toFixed(0)}%</span>
+          </div>
+          <div className="h-1 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ duration: 1, delay: 1 }}
+              className={`h-full ${
+                isBalanced ? 'bg-green-500' : 
+                needsFunding ? 'bg-red-500' : 
+                'bg-blue-400'
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Status Card */}
+          <div className="border border-slate-600 bg-slate-650 p-2.5 rounded">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Status</div>
+            <div className={`text-xs font-medium ${
+              isBalanced ? 'text-green-400' : 
+              needsFunding ? 'text-red-400' : 
+              'text-blue-400'
+            }`}>
+              {isBalanced ? 'BALANCED' : needsFunding ? 'UNDERFUNDED' : 'SURPLUS'}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">
+              {isBalanced ? 'No action needed' : needsFunding ? 'Requires funding' : 'Ready to redeploy'}
+            </div>
+          </div>
+
+          {/* Priority Card */}
+          <div className="border border-slate-600 bg-slate-650 p-2.5 rounded">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Priority</div>
+            <div className="text-xs font-mono text-white">
+              {Math.abs(delta) > 300000 ? 'HIGH' : Math.abs(delta) > 100000 ? 'MEDIUM' : 'LOW'}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Execution: T+2</div>
+          </div>
+
+          {/* Yield Card */}
+          <div className="border border-slate-600 bg-slate-650 p-2.5 rounded">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Current Yield</div>
+            <div className="text-xs font-mono text-white">
+              {avgYield.toFixed(2)}%
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Weighted average</div>
+          </div>
+
+          {/* Opportunity Card */}
+          <div className="border border-slate-600 bg-slate-650 p-2.5 rounded">
+            <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+              Yield Pickup
+              {yieldPickupBps > 50 && <AlertCircle className="w-3 h-3 text-orange-500" />}
+            </div>
+            <div className={`text-xs font-mono ${yieldPickupBps > 50 ? 'text-orange-400' : 'text-green-400'}`}>
+              +{yieldPickupBps} bps
+            </div>
+            <div className="text-[10px] text-green-500 mt-0.5">
+              ${((yieldPickupBps / 10000) * data.current).toFixed(0)}/yr
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+Required imports:
+
+import { motion } from 'motion/react';
+import { Activity, AlertCircle } from 'lucide-react';
