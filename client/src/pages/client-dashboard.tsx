@@ -1668,71 +1668,75 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
         return (
           <div className="space-y-5">
-            {/* ── Portfolio Overview Hero (dark design) ── */}
-            <div className="rounded-xl p-6" style={{ background: "hsl(221,39%,10%)" }}>
-              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-5">Portfolio Overview</p>
+            {/* ── Portfolio Overview Hero ── */}
+            {(() => {
+              const HERO_COLORS: Record<string, { bg: string; accent: string }> = {
+                Reserve: { bg: "#1d4ed8", accent: "#93c5fd" },
+                Flow:    { bg: "#047857", accent: "#6ee7b7" },
+                Build:   { bg: "#b45309", accent: "#fcd34d" },
+                Grow:    { bg: "#5b21b6", accent: "#c084fc" },
+              };
+              return (
+              <div className="rounded-xl border border-border bg-card p-6">
+                <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold mb-5">Portfolio Overview</p>
 
-              {/* Centre card — orange border */}
-              <div className="flex justify-center mb-6">
-                <div className="rounded-xl px-12 py-5 text-center border-2 border-orange-500" style={{ background: "hsl(221,39%,13%)" }}>
-                  <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-1">Total Portfolio</p>
-                  <p className="text-4xl font-black text-white tabular-nums">
-                    {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(2)}M` : fmt(totalAssets)}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">Across {assets.length} accounts</p>
-                  {/* Stacked allocation bar — real proportions */}
-                  <div className="flex mt-4 h-2.5 rounded-full overflow-hidden gap-px">
-                    {([reserveCurrent, flowCurrent, buildCurrent, growCurrent] as number[]).map((val, i) => (
-                      <div key={i} style={{
-                        width: `${totalAssets > 0 ? (val / totalAssets) * 100 : 25}%`,
-                        background: GURU_BUCKETS_DEF[i].bg,
-                      }} />
-                    ))}
+                {/* Centre card — orange border */}
+                <div className="flex justify-center mb-6">
+                  <div className="rounded-xl px-12 py-5 text-center border-2 border-orange-500" style={{ background: "hsl(221,39%,13%)" }}>
+                    <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-1">Total Portfolio</p>
+                    <p className="text-4xl font-black text-white tabular-nums">
+                      {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(2)}M` : fmt(totalAssets)}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">Across {assets.length} accounts</p>
+                    {/* Stacked allocation bar — real proportions */}
+                    <div className="flex mt-4 h-2.5 rounded-full overflow-hidden gap-px">
+                      {(["Reserve","Flow","Build","Grow"] as const).map((name, i) => {
+                        const val = [reserveCurrent, flowCurrent, buildCurrent, growCurrent][i];
+                        return (
+                          <div key={name} style={{
+                            width: `${totalAssets > 0 ? (val / totalAssets) * 100 : 25}%`,
+                            background: HERO_COLORS[name].bg,
+                          }} />
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* 4 bucket mini-cards */}
-              <div className="grid grid-cols-4 gap-3">
-                {rows.map(r => {
-                  const fmtShort   = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(2)}M` : `$${Math.round(v / 1000)}K`;
-                  const avgYieldV  = weightedGrossYield(r.subAccounts, r.current);
-                  const pctTotal   = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
-                  const progressP  = Math.min((r.current / Math.max(r.target, 1)) * 100, 100);
-                  const priority   = Math.abs(r.delta) > 300_000 ? "HIGH" : Math.abs(r.delta) > 100_000 ? "MEDIUM" : "LOW";
-                  const priColor   = priority === "HIGH" ? "#ef4444" : priority === "MEDIUM" ? "#f59e0b" : "#22c55e";
-                  return (
-                    <div key={r.def.name} className="rounded-xl p-4" style={{ background: r.def.bg }}>
-                      <div className="flex items-start justify-between mb-0.5">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
-                          <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
+                {/* 4 bucket mini-cards */}
+                <div className="grid grid-cols-4 gap-3">
+                  {rows.map(r => {
+                    const hc       = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
+                    const fmtShort = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(2)}M` : `$${Math.round(v / 1000)}K`;
+                    const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
+                    const pctTotal  = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
+                    const priority  = Math.abs(r.delta) > 300_000 ? "HIGH" : Math.abs(r.delta) > 100_000 ? "MEDIUM" : "LOW";
+                    const priColor  = priority === "HIGH" ? "#ef4444" : priority === "MEDIUM" ? "#f59e0b" : "#22c55e";
+                    return (
+                      <div key={r.def.name} className="rounded-xl p-4" style={{ background: hc.bg }}>
+                        <div className="flex items-start justify-between mb-0.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
+                            <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
+                          </div>
+                          <span className="text-[7px] font-black px-1.5 py-0.5 rounded flex-shrink-0 ml-1"
+                            style={{ background: priColor + "28", color: priColor, border: `1px solid ${priColor}50` }}>
+                            {priority}
+                          </span>
                         </div>
-                        <span className="text-[7px] font-black px-1.5 py-0.5 rounded flex-shrink-0 ml-1"
-                          style={{ background: priColor + "28", color: priColor, border: `1px solid ${priColor}50` }}>
-                          {priority}
-                        </span>
+                        <p className="text-[9px] italic text-white/50 mb-3 leading-snug">{r.def.rule}</p>
+                        <p className="text-xl font-black text-white leading-none tabular-nums">{fmtShort(r.current)}</p>
+                        <p className="text-[10px] text-white/60 mt-0.5 tabular-nums">{avgYieldV.toFixed(2)}% yield</p>
+                        <p className="text-[9px] text-white/40 mt-1.5">
+                          {r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""} • {pctTotal.toFixed(0)}% of total
+                        </p>
                       </div>
-                      <p className="text-[9px] italic text-white/50 mb-3 leading-snug">{r.def.rule}</p>
-                      <p className="text-xl font-black text-white leading-none tabular-nums">{fmtShort(r.current)}</p>
-                      <p className="text-[10px] text-white/60 mt-0.5 tabular-nums">{avgYieldV.toFixed(2)}% yield</p>
-                      <p className="text-[9px] text-white/40 mt-1.5">
-                        {r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""} • {pctTotal.toFixed(0)}% of total
-                      </p>
-                      <div className="mt-3 h-1.5 rounded-full" style={{ background: "rgba(0,0,0,0.3)" }}>
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progressP}%` }}
-                          transition={{ duration: 1, delay: 0.4 }}
-                          className="h-full rounded-full"
-                          style={{ background: r.def.accent }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+              );
+            })()}
 
             {/* ── Live Projections — below the hero ── */}
             <div className="rounded-xl border bg-card px-6 py-4 flex items-center gap-8">
