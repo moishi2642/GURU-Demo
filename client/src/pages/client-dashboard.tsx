@@ -1707,7 +1707,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 <div className="grid grid-cols-4 gap-3">
                   {rows.map(r => {
                     const hc       = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
-                    const fmtShort = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(2)}M` : `$${Math.round(v / 1000)}K`;
+                    const fmtK     = (v: number) => `$${Math.round(v / 1000).toLocaleString()}K`;
                     const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
                     const pctTotal  = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
                     const isSurplus = r.delta < -5000;
@@ -1725,9 +1725,11 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                             </span>
                           )}
                         </div>
-                        <p className="text-[9px] italic text-white/50 mb-3 leading-snug">{r.def.rule}</p>
-                        <p className="text-xl font-black text-white leading-none tabular-nums">{fmtShort(r.current)}</p>
-                        <p className="text-[10px] text-white/60 mt-0.5 tabular-nums">{avgYieldV.toFixed(2)}% yield</p>
+                        <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
+                        <div className="flex items-baseline justify-between mt-1">
+                          <p className="text-xl font-black text-white leading-none tabular-nums">{fmtK(r.current)}</p>
+                          <p className="text-[10px] text-white/60 tabular-nums">{avgYieldV.toFixed(2)}%</p>
+                        </div>
                         <p className="text-[9px] text-white/40 mt-1.5">
                           {r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""} • {pctTotal.toFixed(0)}% of total
                         </p>
