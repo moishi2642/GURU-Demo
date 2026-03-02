@@ -1479,8 +1479,6 @@ function BucketExecutionPanel({
   bucketName: string; current: number; target: number; delta: number;
   accentColor: string; bgColor: string; avgYield: number; bpPickup: number; totalAssets: number;
 }) {
-  const suggested = Math.abs(delta);
-  const [amount, setAmount] = useState(suggested > 0 ? String(Math.round(suggested)) : "");
   const [staged, setStaged] = useState(false);
 
   const needsFunding = delta > 1000 && bucketName !== "Grow";
@@ -1489,126 +1487,120 @@ function BucketExecutionPanel({
 
   const statusLabel = isBalanced ? "BALANCED" : needsFunding ? "NEEDS FUNDING" : "SURPLUS";
   const statusColor = isBalanced ? "#22c55e" : needsFunding ? "#f43f5e" : "#10b981";
+  const priority    = isBalanced ? "LOW" : needsFunding ? "HIGH" : "MEDIUM";
 
-  const BUCKET_NAMES = ["Operating Cash", "Reserve", "Build", "Grow"];
-  const defaultFrom = needsFunding ? "Grow" : bucketName;
-  const defaultTo   = needsFunding ? bucketName : BUCKET_NAMES.find(n => n !== bucketName) ?? "Reserve";
-  const [fromAccount, setFromAccount] = useState(defaultFrom);
-  const [toAccount,   setToAccount]   = useState(defaultTo);
-
-  const parsedAmt = parseFloat(amount.replace(/[^0-9.]/g, "")) || 0;
-  const newBalance = needsFunding ? current + parsedAmt : current - parsedAmt;
   const fmtD = (v: number) => v >= 1_000_000
     ? `$${(v / 1_000_000).toFixed(2)}M`
     : `$${Math.round(v).toLocaleString()}`;
 
+  const maxBar      = Math.max(current, target) || 1;
+  const currentPct  = Math.min(100, (current / maxBar) * 100);
+  const targetPct   = Math.min(100, (target  / maxBar) * 100);
+  const progressPct = Math.min(100, (current / (target || 1)) * 100);
+
   return (
-    <div className="w-72 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
+    <div className="w-72 flex-shrink-0 border-l border-r border-border bg-slate-800 flex flex-col">
       <div className="flex-1 p-5 flex flex-col gap-4">
 
-        {/* Status + Δ vs Target */}
-        <div className="flex items-start justify-between">
+        {/* Dual animated bars + delta */}
+        <div className="space-y-2.5">
+
+          {/* Current bar */}
           <div>
-            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Status</p>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
-              <span className="text-xs font-black" style={{ color: statusColor }}>{statusLabel}</span>
+            <div className="flex justify-between items-baseline mb-1.5">
+              <span className="text-[9px] uppercase tracking-widest text-slate-400 font-bold">Current</span>
+              <span className="text-sm font-black tabular-nums text-white">{fmtD(current)}</span>
+            </div>
+            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: bgColor }}
+                initial={{ width: 0 }}
+                animate={{ width: `${currentPct}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Δ vs Target</p>
-            <span className="text-xs font-black tabular-nums" style={{ color: statusColor }}>
-              {isBalanced ? "—" : (needsFunding ? "+" : "−") + fmtD(Math.abs(delta))}
-            </span>
-          </div>
-        </div>
 
-        {/* Current / Target row */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Current</p>
-            <p className="text-sm font-black tabular-nums text-foreground">{fmtD(current)}</p>
-            <p className="text-[9px] text-muted-foreground tabular-nums">{avgYield.toFixed(2)}% yield</p>
-          </div>
-          <div className="rounded-lg border px-3 py-2" style={{ borderColor: bgColor + "40", background: bgColor + "10" }}>
-            <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: bgColor }}>GURU Target</p>
-            <p className="text-sm font-black tabular-nums" style={{ color: bgColor }}>{fmtD(target)}</p>
-            <p className="text-[9px] tabular-nums" style={{ color: bgColor, opacity: 0.7 }}>
-              {bpPickup > 0 ? `+${bpPickup}bps pickup` : "optimal"}
-            </p>
-          </div>
-        </div>
-
-        {/* Transfer input */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Transfer Amount</p>
-            {suggested > 0 && (
-              <button
-                onClick={() => { setAmount(String(Math.round(suggested))); setStaged(false); }}
-                className="text-[9px] font-semibold underline underline-offset-2 tabular-nums"
-                style={{ color: bgColor }}
-              >
-                Use {fmtD(suggested)}
-              </button>
-            )}
-          </div>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
-            <input
-              type="number"
-              value={amount}
-              onChange={e => { setAmount(e.target.value); setStaged(false); }}
-              placeholder="0"
-              className="w-full pl-6 pr-3 py-2 text-sm font-semibold tabular-nums rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2"
-            />
-          </div>
-          {parsedAmt > 0 && (
-            <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
-              New balance: <span className="font-semibold text-foreground">{fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}</span>
-            </p>
-          )}
-        </div>
-
-        {/* Routing */}
-        <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Route</p>
+          {/* Delta badge row */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">From</p>
-              <select
-                value={fromAccount}
-                onChange={e => { setFromAccount(e.target.value); setStaged(false); }}
-                className="w-full text-[11px] font-semibold text-foreground bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
-              >
-                {BUCKET_NAMES.map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+            <div className="flex-1 h-px bg-slate-700" />
+            <span
+              className="text-[9px] font-black tabular-nums px-2 py-0.5 rounded-full whitespace-nowrap"
+              style={{ background: statusColor + "28", color: statusColor }}
+            >
+              {isBalanced
+                ? "✓ ON TARGET"
+                : (needsFunding ? "↑ +" : "↓ −") + fmtD(Math.abs(delta))}
+            </span>
+            <div className="flex-1 h-px bg-slate-700" />
+          </div>
+
+          {/* GURU Target bar */}
+          <div>
+            <div className="flex justify-between items-baseline mb-1.5">
+              <span className="text-[9px] uppercase tracking-widest font-bold" style={{ color: accentColor }}>GURU Target</span>
+              <span className="text-sm font-black tabular-nums" style={{ color: accentColor }}>{fmtD(target)}</span>
             </div>
-            <span className="text-muted-foreground flex-shrink-0 mt-4 text-sm">→</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">To</p>
-              <select
-                value={toAccount}
-                onChange={e => { setToAccount(e.target.value); setStaged(false); }}
-                className="w-full text-[11px] font-semibold bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
-                style={{ color: bgColor, borderColor: bgColor + "60", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
-              >
-                {BUCKET_NAMES.filter(n => n !== fromAccount).map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: accentColor }}
+                initial={{ width: 0 }}
+                animate={{ width: `${targetPct}%` }}
+                transition={{ duration: 1.2, ease: "easeOut", delay: 0.15 }}
+              />
             </div>
+          </div>
+
+          {/* Progress bar */}
+          <div>
+            <div className="flex justify-between mb-1">
+              <span className="text-[9px] text-slate-500">Progress to target</span>
+              <span className="text-[9px] font-semibold text-slate-400 tabular-nums">{progressPct.toFixed(0)}%</span>
+            </div>
+            <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: `linear-gradient(to right, ${bgColor}, ${accentColor})` }}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 1.4, ease: "easeOut", delay: 0.3 }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 2×2 metrics grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg bg-slate-700/60 px-3 py-2">
+            <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-0.5">Status</p>
+            <p className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>{statusLabel}</p>
+          </div>
+          <div className="rounded-lg bg-slate-700/60 px-3 py-2">
+            <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-0.5">Priority</p>
+            <p className="text-[10px] font-black text-white leading-tight">{priority}</p>
+          </div>
+          <div className="rounded-lg bg-slate-700/60 px-3 py-2">
+            <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-0.5">Current Yield</p>
+            <p className="text-[10px] font-black text-white tabular-nums">{avgYield.toFixed(2)}%</p>
+          </div>
+          <div className="rounded-lg bg-slate-700/60 px-3 py-2">
+            <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-0.5">Yield Pickup</p>
+            <p className="text-[10px] font-black tabular-nums" style={{ color: bpPickup > 0 ? "#34d399" : "#64748b" }}>
+              {bpPickup > 0 ? `+${bpPickup}bps` : "—"}
+            </p>
           </div>
         </div>
 
       </div>
 
-      {/* Stage button */}
+      {/* Stage Transfer button */}
       <div className="px-5 pb-4">
         <button
-          onClick={() => setStaged(true)}
-          disabled={parsedAmt <= 0}
-          className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
-          style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
+          onClick={() => setStaged(s => !s)}
+          className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-all"
+          style={{ background: staged ? "#22c55e" : bgColor }}
         >
           {staged ? "✓ Staged" : "Stage Transfer"}
         </button>
@@ -1986,11 +1978,11 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                       const isOverfund = r.delta < -5000;
                       return (
                         <div key={r.def.name} className="flex flex-col">
-                          {isOverfund && (
-                            <div className="text-center mb-1">
+                          <div className="text-center mb-1 h-4">
+                            {isOverfund && (
                               <span className="text-[8px] font-black uppercase tracking-widest text-rose-500 animate-pulse">⚠ OVERFUNDED</span>
-                            </div>
-                          )}
+                            )}
+                          </div>
                           <div className="rounded-xl p-4 flex-1" style={{ background: hc.bg }}>
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
@@ -2012,6 +2004,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                       const hcO = HERO_COLORS["Grow (Other)"];
                       return (
                         <div className="flex flex-col">
+                          <div className="h-4 mb-1" />
                           <div className="rounded-xl p-4 flex-1" style={{ background: hcO.bg }}>
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hcO.accent }} />
@@ -2052,21 +2045,23 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           );
                         })}
                         {/* Connectors: each surplus → each need */}
-                        {surplusRows.flatMap(src => {
+                        {surplusRows.flatMap((src, connIdx) => {
                           const srcIdx   = rows.indexOf(src);
                           const srcPct   = (srcIdx + 0.5) / rows.length * 100;
                           const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
-                          return needRows.map(need => {
-                            const tgtIdx   = rows.indexOf(need);
-                            const tgtPct   = (tgtIdx + 0.5) / rows.length * 100;
-                            const leftPct  = Math.min(srcPct, tgtPct);
-                            const wPct     = Math.abs(srcPct - tgtPct);
-                            const tgtColor = HERO_COLORS[need.def.name]?.bg ?? "#64748b";
-                            const midPct   = (srcPct + tgtPct) / 2;
-                            const amount   = need.def.name === "Build"
+                          return needRows.map((need, needIdx) => {
+                            const tgtIdx    = rows.indexOf(need);
+                            const tgtPct    = (tgtIdx + 0.5) / rows.length * 100;
+                            const leftPct   = Math.min(srcPct, tgtPct);
+                            const wPct      = Math.abs(srcPct - tgtPct);
+                            const tgtColor  = HERO_COLORS[need.def.name]?.bg ?? "#64748b";
+                            const midPct    = (srcPct + tgtPct) / 2;
+                            const labelIdx  = connIdx * needRows.length + needIdx;
+                            const labelTop  = dropY + 6 + labelIdx * 14;
+                            const amount    = need.def.name === "Build"
                               ? Math.abs(src.delta)
                               : Math.abs(need.delta);
-                            const fmtAmt   = amount >= 1_000_000
+                            const fmtAmt    = amount >= 1_000_000
                               ? `$${(amount / 1_000_000).toFixed(1)}M`
                               : `$${Math.round(amount / 1000)}K`;
                             const di = dotIdx++;
@@ -2085,9 +2080,9 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                                   background: tgtColor,
                                   transform: "translateX(-50%)", opacity: 0.6,
                                 }} />
-                                {/* Dollar amount label */}
-                                <div className="absolute text-[9px] font-black tabular-nums" style={{
-                                  left: `${midPct}%`, top: dropY + 6,
+                                {/* Dollar amount label — staggered vertically to prevent overlap */}
+                                <div className="absolute text-[9px] font-black tabular-nums bg-white/80 rounded px-1 leading-tight" style={{
+                                  left: `${midPct}%`, top: labelTop,
                                   transform: "translateX(-50%)",
                                   color: tgtColor,
                                 }}>
