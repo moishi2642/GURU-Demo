@@ -2178,7 +2178,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 <div key={r.def.name} className="rounded-xl overflow-hidden flex shadow-sm border border-border">
 
                   {/* ── LEFT: Header + Accounts ── */}
-                  <div className="flex-1 min-w-[240px] flex flex-col border-r border-border">
+                  <div className="w-[380px] flex-shrink-0 flex flex-col border-r border-border">
                     <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: r.def.bg }}>
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
                       <div className="min-w-0 flex-1">
@@ -2189,40 +2189,37 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                     <div className="bg-card px-4 pt-3 pb-3 flex-1 flex flex-col">
                       {/* Column headers */}
-                      <div className="grid mb-2" style={{ gridTemplateColumns: "1fr 80px 64px" }}>
-                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Current Accounts</span>
+                      <div className="grid mb-2 gap-2" style={{ gridTemplateColumns: "1fr 76px 52px 60px" }}>
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Account</span>
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Balance</span>
-                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Gross / AT</span>
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Yield</span>
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Tax-Eff Yld</span>
                       </div>
                       <div className="space-y-1.5 flex-1">
                         {r.subAccounts.map(acct => (
-                          <div key={acct.name} className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 80px 64px" }}>
+                          <div key={acct.name} className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 76px 52px 60px" }}>
                             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0 overflow-hidden">
                               <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
                               <span className="truncate">{acct.name}</span>
                             </span>
                             <span className="text-[11px] font-semibold text-foreground text-right tabular-nums">{fmt(acct.value)}</span>
-                            <div className="text-right">
-                              <div className="text-[10px] font-semibold text-foreground tabular-nums">{acct.yield_}</div>
-                              <div className="text-[9px] text-muted-foreground tabular-nums">{acct.yieldAT}</div>
-                            </div>
+                            <span className="text-[10px] font-semibold text-foreground text-right tabular-nums">{acct.yield_}</span>
+                            <span className="text-[10px] text-muted-foreground text-right tabular-nums">{acct.yieldAT}</span>
                           </div>
                         ))}
                         {r.subAccounts.length === 0 && <p className="text-xs text-muted-foreground italic">No accounts mapped</p>}
                       </div>
                       {/* Weighted avg yield + totals footer */}
                       <div className="mt-2.5 pt-2 border-t border-border">
-                        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 80px 64px" }}>
+                        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 76px 52px 60px" }}>
                           <span className="text-[9px] text-muted-foreground italic">{r.subAccounts.length} position{r.subAccounts.length !== 1 ? "s" : ""}</span>
                           <span className="text-xs font-bold tabular-nums text-foreground text-right">{fmt(r.current)}</span>
-                          <div className="text-right">
-                            <div className="text-[10px] font-bold tabular-nums" style={{ color: r.def.bg }}>
-                              {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
-                            </div>
-                            <div className="text-[9px] text-muted-foreground tabular-nums">
-                              {r.current > 0 ? `${(weightedGrossYield(r.subAccounts, r.current) * 0.63).toFixed(2)}%` : "—"}
-                            </div>
-                          </div>
+                          <span className="text-[10px] font-bold tabular-nums text-right" style={{ color: r.def.bg }}>
+                            {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground tabular-nums text-right">
+                            {r.current > 0 ? `${(weightedGrossYield(r.subAccounts, r.current) * 0.63).toFixed(2)}%` : "—"}
+                          </span>
                         </div>
                       </div>
                     </div>
