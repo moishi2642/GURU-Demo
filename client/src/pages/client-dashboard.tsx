@@ -1618,9 +1618,9 @@ function BucketExecutionPanel({
 
 // ─── Bucket Product Panel (right column of each bucket row) ──────────────────
 function BucketProductPanel({
-  bgColor, accentColor, products,
+  bgColor, accentColor, products, currentAvgYield,
 }: {
-  bgColor: string; accentColor: string; products: BucketProduct[];
+  bgColor: string; accentColor: string; products: BucketProduct[]; currentAvgYield: number;
 }) {
   const top3 = products.slice(0, 3);
   const defaultSelected = top3.findIndex(p => p.isGuru);
@@ -1703,25 +1703,34 @@ function BucketProductPanel({
                     </span>
                   )}
                   <p className="text-[11px] font-semibold text-foreground leading-snug">{p.name}</p>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <div>
-                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Gross</div>
-                      <div className="text-[10px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
-                    </div>
-                    <div>
-                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">After-Tax</div>
-                      <div className="text-[10px] font-bold text-emerald-600 tabular-nums">{p.atYield}</div>
-                    </div>
-                    <div className="ml-auto text-right">
-                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
-                      <div
-                        className="text-[9px] font-semibold tabular-nums"
-                        style={{ color: p.pickup.startsWith("+") ? bgColor : "#94a3b8" }}
-                      >
-                        {p.pickup}
+                  {(() => {
+                    const productAT      = parseFloat(p.atYield.replace(/[^0-9.]/g, ""));
+                    const currentAT      = currentAvgYield * 0.63;
+                    const pickupVal      = !isNaN(productAT) && productAT > 0 ? productAT - currentAT : NaN;
+                    const pickupStr      = isNaN(pickupVal) ? "—" : `${pickupVal >= 0 ? "+" : ""}${pickupVal.toFixed(2)}%`;
+                    const pickupPositive = !isNaN(pickupVal) && pickupVal > 0;
+                    return (
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <div>
+                          <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Yield</div>
+                          <div className="text-[10px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
+                        </div>
+                        <div>
+                          <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Tax-Eff Yield</div>
+                          <div className="text-[10px] font-bold text-emerald-600 tabular-nums">{p.atYield}</div>
+                        </div>
+                        <div className="ml-auto text-right">
+                          <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
+                          <div
+                            className="text-[9px] font-semibold tabular-nums"
+                            style={{ color: pickupPositive ? bgColor : isNaN(pickupVal) ? "#94a3b8" : "#f43f5e" }}
+                          >
+                            {pickupStr}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
               </div>
             </button>
@@ -2266,6 +2275,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     bgColor={r.def.bg}
                     accentColor={r.def.accent}
                     products={prods}
+                    currentAvgYield={weightedGrossYield(r.subAccounts, r.current)}
                   />
 
                 </div>
