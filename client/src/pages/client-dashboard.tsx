@@ -1813,7 +1813,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                   </div>
 
-                  {/* ── MIDDLE: Figma design — dual bars + 2×2 grid (bucket colors) ── */}
+                  {/* ── MIDDLE: dual bars + 2×2 grid ── */}
                   {(() => {
                     const delta         = r.target - r.current;
                     const needsFunding  = delta > 0;
@@ -1824,24 +1824,24 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     const yieldBps      = r.bpPickup;
                     const yieldDollars  = Math.round((Math.abs(yieldBps) / 10000) * r.current);
                     return (
-                      <div className="flex-1 border-l border-r border-slate-600 bg-slate-700">
+                      <div className="flex-1 border-l border-r border-border bg-card">
                         <div className="p-5">
 
                           {/* Current bar */}
                           <div className="mb-4">
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] text-slate-400 uppercase tracking-wider">Current</span>
-                              <span className="text-sm font-mono text-white">${(r.current / 1000).toFixed(0)}K</span>
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Current</span>
+                              <span className="text-sm font-semibold text-foreground tabular-nums">${(r.current / 1000).toFixed(0)}K</span>
                             </div>
-                            <div className="relative h-8 bg-slate-800 rounded border border-slate-600">
+                            <div className="relative h-8 bg-muted rounded border border-border">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${(r.current / maxVal) * 100}%` }}
                                 transition={{ duration: 1, delay: 0.2 }}
                                 className="h-full rounded flex items-center justify-end px-2"
-                                style={{ backgroundColor: r.def.accent + "cc" }}
+                                style={{ backgroundColor: r.def.accent + "dd" }}
                               >
-                                <span className="text-[10px] font-mono font-semibold text-white drop-shadow">
+                                <span className="text-[10px] font-semibold text-white drop-shadow">
                                   {totalAssets > 0 ? ((r.current / totalAssets) * 100).toFixed(1) : "0"}%
                                 </span>
                               </motion.div>
@@ -1851,9 +1851,9 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           {/* Delta badge */}
                           <div className="flex items-center justify-center my-3">
                             {isBalanced ? (
-                              <div className="flex items-center gap-2 text-green-400">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                <span className="text-xs font-medium">BALANCED</span>
+                              <div className="flex items-center gap-2 text-emerald-600">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span className="text-xs font-semibold">BALANCED</span>
                               </div>
                             ) : needsFunding ? (
                               <motion.div
@@ -1862,7 +1862,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                                 transition={{ delay: 0.8 }}
                                 className="flex items-center gap-2"
                               >
-                                <span className="text-rose-400 text-xs font-mono">▲ +${(Math.abs(delta) / 1000).toFixed(0)}K NEEDED</span>
+                                <span className="text-rose-500 text-xs font-semibold">▲ +${(Math.abs(delta) / 1000).toFixed(0)}K NEEDED</span>
                                 <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                               </motion.div>
                             ) : (
@@ -1872,8 +1872,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                                 transition={{ delay: 0.8 }}
                                 className="flex items-center gap-2"
                               >
-                                <span className="text-emerald-400 text-xs font-mono">▼ ${(Math.abs(delta) / 1000).toFixed(0)}K SURPLUS</span>
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <span className="text-emerald-600 text-xs font-semibold">▼ ${(Math.abs(delta) / 1000).toFixed(0)}K SURPLUS</span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                               </motion.div>
                             )}
                           </div>
@@ -1881,13 +1881,13 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           {/* GURU Target bar — bucket color gradient */}
                           <div className="mb-4">
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] uppercase tracking-wider flex items-center gap-1" style={{ color: r.def.accent }}>
+                              <span className="text-[10px] uppercase tracking-wider font-semibold flex items-center gap-1" style={{ color: r.def.bg }}>
                                 <Activity className="w-3 h-3" />
                                 GURU Target
                               </span>
-                              <span className="text-sm font-mono" style={{ color: r.def.accent }}>${(r.target / 1000).toFixed(0)}K</span>
+                              <span className="text-sm font-semibold tabular-nums" style={{ color: r.def.bg }}>${(r.target / 1000).toFixed(0)}K</span>
                             </div>
-                            <div className="relative h-8 rounded border" style={{ background: "#1e293b", borderColor: r.def.bg + "60" }}>
+                            <div className="relative h-8 rounded border border-border bg-muted">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${(r.target / maxVal) * 100}%` }}
@@ -1895,7 +1895,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                                 className="h-full rounded flex items-center justify-end px-2"
                                 style={{ background: `linear-gradient(to right, ${r.def.dark}, ${r.def.bg})` }}
                               >
-                                <span className="text-[10px] font-mono font-semibold text-white drop-shadow">
+                                <span className="text-[10px] font-semibold text-white drop-shadow">
                                   {totalAssets > 0 ? ((r.target / totalAssets) * 100).toFixed(1) : "0"}%
                                 </span>
                               </motion.div>
@@ -1903,12 +1903,12 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           </div>
 
                           {/* Progress to target */}
-                          <div className="mb-4 pb-4 border-b border-slate-600">
-                            <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                          <div className="mb-4 pb-4 border-b border-border">
+                            <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
                               <span>Progress to Target</span>
-                              <span className="font-mono">{progressPct.toFixed(0)}%</span>
+                              <span className="font-semibold tabular-nums">{progressPct.toFixed(0)}%</span>
                             </div>
-                            <div className="h-1 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+                            <div className="h-1 bg-muted rounded-full overflow-hidden border border-border">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progressPct}%` }}
@@ -1921,36 +1921,36 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
                           {/* 2×2 metrics grid */}
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Status</div>
-                              <div className={`text-xs font-medium ${isBalanced ? "text-green-400" : needsFunding ? "text-rose-400" : "text-emerald-400"}`}>
+                            <div className="border border-border bg-secondary/40 p-2.5 rounded-lg">
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-semibold">Status</div>
+                              <div className={`text-xs font-semibold ${isBalanced ? "text-emerald-600" : needsFunding ? "text-rose-500" : "text-emerald-600"}`}>
                                 {isBalanced ? "BALANCED" : needsFunding ? "UNDERFUNDED" : "SURPLUS"}
                               </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">
+                              <div className="text-[10px] text-muted-foreground mt-0.5">
                                 {isBalanced ? "No action needed" : needsFunding ? "Requires funding" : "Ready to redeploy"}
                               </div>
                             </div>
-                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Priority</div>
-                              <div className="text-xs font-mono text-white">
+                            <div className="border border-border bg-secondary/40 p-2.5 rounded-lg">
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-semibold">Priority</div>
+                              <div className="text-xs font-semibold text-foreground">
                                 {Math.abs(delta) > 300000 ? "HIGH" : Math.abs(delta) > 100000 ? "MEDIUM" : "LOW"}
                               </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">Execution: T+2</div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">Execution: T+2</div>
                             </div>
-                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Current Yield</div>
-                              <div className="text-xs font-mono text-white">{avgYield.toFixed(2)}%</div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">Weighted average</div>
+                            <div className="border border-border bg-secondary/40 p-2.5 rounded-lg">
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-semibold">Current Yield</div>
+                              <div className="text-xs font-semibold text-foreground tabular-nums">{avgYield.toFixed(2)}%</div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">Weighted average</div>
                             </div>
-                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <div className="border border-border bg-secondary/40 p-2.5 rounded-lg">
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 font-semibold flex items-center gap-1">
                                 Yield Pickup
                                 {yieldBps > 50 && <AlertCircle className="w-3 h-3 text-orange-500" />}
                               </div>
-                              <div className={`text-xs font-mono ${yieldBps > 50 ? "text-orange-400" : "text-emerald-400"}`}>
+                              <div className={`text-xs font-semibold tabular-nums ${yieldBps > 50 ? "text-orange-500" : "text-emerald-600"}`}>
                                 {yieldBps >= 0 ? "+" : ""}{yieldBps} bps
                               </div>
-                              <div className="text-[10px] text-emerald-500 mt-0.5">{fmt(yieldDollars)}/yr</div>
+                              <div className="text-[10px] text-emerald-600 mt-0.5 font-medium">{fmt(yieldDollars)}/yr</div>
                             </div>
                           </div>
 
