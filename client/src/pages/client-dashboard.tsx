@@ -1673,21 +1673,21 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
               const HERO_COLORS: Record<string, { bg: string; accent: string }> = {
                 Reserve: { bg: "#1d4ed8", accent: "#93c5fd" },
                 Flow:    { bg: "#047857", accent: "#6ee7b7" },
-                Build:   { bg: "#b45309", accent: "#fcd34d" },
+                Build:   { bg: "#ca8a04", accent: "#fde68a" },
                 Grow:    { bg: "#5b21b6", accent: "#c084fc" },
               };
               return (
               <div className="rounded-xl border border-border bg-card p-6">
                 <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold mb-5">Portfolio Overview</p>
 
-                {/* Centre card — orange border */}
+                {/* Centre — no box, no background */}
                 <div className="flex justify-center mb-6">
-                  <div className="rounded-xl px-12 py-5 text-center border-2 border-orange-500" style={{ background: "hsl(221,39%,13%)" }}>
-                    <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-1">Total Portfolio</p>
-                    <p className="text-4xl font-black text-white tabular-nums">
+                  <div className="px-12 py-2 text-center">
+                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Total Portfolio</p>
+                    <p className="text-4xl font-black text-foreground tabular-nums">
                       {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(2)}M` : fmt(totalAssets)}
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">Across {assets.length} accounts</p>
+                    <p className="text-xs text-muted-foreground mt-1">Across {assets.length} accounts</p>
                     {/* Stacked allocation bar — real proportions */}
                     <div className="flex mt-4 h-2.5 rounded-full overflow-hidden gap-px">
                       {(["Reserve","Flow","Build","Grow"] as const).map((name, i) => {
