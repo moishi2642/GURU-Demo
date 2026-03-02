@@ -1483,7 +1483,7 @@ function BucketExecutionPanel({
   const [amount, setAmount] = useState(suggested > 0 ? String(Math.round(suggested)) : "");
   const [staged, setStaged] = useState(false);
 
-  const needsFunding = delta > 1000;
+  const needsFunding = delta > 1000 && bucketName !== "Grow";
   const isSurplus    = delta < -1000;
   const isBalanced   = !needsFunding && !isSurplus;
 
