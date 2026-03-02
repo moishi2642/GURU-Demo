@@ -1485,9 +1485,9 @@ const GURU_BUCKETS_DEF = [
     name: "Reserve",
     tagline: "Active cash management for what's next",
     rule: "12 months of cash for anticipated outflow",
-    bg: "#1e40af",
-    dark: "#1e3a8a",
-    accent: "#93c5fd",
+    bg: "#7c5200",
+    dark: "#5c3c00",
+    accent: "#fcd34d",
   },
   {
     name: "Build",
@@ -1672,8 +1672,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
             {(() => {
               const HERO_COLORS: Record<string, { bg: string; accent: string }> = {
                 "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd" },
-                Reserve:          { bg: "#2563eb", accent: "#bfdbfe" },
-                Build:            { bg: "#16a34a", accent: "#bbf7d0" },
+                Reserve:          { bg: "#047857", accent: "#6ee7b7" },
+                Build:            { bg: "#ca8a04", accent: "#fde68a" },
                 Grow:             { bg: "#5b21b6", accent: "#c084fc" },
               };
               return (
