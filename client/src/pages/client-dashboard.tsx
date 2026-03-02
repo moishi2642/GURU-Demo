@@ -1957,18 +1957,17 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <p className="text-[9px] text-emerald-600/60 mt-0.5">available to redeploy</p>
                       </div>
                       <div>
-                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">AT Income Pickup / Yr</p>
+                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Potential After-Tax Income Pickup Per Year</p>
                         <p className="text-2xl font-black tabular-nums text-emerald-700">{fmt(addlIncome)}</p>
                         <p className="text-[9px] text-emerald-600/60 mt-0.5">projected annual gain</p>
                       </div>
                       <div>
-                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Cashflow Increase</p>
+                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Potential Cashflow Increase</p>
                         <p className="text-2xl font-black tabular-nums text-emerald-700">{pctIncrease}%</p>
                         <p className="text-[9px] text-emerald-600/60 mt-0.5">vs. current yield</p>
                       </div>
                     </div>
                   </div>
-
                   {/* 5 bucket mini-cards (4 active + Grow Other) */}
                   <div className="grid grid-cols-5 gap-3 mt-5">
                     {rows.map(r => {
