@@ -1684,14 +1684,24 @@ function BucketProductPanel({
                     </span>
                   )}
                   <p className="text-[11px] font-semibold text-foreground leading-snug truncate">{p.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] font-bold text-emerald-600 tabular-nums">{p.atYield}</span>
-                    <span
-                      className="text-[9px] font-semibold tabular-nums"
-                      style={{ color: p.pickup.startsWith("+") ? bgColor : "#94a3b8" }}
-                    >
-                      {p.pickup}
-                    </span>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <div>
+                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Gross</div>
+                      <div className="text-[10px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
+                    </div>
+                    <div>
+                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">After-Tax</div>
+                      <div className="text-[10px] font-bold text-emerald-600 tabular-nums">{p.atYield}</div>
+                    </div>
+                    <div className="ml-auto text-right">
+                      <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
+                      <div
+                        className="text-[9px] font-semibold tabular-nums"
+                        style={{ color: p.pickup.startsWith("+") ? bgColor : "#94a3b8" }}
+                      >
+                        {p.pickup}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1844,21 +1854,29 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         const pctIncrease = annualSalIn > 0 ? ((addlIncome / annualSalIn) * 100).toFixed(1) : "0";
 
         // ── Sub-accounts per bucket (computed from assets) ──────────────
-        type Acct = { name: string; value: number; yield_: string };
+        type Acct = { name: string; value: number; yield_: string; yieldAT: string };
         const shortName = (desc: string | null | undefined) =>
           (desc ?? "").split("(")[0].split("—")[0].split("–")[0].trim();
+        const parseYieldNum = (y: string): number => {
+          const m = y.replace(/[~\[\]<>+%]/g, "").match(/(\d+\.?\d*)/);
+          return m ? parseFloat(m[1]) : 0;
+        };
+        const toAT = (gross: string): string => {
+          const n = parseYieldNum(gross);
+          return n > 0 ? `${(n * 0.63).toFixed(2)}%` : "—";
+        };
 
         const reserveAccts: Acct[] = assets
           .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
-          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ? extractRate(a.description) + "%" : "0.01%" }));
+          .map(a => { const y = extractRate(a.description) ? extractRate(a.description) + "%" : "0.01%"; return { name: shortName(a.description), value: Number(a.value), yield_: y, yieldAT: toAT(y) }; });
 
         const flowAccts: Acct[] = assets
           .filter(a => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"))
-          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ? extractRate(a.description) + "%" : "0.01%" }));
+          .map(a => { const y = extractRate(a.description) ? extractRate(a.description) + "%" : "0.01%"; return { name: shortName(a.description), value: Number(a.value), yield_: y, yieldAT: toAT(y) }; });
 
         const buildAccts: Acct[] = assets
           .filter(a => a.type === "fixed_income" && ((a.description ?? "").toLowerCase().includes("treasur") || (a.description ?? "").toLowerCase().includes("t-bill")))
-          .map(a => ({ name: shortName(a.description), value: Number(a.value), yield_: extractRate(a.description) ? extractRate(a.description) + "%" : "—" }));
+          .map(a => { const y = extractRate(a.description) ? extractRate(a.description) + "%" : "—"; return { name: shortName(a.description), value: Number(a.value), yield_: y, yieldAT: toAT(y) }; });
 
         const equityVal = assets.filter(a => a.type === "equity" && !(a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0);
         const retireVal = assets.filter(a => a.type === "equity" && (a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0) +
@@ -1866,16 +1884,11 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         const altVal    = assets.filter(a => a.type === "alternative").reduce((s, a) => s + Number(a.value), 0);
         const reVal     = assets.filter(a => a.type === "real_estate").reduce((s, a) => s + Number(a.value), 0);
         const growAccts: Acct[] = [
-          ...(equityVal > 0 ? [{ name: "Equities (ETFs, Stocks & RSUs)", value: equityVal, yield_: "~7%" }] : []),
-          ...(retireVal > 0 ? [{ name: "Retirement Accounts (401k / IRA)", value: retireVal, yield_: "~6%" }] : []),
-          ...(altVal    > 0 ? [{ name: "Private Equity & Alternatives",   value: altVal,    yield_: "[15%+]" }] : []),
-          ...(reVal     > 0 ? [{ name: "Real Estate",                      value: reVal,     yield_: "~5%" }] : []),
+          ...(equityVal > 0 ? [{ name: "Equities (ETFs, Stocks & RSUs)", value: equityVal, yield_: "~7%",   yieldAT: "~4.41%" }] : []),
+          ...(retireVal > 0 ? [{ name: "Retirement Accounts (401k / IRA)", value: retireVal, yield_: "~6%",  yieldAT: "Tax-def." }] : []),
+          ...(altVal    > 0 ? [{ name: "Private Equity & Alternatives",   value: altVal,    yield_: "[15%+]", yieldAT: "[9.5%+]" }] : []),
+          ...(reVal     > 0 ? [{ name: "Real Estate",                      value: reVal,     yield_: "~5%",   yieldAT: "~3.15%" }] : []),
         ];
-
-        const parseYieldNum = (y: string): number => {
-          const m = y.replace(/[~\[\]<>+%]/g, "").match(/(\d+\.?\d*)/);
-          return m ? parseFloat(m[1]) : 0;
-        };
         const weightedGrossYield = (accts: Acct[], total: number): number => {
           if (total === 0 || accts.length === 0) return 0;
           return accts.reduce((s, a) => s + parseYieldNum(a.yield_) * a.value, 0) / total;
@@ -2110,32 +2123,40 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                     <div className="bg-card px-4 pt-3 pb-3 flex-1 flex flex-col">
                       {/* Column headers */}
-                      <div className="grid mb-2" style={{ gridTemplateColumns: "1fr 80px 48px" }}>
+                      <div className="grid mb-2" style={{ gridTemplateColumns: "1fr 80px 64px" }}>
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Current Accounts</span>
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Balance</span>
-                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Yield</span>
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Gross / AT</span>
                       </div>
                       <div className="space-y-1.5 flex-1">
                         {r.subAccounts.map(acct => (
-                          <div key={acct.name} className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 80px 48px" }}>
+                          <div key={acct.name} className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 80px 64px" }}>
                             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0 overflow-hidden">
                               <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
                               <span className="truncate">{acct.name}</span>
                             </span>
                             <span className="text-[11px] font-semibold text-foreground text-right tabular-nums">{fmt(acct.value)}</span>
-                            <span className="text-[10px] text-muted-foreground text-right tabular-nums">{acct.yield_}</span>
+                            <div className="text-right">
+                              <div className="text-[10px] font-semibold text-foreground tabular-nums">{acct.yield_}</div>
+                              <div className="text-[9px] text-muted-foreground tabular-nums">{acct.yieldAT}</div>
+                            </div>
                           </div>
                         ))}
                         {r.subAccounts.length === 0 && <p className="text-xs text-muted-foreground italic">No accounts mapped</p>}
                       </div>
                       {/* Weighted avg yield + totals footer */}
                       <div className="mt-2.5 pt-2 border-t border-border">
-                        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 80px 48px" }}>
+                        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 80px 64px" }}>
                           <span className="text-[9px] text-muted-foreground italic">{r.subAccounts.length} position{r.subAccounts.length !== 1 ? "s" : ""}</span>
                           <span className="text-xs font-bold tabular-nums text-foreground text-right">{fmt(r.current)}</span>
-                          <span className="text-[10px] font-bold tabular-nums text-right" style={{ color: r.def.bg }}>
-                            {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
-                          </span>
+                          <div className="text-right">
+                            <div className="text-[10px] font-bold tabular-nums" style={{ color: r.def.bg }}>
+                              {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
+                            </div>
+                            <div className="text-[9px] text-muted-foreground tabular-nums">
+                              {r.current > 0 ? `${(weightedGrossYield(r.subAccounts, r.current) * 0.63).toFixed(2)}%` : "—"}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
