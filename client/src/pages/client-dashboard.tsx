@@ -1930,60 +1930,41 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 Grow:             { bg: "#5b21b6", accent: "#c084fc" },
               };
               return (
-                <div className="rounded-xl border bg-gradient-to-r from-slate-50 to-blue-50 border-blue-200 px-6 py-5">
-                  <div className="flex flex-col sm:flex-row gap-6">
-                    {/* LEFT: Bucket allocation bars */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">GURU Bucket Allocation</p>
-                      {rows.map(r => {
-                        const hcL = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
-                        const pct = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
-                        return (
-                          <div key={r.def.name} className="flex items-center gap-3 mb-2.5">
-                            <span className="text-xs font-semibold w-28 flex-shrink-0 truncate" style={{ color: hcL.bg }}>{r.def.name}</span>
-                            <div className="flex-1 h-1.5 bg-black/10 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: hcL.bg }} />
-                            </div>
-                            <span className="text-xs font-bold tabular-nums w-20 text-right text-foreground">{fmt(r.current)}</span>
-                          </div>
-                        );
-                      })}
+                <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
+                  <div className="flex flex-col sm:flex-row gap-6 items-center">
+                    {/* Total Assets headline */}
+                    <div className="flex-shrink-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="rounded-lg p-1.5 bg-emerald-100">
+                          <TrendingUp className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Total Assets</p>
+                      </div>
+                      <p className="text-4xl font-extrabold leading-tight tabular-nums text-emerald-700">
+                        {fmt(totalAssets)}
+                      </p>
+                      <p className="text-[10px] text-emerald-600/70 mt-1">GURU Allocation View · {assets.length} accounts</p>
                     </div>
 
                     {/* DIVIDER */}
-                    <div className="hidden sm:block w-px self-stretch bg-blue-200" />
+                    <div className="hidden sm:block w-px self-stretch bg-emerald-200" />
 
-                    {/* RIGHT: Total portfolio headline */}
-                    <div className="sm:w-64 flex-shrink-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="rounded-lg p-1.5 bg-blue-100">
-                          <TrendingUp className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-blue-700">Total Portfolio</p>
+                    {/* 3 key metrics */}
+                    <div className="flex-1 grid grid-cols-3 gap-6">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Excess Cash</p>
+                        <p className="text-2xl font-black tabular-nums text-emerald-700">{fmt(excessCash)}</p>
+                        <p className="text-[9px] text-emerald-600/60 mt-0.5">available to redeploy</p>
                       </div>
-                      <p className="text-4xl font-extrabold leading-tight tabular-nums mb-1 text-blue-700">
-                        {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(2)}M` : fmt(totalAssets)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mb-3">GURU Allocation View · {assets.length} accounts</p>
-                      {/* Stacked allocation bar */}
-                      <div className="flex h-2.5 rounded-full overflow-hidden gap-px border border-blue-200">
-                        {(["Operating Cash","Reserve","Build","Grow"] as const).map((name, i) => {
-                          const val = [reserveCurrent, flowCurrent, buildCurrent, growCurrent][i];
-                          return (
-                            <div key={name} title={name} style={{
-                              width: `${totalAssets > 0 ? (val / totalAssets) * 100 : 25}%`,
-                              background: HERO_COLORS[name].bg,
-                            }} />
-                          );
-                        })}
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">AT Income Pickup / Yr</p>
+                        <p className="text-2xl font-black tabular-nums text-emerald-700">{fmt(addlIncome)}</p>
+                        <p className="text-[9px] text-emerald-600/60 mt-0.5">projected annual gain</p>
                       </div>
-                      <div className="flex gap-3 mt-2 flex-wrap">
-                        {rows.map(r => (
-                          <div key={r.def.name} className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: HERO_COLORS[r.def.name]?.bg }} />
-                            <span className="text-[9px] text-muted-foreground">{r.def.name}</span>
-                          </div>
-                        ))}
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Cashflow Increase</p>
+                        <p className="text-2xl font-black tabular-nums text-emerald-700">{pctIncrease}%</p>
+                        <p className="text-[9px] text-emerald-600/60 mt-0.5">vs. current yield</p>
                       </div>
                     </div>
                   </div>
@@ -2111,28 +2092,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 </div>
               );
             })()}
-            {/* ── Live Projections — below the hero ── */}
-            <div className="rounded-xl border bg-card px-6 py-4 flex items-center gap-8">
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">Live Projections</span>
-              </div>
-              <div className="w-px h-8 bg-border flex-shrink-0" />
-              {[
-                { label: "Excess Cash",           rawValue: excessCash,  fmt: "currency" as const, sub: "available to redeploy" },
-                { label: "AT Income Pickup / Yr", rawValue: addlIncome,  fmt: "currency" as const, sub: "projected annual gain" },
-                { label: "Cashflow Increase",     rawValue: pctIncrease, fmt: "percent"  as const, sub: "vs. current yield" },
-              ].map(s => (
-                <div key={s.label}>
-                  <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-0.5">{s.label}</p>
-                  <p className="text-2xl leading-none"><RollingNumber value={s.rawValue} format={s.fmt} /></p>
-                  <p className="text-[9px] text-muted-foreground mt-0.5">{s.sub}</p>
-                </div>
-              ))}
-            </div>
             {/* 4 bucket cards — 2×2 grid */}
             <div className="space-y-3">
               {rows.map(r => {
