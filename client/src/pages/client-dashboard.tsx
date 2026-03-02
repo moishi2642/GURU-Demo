@@ -1844,29 +1844,56 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
                   {/* ── MIDDLE: Visual + Metrics ── */}
                   <div className="flex-1 px-5 py-4 bg-card flex flex-col gap-4">
-                    <div>
-                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-3">Current vs AI Target</p>
-                      {/* Bullet bar: fill = current, marker line = AI target */}
-                      <div className="relative h-8 rounded-lg overflow-hidden mb-2" style={{ background: r.def.bg + "18" }}>
-                        {/* Current fill */}
-                        <div className="absolute inset-y-0 left-0 rounded-lg"
-                          style={{ width: `${currentPct}%`, background: r.def.bg, opacity: 0.45 }} />
-                        {/* AI Target marker line */}
-                        <div className="absolute inset-y-0 w-[2px] z-10"
-                          style={{ left: `clamp(1px, ${targetPct}%, calc(100% - 2px))`, background: r.def.bg }} />
-                        {/* Current label inside bar */}
-                        <div className="absolute inset-0 flex items-center px-2.5 justify-between">
-                          <span className="text-[9px] font-semibold text-white/80 drop-shadow-sm">Current</span>
-                          <span className="text-[9px] font-mono font-bold text-white/70 drop-shadow-sm">{fmt(r.current)}</span>
+                    {/* Water-fill bubble: size encodes bucket's share of total assets */}
+                    {(() => {
+                      const sharePct = totalAssets > 0 ? r.target / totalAssets : 0;
+                      const circlePx = Math.max(60, Math.min(200, Math.round(Math.sqrt(sharePct) * 420)));
+                      const fillPct  = r.target > 0 ? Math.min((r.current / r.target) * 100, 100) : 0;
+                      const isOver   = r.current >= r.target;
+                      const fontSize = circlePx >= 140 ? 20 : circlePx >= 100 ? 15 : 12;
+                      const subSize  = circlePx >= 140 ? 9 : 8;
+                      return (
+                        <div className="flex items-center gap-5">
+                          {/* Bubble */}
+                          <div className="relative rounded-full overflow-hidden flex-shrink-0 border-2"
+                            style={{ width: circlePx, height: circlePx, borderColor: r.def.bg + "80" }}>
+                            {/* Water fill from bottom */}
+                            <div className="absolute bottom-0 left-0 right-0 transition-all duration-700"
+                              style={{ height: `${fillPct}%`, background: r.def.bg, opacity: isOver ? 0.65 : 0.4 }} />
+                            {/* Ripple line at water surface */}
+                            {fillPct > 4 && fillPct < 98 && (
+                              <div className="absolute left-0 right-0 h-[1px] opacity-60"
+                                style={{ bottom: `${fillPct}%`, background: r.def.bg }} />
+                            )}
+                            {/* Center text */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                              <span className="font-black leading-none drop-shadow"
+                                style={{ fontSize, color: fillPct > 50 ? "#fff" : r.def.bg }}>
+                                {fillPct.toFixed(0)}%
+                              </span>
+                              <span className="leading-none mt-0.5 drop-shadow"
+                                style={{ fontSize: subSize, color: fillPct > 50 ? "rgba(255,255,255,0.7)" : "var(--muted-foreground)" }}>
+                                of target
+                              </span>
+                            </div>
+                          </div>
+                          {/* Labels beside bubble */}
+                          <div className="flex flex-col gap-2 min-w-0">
+                            <div>
+                              <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Current</p>
+                              <p className="text-sm font-mono font-bold text-foreground tabular-nums leading-tight">{fmt(r.current)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: r.def.bg }}>★ AI Target</p>
+                              <p className="text-sm font-mono font-bold tabular-nums leading-tight" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
+                            </div>
+                            <span className={`text-[9px] font-bold tabular-nums leading-tight ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                              {r.delta < 0 ? `▼ ${fmt(Math.abs(r.delta))} to redeploy` : r.delta > 0 ? `▲ ${fmt(Math.abs(r.delta))} needed` : "✓ Balanced"}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      {/* Below bar: delta only */}
-                      <div className="flex items-center justify-end">
-                        <span className={`text-[9px] font-bold tabular-nums ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                          {r.delta < 0 ? `▼ ${fmt(Math.abs(r.delta))} to redeploy` : r.delta > 0 ? `▲ ${fmt(Math.abs(r.delta))} needed` : "Balanced"}
-                        </span>
-                      </div>
-                    </div>
+                      );
+                    })()}
                     <div className="grid grid-cols-3 gap-3 pt-3 border-t" style={{ borderColor: r.def.bg + "30" }}>
                       <div>
                         <p className="text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: r.def.bg }}>★ AI Target</p>
