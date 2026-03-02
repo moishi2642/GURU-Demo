@@ -15,8 +15,9 @@ import {
 import {
   BrainCircuit, TrendingUp, TrendingDown, ChevronLeft, Activity,
   CheckCircle2, AlertTriangle, XCircle, Zap, LayoutDashboard, FileText,
-  Database, ArrowUpRight, CalendarClock, BarChart2, PieChart as PieChartIcon, Scale,
+  Database, ArrowUpRight, CalendarClock, BarChart2, PieChart as PieChartIcon, Scale, AlertCircle,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
 import type { Asset, Liability, CashFlow, Strategy } from "@shared/schema";
 
@@ -1842,82 +1843,151 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                   </div>
 
-                  {/* ── MIDDLE: Visual + Metrics ── */}
-                  <div className="flex-1 px-5 py-4 bg-card flex flex-col gap-4">
-                    {/* Water-fill bubble: size encodes bucket's share of total assets */}
-                    {(() => {
-                      const sharePct = totalAssets > 0 ? r.target / totalAssets : 0;
-                      const circlePx = Math.max(60, Math.min(200, Math.round(Math.sqrt(sharePct) * 420)));
-                      const fillPct  = r.target > 0 ? Math.min((r.current / r.target) * 100, 100) : 0;
-                      const isOver   = r.current >= r.target;
-                      const fontSize = circlePx >= 140 ? 20 : circlePx >= 100 ? 15 : 12;
-                      const subSize  = circlePx >= 140 ? 9 : 8;
-                      return (
-                        <div className="flex items-center gap-5">
-                          {/* Bubble */}
-                          <div className="relative rounded-full overflow-hidden flex-shrink-0 border-2"
-                            style={{ width: circlePx, height: circlePx, borderColor: r.def.bg + "80" }}>
-                            {/* Water fill from bottom */}
-                            <div className="absolute bottom-0 left-0 right-0 transition-all duration-700"
-                              style={{ height: `${fillPct}%`, background: r.def.bg, opacity: isOver ? 0.65 : 0.4 }} />
-                            {/* Ripple line at water surface */}
-                            {fillPct > 4 && fillPct < 98 && (
-                              <div className="absolute left-0 right-0 h-[1px] opacity-60"
-                                style={{ bottom: `${fillPct}%`, background: r.def.bg }} />
+                  {/* ── MIDDLE: Figma design — dual bars + 2×2 grid (bucket colors) ── */}
+                  {(() => {
+                    const delta         = r.target - r.current;
+                    const needsFunding  = delta > 0;
+                    const isBalanced    = Math.abs(delta) < 1000;
+                    const progressPct   = Math.min((r.current / Math.max(r.target, 1)) * 100, 100);
+                    const maxVal        = Math.max(r.current, r.target, 1);
+                    const avgYield      = weightedGrossYield(r.subAccounts, r.current);
+                    const yieldBps      = r.bpPickup;
+                    const yieldDollars  = Math.round((Math.abs(yieldBps) / 10000) * r.current);
+                    return (
+                      <div className="flex-1 border-l border-r border-slate-600 bg-slate-700">
+                        <div className="p-5">
+
+                          {/* Current bar */}
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] text-slate-400 uppercase tracking-wider">Current</span>
+                              <span className="text-sm font-mono text-white">${(r.current / 1000).toFixed(0)}K</span>
+                            </div>
+                            <div className="relative h-8 bg-slate-800 rounded border border-slate-600">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(r.current / maxVal) * 100}%` }}
+                                transition={{ duration: 1, delay: 0.2 }}
+                                className="h-full rounded flex items-center justify-end px-2"
+                                style={{ backgroundColor: r.def.accent + "cc" }}
+                              >
+                                <span className="text-[10px] font-mono font-semibold text-white drop-shadow">
+                                  {totalAssets > 0 ? ((r.current / totalAssets) * 100).toFixed(1) : "0"}%
+                                </span>
+                              </motion.div>
+                            </div>
+                          </div>
+
+                          {/* Delta badge */}
+                          <div className="flex items-center justify-center my-3">
+                            {isBalanced ? (
+                              <div className="flex items-center gap-2 text-green-400">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                <span className="text-xs font-medium">BALANCED</span>
+                              </div>
+                            ) : needsFunding ? (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.8 }}
+                                className="flex items-center gap-2"
+                              >
+                                <span className="text-rose-400 text-xs font-mono">▲ +${(Math.abs(delta) / 1000).toFixed(0)}K NEEDED</span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.8 }}
+                                className="flex items-center gap-2"
+                              >
+                                <span className="text-emerald-400 text-xs font-mono">▼ ${(Math.abs(delta) / 1000).toFixed(0)}K SURPLUS</span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              </motion.div>
                             )}
-                            {/* Center text */}
-                            <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                              <span className="font-black leading-none drop-shadow"
-                                style={{ fontSize, color: fillPct > 50 ? "#fff" : r.def.bg }}>
-                                {fillPct.toFixed(0)}%
+                          </div>
+
+                          {/* GURU Target bar — bucket color gradient */}
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-[10px] uppercase tracking-wider flex items-center gap-1" style={{ color: r.def.accent }}>
+                                <Activity className="w-3 h-3" />
+                                GURU Target
                               </span>
-                              <span className="leading-none mt-0.5 drop-shadow"
-                                style={{ fontSize: subSize, color: fillPct > 50 ? "rgba(255,255,255,0.7)" : "var(--muted-foreground)" }}>
-                                of target
-                              </span>
+                              <span className="text-sm font-mono" style={{ color: r.def.accent }}>${(r.target / 1000).toFixed(0)}K</span>
+                            </div>
+                            <div className="relative h-8 rounded border" style={{ background: "#1e293b", borderColor: r.def.bg + "60" }}>
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(r.target / maxVal) * 100}%` }}
+                                transition={{ duration: 1, delay: 0.5 }}
+                                className="h-full rounded flex items-center justify-end px-2"
+                                style={{ background: `linear-gradient(to right, ${r.def.dark}, ${r.def.bg})` }}
+                              >
+                                <span className="text-[10px] font-mono font-semibold text-white drop-shadow">
+                                  {totalAssets > 0 ? ((r.target / totalAssets) * 100).toFixed(1) : "0"}%
+                                </span>
+                              </motion.div>
                             </div>
                           </div>
-                          {/* Labels beside bubble */}
-                          <div className="flex flex-col gap-2 min-w-0">
-                            <div>
-                              <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Current</p>
-                              <p className="text-sm font-mono font-bold text-foreground tabular-nums leading-tight">{fmt(r.current)}</p>
+
+                          {/* Progress to target */}
+                          <div className="mb-4 pb-4 border-b border-slate-600">
+                            <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                              <span>Progress to Target</span>
+                              <span className="font-mono">{progressPct.toFixed(0)}%</span>
                             </div>
-                            <div>
-                              <p className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: r.def.bg }}>★ AI Target</p>
-                              <p className="text-sm font-mono font-bold tabular-nums leading-tight" style={{ color: r.def.bg }}>{fmt(r.target)}</p>
+                            <div className="h-1 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progressPct}%` }}
+                                transition={{ duration: 1, delay: 1 }}
+                                className="h-full rounded-full"
+                                style={{ background: isBalanced ? "#22c55e" : r.def.bg }}
+                              />
                             </div>
-                            <span className={`text-[9px] font-bold tabular-nums leading-tight ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                              {r.delta < 0 ? `▼ ${fmt(Math.abs(r.delta))} to redeploy` : r.delta > 0 ? `▲ ${fmt(Math.abs(r.delta))} needed` : "✓ Balanced"}
-                            </span>
                           </div>
+
+                          {/* 2×2 metrics grid */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
+                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Status</div>
+                              <div className={`text-xs font-medium ${isBalanced ? "text-green-400" : needsFunding ? "text-rose-400" : "text-emerald-400"}`}>
+                                {isBalanced ? "BALANCED" : needsFunding ? "UNDERFUNDED" : "SURPLUS"}
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-0.5">
+                                {isBalanced ? "No action needed" : needsFunding ? "Requires funding" : "Ready to redeploy"}
+                              </div>
+                            </div>
+                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
+                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Priority</div>
+                              <div className="text-xs font-mono text-white">
+                                {Math.abs(delta) > 300000 ? "HIGH" : Math.abs(delta) > 100000 ? "MEDIUM" : "LOW"}
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-0.5">Execution: T+2</div>
+                            </div>
+                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
+                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Current Yield</div>
+                              <div className="text-xs font-mono text-white">{avgYield.toFixed(2)}%</div>
+                              <div className="text-[10px] text-slate-500 mt-0.5">Weighted average</div>
+                            </div>
+                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
+                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                Yield Pickup
+                                {yieldBps > 50 && <AlertCircle className="w-3 h-3 text-orange-500" />}
+                              </div>
+                              <div className={`text-xs font-mono ${yieldBps > 50 ? "text-orange-400" : "text-emerald-400"}`}>
+                                {yieldBps >= 0 ? "+" : ""}{yieldBps} bps
+                              </div>
+                              <div className="text-[10px] text-emerald-500 mt-0.5">{fmt(yieldDollars)}/yr</div>
+                            </div>
+                          </div>
+
                         </div>
-                      );
-                    })()}
-                    <div className="grid grid-cols-3 gap-3 pt-3 border-t" style={{ borderColor: r.def.bg + "30" }}>
-                      <div>
-                        <p className="text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: r.def.bg }}>★ AI Target</p>
-                        <p className="text-base leading-none"><RollingNumber value={r.target} format="currency" /></p>
                       </div>
-                      <div>
-                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-1 ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                          {r.delta < 0 ? "▼ To Redeploy" : r.delta > 0 ? "▲ Needed" : "Balanced"}
-                        </p>
-                        <p className="text-base leading-none">
-                          {r.delta !== 0 ? <RollingNumber value={Math.abs(r.delta)} format="currency" /> : <span className="font-mono font-bold text-muted-foreground">—</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <p className={`text-[9px] uppercase tracking-widest font-bold mb-1 ${r.bpPickup > 0 ? "text-emerald-600" : r.bpPickup < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                          Yield Pickup
-                        </p>
-                        <p className="text-base leading-none">
-                          {r.bpPickup !== 0 ? <RollingNumber value={Math.abs(r.bpPickup)} format="raw" prefix={r.bpPickup > 0 ? "+" : "-"} /> : <span className="font-mono font-bold text-muted-foreground">—</span>}
-                        </p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5">after-tax bps</p>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* ── RIGHT: Products ticker ── */}
                   <div className="w-52 flex-shrink-0 flex flex-col border-l border-[hsl(221,39%,22%)] bg-[hsl(221,39%,10%)]">
