@@ -1685,7 +1685,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                   <div className="px-12 py-2 text-center">
                     <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Total Portfolio</p>
                     <p className="text-4xl font-black text-foreground tabular-nums">
-                      {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(2)}M` : fmt(totalAssets)}
+                      {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(1)}M` : fmt(totalAssets)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">Across {assets.length} accounts</p>
                     {/* Stacked allocation bar — real proportions */}
@@ -1734,6 +1734,83 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     );
                   })}
                 </div>
+
+                {/* ── Org-chart flow lines ── */}
+                {(() => {
+                  const H = 72;
+                  const dropY = 36;
+                  const surplusRow = rows.find(r => r.delta < -5000);
+                  const needRows   = rows.filter(r => r.delta > 5000);
+                  if (!surplusRow || needRows.length === 0) return null;
+                  const srcIdx = rows.indexOf(surplusRow);
+                  const srcPct = (srcIdx + 0.5) / rows.length * 100;
+                  const srcColor = HERO_COLORS[surplusRow.def.name]?.bg ?? "#64748b";
+                  return (
+                    <div className="relative mt-1 mb-1" style={{ height: H }}>
+                      {/* Vertical drop from source (surplus bucket) */}
+                      <div className="absolute rounded-full" style={{
+                        left: `${srcPct}%`, top: 0,
+                        width: 2, height: dropY,
+                        background: srcColor,
+                        transform: "translateX(-50%)", opacity: 0.6,
+                      }} />
+                      {needRows.map((need, i) => {
+                        const tgtIdx  = rows.indexOf(need);
+                        const tgtPct  = (tgtIdx + 0.5) / rows.length * 100;
+                        const leftPct = Math.min(srcPct, tgtPct);
+                        const wPct    = Math.abs(srcPct - tgtPct);
+                        const tgtColor = HERO_COLORS[need.def.name]?.bg ?? "#64748b";
+                        const midPct  = (srcPct + tgtPct) / 2;
+                        const amount  = Math.abs(need.delta);
+                        const fmtAmt  = amount >= 1_000_000
+                          ? `$${(amount / 1_000_000).toFixed(1)}M`
+                          : `$${Math.round(amount / 1000)}K`;
+                        return (
+                          <div key={need.def.name}>
+                            {/* Horizontal connector */}
+                            <div className="absolute" style={{
+                              left: `${leftPct}%`, top: dropY,
+                              width: `${wPct}%`, height: 2,
+                              background: `linear-gradient(to left, ${srcColor}80, ${tgtColor}80)`,
+                            }} />
+                            {/* Vertical rise to target */}
+                            <div className="absolute rounded-full" style={{
+                              left: `${tgtPct}%`, top: dropY - 28,
+                              width: 2, height: 28,
+                              background: tgtColor,
+                              transform: "translateX(-50%)", opacity: 0.6,
+                            }} />
+                            {/* Dollar amount */}
+                            <div className="absolute text-[9px] font-black tabular-nums" style={{
+                              left: `${midPct}%`, top: dropY + 6,
+                              transform: "translateX(-50%)",
+                              color: tgtColor,
+                            }}>
+                              {fmtAmt}
+                            </div>
+                            {/* Animated moving dot */}
+                            <motion.div
+                              className="absolute rounded-full z-10 shadow"
+                              style={{ width: 9, height: 9, background: tgtColor, marginLeft: -4, marginTop: -4 }}
+                              animate={{
+                                left: [`${srcPct}%`, `${srcPct}%`, `${tgtPct}%`, `${tgtPct}%`],
+                                top:  [0, dropY, dropY, dropY - 28],
+                              }}
+                              transition={{
+                                duration: 2.8,
+                                delay: i * 1.0,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                                times: [0, 0.35, 0.65, 1],
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
               </div>
               );
             })()}
@@ -1786,32 +1863,32 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                     <div className="bg-card px-4 pt-3 pb-3 flex-1 flex flex-col">
                       {/* Column headers */}
-                      <div className="grid mb-2" style={{ gridTemplateColumns: "1fr 48px 88px" }}>
+                      <div className="grid mb-2" style={{ gridTemplateColumns: "1fr 88px 56px" }}>
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Current Accounts</span>
-                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Yield</span>
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Balance</span>
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Yield</span>
                       </div>
                       <div className="space-y-1.5 flex-1">
                         {r.subAccounts.map(acct => (
-                          <div key={acct.name} className="grid items-center gap-1" style={{ gridTemplateColumns: "1fr 48px 88px" }}>
+                          <div key={acct.name} className="grid items-center gap-1" style={{ gridTemplateColumns: "1fr 88px 56px" }}>
                             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
                               <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
                               <span className="truncate">{acct.name}</span>
                             </span>
-                            <span className="text-[10px] text-muted-foreground text-right tabular-nums">{acct.yield_}</span>
                             <span className="text-[11px] font-semibold text-foreground text-right tabular-nums">{fmt(acct.value)}</span>
+                            <span className="text-[10px] text-muted-foreground text-right tabular-nums">{acct.yield_}</span>
                           </div>
                         ))}
                         {r.subAccounts.length === 0 && <p className="text-xs text-muted-foreground italic">No accounts mapped</p>}
                       </div>
                       {/* Weighted avg yield + totals footer */}
                       <div className="mt-2.5 pt-2 border-t border-border">
-                        <div className="grid items-center" style={{ gridTemplateColumns: "1fr 48px 88px" }}>
+                        <div className="grid items-center" style={{ gridTemplateColumns: "1fr 88px 56px" }}>
                           <p className="text-[9px] text-muted-foreground italic">{r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""}</p>
+                          <span className="text-xs font-bold tabular-nums text-foreground text-right">{fmt(r.current)}</span>
                           <span className="text-[10px] font-bold tabular-nums text-right" style={{ color: r.def.bg }}>
                             {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
                           </span>
-                          <span className="text-xs font-bold tabular-nums text-foreground text-right">{fmt(r.current)}</span>
                         </div>
                       </div>
                     </div>
