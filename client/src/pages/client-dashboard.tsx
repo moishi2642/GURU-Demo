@@ -2032,7 +2032,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         {/* Vertical drop line for every surplus source */}
                         {surplusRows.map(src => {
                           const srcIdx   = rows.indexOf(src);
-                          const srcPct   = (srcIdx + 0.5) / rows.length * 100;
+                          const srcPct   = (srcIdx + 0.5) / (rows.length + 1) * 100;
                           const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
                           return (
                             <div key={`drop-${src.def.name}`} className="absolute rounded-full" style={{
@@ -2046,11 +2046,11 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         {/* Connectors: each surplus → each need */}
                         {surplusRows.flatMap((src, connIdx) => {
                           const srcIdx   = rows.indexOf(src);
-                          const srcPct   = (srcIdx + 0.5) / rows.length * 100;
+                          const srcPct   = (srcIdx + 0.5) / (rows.length + 1) * 100;
                           const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
                           return needRows.map((need, needIdx) => {
                             const tgtIdx    = rows.indexOf(need);
-                            const tgtPct    = (tgtIdx + 0.5) / rows.length * 100;
+                            const tgtPct    = (tgtIdx + 0.5) / (rows.length + 1) * 100;
                             const leftPct   = Math.min(srcPct, tgtPct);
                             const wPct      = Math.abs(srcPct - tgtPct);
                             const tgtColor  = HERO_COLORS[need.def.name]?.bg ?? "#64748b";
