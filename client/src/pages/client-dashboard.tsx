@@ -1728,7 +1728,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
                         <div className="flex items-baseline justify-between mt-1">
                           <p className="text-xl font-black text-white leading-none tabular-nums">{fmtK(r.current)}</p>
-                          <p className="text-[10px] text-white/60 tabular-nums">{avgYieldV.toFixed(2)}%</p>
+                          <p className="text-[10px] text-white/60 tabular-nums">{avgYieldV.toFixed(2)}% yield</p>
                         </div>
                         <p className="text-[9px] text-white/40 mt-1.5">
                           {r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""} • {pctTotal.toFixed(0)}% of total
