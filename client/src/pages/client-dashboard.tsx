@@ -1490,8 +1490,11 @@ function BucketExecutionPanel({
   const statusLabel = isBalanced ? "BALANCED" : needsFunding ? "NEEDS FUNDING" : "SURPLUS";
   const statusColor = isBalanced ? "#22c55e" : needsFunding ? "#f43f5e" : "#10b981";
 
-  const fromLabel = needsFunding ? "Grow" : bucketName;
-  const toLabel   = needsFunding ? bucketName : "Build / Grow";
+  const BUCKET_NAMES = ["Operating Cash", "Reserve", "Build", "Grow"];
+  const defaultFrom = needsFunding ? "Grow" : bucketName;
+  const defaultTo   = needsFunding ? bucketName : BUCKET_NAMES.find(n => n !== bucketName) ?? "Reserve";
+  const [fromAccount, setFromAccount] = useState(defaultFrom);
+  const [toAccount,   setToAccount]   = useState(defaultTo);
 
   const parsedAmt = parseFloat(amount.replace(/[^0-9.]/g, "")) || 0;
   const newBalance = needsFunding ? current + parsedAmt : current - parsedAmt;
@@ -1569,12 +1572,36 @@ function BucketExecutionPanel({
         </div>
 
         {/* Routing */}
-        <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Route</p>
-          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-            <span className="truncate">{fromLabel}</span>
-            <span className="text-muted-foreground flex-shrink-0">→</span>
-            <span className="truncate">{toLabel}</span>
+        <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Route</p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">From</p>
+              <select
+                value={fromAccount}
+                onChange={e => { setFromAccount(e.target.value); setStaged(false); }}
+                className="w-full text-[11px] font-semibold text-foreground bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
+              >
+                {BUCKET_NAMES.map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+            <span className="text-muted-foreground flex-shrink-0 mt-4 text-sm">→</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">To</p>
+              <select
+                value={toAccount}
+                onChange={e => { setToAccount(e.target.value); setStaged(false); }}
+                className="w-full text-[11px] font-semibold bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                style={{ color: bgColor, borderColor: bgColor + "60", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
+              >
+                {BUCKET_NAMES.filter(n => n !== fromAccount).map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
