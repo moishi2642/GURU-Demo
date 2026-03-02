@@ -1503,7 +1503,7 @@ function BucketExecutionPanel({
     : `$${Math.round(v).toLocaleString()}`;
 
   return (
-    <div className="flex-1 border-l border-r border-border bg-card flex flex-col">
+    <div className="w-72 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
       <div className="flex-1 p-5 flex flex-col gap-4">
 
         {/* Status + current vs target */}
@@ -2099,7 +2099,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 <div key={r.def.name} className="rounded-xl overflow-hidden flex shadow-sm border border-border">
 
                   {/* ── LEFT: Header + Accounts ── */}
-                  <div className="w-72 flex-shrink-0 flex flex-col border-r border-border">
+                  <div className="flex-1 min-w-[240px] flex flex-col border-r border-border">
                     <div className="px-4 py-3 flex items-center gap-2.5" style={{ background: r.def.bg }}>
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
                       <div className="min-w-0 flex-1">
