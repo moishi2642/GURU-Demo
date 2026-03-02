@@ -1710,8 +1710,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     const fmtShort = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(2)}M` : `$${Math.round(v / 1000)}K`;
                     const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
                     const pctTotal  = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
-                    const priority  = Math.abs(r.delta) > 300_000 ? "HIGH" : Math.abs(r.delta) > 100_000 ? "MEDIUM" : "LOW";
-                    const priColor  = priority === "HIGH" ? "#ef4444" : priority === "MEDIUM" ? "#f59e0b" : "#22c55e";
+                    const isSurplus = r.delta < -5000;
                     return (
                       <div key={r.def.name} className="rounded-xl p-4" style={{ background: hc.bg }}>
                         <div className="flex items-start justify-between mb-0.5">
@@ -1719,10 +1718,12 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
                             <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                           </div>
-                          <span className="text-[7px] font-black px-1.5 py-0.5 rounded flex-shrink-0 ml-1"
-                            style={{ background: priColor + "28", color: priColor, border: `1px solid ${priColor}50` }}>
-                            {priority}
-                          </span>
+                          {isSurplus && (
+                            <span className="relative flex h-2 w-2 flex-shrink-0 ml-1 mt-0.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                            </span>
+                          )}
                         </div>
                         <p className="text-[9px] italic text-white/50 mb-3 leading-snug">{r.def.rule}</p>
                         <p className="text-xl font-black text-white leading-none tabular-nums">{fmtShort(r.current)}</p>
@@ -1739,73 +1740,87 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 {(() => {
                   const H = 72;
                   const dropY = 36;
-                  const surplusRow = rows.find(r => r.delta < -5000);
-                  const needRows   = rows.filter(r => r.delta > 5000);
-                  if (!surplusRow || needRows.length === 0) return null;
-                  const srcIdx = rows.indexOf(surplusRow);
-                  const srcPct = (srcIdx + 0.5) / rows.length * 100;
-                  const srcColor = HERO_COLORS[surplusRow.def.name]?.bg ?? "#64748b";
+                  const surplusRows = rows.filter(r => r.delta < -5000);
+                  const needRows    = rows.filter(r => r.delta > 5000 || r.def.name === "Build");
+                  if (surplusRows.length === 0 || needRows.length === 0) return null;
+                  let dotIdx = 0;
                   return (
                     <div className="relative mt-1 mb-1" style={{ height: H }}>
-                      {/* Vertical drop from source (surplus bucket) */}
-                      <div className="absolute rounded-full" style={{
-                        left: `${srcPct}%`, top: 0,
-                        width: 2, height: dropY,
-                        background: srcColor,
-                        transform: "translateX(-50%)", opacity: 0.6,
-                      }} />
-                      {needRows.map((need, i) => {
-                        const tgtIdx  = rows.indexOf(need);
-                        const tgtPct  = (tgtIdx + 0.5) / rows.length * 100;
-                        const leftPct = Math.min(srcPct, tgtPct);
-                        const wPct    = Math.abs(srcPct - tgtPct);
-                        const tgtColor = HERO_COLORS[need.def.name]?.bg ?? "#64748b";
-                        const midPct  = (srcPct + tgtPct) / 2;
-                        const amount  = Math.abs(need.delta);
-                        const fmtAmt  = amount >= 1_000_000
-                          ? `$${(amount / 1_000_000).toFixed(1)}M`
-                          : `$${Math.round(amount / 1000)}K`;
+                      {/* Vertical drop line for every surplus source */}
+                      {surplusRows.map(src => {
+                        const srcIdx   = rows.indexOf(src);
+                        const srcPct   = (srcIdx + 0.5) / rows.length * 100;
+                        const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
                         return (
-                          <div key={need.def.name}>
-                            {/* Horizontal connector */}
-                            <div className="absolute" style={{
-                              left: `${leftPct}%`, top: dropY,
-                              width: `${wPct}%`, height: 2,
-                              background: `linear-gradient(to left, ${srcColor}80, ${tgtColor}80)`,
-                            }} />
-                            {/* Vertical rise to target */}
-                            <div className="absolute rounded-full" style={{
-                              left: `${tgtPct}%`, top: dropY - 28,
-                              width: 2, height: 28,
-                              background: tgtColor,
-                              transform: "translateX(-50%)", opacity: 0.6,
-                            }} />
-                            {/* Dollar amount */}
-                            <div className="absolute text-[9px] font-black tabular-nums" style={{
-                              left: `${midPct}%`, top: dropY + 6,
-                              transform: "translateX(-50%)",
-                              color: tgtColor,
-                            }}>
-                              {fmtAmt}
-                            </div>
-                            {/* Animated moving dot */}
-                            <motion.div
-                              className="absolute rounded-full z-10 shadow"
-                              style={{ width: 9, height: 9, background: tgtColor, marginLeft: -4, marginTop: -4 }}
-                              animate={{
-                                left: [`${srcPct}%`, `${srcPct}%`, `${tgtPct}%`, `${tgtPct}%`],
-                                top:  [0, dropY, dropY, dropY - 28],
-                              }}
-                              transition={{
-                                duration: 2.8,
-                                delay: i * 1.0,
-                                repeat: Infinity,
-                                ease: "easeInOut",
-                                times: [0, 0.35, 0.65, 1],
-                              }}
-                            />
-                          </div>
+                          <div key={`drop-${src.def.name}`} className="absolute rounded-full" style={{
+                            left: `${srcPct}%`, top: 0,
+                            width: 2, height: dropY,
+                            background: srcColor,
+                            transform: "translateX(-50%)", opacity: 0.6,
+                          }} />
                         );
+                      })}
+                      {/* Connectors: each surplus → each need */}
+                      {surplusRows.flatMap(src => {
+                        const srcIdx   = rows.indexOf(src);
+                        const srcPct   = (srcIdx + 0.5) / rows.length * 100;
+                        const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
+                        return needRows.map(need => {
+                          const tgtIdx   = rows.indexOf(need);
+                          const tgtPct   = (tgtIdx + 0.5) / rows.length * 100;
+                          const leftPct  = Math.min(srcPct, tgtPct);
+                          const wPct     = Math.abs(srcPct - tgtPct);
+                          const tgtColor = HERO_COLORS[need.def.name]?.bg ?? "#64748b";
+                          const midPct   = (srcPct + tgtPct) / 2;
+                          const amount   = need.def.name === "Build"
+                            ? Math.abs(src.delta)
+                            : Math.abs(need.delta);
+                          const fmtAmt   = amount >= 1_000_000
+                            ? `$${(amount / 1_000_000).toFixed(1)}M`
+                            : `$${Math.round(amount / 1000)}K`;
+                          const di = dotIdx++;
+                          return (
+                            <div key={`${src.def.name}->${need.def.name}`}>
+                              {/* Horizontal connector */}
+                              <div className="absolute" style={{
+                                left: `${leftPct}%`, top: dropY,
+                                width: `${wPct}%`, height: 2,
+                                background: `linear-gradient(to ${srcPct < tgtPct ? "right" : "left"}, ${srcColor}80, ${tgtColor}80)`,
+                              }} />
+                              {/* Vertical rise to target */}
+                              <div className="absolute rounded-full" style={{
+                                left: `${tgtPct}%`, top: dropY - 28,
+                                width: 2, height: 28,
+                                background: tgtColor,
+                                transform: "translateX(-50%)", opacity: 0.6,
+                              }} />
+                              {/* Dollar amount label */}
+                              <div className="absolute text-[9px] font-black tabular-nums" style={{
+                                left: `${midPct}%`, top: dropY + 6,
+                                transform: "translateX(-50%)",
+                                color: tgtColor,
+                              }}>
+                                {fmtAmt}
+                              </div>
+                              {/* Animated dot */}
+                              <motion.div
+                                className="absolute rounded-full z-10 shadow"
+                                style={{ width: 9, height: 9, background: tgtColor, marginLeft: -4, marginTop: -4 }}
+                                animate={{
+                                  left: [`${srcPct}%`, `${srcPct}%`, `${tgtPct}%`, `${tgtPct}%`],
+                                  top:  [0, dropY, dropY, dropY - 28],
+                                }}
+                                transition={{
+                                  duration: 2.8,
+                                  delay: di * 0.8,
+                                  repeat: Infinity,
+                                  ease: "easeInOut",
+                                  times: [0, 0.35, 0.65, 1],
+                                }}
+                              />
+                            </div>
+                          );
+                        });
                       })}
                     </div>
                   );
