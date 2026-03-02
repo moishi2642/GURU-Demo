@@ -1838,11 +1838,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           </span>
                           <span className="text-xs font-bold tabular-nums text-foreground text-right">{fmt(r.current)}</span>
                         </div>
-                        <div className="grid items-center mt-1.5" style={{ gridTemplateColumns: "1fr 48px 88px" }}>
-                          <p className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: r.def.bg }}>★ AI Target</p>
-                          <span />
-                          <span className="text-xs font-bold tabular-nums text-right" style={{ color: r.def.bg }}>{fmt(r.target)}</span>
-                        </div>
                       </div>
                     </div>
                   </div>
