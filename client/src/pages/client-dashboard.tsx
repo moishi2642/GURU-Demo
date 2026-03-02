@@ -1687,7 +1687,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
   return (
     <div className="space-y-6">
-
       {/* ── Rebalancing Recommendation ───────────────────────────────────── */}
       {(() => {
         const reserveCurrent = reserve;
@@ -1801,161 +1800,153 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 Grow:             { bg: "#5b21b6", accent: "#c084fc" },
               };
               return (
-              <div className="rounded-xl border border-border bg-card p-6">
-                <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold mb-5">Portfolio Overview</p>
-
-                {/* Centre — no box, no background */}
-                <div className="flex justify-center mb-6">
-                  <div className="px-12 py-2 text-center">
-                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Total Portfolio</p>
-                    <p className="text-4xl font-black text-foreground tabular-nums">
-                      {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(1)}M` : fmt(totalAssets)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Across {assets.length} accounts</p>
-                    {/* Stacked allocation bar — real proportions */}
-                    <div className="flex mt-4 h-2.5 rounded-full overflow-hidden gap-px">
-                      {(["Operating Cash","Reserve","Build","Grow"] as const).map((name, i) => {
-                        const val = [reserveCurrent, flowCurrent, buildCurrent, growCurrent][i];
-                        return (
-                          <div key={name} style={{
-                            width: `${totalAssets > 0 ? (val / totalAssets) * 100 : 25}%`,
-                            background: HERO_COLORS[name].bg,
-                          }} />
-                        );
-                      })}
+                <div className="rounded-xl border border-border bg-card p-6">
+                  <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold mb-5">Portfolio Overview</p>
+                  {/* Centre — no box, no background */}
+                  <div className="flex justify-center mb-6">
+                    <div className="px-12 py-2 text-center">
+                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Total Portfolio</p>
+                      <p className="text-4xl font-black text-foreground tabular-nums">
+                        {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(1)}M` : fmt(totalAssets)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">Across {assets.length} accounts</p>
+                      {/* Stacked allocation bar — real proportions */}
+                      <div className="flex mt-4 h-2.5 rounded-full overflow-hidden gap-px">
+                        {(["Operating Cash","Reserve","Build","Grow"] as const).map((name, i) => {
+                          const val = [reserveCurrent, flowCurrent, buildCurrent, growCurrent][i];
+                          return (
+                            <div key={name} style={{
+                              width: `${totalAssets > 0 ? (val / totalAssets) * 100 : 25}%`,
+                              background: HERO_COLORS[name].bg,
+                            }} />
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* 4 bucket mini-cards */}
-                <div className="grid grid-cols-4 gap-3">
-                  {rows.map(r => {
-                    const hc       = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
-                    const fmtK     = (v: number) => `$${Math.round(v).toLocaleString()}`;
-                    const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
-                    const pctTotal  = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
-                    const isSurplus = r.delta < -5000;
-                    return (
-                      <div key={r.def.name} className="rounded-xl p-4" style={{ background: hc.bg }}>
-                        <div className="flex items-start justify-between mb-0.5">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
-                            <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
+                  {/* 4 bucket mini-cards */}
+                  <div className="grid grid-cols-4 gap-3">
+                    {rows.map(r => {
+                      const hc       = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
+                      const fmtK     = (v: number) => `$${Math.round(v).toLocaleString()}`;
+                      const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
+                      const pctTotal  = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
+                      const isSurplus = r.delta < -5000;
+                      return (
+                        <div key={r.def.name} className="rounded-xl p-4" style={{ background: hc.bg }}>
+                          <div className="flex items-start justify-between mb-0.5">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
+                              <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
+                            </div>
+                            {isSurplus && (
+                              <span className="relative flex h-2 w-2 flex-shrink-0 ml-1 mt-0.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                              </span>
+                            )}
                           </div>
-                          {isSurplus && (
-                            <span className="relative flex h-2 w-2 flex-shrink-0 ml-1 mt-0.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                            </span>
-                          )}
+                          <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
+                          <div className="flex items-baseline justify-between mt-1 gap-1">
+                            <p className={`${fmtK(r.current).length > 9 ? "text-sm" : fmtK(r.current).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>{fmtK(r.current)}</p>
+                            <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>
+                          </div>
                         </div>
-                        <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
-                        <div className="flex items-baseline justify-between mt-1 gap-1">
-                          <p className={`${fmtK(r.current).length > 9 ? "text-sm" : fmtK(r.current).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>{fmtK(r.current)}</p>
-                          <p className="text-[10px] text-white/60 tabular-nums flex-shrink-0">{avgYieldV.toFixed(2)}% yield</p>
-                        </div>
-                        <p className="text-[9px] text-white/40 mt-1.5">
-                          {r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""} • {pctTotal.toFixed(0)}% of total
-                        </p>
+                      );
+                    })}
+                  </div>
+                  {/* ── Org-chart flow lines ── */}
+                  {(() => {
+                    const H = 72;
+                    const dropY = 36;
+                    const surplusRows = rows.filter(r => r.delta < -5000);
+                    const needRows    = rows.filter(r => r.delta > 5000 || r.def.name === "Build");
+                    if (surplusRows.length === 0 || needRows.length === 0) return null;
+                    let dotIdx = 0;
+                    return (
+                      <div className="relative mt-1 mb-1" style={{ height: H }}>
+                        {/* Vertical drop line for every surplus source */}
+                        {surplusRows.map(src => {
+                          const srcIdx   = rows.indexOf(src);
+                          const srcPct   = (srcIdx + 0.5) / rows.length * 100;
+                          const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
+                          return (
+                            <div key={`drop-${src.def.name}`} className="absolute rounded-full" style={{
+                              left: `${srcPct}%`, top: 0,
+                              width: 2, height: dropY,
+                              background: srcColor,
+                              transform: "translateX(-50%)", opacity: 0.6,
+                            }} />
+                          );
+                        })}
+                        {/* Connectors: each surplus → each need */}
+                        {surplusRows.flatMap(src => {
+                          const srcIdx   = rows.indexOf(src);
+                          const srcPct   = (srcIdx + 0.5) / rows.length * 100;
+                          const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
+                          return needRows.map(need => {
+                            const tgtIdx   = rows.indexOf(need);
+                            const tgtPct   = (tgtIdx + 0.5) / rows.length * 100;
+                            const leftPct  = Math.min(srcPct, tgtPct);
+                            const wPct     = Math.abs(srcPct - tgtPct);
+                            const tgtColor = HERO_COLORS[need.def.name]?.bg ?? "#64748b";
+                            const midPct   = (srcPct + tgtPct) / 2;
+                            const amount   = need.def.name === "Build"
+                              ? Math.abs(src.delta)
+                              : Math.abs(need.delta);
+                            const fmtAmt   = amount >= 1_000_000
+                              ? `$${(amount / 1_000_000).toFixed(1)}M`
+                              : `$${Math.round(amount / 1000)}K`;
+                            const di = dotIdx++;
+                            return (
+                              <div key={`${src.def.name}->${need.def.name}`}>
+                                {/* Horizontal connector */}
+                                <div className="absolute" style={{
+                                  left: `${leftPct}%`, top: dropY,
+                                  width: `${wPct}%`, height: 2,
+                                  background: `linear-gradient(to ${srcPct < tgtPct ? "right" : "left"}, ${srcColor}80, ${tgtColor}80)`,
+                                }} />
+                                {/* Vertical rise to target */}
+                                <div className="absolute rounded-full" style={{
+                                  left: `${tgtPct}%`, top: dropY - 28,
+                                  width: 2, height: 28,
+                                  background: tgtColor,
+                                  transform: "translateX(-50%)", opacity: 0.6,
+                                }} />
+                                {/* Dollar amount label */}
+                                <div className="absolute text-[9px] font-black tabular-nums" style={{
+                                  left: `${midPct}%`, top: dropY + 6,
+                                  transform: "translateX(-50%)",
+                                  color: tgtColor,
+                                }}>
+                                  {fmtAmt}
+                                </div>
+                                {/* Animated dot */}
+                                <motion.div
+                                  className="absolute rounded-full z-10 shadow"
+                                  style={{ width: 9, height: 9, background: tgtColor, marginLeft: -4, marginTop: -4 }}
+                                  animate={{
+                                    left: [`${srcPct}%`, `${srcPct}%`, `${tgtPct}%`, `${tgtPct}%`],
+                                    top:  [0, dropY, dropY, dropY - 28],
+                                  }}
+                                  transition={{
+                                    duration: 2.8,
+                                    delay: di * 0.8,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                    times: [0, 0.35, 0.65, 1],
+                                  }}
+                                />
+                              </div>
+                            );
+                          });
+                        })}
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
-
-                {/* ── Org-chart flow lines ── */}
-                {(() => {
-                  const H = 72;
-                  const dropY = 36;
-                  const surplusRows = rows.filter(r => r.delta < -5000);
-                  const needRows    = rows.filter(r => r.delta > 5000 || r.def.name === "Build");
-                  if (surplusRows.length === 0 || needRows.length === 0) return null;
-                  let dotIdx = 0;
-                  return (
-                    <div className="relative mt-1 mb-1" style={{ height: H }}>
-                      {/* Vertical drop line for every surplus source */}
-                      {surplusRows.map(src => {
-                        const srcIdx   = rows.indexOf(src);
-                        const srcPct   = (srcIdx + 0.5) / rows.length * 100;
-                        const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
-                        return (
-                          <div key={`drop-${src.def.name}`} className="absolute rounded-full" style={{
-                            left: `${srcPct}%`, top: 0,
-                            width: 2, height: dropY,
-                            background: srcColor,
-                            transform: "translateX(-50%)", opacity: 0.6,
-                          }} />
-                        );
-                      })}
-                      {/* Connectors: each surplus → each need */}
-                      {surplusRows.flatMap(src => {
-                        const srcIdx   = rows.indexOf(src);
-                        const srcPct   = (srcIdx + 0.5) / rows.length * 100;
-                        const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
-                        return needRows.map(need => {
-                          const tgtIdx   = rows.indexOf(need);
-                          const tgtPct   = (tgtIdx + 0.5) / rows.length * 100;
-                          const leftPct  = Math.min(srcPct, tgtPct);
-                          const wPct     = Math.abs(srcPct - tgtPct);
-                          const tgtColor = HERO_COLORS[need.def.name]?.bg ?? "#64748b";
-                          const midPct   = (srcPct + tgtPct) / 2;
-                          const amount   = need.def.name === "Build"
-                            ? Math.abs(src.delta)
-                            : Math.abs(need.delta);
-                          const fmtAmt   = amount >= 1_000_000
-                            ? `$${(amount / 1_000_000).toFixed(1)}M`
-                            : `$${Math.round(amount / 1000)}K`;
-                          const di = dotIdx++;
-                          return (
-                            <div key={`${src.def.name}->${need.def.name}`}>
-                              {/* Horizontal connector */}
-                              <div className="absolute" style={{
-                                left: `${leftPct}%`, top: dropY,
-                                width: `${wPct}%`, height: 2,
-                                background: `linear-gradient(to ${srcPct < tgtPct ? "right" : "left"}, ${srcColor}80, ${tgtColor}80)`,
-                              }} />
-                              {/* Vertical rise to target */}
-                              <div className="absolute rounded-full" style={{
-                                left: `${tgtPct}%`, top: dropY - 28,
-                                width: 2, height: 28,
-                                background: tgtColor,
-                                transform: "translateX(-50%)", opacity: 0.6,
-                              }} />
-                              {/* Dollar amount label */}
-                              <div className="absolute text-[9px] font-black tabular-nums" style={{
-                                left: `${midPct}%`, top: dropY + 6,
-                                transform: "translateX(-50%)",
-                                color: tgtColor,
-                              }}>
-                                {fmtAmt}
-                              </div>
-                              {/* Animated dot */}
-                              <motion.div
-                                className="absolute rounded-full z-10 shadow"
-                                style={{ width: 9, height: 9, background: tgtColor, marginLeft: -4, marginTop: -4 }}
-                                animate={{
-                                  left: [`${srcPct}%`, `${srcPct}%`, `${tgtPct}%`, `${tgtPct}%`],
-                                  top:  [0, dropY, dropY, dropY - 28],
-                                }}
-                                transition={{
-                                  duration: 2.8,
-                                  delay: di * 0.8,
-                                  repeat: Infinity,
-                                  ease: "easeInOut",
-                                  times: [0, 0.35, 0.65, 1],
-                                }}
-                              />
-                            </div>
-                          );
-                        });
-                      })}
-                    </div>
-                  );
-                })()}
-
-              </div>
               );
             })()}
-
             {/* ── Live Projections — below the hero ── */}
             <div className="rounded-xl border bg-card px-6 py-4 flex items-center gap-8">
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1978,7 +1969,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 </div>
               ))}
             </div>
-
             {/* 4 bucket cards — 2×2 grid */}
             <div className="space-y-3">
               {rows.map(r => {
@@ -2001,15 +1991,15 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                     <div className="bg-card px-4 pt-3 pb-3 flex-1 flex flex-col">
                       {/* Column headers */}
-                      <div className="grid mb-2" style={{ gridTemplateColumns: "1fr 88px 56px" }}>
+                      <div className="grid mb-2" style={{ gridTemplateColumns: "1fr 80px 48px" }}>
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Current Accounts</span>
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Balance</span>
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Yield</span>
                       </div>
                       <div className="space-y-1.5 flex-1">
                         {r.subAccounts.map(acct => (
-                          <div key={acct.name} className="grid items-center gap-1" style={{ gridTemplateColumns: "1fr 88px 56px" }}>
-                            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
+                          <div key={acct.name} className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 80px 48px" }}>
+                            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0 overflow-hidden">
                               <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
                               <span className="truncate">{acct.name}</span>
                             </span>
@@ -2021,8 +2011,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                       </div>
                       {/* Weighted avg yield + totals footer */}
                       <div className="mt-2.5 pt-2 border-t border-border">
-                        <div className="grid items-center" style={{ gridTemplateColumns: "1fr 88px 56px" }}>
-                          <p className="text-[9px] text-muted-foreground italic">{r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""}</p>
+                        <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 80px 48px" }}>
+                          <span className="text-[9px] text-muted-foreground italic">{r.subAccounts.length} position{r.subAccounts.length !== 1 ? "s" : ""}</span>
                           <span className="text-xs font-bold tabular-nums text-foreground text-right">{fmt(r.current)}</span>
                           <span className="text-[10px] font-bold tabular-nums text-right" style={{ color: r.def.bg }}>
                             {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
@@ -2090,7 +2080,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 );
               })}
             </div>
-
             {/* Totals summary strip */}
             <div className="rounded-xl bg-slate-900 px-5 py-3.5 grid grid-cols-4 gap-4 text-white">
               <div>
@@ -2115,8 +2104,6 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
           </div>
         );
       })()}
-
-
     </div>
   );
 }
