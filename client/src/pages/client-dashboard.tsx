@@ -1668,124 +1668,94 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
 
         return (
           <div className="space-y-5">
-            {/* ── GURU Hero Banner — Before / After allocation chart ── */}
-            {(() => {
-              const barBuckets = [
-                { label: "Reserve", current: reserveCurrent, target: reserveTarget, color: GURU_BUCKETS_DEF[0].bg, accent: GURU_BUCKETS_DEF[0].accent },
-                { label: "Flow",    current: flowCurrent,    target: flowTarget,    color: GURU_BUCKETS_DEF[1].bg, accent: GURU_BUCKETS_DEF[1].accent },
-                { label: "Build",   current: buildCurrent,   target: buildTarget,   color: GURU_BUCKETS_DEF[2].bg, accent: GURU_BUCKETS_DEF[2].accent },
-                { label: "Grow",    current: growCurrent,    target: growTarget,    color: GURU_BUCKETS_DEF[3].bg, accent: GURU_BUCKETS_DEF[3].accent },
-              ];
-              // Log-scale normalization so small buckets (Reserve ~2%, Build ~2%) remain legible
-              const mkBar = (getValue: (b: typeof barBuckets[0]) => number) => {
-                const raw = barBuckets.map(b => ({
-                  ...b,
-                  pct: totalAssets > 0 ? (getValue(b) / totalAssets) * 100 : 0,
-                }));
-                const logVals = raw.map(b => b.pct > 0 ? Math.log(1 + b.pct) : 0);
-                const logTotal = logVals.reduce((s, v) => s + v, 0);
-                return raw.map((b, i) => ({
-                  ...b,
-                  displayPct: logTotal > 0 ? (logVals[i] / logTotal) * 100 : 0,
-                }));
-              };
-              const currentBar = mkBar(b => b.current);
-              const guruBar    = mkBar(b => b.target);
+            {/* ── Portfolio Overview Hero (dark design) ── */}
+            <div className="rounded-xl p-6" style={{ background: "hsl(221,39%,10%)" }}>
+              <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-5">Portfolio Overview</p>
 
-              return (
-                <div className="rounded-xl border shadow-sm px-6 py-5 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
-                  <div className="flex flex-col lg:flex-row gap-6">
-
-                    {/* ── Chart: Before / After stacked bars ── */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 mb-4">GURU Asset Reallocation</p>
-
-                      {/* Before bar */}
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Current</span>
-                          <span className="text-[10px] text-gray-400 tabular-nums">{fmt(totalAssets)}</span>
-                        </div>
-                        <div className="flex rounded-md overflow-hidden h-9 gap-px">
-                          {currentBar.map(b => (
-                            <div key={b.label} className="flex items-center justify-center overflow-hidden transition-all"
-                              style={{ width: `${b.displayPct}%`, background: b.color, opacity: 0.7 }}>
-                              {b.displayPct > 9 && (
-                                <span className="text-[9px] font-bold text-white/90 px-1 truncate">{b.pct.toFixed(0)}%</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* After bar */}
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">★ GURU Target</span>
-                          <span className="text-[10px] text-gray-400 tabular-nums">{fmt(totalAssets)}</span>
-                        </div>
-                        <div className="flex rounded-md overflow-hidden h-9 gap-px">
-                          {guruBar.map(b => (
-                            <div key={b.label} className="flex items-center justify-center overflow-hidden transition-all"
-                              style={{ width: `${b.displayPct}%`, background: b.color }}>
-                              {b.displayPct > 9 && (
-                                <span className="text-[9px] font-bold text-white px-1 truncate">{b.pct.toFixed(0)}%</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Legend + delta arrows */}
-                      <div className="flex items-center gap-4 flex-wrap">
-                        {barBuckets.map(b => {
-                          const diff = b.target - b.current;
-                          return (
-                            <div key={b.label} className="flex items-center gap-1.5">
-                              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: b.color }} />
-                              <span className="text-[10px] text-gray-500">{b.label}</span>
-                              {Math.abs(diff) > 1000 && (
-                                <span className={`text-[9px] font-bold ${diff > 0 ? "text-emerald-600" : "text-rose-500"}`}>
-                                  {diff > 0 ? "▲" : "▼"}{fmt(Math.abs(diff), true)}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* DIVIDER */}
-                    <div className="hidden lg:block w-px self-stretch bg-emerald-200" />
-
-                    {/* ── 3 outcome stats ── */}
-                    <div className="lg:w-52 flex-shrink-0 flex flex-col justify-center gap-4">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                        </span>
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">Live Projections</span>
-                      </div>
-                      {[
-                        { label: "Excess Cash",           rawValue: excessCash,   fmt: "currency" as const, sub: "available to redeploy" },
-                        { label: "AT Income Pickup / Yr", rawValue: addlIncome,   fmt: "currency" as const, sub: "projected annual gain" },
-                        { label: "Cashflow Increase",     rawValue: pctIncrease,  fmt: "percent"  as const, sub: "vs. current yield" },
-                      ].map(s => (
-                        <div key={s.label}>
-                          <p className="text-[9px] uppercase tracking-widest text-gray-400 font-semibold mb-0.5">{s.label}</p>
-                          <p className="text-2xl leading-none">
-                            <RollingNumber value={s.rawValue} format={s.fmt} />
-                          </p>
-                          <p className="text-[9px] text-gray-400 mt-0.5">{s.sub}</p>
-                        </div>
-                      ))}
-                    </div>
-
+              {/* Centre card — orange border */}
+              <div className="flex justify-center mb-6">
+                <div className="rounded-xl px-12 py-5 text-center border-2 border-orange-500" style={{ background: "hsl(221,39%,13%)" }}>
+                  <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-1">Total Portfolio</p>
+                  <p className="text-4xl font-black text-white tabular-nums">
+                    {totalAssets >= 1_000_000 ? `$${(totalAssets / 1_000_000).toFixed(2)}M` : fmt(totalAssets)}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">Across {assets.length} accounts</p>
+                  {/* Stacked allocation bar — real proportions */}
+                  <div className="flex mt-4 h-2.5 rounded-full overflow-hidden gap-px">
+                    {([reserveCurrent, flowCurrent, buildCurrent, growCurrent] as number[]).map((val, i) => (
+                      <div key={i} style={{
+                        width: `${totalAssets > 0 ? (val / totalAssets) * 100 : 25}%`,
+                        background: GURU_BUCKETS_DEF[i].bg,
+                      }} />
+                    ))}
                   </div>
                 </div>
-              );
-            })()}
+              </div>
+
+              {/* 4 bucket mini-cards */}
+              <div className="grid grid-cols-4 gap-3">
+                {rows.map(r => {
+                  const fmtShort   = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(2)}M` : `$${Math.round(v / 1000)}K`;
+                  const avgYieldV  = weightedGrossYield(r.subAccounts, r.current);
+                  const pctTotal   = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
+                  const progressP  = Math.min((r.current / Math.max(r.target, 1)) * 100, 100);
+                  const priority   = Math.abs(r.delta) > 300_000 ? "HIGH" : Math.abs(r.delta) > 100_000 ? "MEDIUM" : "LOW";
+                  const priColor   = priority === "HIGH" ? "#ef4444" : priority === "MEDIUM" ? "#f59e0b" : "#22c55e";
+                  return (
+                    <div key={r.def.name} className="rounded-xl p-4" style={{ background: r.def.bg }}>
+                      <div className="flex items-start justify-between mb-0.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.def.accent }} />
+                          <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
+                        </div>
+                        <span className="text-[7px] font-black px-1.5 py-0.5 rounded flex-shrink-0 ml-1"
+                          style={{ background: priColor + "28", color: priColor, border: `1px solid ${priColor}50` }}>
+                          {priority}
+                        </span>
+                      </div>
+                      <p className="text-[9px] italic text-white/50 mb-3 leading-snug">{r.def.rule}</p>
+                      <p className="text-xl font-black text-white leading-none tabular-nums">{fmtShort(r.current)}</p>
+                      <p className="text-[10px] text-white/60 mt-0.5 tabular-nums">{avgYieldV.toFixed(2)}% yield</p>
+                      <p className="text-[9px] text-white/40 mt-1.5">
+                        {r.subAccounts.length} account{r.subAccounts.length !== 1 ? "s" : ""} • {pctTotal.toFixed(0)}% of total
+                      </p>
+                      <div className="mt-3 h-1.5 rounded-full" style={{ background: "rgba(0,0,0,0.3)" }}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progressP}%` }}
+                          transition={{ duration: 1, delay: 0.4 }}
+                          className="h-full rounded-full"
+                          style={{ background: r.def.accent }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── Live Projections — below the hero ── */}
+            <div className="rounded-xl border bg-card px-6 py-4 flex items-center gap-8">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">Live Projections</span>
+              </div>
+              <div className="w-px h-8 bg-border flex-shrink-0" />
+              {[
+                { label: "Excess Cash",           rawValue: excessCash,  fmt: "currency" as const, sub: "available to redeploy" },
+                { label: "AT Income Pickup / Yr", rawValue: addlIncome,  fmt: "currency" as const, sub: "projected annual gain" },
+                { label: "Cashflow Increase",     rawValue: pctIncrease, fmt: "percent"  as const, sub: "vs. current yield" },
+              ].map(s => (
+                <div key={s.label}>
+                  <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-0.5">{s.label}</p>
+                  <p className="text-2xl leading-none"><RollingNumber value={s.rawValue} format={s.fmt} /></p>
+                  <p className="text-[9px] text-muted-foreground mt-0.5">{s.sub}</p>
+                </div>
+              ))}
+            </div>
 
             {/* 4 bucket cards — 2×2 grid */}
             <div className="space-y-3">
