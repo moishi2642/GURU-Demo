@@ -1850,26 +1850,30 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                   {/* ── MIDDLE: Visual + Metrics ── */}
                   <div className="flex-1 px-5 py-4 bg-card flex flex-col gap-4">
                     <div>
-                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-3">Allocation Shift</p>
-                      <div className="space-y-2.5">
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[9px] text-muted-foreground">Current</span>
-                            <span className="text-[9px] tabular-nums text-muted-foreground font-mono">{fmt(r.current)}</span>
-                          </div>
-                          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: r.def.bg + "18" }}>
-                            <div className="h-full rounded-full" style={{ width: `${currentPct}%`, background: r.def.bg, opacity: 0.4 }} />
-                          </div>
+                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-3">Current vs AI Target</p>
+                      {/* Bullet bar: fill = current, marker line = AI target */}
+                      <div className="relative h-8 rounded-lg overflow-hidden mb-2" style={{ background: r.def.bg + "18" }}>
+                        {/* Current fill */}
+                        <div className="absolute inset-y-0 left-0 rounded-lg"
+                          style={{ width: `${currentPct}%`, background: r.def.bg, opacity: 0.45 }} />
+                        {/* AI Target marker line */}
+                        <div className="absolute inset-y-0 w-[2px] z-10"
+                          style={{ left: `clamp(1px, ${targetPct}%, calc(100% - 2px))`, background: r.def.bg }} />
+                        {/* Current label inside bar */}
+                        <div className="absolute inset-0 flex items-center px-2.5 justify-between">
+                          <span className="text-[9px] font-semibold text-white/80 drop-shadow-sm">Current</span>
+                          <span className="text-[9px] font-mono font-bold text-white/70 drop-shadow-sm">{fmt(r.current)}</span>
                         </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[9px] font-semibold" style={{ color: r.def.bg }}>★ AI Target</span>
-                            <span className="text-[9px] tabular-nums font-mono font-semibold" style={{ color: r.def.bg }}>{fmt(r.target)}</span>
-                          </div>
-                          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: r.def.bg + "18" }}>
-                            <div className="h-full rounded-full" style={{ width: `${targetPct}%`, background: r.def.bg }} />
-                          </div>
+                      </div>
+                      {/* Below bar: AI target label + delta */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <span className="inline-block w-[2px] h-3 rounded-sm flex-shrink-0" style={{ background: r.def.bg }} />
+                          <span className="text-[9px] font-semibold" style={{ color: r.def.bg }}>★ AI Target: {fmt(r.target)}</span>
                         </div>
+                        <span className={`text-[9px] font-bold tabular-nums ${r.delta < 0 ? "text-emerald-600" : r.delta > 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                          {r.delta < 0 ? `▼ ${fmt(Math.abs(r.delta))} to redeploy` : r.delta > 0 ? `▲ ${fmt(Math.abs(r.delta))} needed` : "Balanced"}
+                        </span>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-3 pt-3 border-t" style={{ borderColor: r.def.bg + "30" }}>
