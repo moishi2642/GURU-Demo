@@ -1819,7 +1819,13 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         const reserveCurrent = reserve;
         const flowCurrent    = yieldBucket + brokerageCash;
         const buildCurrent   = tactical;
-        const growCurrent    = totalAssets - reserveCurrent - flowCurrent - buildCurrent;
+        const equityValEarly = assets.filter(a => a.type === "equity" && !(a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0);
+        const retireValEarly = assets.filter(a => a.type === "equity" && (a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0) +
+                               assets.filter(a => a.type === "fixed_income" && ((a.description ?? "").toLowerCase().includes("ira") || (a.description ?? "").toLowerCase().includes("401"))).reduce((s, a) => s + Number(a.value), 0);
+        const altValEarly    = assets.filter(a => a.type === "alternative").reduce((s, a) => s + Number(a.value), 0);
+        const reValEarly     = assets.filter(a => a.type === "real_estate").reduce((s, a) => s + Number(a.value), 0);
+        const otherCurrent   = altValEarly + reValEarly;
+        const growCurrent    = equityValEarly + retireValEarly;
 
         const moMap: Record<string, number> = {};
         cashFlows.filter(c => c.type === "outflow").forEach(c => {
@@ -1835,7 +1841,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
         const reserveTarget = Math.round(minMonthly * 2);
         const flowTarget    = annualOut;
         const buildTarget   = buildCurrent;
-        const growTarget    = totalAssets - reserveTarget - flowTarget - buildTarget;
+        const growTarget    = totalAssets - reserveTarget - flowTarget - buildTarget - otherCurrent;
 
         const reserveDelta = reserveTarget - reserveCurrent;
         const flowDelta    = flowTarget    - flowCurrent;
@@ -1873,16 +1879,17 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
           .filter(a => a.type === "fixed_income" && ((a.description ?? "").toLowerCase().includes("treasur") || (a.description ?? "").toLowerCase().includes("t-bill")))
           .map(a => { const y = extractRate(a.description) ? extractRate(a.description) + "%" : "—"; return { name: shortName(a.description), value: Number(a.value), yield_: y, yieldAT: toAT(y) }; });
 
-        const equityVal = assets.filter(a => a.type === "equity" && !(a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0);
-        const retireVal = assets.filter(a => a.type === "equity" && (a.description ?? "").toLowerCase().includes("ira")).reduce((s, a) => s + Number(a.value), 0) +
-                          assets.filter(a => a.type === "fixed_income" && ((a.description ?? "").toLowerCase().includes("ira") || (a.description ?? "").toLowerCase().includes("401"))).reduce((s, a) => s + Number(a.value), 0);
-        const altVal    = assets.filter(a => a.type === "alternative").reduce((s, a) => s + Number(a.value), 0);
-        const reVal     = assets.filter(a => a.type === "real_estate").reduce((s, a) => s + Number(a.value), 0);
+        const equityVal = equityValEarly;
+        const retireVal = retireValEarly;
+        const altVal    = altValEarly;
+        const reVal     = reValEarly;
         const growAccts: Acct[] = [
-          ...(equityVal > 0 ? [{ name: "Equities (ETFs, Stocks & RSUs)", value: equityVal, yield_: "~7%",   yieldAT: "~4.41%" }] : []),
-          ...(retireVal > 0 ? [{ name: "Retirement Accounts (401k / IRA)", value: retireVal, yield_: "~6%",  yieldAT: "Tax-def." }] : []),
-          ...(altVal    > 0 ? [{ name: "Private Equity & Alternatives",   value: altVal,    yield_: "[15%+]", yieldAT: "[9.5%+]" }] : []),
-          ...(reVal     > 0 ? [{ name: "Real Estate",                      value: reVal,     yield_: "~5%",   yieldAT: "~3.15%" }] : []),
+          ...(equityVal > 0 ? [{ name: "Equities (ETFs, Stocks & RSUs)",    value: equityVal, yield_: "~7%",    yieldAT: "~4.41%" }] : []),
+          ...(retireVal > 0 ? [{ name: "Retirement Accounts (401k / IRA)",  value: retireVal, yield_: "~6%",    yieldAT: "Tax-def." }] : []),
+        ];
+        const otherAccts: Acct[] = [
+          ...(altVal > 0 ? [{ name: "Private Equity & Alternatives", value: altVal, yield_: "[15%+]", yieldAT: "[9.5%+]" }] : []),
+          ...(reVal  > 0 ? [{ name: "Real Estate",                   value: reVal,  yield_: "~5%",    yieldAT: "~3.15%"  }] : []),
         ];
         const weightedGrossYield = (accts: Acct[], total: number): number => {
           if (total === 0 || accts.length === 0) return 0;
@@ -1928,6 +1935,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                 Reserve:          { bg: "#047857", accent: "#6ee7b7" },
                 Build:            { bg: "#ca8a04", accent: "#fde68a" },
                 Grow:             { bg: "#5b21b6", accent: "#c084fc" },
+                "Grow (Other)":   { bg: "#6b7280", accent: "#d1d5db" },
               };
               return (
                 <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
@@ -1969,8 +1977,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                   </div>
 
-                  {/* 4 bucket mini-cards */}
-                  <div className="grid grid-cols-4 gap-3 mt-5">
+                  {/* 5 bucket mini-cards (4 active + Grow Other) */}
+                  <div className="grid grid-cols-5 gap-3 mt-5">
                     {rows.map(r => {
                       const hc        = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
                       const fmtK      = (v: number) => `$${Math.round(v).toLocaleString()}`;
@@ -1984,11 +1992,9 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                             </div>
                           )}
                           <div className="rounded-xl p-4 flex-1" style={{ background: hc.bg }}>
-                            <div className="flex items-start justify-between mb-0.5">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
-                                <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
-                              </div>
+                            <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
+                              <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                             </div>
                             <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
                             <div className="flex items-baseline justify-between mt-1 gap-1">
@@ -1999,6 +2005,27 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         </div>
                       );
                     })}
+                    {/* Grow (Other) — display-only, no reallocation */}
+                    {(() => {
+                      const fmtK = (v: number) => `$${Math.round(v).toLocaleString()}`;
+                      const otherYield = weightedGrossYield(otherAccts, otherCurrent);
+                      const hcO = HERO_COLORS["Grow (Other)"];
+                      return (
+                        <div className="flex flex-col">
+                          <div className="rounded-xl p-4 flex-1" style={{ background: hcO.bg }}>
+                            <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hcO.accent }} />
+                              <span className="text-[11px] font-black uppercase text-white leading-tight">Grow (Other)</span>
+                            </div>
+                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">Alts & Real Estate — illiquid</p>
+                            <div className="flex items-baseline justify-between mt-1 gap-1">
+                              <p className={`${fmtK(otherCurrent).length > 9 ? "text-sm" : fmtK(otherCurrent).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>{fmtK(otherCurrent)}</p>
+                              <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{otherYield.toFixed(2)}% yield</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                   {/* ── Org-chart flow lines ── */}
                   {(() => {
