@@ -1624,19 +1624,44 @@ function BucketProductPanel({
 }) {
   const top3 = products.slice(0, 3);
   const defaultSelected = top3.findIndex(p => p.isGuru);
+  const initialIdx = defaultSelected >= 0 ? defaultSelected : top3.length > 0 ? 0 : -1;
+
   const [selected, setSelected] = useState<Set<number>>(
-    new Set(defaultSelected >= 0 ? [defaultSelected] : top3.length > 0 ? [0] : [])
+    new Set(initialIdx >= 0 ? [initialIdx] : [])
+  );
+  const [allocations, setAllocations] = useState<Record<number, number>>(
+    initialIdx >= 0 ? { [initialIdx]: 100 } : {}
   );
   const [staged, setStaged] = useState(false);
+
+  function evenSplit(indices: number[]): Record<number, number> {
+    if (indices.length === 0) return {};
+    const each = Math.floor(100 / indices.length);
+    const rem  = 100 - each * indices.length;
+    return Object.fromEntries(indices.map((idx, pos) => [idx, each + (pos === 0 ? rem : 0)]));
+  }
 
   function toggle(i: number) {
     setSelected(prev => {
       const next = new Set(prev);
       next.has(i) ? next.delete(i) : next.add(i);
+      const arr = Array.from(next);
+      setAllocations(evenSplit(arr));
+      setStaged(false);
       return next;
     });
+  }
+
+  function setAlloc(i: number, val: string) {
+    const n = Math.min(100, Math.max(0, parseInt(val) || 0));
+    setAllocations(prev => ({ ...prev, [i]: n }));
     setStaged(false);
   }
+
+  const selectedArr = Array.from(selected);
+  const totalPct    = selectedArr.reduce((s, i) => s + (allocations[i] ?? 0), 0);
+  const pctValid    = totalPct === 100;
+  const multiSelect = selected.size > 1;
 
   return (
     <div className="w-80 flex-shrink-0 flex flex-col border-l border-border bg-card">
@@ -1677,7 +1702,7 @@ function BucketProductPanel({
                       ★ GURU
                     </span>
                   )}
-                  <p className="text-[11px] font-semibold text-foreground leading-snug truncate">{p.name}</p>
+                  <p className="text-[11px] font-semibold text-foreground leading-snug">{p.name}</p>
                   <div className="flex items-center gap-3 mt-1.5">
                     <div>
                       <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Gross</div>
@@ -1705,16 +1730,58 @@ function BucketProductPanel({
         {top3.length === 0 && (
           <p className="text-xs text-muted-foreground italic mt-2">No products mapped</p>
         )}
+
+        {/* Allocation split — only shown when 2+ products selected */}
+        {multiSelect && (
+          <div className="mt-1 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Allocation Split</p>
+              <span
+                className="text-[9px] font-bold tabular-nums"
+                style={{ color: pctValid ? "#22c55e" : "#f43f5e" }}
+              >
+                {totalPct}% {pctValid ? "✓" : `(need ${100 - totalPct > 0 ? "+" : ""}${100 - totalPct}%)`}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {selectedArr.map(i => {
+                const p = top3[i];
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="flex-1 text-[10px] text-foreground font-medium truncate min-w-0">{p.name}</span>
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={allocations[i] ?? 0}
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => { e.stopPropagation(); setAlloc(i, e.target.value); }}
+                        className="w-12 text-right text-[11px] font-bold tabular-nums rounded border border-border bg-background px-1.5 py-1 focus:outline-none focus:ring-1"
+                        style={{ color: bgColor }}
+                      />
+                      <span className="text-[10px] text-muted-foreground font-semibold">%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="px-3 pb-4">
         <button
           onClick={() => setStaged(true)}
-          disabled={selected.size === 0}
+          disabled={selected.size === 0 || (multiSelect && !pctValid)}
           className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
           style={{ background: bgColor }}
         >
-          {staged ? `✓ ${selected.size} Staged` : `Stage ${selected.size} Selected`}
+          {staged
+            ? `✓ ${selected.size} Staged`
+            : multiSelect
+              ? `Stage Split (${selectedArr.map(i => `${allocations[i] ?? 0}%`).join(" / ")})`
+              : `Stage ${selected.size} Selected`}
         </button>
       </div>
     </div>
