@@ -3069,8 +3069,8 @@ function BucketExecutionPanel({
                 value={fmtInput(rawAmt)}
                 onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
                 placeholder="0"
-                className="w-full pl-6 pr-3 py-2 text-sm font-bold tabular-nums rounded-lg border focus:outline-none focus:ring-2"
-                style={{ borderColor: "#f59e0b99", background: "#fff9eb", color: "#92400e" }}
+                className="w-full pl-6 pr-3 py-2 text-sm font-bold tabular-nums rounded-lg focus:outline-none focus:ring-2"
+                style={{ border: "1px solid #f59e0b99", backgroundColor: "#fff9eb", color: "#92400e" }}
               />
             </div>
             {parsedAmt > 0 && (
@@ -4028,25 +4028,25 @@ function GuruAllocationView({
                       </div>
                     </div>
                   </div>
-                  {/* 5 bucket mini-cards (4 active + Grow Other) */}
-                  <div className="grid grid-cols-5 gap-3 mt-5">
-                    {rows.map((r) => {
-                      const hc = HERO_COLORS[r.def.name] ?? {
-                        bg: r.def.bg,
-                        accent: r.def.accent,
-                      };
-                      const fmtK = (v: number) =>
-                        `$${Math.round(v).toLocaleString()}`;
-                      const avgYieldV = weightedGrossYield(
-                        r.subAccounts,
-                        r.current,
-                      );
+                  {/* 5 bucket mini-cards — single row normally, two-row pro forma when transfers pending */}
+                  {(() => {
+                    const hasPending = pendingTransfers.length > 0;
+                    const fmtK = (v: number) => `$${Math.round(v).toLocaleString()}`;
+
+                    const renderBucketCard = (r: GBRow, proforma: boolean) => {
+                      const hc = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
+                      const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
+                      const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
+                      const proBalance = r.current + inAmt - outAmt;
+                      const balance = proforma ? proBalance : r.current;
+                      const deltaAmt = proBalance - r.current;
+                      const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
                       const isOverfund = r.delta < -5000;
                       const isDragTarget = dragItem && dragItem !== r.def.name;
                       return (
-                        <div key={r.def.name} className="flex flex-col">
+                        <div key={`${r.def.name}-${proforma ? "pro" : "cur"}`} className="flex flex-col">
                           <div className="mb-1 h-5 flex items-center justify-center">
-                            {isOverfund && (
+                            {!proforma && isOverfund && (
                               <div
                                 draggable
                                 onDragStart={() => setDragItem(r.def.name)}
@@ -4058,62 +4058,51 @@ function GuruAllocationView({
                                 <span>{fmtK(Math.abs(r.delta))} surplus</span>
                               </div>
                             )}
+                            {proforma && deltaAmt !== 0 && (
+                              <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border ${deltaAmt > 0 ? "bg-green-50 border-green-300 text-green-700" : "bg-red-50 border-red-300 text-red-700"}`}>
+                                {deltaAmt > 0 ? "▲" : "▼"} {deltaAmt > 0 ? "+" : "−"}{fmtK(Math.abs(deltaAmt))}
+                              </span>
+                            )}
                           </div>
                           <div
-                            className={`rounded-xl p-4 flex-1 transition-all duration-150 ${isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
-                            style={{ background: hc.bg }}
-                            onDragOver={isDragTarget ? (e) => e.preventDefault() : undefined}
-                            onDrop={isDragTarget ? (e) => {
+                            className={`rounded-xl p-4 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
+                            style={{ background: hc.bg, opacity: proforma ? 1 : (hasPending ? 0.4 : 1) }}
+                            onDragOver={!proforma && isDragTarget ? (e) => e.preventDefault() : undefined}
+                            onDrop={!proforma && isDragTarget ? (e) => {
                               e.preventDefault();
                               setDragItem(null);
-                              document.getElementById(`guru-bucket-${r.def.name.toLowerCase().replace(/\s+/g, '-')}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              document.getElementById(`guru-bucket-${r.def.name.toLowerCase().replace(/\s+/g, "-")}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
                             } : undefined}
                           >
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                              <span
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ background: hc.dot }}
-                              />
-                              <span className="text-[11px] font-black uppercase text-white leading-tight truncate">
-                                {r.def.name}
-                              </span>
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot }} />
+                              <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                             </div>
-                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">
-                              {r.def.rule}
-                            </p>
+                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
                             <div className="flex items-baseline justify-between mt-1 gap-1">
-                              <p
-                                className={`${fmtK(r.current).length > 9 ? "text-sm" : fmtK(r.current).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}
-                              >
-                                {fmtK(r.current)}
+                              <p className={`${fmtK(balance).length > 9 ? "text-sm" : fmtK(balance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
+                                {fmtK(balance)}
                               </p>
-                              <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">
-                                {avgYieldV.toFixed(2)}% yield
-                              </p>
+                              <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>
                             </div>
                           </div>
                         </div>
                       );
-                    })}
-                    {/* Grow (Other) — three sub-category mini-cards */}
-                    {(() => {
-                      const fmtK = (v: number) => `$${Math.round(v).toLocaleString()}`;
+                    };
+
+                    const renderSubCats = (opacity = 1) => {
                       const subCats = [
-                        { label: "Real Estate",        value: reVal,    yieldStr: "~5%",   key: "Real Estate" },
-                        { label: "Alternative Assets", value: altVal,   yieldStr: "15%+",  key: "Alternative Assets" },
-                        { label: "529 Plans",          value: plan529,  yieldStr: "—",     key: "529 Plans" },
+                        { label: "Real Estate",        value: reVal,   yieldStr: "~5%",  key: "Real Estate" },
+                        { label: "Alternative Assets", value: altVal,  yieldStr: "15%+", key: "Alternative Assets" },
+                        { label: "529 Plans",          value: plan529, yieldStr: "—",    key: "529 Plans" },
                       ];
                       return (
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1.5" style={{ opacity }}>
                           <div className="h-4 mb-0" />
                           {subCats.map((cat) => {
                             const hc = HERO_COLORS[cat.key];
                             return (
-                              <div
-                                key={cat.key}
-                                className="rounded-lg px-3 py-2 flex items-center justify-between gap-2"
-                                style={{ background: hc.bg }}
-                              >
+                              <div key={cat.key} className="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style={{ background: hc.bg }}>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-1 mb-0.5">
                                     <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
@@ -4127,9 +4116,105 @@ function GuruAllocationView({
                           })}
                         </div>
                       );
-                    })()}
-                  </div>
-                  {/* ── Org-chart flow lines ── */}
+                    };
+
+                    if (!hasPending) {
+                      return (
+                        <div className="grid grid-cols-5 gap-3 mt-5">
+                          {rows.map((r) => renderBucketCard(r, false))}
+                          {renderSubCats()}
+                        </div>
+                      );
+                    }
+
+                    /* ── Two-row pro forma layout ── */
+                    return (
+                      <div className="mt-5">
+                        {/* CURRENT row label */}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[8px] uppercase tracking-widest font-bold text-slate-400">Current</span>
+                          <div className="flex-1 h-px bg-border" />
+                        </div>
+                        {/* Current row — faded */}
+                        <div className="grid grid-cols-5 gap-3">
+                          {rows.map((r) => renderBucketCard(r, false))}
+                          {renderSubCats(0.4)}
+                        </div>
+
+                        {/* Flow arrows between rows */}
+                        <div className="relative mt-1" style={{ height: 48 }}>
+                          {pendingTransfers.map((t, ti) => {
+                            const fromIdx = rows.findIndex(r => r.def.name === t.from);
+                            const toIdx   = rows.findIndex(r => r.def.name === t.to);
+                            if (fromIdx < 0 || toIdx < 0) return null;
+                            const fromPct = ((fromIdx + 0.5) / 5) * 100;
+                            const toPct   = ((toIdx   + 0.5) / 5) * 100;
+                            const midPct  = (fromPct + toPct) / 2;
+                            const fromColor = HERO_COLORS[t.from]?.bg ?? "#64748b";
+                            const toColor   = HERO_COLORS[t.to]?.bg   ?? "#64748b";
+                            const goRight   = fromPct < toPct;
+                            return (
+                              <div key={`flow-${ti}`}>
+                                {/* Horizontal line */}
+                                <div className="absolute" style={{
+                                  left: `${Math.min(fromPct, toPct)}%`,
+                                  top: "50%",
+                                  width: `${Math.abs(toPct - fromPct)}%`,
+                                  height: 2,
+                                  background: `linear-gradient(to ${goRight ? "right" : "left"}, ${fromColor}cc, ${toColor}cc)`,
+                                  transform: "translateY(-50%)",
+                                }} />
+                                {/* Arrowhead at destination */}
+                                <div className="absolute" style={{
+                                  left: `${toPct}%`,
+                                  top: "50%",
+                                  transform: `translate(${goRight ? "-8px" : "2px"}, -50%)`,
+                                  width: 0,
+                                  height: 0,
+                                  borderTop: "5px solid transparent",
+                                  borderBottom: "5px solid transparent",
+                                  [goRight ? "borderLeft" : "borderRight"]: `7px solid ${toColor}`,
+                                }} />
+                                {/* Amount pill */}
+                                <div className="absolute text-[9px] font-black tabular-nums rounded-full px-2 py-0.5 border shadow-sm whitespace-nowrap"
+                                  style={{
+                                    left: `${midPct}%`,
+                                    top: "50%",
+                                    transform: "translate(-50%, -50%)",
+                                    background: "#fff",
+                                    color: fromColor,
+                                    borderColor: fromColor + "55",
+                                  }}
+                                >
+                                  {fmtK(t.amount)}
+                                </div>
+                                {/* Animated traveling dot */}
+                                <motion.div
+                                  className="absolute rounded-full shadow-md z-10"
+                                  style={{ width: 8, height: 8, backgroundColor: fromColor, marginLeft: -4, marginTop: -4 }}
+                                  animate={{ left: [`${fromPct}%`, `${toPct}%`], top: ["50%", "50%"] }}
+                                  transition={{ duration: 1.8, delay: ti * 0.4, repeat: Infinity, ease: "easeInOut" }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* PRO FORMA row label */}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[8px] uppercase tracking-widest font-bold" style={{ color: "#16a34a" }}>Pro Forma</span>
+                          <div className="flex-1 h-px" style={{ background: "#16a34a44" }} />
+                        </div>
+                        {/* Pro forma row — full brightness */}
+                        <div className="grid grid-cols-5 gap-3">
+                          {rows.map((r) => renderBucketCard(r, true))}
+                          {renderSubCats(1)}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Org-chart flow lines (preserved, disabled) ── */}
                   {(() => {
                     return null;
                     const H = 72;
