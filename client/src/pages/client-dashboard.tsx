@@ -3129,7 +3129,6 @@ function BucketExecutionPanel({
           </div>
         )}
       </div>
-
       {/* Execute / Undo button */}
       <div className="px-5 pb-4">
         {executed ? (
@@ -3989,9 +3988,7 @@ function GuruAllocationView({
                     {/* 3 key metrics */}
                     <div className="flex-1 grid grid-cols-3 gap-6">
                       <div>
-                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">
-                          Excess Cash
-                        </p>
+                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Potential Excess Cash</p>
                         <p className="text-2xl font-black tabular-nums text-emerald-700">
                           {fmt(excessCash)}
                         </p>
@@ -4348,7 +4345,9 @@ function GuruAllocationView({
                           ))}
                           {/* New amber rows for selected products */}
                           {activeSels.map((sel) => {
-                            const allocBal = r.current * (sel.alloc / 100);
+                            const _inAmt = pendingTransfers.filter((t) => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
+                            const _outAmt = pendingTransfers.filter((t) => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
+                            const allocBal = (r.current + _inAmt - _outAmt) * (sel.alloc / 100);
                             return (
                               <div
                                 key={sel.product.name}
@@ -4479,7 +4478,6 @@ function GuruAllocationView({
                         })()}
                       </div>
                     </div>
-
                     {/* ── MIDDLE: execution panel ── */}
                     {(() => {
                       const avgYield = weightedGrossYield(r.subAccounts, r.current);
@@ -4509,7 +4507,6 @@ function GuruAllocationView({
                         />
                       );
                     })()}
-
                     {/* ── RIGHT: Products panel ── */}
                     <BucketProductPanel
                       bgColor={r.def.bg}
@@ -4667,7 +4664,6 @@ function GuruAllocationView({
                 </div>
               );
             })()}
-
           </div>
         );
       })()}
