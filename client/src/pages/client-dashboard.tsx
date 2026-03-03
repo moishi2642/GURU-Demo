@@ -3773,18 +3773,17 @@ function GuruAllocationView({
         const altVal = altValEarly;
         const reVal = reValEarly;
         // Grow sub-accounts: detailed breakdown per prototype model
-        // Equities use 20% federal cap gains only → keep 80%
-        const toATGrow = (gross: string) => { const n = parseYieldNum(gross); return n > 0 ? `${(n * 0.80).toFixed(2)}%` : "—"; };
+        // yieldAT field repurposed as 5yr historical return for display
         const growAccts: Acct[] = [
-          { name: "Cash — Brokerage Sweep",     value: 222965, yield_: "4.30%", yieldAT: toATFed("4.30%") },
-          { name: "International",               value: 244685, yield_: "~7.0%", yieldAT: toATGrow("7.0%") },
-          { name: "US Total Market",             value: 779878, yield_: "~7.5%", yieldAT: toATGrow("7.5%") },
-          { name: "US Large Cap",                value: 535000, yield_: "~7.5%", yieldAT: toATGrow("7.5%") },
-          { name: "US Small Cap",                value: 323582, yield_: "~8.0%", yieldAT: toATGrow("8.0%") },
-          { name: "US Dividend / Value",         value: 94369,  yield_: "~6.0%", yieldAT: toATGrow("6.0%") },
-          { name: "Single Stock",                value: 238311, yield_: "~7.0%", yieldAT: toATGrow("7.0%") },
-          { name: "Bonds",                       value: 61210,  yield_: "~4.0%", yieldAT: toATFed("4.0%") },
-          { name: "Crypto",                      value: 9500,   yield_: "—",     yieldAT: "—" },
+          { name: "Cash — Brokerage Sweep",  value: 222965, yield_: "—", yieldAT: "2.5%" },
+          { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%" },
+          { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%" },
+          { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%" },
+          { name: "US Small Cap",             value: 323582, yield_: "—", yieldAT: "9.1%" },
+          { name: "US Dividend / Value",      value: 94369,  yield_: "—", yieldAT: "10.3%" },
+          { name: "Single Stock",             value: 238311, yield_: "—", yieldAT: "~20%+" },
+          { name: "Bonds",                    value: 61210,  yield_: "—", yieldAT: "0.2%" },
+          { name: "Crypto",                   value: 9500,   yield_: "—", yieldAT: "~30%+" },
         ];
         const otherAccts: Acct[] = [
           ...(altVal > 0
@@ -4266,10 +4265,10 @@ function GuruAllocationView({
                             Balance
                           </span>
                           <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">
-                            Yield
+                            {r.def.name === "Grow" ? "" : "Yield"}
                           </span>
                           <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">
-                            Tax-Eff Yld
+                            {r.def.name === "Grow" ? "5yr Return" : "Tax-Eff Yld"}
                           </span>
                         </div>
                         {(() => {
