@@ -4043,8 +4043,8 @@ function GuruAllocationView({
                       const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
                       const isGain = totalPickup >= 0;
                       const valCol = isGain ? "#15803d" : "#dc2626";
-                      /* Box ~260px wide × 100px tall — rotating border effect */
-                      const BW = 260; const BH = 100;
+                      /* Box ~360px wide × 100px tall — rotating border effect */
+                      const BW = 360; const BH = 100;
                       const diag = Math.ceil(Math.sqrt(BW * BW + BH * BH)) + 20;
                       return (
                         <div className="relative flex-shrink-0 rounded-xl overflow-hidden flex-shrink-0" style={{ width: BW, height: BH }}>
@@ -4067,11 +4067,11 @@ function GuruAllocationView({
                           <div className="absolute rounded-[10px] bg-amber-50 px-4 py-3 flex flex-col justify-between" style={{ inset: "2px" }}>
                             <div className="flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-                              <p className="text-[8px] uppercase tracking-widest font-black text-amber-700">Changes Preview</p>
+                              <p className="text-[8px] uppercase tracking-widest font-black text-amber-700">Impact from Selection</p>
                             </div>
                             <div className="grid grid-cols-2 gap-3 mt-1">
                               <div>
-                                <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">AT Income / Year</p>
+                                <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">After Tax Income / Year</p>
                                 <p className="text-xl font-black tabular-nums leading-none" style={{ color: valCol }}>
                                   {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
                                 </p>
