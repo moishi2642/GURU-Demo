@@ -4021,6 +4021,12 @@ function GuruAllocationView({
                       const isOverfund = r.delta < -5000;
                       const isDragTarget = dragItem && dragItem !== r.def.name;
 
+                      const isGrowCard = r.def.name === "Grow";
+                      const avgYieldAT = weightedATYield(r.subAccounts, r.current);
+                      const curATIncome = Math.round(r.current * avgYieldAT / 100);
+                      const proATIncome = Math.round(proBalance * avgYieldAT / 100);
+                      const fmtIncome = (v: number) => `$${Math.abs(v).toLocaleString()}/yr`;
+
                       /* ── Option B inline before/after — all buckets with a delta ── */
                       if (hasPending && deltaAmt !== 0 && !proforma) {
                         return (
@@ -4036,19 +4042,19 @@ function GuruAllocationView({
                                 <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                               </div>
                               <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
-                              {/* Before row — balance + yield both crossed out */}
+                              {/* Before row — balance + AT income crossed out */}
                               <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
                                 <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(r.current)}</p>
-                                <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>
+                                {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{fmtIncome(curATIncome)}</p>}
                               </div>
                               {/* Dotted divider */}
                               <div className="border-t border-dashed border-white/25 my-1.5" />
-                              {/* After row — new balance + yield */}
+                              {/* After row — new balance + new AT income */}
                               <div className="flex items-baseline justify-between gap-1">
                                 <p className={`${fmtK(proBalance).length > 9 ? "text-sm" : fmtK(proBalance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
                                   {fmtK(proBalance)}
                                 </p>
-                                <p className="text-white/60 tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>
+                                {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{fmtIncome(proATIncome)}</p>}
                               </div>
                             </div>
                           </div>
@@ -4095,7 +4101,7 @@ function GuruAllocationView({
                               <p className={`${fmtK(balance).length > 9 ? "text-sm" : fmtK(balance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
                                 {fmtK(balance)}
                               </p>
-                              <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>
+                              {!isGrowCard && <p className="text-white/60 tabular-nums flex-shrink-0 text-[11px]">{fmtIncome(curATIncome)}</p>}
                             </div>
                           </div>
                         </div>
