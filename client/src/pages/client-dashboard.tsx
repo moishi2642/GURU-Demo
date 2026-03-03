@@ -2297,138 +2297,22 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     </div>
                   </div>
 
-                  {/* ── MIDDLE: Figma visualization ── */}
+                  {/* ── MIDDLE: execution panel ── */}
                   {(() => {
-                    const avgYield      = weightedGrossYield(r.subAccounts, r.current);
-                    const midDelta      = r.target - r.current;
-                    const midNeedsFund  = midDelta > 1000 && r.def.name !== "Grow";
-                    const midIsSurplus  = midDelta < -1000;
-                    const midIsBalanced = !midNeedsFund && !midIsSurplus;
-                    const maxVal        = Math.max(r.current, r.target);
-                    const progPct       = r.target > 0 ? Math.min((r.current / r.target) * 100, 100) : 100;
-                    const tgtAtYield    = parseFloat((BUCKET_PRODUCTS[r.def.name]?.[0]?.atYield ?? "0").replace(/[^0-9.]/g, "")) || avgYield;
-                    const pickupBps     = Math.round((tgtAtYield - avgYield) * 100);
+                    const avgYield = weightedGrossYield(r.subAccounts, r.current);
                     return (
-                      <div className="w-80 flex-shrink-0 border-l border-r border-slate-600 bg-slate-700">
-                        <div className="p-5">
-                          {/* Current bar */}
-                          <div className="mb-4">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] text-slate-400 uppercase tracking-wider">Current</span>
-                              <span className="text-sm font-mono text-white">${Math.round(r.current).toLocaleString()}</span>
-                            </div>
-                            <div className="relative h-8 bg-slate-800 rounded border border-slate-600">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: maxVal > 0 ? `${(r.current / maxVal) * 100}%` : "0%" }}
-                                transition={{ duration: 1, delay: 0.2 }}
-                                className="h-full rounded flex items-center justify-end px-2"
-                                style={{ backgroundColor: r.def.accent }}
-                              >
-                                <span className="text-[10px] font-mono font-semibold text-white">
-                                  {totalAssets > 0 ? ((r.current / totalAssets) * 100).toFixed(1) : "0.0"}%
-                                </span>
-                              </motion.div>
-                            </div>
-                          </div>
-
-                          {/* Delta indicator */}
-                          <div className="flex items-center justify-center my-3">
-                            {midIsBalanced ? (
-                              <div className="flex items-center gap-2 text-green-400">
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                <span className="text-xs font-medium">BALANCED</span>
-                              </div>
-                            ) : midNeedsFund ? (
-                              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="flex items-center gap-2">
-                                <div className="text-red-400 text-xs font-mono">▼ ${Math.abs(midDelta).toLocaleString()} GAP</div>
-                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                              </motion.div>
-                            ) : (
-                              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="flex items-center gap-2">
-                                <div className="text-blue-400 text-xs font-mono">▲ ${Math.abs(midDelta).toLocaleString()} SURPLUS</div>
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                              </motion.div>
-                            )}
-                          </div>
-
-                          {/* GURU Target bar */}
-                          <div className="mb-4">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[10px] text-orange-400 uppercase tracking-wider flex items-center gap-1">
-                                <Activity className="w-3 h-3" />
-                                GURU Target
-                              </span>
-                              <span className="text-sm font-mono text-orange-400">${Math.round(r.target).toLocaleString()}</span>
-                            </div>
-                            <div className="relative h-8 bg-slate-800 rounded border border-orange-500/30">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: maxVal > 0 ? `${(r.target / maxVal) * 100}%` : "0%" }}
-                                transition={{ duration: 1, delay: 0.5 }}
-                                className="h-full rounded flex items-center justify-end px-2 bg-gradient-to-r from-orange-600 to-orange-500"
-                              >
-                                <span className="text-[10px] font-mono font-semibold text-white">
-                                  {totalAssets > 0 ? ((r.target / totalAssets) * 100).toFixed(1) : "0.0"}%
-                                </span>
-                              </motion.div>
-                            </div>
-                          </div>
-
-                          {/* Progress to target */}
-                          <div className="mb-4 pb-4 border-b border-slate-600">
-                            <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                              <span>Progress to Target</span>
-                              <span className="font-mono">{progPct.toFixed(0)}%</span>
-                            </div>
-                            <div className="h-1 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progPct}%` }}
-                                transition={{ duration: 1, delay: 1 }}
-                                className={`h-full ${midIsBalanced ? "bg-green-500" : midNeedsFund ? "bg-red-500" : "bg-blue-400"}`}
-                              />
-                            </div>
-                          </div>
-
-                          {/* 2×2 metrics grid */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Status</div>
-                              <div className={`text-xs font-medium ${midIsBalanced ? "text-green-400" : midNeedsFund ? "text-red-400" : "text-blue-400"}`}>
-                                {midIsBalanced ? "BALANCED" : midNeedsFund ? "UNDERFUNDED" : "SURPLUS"}
-                              </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">
-                                {midIsBalanced ? "No action needed" : midNeedsFund ? "Requires funding" : "Ready to redeploy"}
-                              </div>
-                            </div>
-                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Priority</div>
-                              <div className="text-xs font-mono text-white">
-                                {Math.abs(midDelta) > 300000 ? "HIGH" : Math.abs(midDelta) > 100000 ? "MEDIUM" : "LOW"}
-                              </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">Execution: T+2</div>
-                            </div>
-                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Current Yield</div>
-                              <div className="text-xs font-mono text-white">{avgYield.toFixed(2)}%</div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">Weighted average</div>
-                            </div>
-                            <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                Yield Pickup
-                                {pickupBps > 50 && <AlertCircle className="w-3 h-3 text-orange-500" />}
-                              </div>
-                              <div className={`text-xs font-mono ${pickupBps > 50 ? "text-orange-400" : "text-green-400"}`}>
-                                +{pickupBps} bps
-                              </div>
-                              <div className="text-[10px] text-green-500 mt-0.5">
-                                ${Math.round((pickupBps / 10000) * r.current).toLocaleString()}/yr
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <BucketExecutionPanel
+                        key={r.def.name}
+                        bucketName={r.def.name}
+                        current={r.current}
+                        target={r.target}
+                        delta={r.delta}
+                        accentColor={r.def.accent}
+                        bgColor={r.def.bg}
+                        avgYield={avgYield}
+                        bpPickup={r.bpPickup}
+                        totalAssets={totalAssets}
+                      />
                     );
                   })()}
 
