@@ -4283,6 +4283,14 @@ function GuruAllocationView({
                                 transform: "translateX(-50%)",
                                 opacity: 0.6,
                               }} />
+                              {/* "in" label beside rise line */}
+                              <div className="absolute text-[9px] font-black tabular-nums bg-white/90 rounded px-1 leading-tight whitespace-nowrap" style={{
+                                left: `calc(${tgtPct}% + 6px)`,
+                                top: dropY - 22,
+                                color: "#16a34a",
+                              }}>
+                                {fmtAmt} in
+                              </div>
                               {/* Animated dot traveling from → to */}
                               <motion.div
                                 className="absolute rounded-full z-10 shadow"
