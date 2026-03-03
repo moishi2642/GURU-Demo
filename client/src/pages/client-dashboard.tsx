@@ -4265,9 +4265,9 @@ function GuruAllocationView({
                               <div className="absolute text-[9px] font-black tabular-nums bg-white/90 rounded px-1 leading-tight whitespace-nowrap" style={{
                                 left: `calc(${srcPct}% + 6px)`,
                                 top: Math.floor(dropY / 2) - 6,
-                                color: srcColor,
+                                color: "#dc2626",
                               }}>
-                                {fmtAmt}
+                                {fmtAmt} out
                               </div>
                               {/* Horizontal connector */}
                               <div className="absolute" style={{
