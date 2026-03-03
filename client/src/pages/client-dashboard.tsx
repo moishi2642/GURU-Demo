@@ -830,27 +830,6 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           })()}
         </div>
       </div>
-      {/* ── Monthly net cash flow — single aligned row ── */}
-      <div className="px-3 pt-2 pb-1">
-        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Monthly Net Cash Flow</p>
-        {/* Left margin matches YAxis width (44px) + right margin (44px) to align with chart */}
-        <div className="flex" style={{ paddingLeft: 44, paddingRight: 44 }}>
-          {data.map((d) => {
-            const isTrough = hasTrough && d.month === troughMonth;
-            return (
-              <div key={d.month} className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
-                <span className="text-[8px] font-semibold text-muted-foreground">{d.month}</span>
-                <span
-                  className={`text-[9px] font-black tabular-nums leading-none ${isTrough ? "text-rose-600" : d.net >= 0 ? "text-emerald-600" : "text-rose-500"}`}
-                >
-                  {d.net >= 0 ? "+" : ""}{fmtK(d.net)}
-                </span>
-                {isTrough && <span className="text-[7px] font-black text-rose-500 leading-none">▼</span>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
       {/* ── Chart 2: Cumulative area chart ── */}
       <div className="px-3 pb-2">
         <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Cumulative Net Cash Flow</p>
