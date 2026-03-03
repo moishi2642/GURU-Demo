@@ -4141,7 +4141,7 @@ function GuruAllocationView({
                                 {!isGrowCard && (
                                   yieldChanged ? (
                                     <span className="flex items-baseline gap-1 flex-shrink-0">
-                                      <span className="text-white/40 tabular-nums text-[10px] line-through">{avgYieldV.toFixed(2)}% yield</span>
+                                      <span className="text-white/40 tabular-nums text-[10px]">{avgYieldV.toFixed(2)}% yield</span>
                                       <span className="text-white tabular-nums text-[11px] font-black">{newGrossYield.toFixed(2)}% yield</span>
                                     </span>
                                   ) : (
@@ -4180,8 +4180,8 @@ function GuruAllocationView({
                             <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
                             {yieldChanged && !proforma ? (
                               <>
-                                {/* Before row — faded + crossed out */}
-                                <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
+                                {/* Before row — faded */}
+                                <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40">
                                   <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(balance)}</p>
                                   {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}% yield</p>}
                                 </div>
@@ -4534,7 +4534,7 @@ function GuruAllocationView({
                                 </span>
                                 {hasPending ? (
                                   <span className="text-xs font-bold tabular-nums text-right flex flex-col items-end leading-tight">
-                                    <span className="text-muted-foreground line-through text-[10px]">{fmt(r.current)}</span>
+                                    <span className="text-muted-foreground text-[10px]">{fmt(r.current)}</span>
                                     <span className="text-amber-600">{fmt(adjTotal)}</span>
                                   </span>
                                 ) : (
