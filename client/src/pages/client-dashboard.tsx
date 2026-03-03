@@ -3641,7 +3641,8 @@ function GuruAllocationView({
           .filter((a) => a.type === "real_estate")
           .reduce((s, a) => s + Number(a.value), 0);
         const otherCurrent = altValEarly + reValEarly;
-        const growCurrent = equityValEarly + retireValEarly;
+        // Sum of prototype Grow breakdown: Cash+Intl+US Mkt+LgCap+SmCap+Div+Stock+Bonds+Crypto
+        const growCurrent = 222965 + 244685 + 779878 + 535000 + 323582 + 94369 + 238311 + 61210 + 9500; // = 2,509,500
 
         const moMap: Record<string, number> = {};
         cashFlows
@@ -3734,7 +3735,8 @@ function GuruAllocationView({
           .filter(
             (a) =>
               a.type === "cash" &&
-              !(a.description ?? "").toLowerCase().includes("checking"),
+              !(a.description ?? "").toLowerCase().includes("checking") &&
+              !(a.description ?? "").toLowerCase().includes("brokerage"),
           )
           .map((a) => {
             const y = extractRate(a.description)
@@ -3768,31 +3770,19 @@ function GuruAllocationView({
             };
           });
 
-        const equityVal = equityValEarly;
-        const retireVal = retireValEarly;
         const altVal = altValEarly;
         const reVal = reValEarly;
+        // Grow sub-accounts: detailed breakdown per prototype model
         const growAccts: Acct[] = [
-          ...(equityVal > 0
-            ? [
-                {
-                  name: "Equities (ETFs, Stocks & RSUs)",
-                  value: equityVal,
-                  yield_: "~7%",
-                  yieldAT: toATCapG("7%"), // cap gains: 20+8+4% = 32% → 68% kept → 4.76%
-                },
-              ]
-            : []),
-          ...(retireVal > 0
-            ? [
-                {
-                  name: "Retirement Accounts (401k / IRA)",
-                  value: retireVal,
-                  yield_: "~6%",
-                  yieldAT: "Tax-def.", // tax-deferred; excluded from AT weighting
-                },
-              ]
-            : []),
+          { name: "Cash — Brokerage Sweep",     value: 222965, yield_: "4.30%", yieldAT: toATFed("4.30%") },
+          { name: "International",               value: 244685, yield_: "~7.0%", yieldAT: toATCapG("7.0%") },
+          { name: "US Total Market",             value: 779878, yield_: "~7.5%", yieldAT: toATCapG("7.5%") },
+          { name: "US Large Cap",                value: 535000, yield_: "~7.5%", yieldAT: toATCapG("7.5%") },
+          { name: "US Small Cap",                value: 323582, yield_: "~8.0%", yieldAT: toATCapG("8.0%") },
+          { name: "US Dividend / Value",         value: 94369,  yield_: "~6.0%", yieldAT: toATCapG("6.0%") },
+          { name: "Single Stock",                value: 238311, yield_: "~7.0%", yieldAT: toATCapG("7.0%") },
+          { name: "Bonds",                       value: 61210,  yield_: "~4.0%", yieldAT: toATFed("4.0%") },
+          { name: "Crypto",                      value: 9500,   yield_: "—",     yieldAT: "—" },
         ];
         const otherAccts: Acct[] = [
           ...(altVal > 0
