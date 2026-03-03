@@ -3641,7 +3641,7 @@ function GuruAllocationView({
       {/* ── Rebalancing Recommendation ───────────────────────────────────── */}
       {(() => {
         const reserveCurrent = reserve;
-        const flowCurrent = yieldBucket + brokerageCash;
+        const flowCurrent = yieldBucket; // brokerageCash now classified in Grow
         const buildCurrent = tactical;
         const equityValEarly = assets
           .filter(
@@ -3694,7 +3694,7 @@ function GuruAllocationView({
           .reduce((s, c) => s + Number(c.amount), 0);
 
         const reserveTarget = Math.round(minMonthly * 2);
-        const flowTarget = annualOut;
+        const flowTarget = cashTrough; // target the 12-month cumulative cash flow trough
         const buildTarget = buildCurrent;
         // Use prototype model total ($5,996,550) so growTarget is consistent with
         // hardcoded growCurrent ($2,509,500) — both reflect the prototype asset values
