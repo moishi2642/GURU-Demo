@@ -3062,44 +3062,32 @@ function BucketExecutionPanel({
               )}
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold" style={{ color: "#92400e" }}>$</span>
               <input
                 type="text"
                 inputMode="numeric"
                 value={fmtInput(rawAmt)}
                 onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
                 placeholder="0"
-                className="w-full pl-6 pr-3 py-2 text-sm font-bold tabular-nums rounded-lg focus:outline-none focus:ring-2"
+                className="w-full px-3 py-2 text-sm font-bold tabular-nums rounded-lg focus:outline-none focus:ring-2"
                 style={{ border: "1px solid #f59e0b99", backgroundColor: "#fff9eb", color: "#92400e" }}
               />
             </div>
-            {parsedAmt > 0 && (
-              <p className="text-[9px] tabular-nums mt-1.5" style={{ color: "#b45309" }}>
-                New balance:{" "}
-                <span className="font-black">
-                  {fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}
-                </span>
-              </p>
-            )}
           </div>
         )}
 
         {/* Routing */}
         {!executed && (
-          <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}>
-            <p className="text-[9px] uppercase tracking-wider font-bold mb-2" style={{ color: "#b45309" }}>Route</p>
+          <div className="rounded-lg border border-border px-3 py-2.5 bg-secondary/20">
+            <p className="text-[9px] uppercase tracking-wider font-bold mb-2 text-muted-foreground">Route</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold" style={{ color: "#b45309" }}>From</p>
+                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">From</p>
                 <select
                   value={fromAccount}
                   onChange={(e) => { setFromAccount(e.target.value); setExecuted(false); }}
-                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                  className="w-full text-[11px] font-semibold text-foreground rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer bg-background border border-border"
                   style={{
-                    color: "#92400e",
-                    border: "1px solid #f59e0b99",
-                    backgroundColor: "#fff9eb",
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "right 6px center",
                     paddingRight: "22px",
@@ -3108,18 +3096,16 @@ function BucketExecutionPanel({
                   {BUCKET_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
-              <span className="flex-shrink-0 mt-4 text-sm font-bold" style={{ color: "#b45309" }}>→</span>
+              <span className="flex-shrink-0 mt-4 text-sm text-muted-foreground">→</span>
               <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold" style={{ color: "#b45309" }}>To</p>
+                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">To</p>
                 <select
                   value={toAccount}
                   onChange={(e) => { setToAccount(e.target.value); setExecuted(false); }}
-                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer bg-background border border-border"
                   style={{
-                    color: "#92400e",
-                    border: "1px solid #f59e0b99",
-                    backgroundColor: "#fff9eb",
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                    color: bgColor,
+                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "right 6px center",
                     paddingRight: "22px",
@@ -4043,6 +4029,40 @@ function GuruAllocationView({
                       const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
                       const isOverfund = r.delta < -5000;
                       const isDragTarget = dragItem && dragItem !== r.def.name;
+
+                      /* ── Option B inline style — Operating Cash only ── */
+                      if (r.def.name === "Operating Cash" && hasPending && deltaAmt !== 0 && !proforma) {
+                        return (
+                          <div key="op-cash-optB" className="flex flex-col">
+                            <div className="mb-1 h-5 flex items-center justify-center">
+                              <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border ${deltaAmt > 0 ? "bg-green-50 border-green-300 text-green-700" : "bg-red-50 border-red-300 text-red-700"}`}>
+                                {deltaAmt > 0 ? "▲ +" : "▼ −"}{fmtK(Math.abs(deltaAmt))}
+                              </span>
+                            </div>
+                            <div className="rounded-xl p-4 flex-1" style={{ background: hc.bg }}>
+                              <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot }} />
+                                <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
+                              </div>
+                              <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
+                              {/* Before */}
+                              <p className="text-sm font-bold text-white/40 tabular-nums leading-none line-through mt-1">
+                                {fmtK(r.current)}
+                              </p>
+                              {/* Dotted divider */}
+                              <div className="border-t border-dashed border-white/25 my-1.5" />
+                              {/* After */}
+                              <div className="flex items-baseline justify-between gap-1">
+                                <p className={`${fmtK(proBalance).length > 9 ? "text-sm" : fmtK(proBalance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
+                                  {fmtK(proBalance)}
+                                </p>
+                                <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div key={`${r.def.name}-${proforma ? "pro" : "cur"}`} className="flex flex-col">
                           <div className="mb-1 h-5 flex items-center justify-center">
@@ -4207,7 +4227,15 @@ function GuruAllocationView({
                         </div>
                         {/* Pro forma row — full brightness */}
                         <div className="grid grid-cols-5 gap-3">
-                          {rows.map((r) => renderBucketCard(r, true))}
+                          {rows.map((r) => {
+                            /* Op Cash is already self-contained in the current row via Option B */
+                            if (r.def.name === "Operating Cash") {
+                              const inA = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
+                              const outA = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
+                              if (inA - outA !== 0) return <div key="op-cash-spacer" />;
+                            }
+                            return renderBucketCard(r, true);
+                          })}
                           {renderSubCats(1)}
                         </div>
                       </div>
