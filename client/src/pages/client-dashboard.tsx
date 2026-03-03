@@ -2605,26 +2605,6 @@ function BucketExecutionPanel({
   const effDelta = effTarget - current;
 
   const needsFunding = effDelta > 1000 && bucketName !== "Grow";
-  const isSurplus = effDelta < -1000;
-  const isBalanced = !needsFunding && !isSurplus;
-  const isGrow = bucketName === "Grow";
-
-  const statusLabel =
-    isGrow && isBalanced
-      ? "OPPORTUNITY"
-      : isBalanced
-        ? "BALANCED"
-        : needsFunding
-          ? "NEEDS FUNDING"
-          : "SURPLUS";
-  const statusColor =
-    isGrow && isBalanced
-      ? "#8b5cf6"
-      : isBalanced
-        ? "#16a34a"
-        : needsFunding
-          ? "#f43f5e"
-          : "#10b981";
 
   const BUCKET_NAMES = ["Operating Cash", "Reserve", "Build", "Grow"];
   const defaultFrom = needsFunding ? "Grow" : bucketName;
@@ -2686,62 +2666,16 @@ function BucketExecutionPanel({
           </div>
         )}
 
-        {/* ── Current ── */}
-        <div>
-          <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
-          <p className="text-2xl font-black tabular-nums text-foreground leading-none">{fmtD(current)}</p>
-        </div>
-
-        {/* ── Target ── */}
-        <div>
-          <p className="text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
-          <p className="text-2xl font-black tabular-nums leading-none" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
-          {!isBalanced && (
-            <p className="text-[10px] font-semibold mt-1" style={{ color: AMBER }}>
-              {needsFunding ? `▲ ${fmtD(Math.abs(effDelta))} needed` : `▼ ${fmtD(Math.abs(effDelta))} surplus`}
-            </p>
-          )}
-          {isBalanced && (
-            <p className="text-[10px] font-semibold mt-1 text-emerald-600">✓ On target</p>
-          )}
-        </div>
-
-        {/* ── 2×2 metrics grid ── */}
-        <div className="grid grid-cols-2 gap-1.5">
-          <div className="bg-muted/60 rounded-lg px-3 py-2 border border-border">
-            <p className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Status</p>
-            <p className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>{statusLabel}</p>
+        {/* ── Current / Target side by side ── */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
+            <p className="text-xl font-black tabular-nums text-foreground leading-none">{fmtD(current)}</p>
           </div>
-          <div className="bg-muted/60 rounded-lg px-3 py-2 border border-border">
-            <p className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Priority</p>
-            <p className="text-[10px] font-black text-foreground leading-tight">
-              {needsFunding ? "HIGH" : isSurplus ? "REVIEW" : "MAINTAIN"}
-            </p>
+          <div>
+            <p className="text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
+            <p className="text-xl font-black tabular-nums leading-none" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
           </div>
-          {!isGrow ? (
-            <>
-              <div className="bg-muted/60 rounded-lg px-3 py-2 border border-border">
-                <p className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Current Yield</p>
-                <p className="text-[10px] font-black text-foreground tabular-nums leading-tight">
-                  {avgYieldAT > 0 ? `${avgYieldAT.toFixed(2)}%` : "—"}
-                </p>
-              </div>
-              <div className="bg-muted/60 rounded-lg px-3 py-2 border border-border">
-                <p className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Yield Pickup</p>
-                <p
-                  className="text-[10px] font-black tabular-nums leading-tight"
-                  style={{ color: bpPickup > 0 ? "#16a34a" : bpPickup < 0 ? "#f43f5e" : "#94a3b8" }}
-                >
-                  {bpPickup !== 0 ? `${bpPickup > 0 ? "+" : ""}${bpPickup.toFixed(0)}bp` : "—"}
-                </p>
-              </div>
-            </>
-          ) : (
-            <div className="col-span-2 bg-muted/60 rounded-lg px-3 py-2 border border-border">
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Growth Focus</p>
-              <p className="text-[10px] font-black text-foreground leading-tight">Long-term appreciation</p>
-            </div>
-          )}
         </div>
 
         {/* ── Transfer Amount ── */}
