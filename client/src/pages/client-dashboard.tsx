@@ -4496,118 +4496,33 @@ function GuruAllocationView({
                         })()}
                       </div>
                     </div>
-                    {/* ── MIDDLE: Figma bars + metrics ── */}
+                    {/* ── MIDDLE: execution panel ── */}
                     {(() => {
+                      const avgYield = weightedGrossYield(r.subAccounts, r.current);
                       const avgYieldAT = weightedATYield(r.subAccounts, r.current);
-                      const maxBar = Math.max(r.current, r.target, 1);
-                      const curBarPct = (r.current / maxBar) * 100;
-                      const tgtBarPct = (r.target / maxBar) * 100;
-                      const progressPct = r.target > 0 ? Math.min((r.current / r.target) * 100, 150) : 0;
-                      const absDelta = Math.abs(r.delta);
-                      const isOver = r.delta < -1000;
-                      const isUnder = r.delta > 1000;
-                      const isBalanced = !isOver && !isUnder;
-                      const statusLabel = isBalanced ? "Balanced" : isOver ? "Surplus" : "Needs Funding";
-                      const statusColor = isBalanced ? "#22c55e" : isOver ? "#10b981" : "#f43f5e";
-                      const priority = absDelta > 200000 ? "HIGH" : absDelta > 50000 ? "MEDIUM" : "LOW";
-                      const priorityColor = priority === "HIGH" ? "#f43f5e" : priority === "MEDIUM" ? "#f59e0b" : "#22c55e";
-                      const fmtD = (v: number) => `$${Math.round(v).toLocaleString()}`;
                       return (
-                        <div className="w-72 flex-shrink-0 border-l border-r border-slate-600 bg-slate-700 flex flex-col p-5 gap-4">
-                          {/* Animated bars */}
-                          <div className="space-y-3">
-                            {/* Current bar */}
-                            <div>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-300">Current</span>
-                                <span className="text-[10px] font-black tabular-nums text-white">{fmtD(r.current)}</span>
-                              </div>
-                              <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-                                <motion.div
-                                  className="h-full rounded-full"
-                                  style={{ backgroundColor: r.def.accent }}
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${curBarPct}%` }}
-                                  transition={{ duration: 0.8, ease: "easeOut" }}
-                                />
-                              </div>
-                            </div>
-                            {/* Delta badge */}
-                            <div className="flex items-center justify-center">
-                              <span
-                                className="text-[9px] font-black px-2.5 py-0.5 rounded-full tabular-nums"
-                                style={{ background: statusColor + "33", color: statusColor, border: `1px solid ${statusColor}55` }}
-                              >
-                                {isBalanced ? "≈ On Target" : (isOver ? "▲ " : "▼ ") + fmtD(absDelta)}
-                              </span>
-                            </div>
-                            {/* GURU Target bar */}
-                            <div>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-300">GURU Target</span>
-                                <span className="text-[10px] font-black tabular-nums text-white">{fmtD(r.target)}</span>
-                              </div>
-                              <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-                                <motion.div
-                                  className="h-full rounded-full"
-                                  style={{ backgroundColor: r.def.accent + "88" }}
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${tgtBarPct}%` }}
-                                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          {/* Progress bar */}
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Allocation vs Target</span>
-                              <span
-                                className="text-[9px] font-bold tabular-nums"
-                                style={{ color: progressPct >= 85 && progressPct <= 115 ? "#22c55e" : "#f59e0b" }}
-                              >
-                                {progressPct.toFixed(0)}%
-                              </span>
-                            </div>
-                            <div className="h-1.5 bg-slate-600 rounded-full overflow-hidden">
-                              <motion.div
-                                className="h-full rounded-full"
-                                style={{
-                                  backgroundColor: progressPct >= 85 && progressPct <= 115
-                                    ? "#22c55e"
-                                    : progressPct > 115 ? "#f59e0b" : "#f43f5e",
-                                }}
-                                initial={{ width: 0 }}
-                                animate={{ width: `${Math.min(progressPct, 100)}%` }}
-                                transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-                              />
-                            </div>
-                          </div>
-                          {/* 2×2 metrics grid */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="rounded-lg bg-slate-800 px-3 py-2">
-                              <p className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Status</p>
-                              <p className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>{statusLabel}</p>
-                            </div>
-                            <div className="rounded-lg bg-slate-800 px-3 py-2">
-                              <p className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Priority</p>
-                              <p className="text-[10px] font-black leading-tight" style={{ color: priorityColor }}>{priority}</p>
-                            </div>
-                            <div className="rounded-lg bg-slate-800 px-3 py-2">
-                              <p className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Current Yield</p>
-                              <p className="text-[10px] font-black tabular-nums text-white">{avgYieldAT.toFixed(2)}% AT</p>
-                            </div>
-                            <div className="rounded-lg bg-slate-800 px-3 py-2">
-                              <p className="text-[8px] uppercase tracking-wider text-slate-400 font-semibold mb-0.5">Yield Pickup</p>
-                              <p
-                                className="text-[10px] font-black tabular-nums"
-                                style={{ color: r.bpPickup >= 0 ? "#22c55e" : "#f43f5e" }}
-                              >
-                                {r.bpPickup >= 0 ? "+" : ""}{r.bpPickup} bps
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        <BucketExecutionPanel
+                          key={r.def.name}
+                          bucketName={r.def.name}
+                          current={r.current}
+                          target={r.target}
+                          delta={r.delta}
+                          accentColor={r.def.accent}
+                          bgColor={r.def.bg}
+                          avgYield={avgYield}
+                          avgYieldAT={avgYieldAT}
+                          bpPickup={r.bpPickup}
+                          totalAssets={totalAssets}
+                          onExecute={handleExecute}
+                          onUndo={handleUndo}
+                          monthsInputConfig={
+                            r.def.name === "Operating Cash"
+                              ? { defaultMonths: 2, monthlyUnit: r.target / 2, label: "mos. of expenses" }
+                              : r.def.name === "Reserve"
+                                ? { defaultMonths: 12, monthlyUnit: r.target / 12, label: "mos. of cumulative cash outflow" }
+                                : undefined
+                          }
+                        />
                       );
                     })()}
                     {/* ── RIGHT: Products panel ── */}
