@@ -4083,6 +4083,11 @@ function GuruAllocationView({
                                 {deltaAmt > 0 ? "▲" : "▼"} {deltaAmt > 0 ? "+" : "−"}{fmtK(Math.abs(deltaAmt))}
                               </span>
                             )}
+                            {!proforma && yieldChanged && (
+                              <span className="text-[8px] font-black px-2 py-0.5 rounded-full border bg-violet-50 border-violet-300 text-violet-700">
+                                ~ yield change
+                              </span>
+                            )}
                           </div>
                           <div
                             className={`rounded-xl p-4 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
@@ -4099,21 +4104,29 @@ function GuruAllocationView({
                               <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                             </div>
                             <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
-                            <div className="flex items-baseline justify-between mt-1 gap-1">
-                              <p className={`${fmtK(balance).length > 9 ? "text-sm" : fmtK(balance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
-                                {fmtK(balance)}
-                              </p>
-                              {!isGrowCard && (
-                                yieldChanged ? (
-                                  <span className="flex items-baseline gap-1 flex-shrink-0">
-                                    <span className="text-white/40 tabular-nums text-[11px] line-through">{avgYieldV.toFixed(2)}%</span>
-                                    <span className="text-white tabular-nums text-[12px] font-black">{newGrossYield.toFixed(2)}%</span>
-                                  </span>
-                                ) : (
-                                  <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>
-                                )
-                              )}
-                            </div>
+                            {yieldChanged && !proforma ? (
+                              <>
+                                {/* Before row — faded + crossed out */}
+                                <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
+                                  <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(balance)}</p>
+                                  {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>}
+                                </div>
+                                {/* Dotted divider */}
+                                <div className="border-t border-dashed border-white/25 my-1.5" />
+                                {/* After row */}
+                                <div className="flex items-baseline justify-between gap-1">
+                                  <p className="font-black text-white tabular-nums text-[16px] leading-none">{fmtK(balance)}</p>
+                                  {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[11px] font-black">{newGrossYield.toFixed(2)}%</p>}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex items-baseline justify-between mt-1 gap-1">
+                                <p className={`${fmtK(balance).length > 9 ? "text-sm" : fmtK(balance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
+                                  {fmtK(balance)}
+                                </p>
+                                {!isGrowCard && <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
