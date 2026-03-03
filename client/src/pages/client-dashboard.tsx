@@ -4004,22 +4004,28 @@ function GuruAllocationView({
                       const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
                       const isGain = totalPickup >= 0;
                       const valCol = isGain ? "#15803d" : "#dc2626";
-                      /* Box ~260px wide × 100px tall — dot orbits perimeter */
+                      /* Box ~260px wide × 100px tall — rotating border effect */
                       const BW = 260; const BH = 100;
+                      const diag = Math.ceil(Math.sqrt(BW * BW + BH * BH)) + 20;
                       return (
-                        <div className="relative flex-shrink-0" style={{ width: BW, height: BH }}>
-                          {/* Orbiting dot */}
+                        <div className="relative flex-shrink-0 rounded-xl overflow-hidden flex-shrink-0" style={{ width: BW, height: BH }}>
+                          {/* Rotating conic gradient — sweeping border */}
                           <motion.div
-                            className="absolute rounded-full z-10"
-                            style={{ width: 10, height: 10, background: "#f59e0b", boxShadow: "0 0 6px 2px #fbbf24aa", top: 0, left: 0 }}
-                            animate={{
-                              x: [-5, BW - 5, BW - 5, -5, -5],
-                              y: [-5, -5, BH - 5, BH - 5, -5],
+                            style={{
+                              position: "absolute",
+                              width: diag,
+                              height: diag,
+                              top: "50%",
+                              left: "50%",
+                              marginTop: -diag / 2,
+                              marginLeft: -diag / 2,
+                              background: "conic-gradient(from 0deg at 50% 50%, #f59e0b 0deg, #fcd34d 40deg, #fef3c7 80deg, transparent 140deg, transparent 300deg, #f59e0b 360deg)",
                             }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear", times: [0, 0.25, 0.5, 0.75, 1] }}
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                           />
-                          {/* Amber panel */}
-                          <div className="absolute inset-0 rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 flex flex-col justify-between overflow-hidden">
+                          {/* Amber panel — 2px inset exposes the rotating border */}
+                          <div className="absolute rounded-[10px] bg-amber-50 px-4 py-3 flex flex-col justify-between" style={{ inset: "2px" }}>
                             <div className="flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
                               <p className="text-[8px] uppercase tracking-widest font-black text-amber-700">Changes Preview</p>
