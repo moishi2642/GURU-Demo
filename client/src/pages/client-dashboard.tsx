@@ -1474,10 +1474,12 @@ function CashFlowForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlow
 // ─── Bucket Execution Panel (middle column of each bucket row) ────────────────
 function BucketExecutionPanel({
   bucketName, current, target, delta, accentColor, bgColor,
-  avgYield, bpPickup, totalAssets,
+  avgYield, bpPickup, totalAssets, onExecute, onUndo,
 }: {
   bucketName: string; current: number; target: number; delta: number;
   accentColor: string; bgColor: string; avgYield: number; bpPickup: number; totalAssets: number;
+  onExecute?: (from: string, to: string, amount: number) => void;
+  onUndo?: (from: string, to: string) => void;
 }) {
   const suggested = Math.abs(delta);
   const [rawAmt, setRawAmt] = useState(suggested > 0 ? String(Math.round(suggested)) : "");
@@ -1635,7 +1637,7 @@ function BucketExecutionPanel({
       <div className="px-5 pb-4">
         {executed ? (
           <button
-            onClick={() => setExecuted(false)}
+            onClick={() => { setExecuted(false); onUndo?.(fromAccount, toAccount); }}
             className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-colors"
             style={{ color: bgColor, borderColor: bgColor + "60", background: "transparent" }}
           >
@@ -1643,7 +1645,7 @@ function BucketExecutionPanel({
           </button>
         ) : (
           <button
-            onClick={() => setExecuted(true)}
+            onClick={() => { setExecuted(true); onExecute?.(fromAccount, toAccount, parsedAmt); }}
             disabled={parsedAmt <= 0}
             className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
             style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
@@ -1907,6 +1909,18 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
 };
 
 function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const [pendingTransfers, setPendingTransfers] = useState<{ from: string; to: string; amount: number }[]>([]);
+
+  function handleExecute(from: string, to: string, amount: number) {
+    setPendingTransfers(prev => {
+      const filtered = prev.filter(t => !(t.from === from && t.to === to));
+      return [...filtered, { from, to, amount }];
+    });
+  }
+  function handleUndo(from: string, to: string) {
+    setPendingTransfers(prev => prev.filter(t => !(t.from === from && t.to === to)));
+  }
+
   const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
   const forecastData = buildForecast(cashFlows);
   const cashTrough   = computeTrough(forecastData);
@@ -2272,6 +2286,24 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           </div>
                         ))}
                         {r.subAccounts.length === 0 && <p className="text-xs text-muted-foreground italic">No accounts mapped</p>}
+                        {/* Pending inbound transfers */}
+                        {pendingTransfers.filter(t => t.to === r.def.name).map(pt => (
+                          <div key={`pending-${pt.from}`} className="grid items-center gap-2 rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50" style={{ gridTemplateColumns: "1fr 76px 52px 60px" }}>
+                            <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden">
+                              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
+                              <span className="truncate font-semibold text-amber-800">Transfer from {pt.from}</span>
+                            </span>
+                            <span className="text-[11px] font-bold text-amber-700 text-right tabular-nums">{fmt(pt.amount)}</span>
+                            <span className="text-[10px] text-amber-500 text-right">—</span>
+                            <span className="text-[10px] text-amber-500 text-right">—</span>
+                          </div>
+                        ))}
+                        {pendingTransfers.filter(t => t.to === r.def.name).length > 0 && (
+                          <div className="flex items-center gap-1 mt-1 text-[9px] font-black uppercase tracking-wider text-amber-600">
+                            <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                            Select a product for incoming funds →
+                          </div>
+                        )}
                       </div>
                       {/* Weighted avg yield + totals footer */}
                       <div className="mt-2.5 pt-2 border-t border-border">
@@ -2304,6 +2336,8 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                         avgYield={avgYield}
                         bpPickup={r.bpPickup}
                         totalAssets={totalAssets}
+                        onExecute={handleExecute}
+                        onUndo={handleUndo}
                       />
                     );
                   })()}
