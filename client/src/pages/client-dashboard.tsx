@@ -4501,7 +4501,7 @@ function GuruAllocationView({
                             r.def.name === "Operating Cash"
                               ? { defaultMonths: 2, monthlyUnit: r.target / 2, label: "mos. of expenses" }
                               : r.def.name === "Reserve"
-                                ? { defaultMonths: 12, monthlyUnit: r.target / 12, label: "mos. of cash flow" }
+                                ? { defaultMonths: 12, monthlyUnit: r.target / 12, label: "mos. of cumulative cash outflow" }
                                 : undefined
                           }
                         />
