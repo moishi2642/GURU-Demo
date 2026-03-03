@@ -2953,187 +2953,149 @@ function BucketExecutionPanel({
     return isNaN(n) ? raw : Math.round(n).toLocaleString();
   };
 
-  const currentPct = effTarget > 0 ? Math.min(100, (current / effTarget) * 100) : 0;
-  const priorityLabel = needsFunding ? "HIGH" : isSurplus ? "MEDIUM" : "LOW";
-  const priorityColor = needsFunding ? "#f87171" : isSurplus ? "#fbbf24" : "#34d399";
-
   return (
-    <div className="w-80 flex-shrink-0 border-l border-r border-white/10 flex flex-col" style={{ background: "#1e293b" }}>
-      <div className="flex-1 px-5 py-4 flex flex-col gap-3">
-
-        {/* ── Months stepper (Operating Cash / Reserve only) ── */}
-        {monthsInputConfig && (
+    <div className="w-80 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
+      <div className="flex-1 p-5 flex flex-col gap-4">
+        {/* Status / Target Coverage */}
+        {monthsInputConfig ? (
           <div>
-            <p className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-2">
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-2.5">
               Target Coverage
             </p>
-            <div className="flex items-center gap-3 rounded-xl px-4 py-3 border border-white/10" style={{ background: "rgba(255,255,255,0.05)" }}>
+            <div className="flex items-center gap-3 bg-secondary/30 rounded-xl px-4 py-3 border border-border">
               <button
                 onClick={() => setMonths((m) => Math.max(1, m - 1))}
-                className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center text-sm font-bold text-white/60 hover:bg-white/10 transition-colors select-none"
+                className="w-7 h-7 rounded-full border border-border bg-background flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-secondary transition-colors select-none"
               >−</button>
               <div className="flex-1 text-center">
-                <span className="text-3xl font-black tabular-nums leading-none" style={{ color: accentColor }}>
+                <span className="text-3xl font-black tabular-nums leading-none" style={{ color: bgColor }}>
                   {months}
                 </span>
-                <span className="text-[10px] font-semibold text-white/40 ml-1.5 leading-none">
+                <span className="text-[10px] font-semibold text-muted-foreground ml-1.5 leading-none">
                   {monthsInputConfig.label}
                 </span>
               </div>
               <button
                 onClick={() => setMonths((m) => m + 1)}
-                className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center text-sm font-bold text-white/60 hover:bg-white/10 transition-colors select-none"
+                className="w-7 h-7 rounded-full border border-border bg-background flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-secondary transition-colors select-none"
               >+</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
+                Status
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+                <span className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>
+                  {statusLabel}
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
+                Δ vs Target
+              </p>
+              <span className="text-xs font-black tabular-nums" style={{ color: statusColor }}>
+                {isBalanced ? "—" : (needsFunding ? "+" : "−") + fmtD(Math.abs(effDelta))}
+              </span>
             </div>
           </div>
         )}
 
-        {/* ── Current bar ── */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[9px] uppercase tracking-widest font-bold text-white/40">Current</span>
-            <span className="text-[11px] font-black tabular-nums text-white">{fmtD(current)}</span>
-          </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
-            <motion.div
-              className="h-full rounded-full"
-              style={{ background: accentColor }}
-              initial={{ width: 0 }}
-              animate={{ width: `${currentPct}%` }}
-              transition={{ duration: 0.9, ease: "easeOut" }}
-            />
-          </div>
-        </div>
-
-        {/* ── Delta badge ── */}
-        <div className="flex items-center justify-between">
-          <span className="text-[8px] uppercase tracking-widest text-white/25 font-bold">Δ vs GURU Target</span>
-          <span
-            className="text-[9px] font-black px-2.5 py-0.5 rounded-full border"
-            style={
-              isBalanced
-                ? { color: "#34d399", borderColor: "#34d39933", background: "rgba(52,211,153,0.1)" }
-                : needsFunding
-                  ? { color: "#f87171", borderColor: "#f8717133", background: "rgba(248,113,113,0.1)" }
-                  : { color: "#34d399", borderColor: "#34d39933", background: "rgba(52,211,153,0.1)" }
-            }
-          >
-            {isBalanced ? "✓ On Target" : (needsFunding ? "+" : "−") + fmtD(Math.abs(effDelta))}
-          </span>
-        </div>
-
-        {/* ── GURU Target bar ── */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[9px] uppercase tracking-widest font-bold text-white/40">GURU Target</span>
-            <span className="text-[11px] font-black tabular-nums" style={{ color: accentColor }}>{fmtD(effTarget)}</span>
-          </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
-            <motion.div
-              className="h-full rounded-full"
-              style={{ background: accentColor, opacity: 0.45 }}
-              initial={{ width: 0 }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 0.9, ease: "easeOut", delay: 0.15 }}
-            />
-          </div>
-        </div>
-
-        {/* ── 2×2 metrics grid ── */}
-        <div className="grid grid-cols-2 gap-2 mt-0.5">
-          <div className="rounded-lg px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <p className="text-[8px] uppercase tracking-wider font-bold mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Status</p>
-            <p className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>{statusLabel}</p>
-          </div>
-          <div className="rounded-lg px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <p className="text-[8px] uppercase tracking-wider font-bold mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Priority</p>
-            <p className="text-[10px] font-black leading-tight" style={{ color: priorityColor }}>{priorityLabel}</p>
-          </div>
-          <div className="rounded-lg px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <p className="text-[8px] uppercase tracking-wider font-bold mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Current Yield</p>
-            <p className="text-[10px] font-black tabular-nums text-white">{avgYieldAT.toFixed(2)}% AT</p>
-          </div>
-          <div className="rounded-lg px-3 py-2" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <p className="text-[8px] uppercase tracking-wider font-bold mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>Yield Pickup</p>
-            <p className="text-[10px] font-black tabular-nums" style={{ color: bpPickup > 0 ? "#34d399" : bpPickup < -0.5 ? "#f87171" : "#94a3b8" }}>
-              {bpPickup > 0 ? "+" : ""}{bpPickup.toFixed(0)} bps
+        {/* Current / Target row */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">
+              Current
             </p>
+            <p className="text-sm font-black tabular-nums text-foreground">{fmtD(current)}</p>
+          </div>
+          <div
+            className="rounded-lg border px-3 py-2"
+            style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}
+          >
+            <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: "#b45309" }}>
+              Target
+            </p>
+            <p className="text-sm font-black tabular-nums" style={{ color: "#92400e" }}>{fmtD(effTarget)}</p>
           </div>
         </div>
 
-        {/* ── Executed confirmation banner ── */}
+        {/* Executed confirmation banner */}
         {executed && (
           <div
             className="rounded-lg px-3 py-2.5 flex items-start gap-2"
-            style={{ background: accentColor + "20", border: `1px solid ${accentColor}40` }}
+            style={{ background: bgColor + "15", border: `1px solid ${bgColor}40` }}
           >
-            <span className="text-base leading-none mt-0.5 text-white">✓</span>
+            <span className="text-base leading-none mt-0.5">✓</span>
             <div>
-              <p className="text-[10px] font-black text-white">Transfer Executed</p>
-              <p className="text-[9px] text-white/50 tabular-nums mt-0.5">
+              <p className="text-[10px] font-black text-foreground">Transfer Executed</p>
+              <p className="text-[9px] text-muted-foreground tabular-nums mt-0.5">
                 {fmtD(parsedAmt)} moved{" "}
-                <span className="font-semibold text-white/80">{fromAccount} → {toAccount}</span>
+                <span className="font-semibold text-foreground">{fromAccount} → {toAccount}</span>
               </p>
-              <p className="text-[9px] tabular-nums mt-0.5" style={{ color: accentColor }}>
+              <p className="text-[9px] tabular-nums mt-0.5" style={{ color: bgColor }}>
                 New balance: {fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}
               </p>
             </div>
           </div>
         )}
 
-        {/* ── Transfer amount input ── */}
+        {/* Transfer amount input */}
         {!executed && (
-          <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: "rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.08)" }}>
-            <p className="text-[9px] uppercase tracking-widest font-bold mb-1.5" style={{ color: "#fbbf24" }}>
-              Transfer Amount
-            </p>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={fmtInput(rawAmt)}
-              onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
-              placeholder="0"
-              className="w-full px-3 py-2 text-sm font-bold tabular-nums rounded-lg focus:outline-none focus:ring-1"
-              style={{ border: "1px solid rgba(245,158,11,0.4)", backgroundColor: "rgba(0,0,0,0.25)", color: "#fbbf24" }}
-            />
+          <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[9px] uppercase tracking-widest font-bold" style={{ color: "#b45309" }}>
+                Transfer Amount
+              </p>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={fmtInput(rawAmt)}
+                onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
+                placeholder="0"
+                className="w-full px-3 py-2 text-sm font-bold tabular-nums rounded-lg focus:outline-none focus:ring-2"
+                style={{ border: "1px solid #f59e0b99", backgroundColor: "#fff9eb", color: "#92400e" }}
+              />
+            </div>
           </div>
         )}
 
-        {/* ── Routing ── */}
+        {/* Routing */}
         {!executed && (
-          <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }}>
-            <p className="text-[9px] uppercase tracking-wider font-bold mb-2 text-white/40">Route</p>
+          <div className="rounded-lg border border-border px-3 py-2.5 bg-secondary/20">
+            <p className="text-[9px] uppercase tracking-wider font-bold mb-2 text-muted-foreground">Route</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-white/30">From</p>
+                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">From</p>
                 <select
                   value={fromAccount}
                   onChange={(e) => { setFromAccount(e.target.value); setExecuted(false); }}
-                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer"
+                  className="w-full text-[11px] font-semibold text-foreground rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer bg-background border border-border"
                   style={{
-                    background: "rgba(255,255,255,0.07)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    color: "#e2e8f0",
                     backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "right 6px center",
                     paddingRight: "22px",
                   }}
                 >
-                  {BUCKET_NAMES.map((n) => <option key={n} value={n} style={{ background: "#1e293b" }}>{n}</option>)}
+                  {BUCKET_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
-              <span className="flex-shrink-0 mt-4 text-sm text-white/30">→</span>
+              <span className="flex-shrink-0 mt-4 text-sm text-muted-foreground">→</span>
               <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-white/30">To</p>
+                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">To</p>
                 <select
                   value={toAccount}
                   onChange={(e) => { setToAccount(e.target.value); setExecuted(false); }}
-                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer"
+                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer bg-background border border-border"
                   style={{
-                    background: "rgba(255,255,255,0.07)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    color: accentColor,
+                    color: bgColor,
                     backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "right 6px center",
@@ -3141,7 +3103,7 @@ function BucketExecutionPanel({
                   }}
                 >
                   {BUCKET_NAMES.filter((n) => n !== fromAccount).map((n) => (
-                    <option key={n} value={n} style={{ background: "#1e293b" }}>{n}</option>
+                    <option key={n} value={n}>{n}</option>
                   ))}
                 </select>
               </div>
@@ -3149,14 +3111,13 @@ function BucketExecutionPanel({
           </div>
         )}
       </div>
-
-      {/* ── Execute / Undo button ── */}
+      {/* Execute / Undo button */}
       <div className="px-5 pb-4">
         {executed ? (
           <button
             onClick={() => { setExecuted(false); onUndo?.(fromAccount, toAccount); }}
             className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-colors"
-            style={{ color: accentColor, borderColor: accentColor + "50", background: "transparent" }}
+            style={{ color: bgColor, borderColor: bgColor + "60", background: "transparent" }}
           >
             Undo Transfer
           </button>
@@ -3165,7 +3126,7 @@ function BucketExecutionPanel({
             onClick={() => { setExecuted(true); onExecute?.(fromAccount, toAccount, parsedAmt); }}
             disabled={parsedAmt <= 0}
             className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
-            style={{ background: parsedAmt > 0 ? accentColor : "#475569" }}
+            style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
           >
             Execute
           </button>
