@@ -4078,7 +4078,7 @@ function GuruAllocationView({
                           </div>
                           <div
                             className={`rounded-xl p-4 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
-                            style={{ background: hc.bg, opacity: proforma ? 1 : (hasPending ? 0.4 : 1) }}
+                            style={{ background: hc.bg }}
                             onDragOver={!proforma && isDragTarget ? (e) => e.preventDefault() : undefined}
                             onDrop={!proforma && isDragTarget ? (e) => {
                               e.preventDefault();
