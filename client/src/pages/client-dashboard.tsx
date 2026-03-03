@@ -3051,15 +3051,6 @@ function BucketExecutionPanel({
               <p className="text-[9px] uppercase tracking-widest font-bold" style={{ color: "#b45309" }}>
                 Transfer Amount
               </p>
-              {suggested > 0 && (
-                <button
-                  onClick={() => { setRawAmt(String(Math.round(suggested))); setExecuted(false); }}
-                  className="text-[9px] font-semibold underline underline-offset-2 tabular-nums"
-                  style={{ color: "#b45309" }}
-                >
-                  Use {fmtD(suggested)}
-                </button>
-              )}
             </div>
             <div className="relative">
               <input
