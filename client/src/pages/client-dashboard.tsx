@@ -5024,6 +5024,17 @@ export default function ClientDashboard() {
                 Advisor Discussion Points · Today's Priorities
               </p>
             </div>
+            {/* Category banners */}
+            <div className="grid grid-cols-2 border-b border-border">
+              <div className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-50/60 border-r border-border">
+                <PieChartIcon className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                <p className="text-[8px] uppercase tracking-widest font-black text-blue-600">Investment Portfolio</p>
+              </div>
+              <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-50/60">
+                <Wallet className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                <p className="text-[8px] uppercase tracking-widest font-black text-amber-600">Cash Management</p>
+              </div>
+            </div>
             <div className="grid grid-cols-4 divide-x divide-border">
 
               {/* 1 · Total Cash to Invest */}
