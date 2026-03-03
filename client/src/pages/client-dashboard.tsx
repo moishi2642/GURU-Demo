@@ -3442,21 +3442,21 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
   // Build: JPMorgan Treasuries MMF is GURU pick (federal-only exempt → ×0.65); munis triple-exempt (×1.00); equities cap gains (×0.68)
   Build: [
     {
-      name: "JPMorgan 100% Treasuries Money Market Fund",
-      institution: "J.P. Morgan",
-      type: "Money Market Fund",
-      grossYield: "3.90%",
-      atYield: "2.54%",
-      pickup: "+0.39%",
-      isGuru: true,
-    },
-    {
       name: "US Treasury Ladder — 1, 2 & 3-Year Notes",
       institution: "US Treasury",
       type: "Treasury Ladder",
       grossYield: "4.01%",
       atYield: "2.61%",
-      pickup: "Duration lock-in",
+      pickup: "+0.22%",
+      isGuru: true,
+    },
+    {
+      name: "JPMorgan 100% Treasuries Money Market Fund",
+      institution: "J.P. Morgan",
+      type: "Money Market Fund",
+      grossYield: "3.90%",
+      atYield: "2.54%",
+      pickup: "Duration premium",
       isGuru: false,
     },
     {
