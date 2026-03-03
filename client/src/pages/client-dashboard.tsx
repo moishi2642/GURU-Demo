@@ -790,7 +790,7 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
       <div className="px-4 pt-4 pb-1">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cumulative Cash Flow - Planning liquidity needs</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">12 Month Cumulative Cash Flow - Planning Liquidity Need</p>
             <div className="flex items-center gap-2 mt-0.5">
               {isPositive ? (
                 <TrendingUp className="w-5 h-5 text-emerald-500 flex-shrink-0" />
@@ -2977,143 +2977,220 @@ function BucketExecutionPanel({
     return isNaN(n) ? raw : Math.round(n).toLocaleString();
   };
 
-  return (
-    <div className="w-80 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
-      <div className="flex-1 p-5 flex flex-col gap-4">
+  const coveragePct = effTarget > 0 ? Math.min((current / effTarget) * 100, 100) : 0;
+  const currentBarPct = Math.min((current / Math.max(current, effTarget, 1)) * 100, 100);
 
-        {/* Status / Target Coverage */}
-        {monthsInputConfig ? (
+  return (
+    <div className="w-80 flex-shrink-0 border-l border-r border-border bg-slate-700 flex flex-col">
+      <div className="flex-1 px-5 py-4 flex flex-col gap-4">
+
+        {/* Months stepper — only for Operating Cash / Reserve */}
+        {monthsInputConfig && (
           <div>
-            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-2.5">
+            <p className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-2">
               Target Coverage
             </p>
-            <div className="flex items-center gap-3 bg-secondary/30 rounded-xl px-4 py-3 border border-border">
+            <div className="flex items-center gap-3 bg-slate-800 rounded-xl px-4 py-3">
               <button
                 onClick={() => setMonths((m) => Math.max(1, m - 1))}
-                className="w-7 h-7 rounded-full border border-border bg-background flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-secondary transition-colors select-none"
+                className="w-7 h-7 rounded-full bg-slate-600 flex items-center justify-center text-sm font-bold text-white/70 hover:bg-slate-500 transition-colors select-none"
               >−</button>
               <div className="flex-1 text-center">
-                <span className="text-3xl font-black tabular-nums leading-none" style={{ color: bgColor }}>
+                <span className="text-3xl font-black tabular-nums leading-none text-white">
                   {months}
                 </span>
-                <span className="text-[10px] font-semibold text-muted-foreground ml-1.5 leading-none">
+                <span className="text-[10px] font-semibold text-white/50 ml-1.5 leading-none">
                   {monthsInputConfig.label}
                 </span>
               </div>
               <button
                 onClick={() => setMonths((m) => m + 1)}
-                className="w-7 h-7 rounded-full border border-border bg-background flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-secondary transition-colors select-none"
+                className="w-7 h-7 rounded-full bg-slate-600 flex items-center justify-center text-sm font-bold text-white/70 hover:bg-slate-500 transition-colors select-none"
               >+</button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Status</p>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
-                <span className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>{statusLabel}</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Δ vs Target</p>
-              <span className="text-xs font-black tabular-nums" style={{ color: statusColor }}>
-                {isBalanced ? "—" : (needsFunding ? "+" : "−") + fmtD(Math.abs(effDelta))}
-              </span>
             </div>
           </div>
         )}
 
-        {/* Current / Target row */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Current</p>
-            <p className="text-sm font-black tabular-nums text-foreground">{fmtD(current)}</p>
+        {/* ── Two animated bars ── */}
+        <div className="space-y-2">
+          {/* Current bar */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px]">
+              <span className="text-white/50 font-semibold uppercase tracking-wider">Current</span>
+              <span className="text-white font-black tabular-nums">{fmtD(current)}</span>
+            </div>
+            <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ backgroundColor: accentColor }}
+                initial={{ width: 0 }}
+                animate={{ width: `${currentBarPct}%` }}
+                transition={{ duration: 0.9, ease: "easeOut" }}
+              />
+            </div>
           </div>
-          <div className="rounded-lg border px-3 py-2" style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}>
-            <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: "#b45309" }}>Target</p>
-            <p className="text-sm font-black tabular-nums" style={{ color: "#92400e" }}>{fmtD(effTarget)}</p>
+
+          {/* Delta badge */}
+          <div className="flex items-center justify-center py-0.5">
+            <span
+              className="text-[9px] font-black px-2.5 py-0.5 rounded-full"
+              style={{
+                background: isBalanced ? "#22c55e22" : needsFunding ? "#f43f5e22" : "#10b98122",
+                color: isBalanced ? "#86efac" : needsFunding ? "#fda4af" : "#6ee7b7",
+              }}
+            >
+              {isBalanced ? "ON TARGET" : (needsFunding ? "▲ need " : "▼ surplus ") + fmtD(Math.abs(effDelta))}
+            </span>
+          </div>
+
+          {/* GURU Target bar */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px]">
+              <span className="text-white/50 font-semibold uppercase tracking-wider">GURU Target</span>
+              <span className="font-black tabular-nums" style={{ color: accentColor }}>{fmtD(effTarget)}</span>
+            </div>
+            <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full opacity-40"
+                style={{ backgroundColor: accentColor }}
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 0.9, ease: "easeOut", delay: 0.1 }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Executed confirmation banner */}
-        {executed && (
-          <div className="rounded-lg px-3 py-2.5 flex items-start gap-2" style={{ background: bgColor + "15", border: `1px solid ${bgColor}40` }}>
-            <span className="text-base leading-none mt-0.5">✓</span>
+        {/* ── Coverage progress bar ── */}
+        <div className="space-y-1">
+          <div className="flex justify-between text-[10px]">
+            <span className="text-white/40 uppercase tracking-wider">Coverage</span>
+            <span className="text-white/60 tabular-nums font-semibold">
+              {effTarget > 0 ? `${Math.round(coveragePct)}%` : "—"}
+            </span>
+          </div>
+          <div className="h-1.5 bg-slate-600 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ backgroundColor: accentColor }}
+              initial={{ width: 0 }}
+              animate={{ width: `${coveragePct}%` }}
+              transition={{ duration: 1.1, ease: "easeOut", delay: 0.2 }}
+            />
+          </div>
+        </div>
+
+        {/* ── 2×2 metrics grid ── */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <div className="bg-slate-800 rounded-lg px-3 py-2">
+            <p className="text-[8px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Status</p>
+            <p className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>{statusLabel}</p>
+          </div>
+          <div className="bg-slate-800 rounded-lg px-3 py-2">
+            <p className="text-[8px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Priority</p>
+            <p className="text-[10px] font-black text-white leading-tight">
+              {needsFunding ? "HIGH" : isSurplus ? "REVIEW" : "MAINTAIN"}
+            </p>
+          </div>
+          {!isGrow ? (
+            <>
+              <div className="bg-slate-800 rounded-lg px-3 py-2">
+                <p className="text-[8px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Current Yield</p>
+                <p className="text-[10px] font-black text-white tabular-nums leading-tight">
+                  {avgYieldAT > 0 ? `${avgYieldAT.toFixed(2)}%` : "—"}
+                </p>
+              </div>
+              <div className="bg-slate-800 rounded-lg px-3 py-2">
+                <p className="text-[8px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Yield Pickup</p>
+                <p
+                  className="text-[10px] font-black tabular-nums leading-tight"
+                  style={{ color: bpPickup > 0 ? "#34d399" : bpPickup < 0 ? "#f87171" : "#94a3b8" }}
+                >
+                  {bpPickup !== 0 ? `${bpPickup > 0 ? "+" : ""}${bpPickup.toFixed(0)}bp` : "—"}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="col-span-2 bg-slate-800 rounded-lg px-3 py-2">
+              <p className="text-[8px] uppercase tracking-wider text-white/30 font-semibold mb-0.5">Growth Focus</p>
+              <p className="text-[10px] font-black text-white/80 leading-tight">Long-term appreciation</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Transfer workflow ── */}
+        {executed ? (
+          <div className="rounded-lg px-3 py-2.5 flex items-start gap-2 bg-slate-800">
+            <span className="text-base leading-none mt-0.5 text-emerald-400">✓</span>
             <div>
-              <p className="text-[10px] font-black text-foreground">Transfer Executed</p>
-              <p className="text-[9px] text-muted-foreground tabular-nums mt-0.5">
+              <p className="text-[10px] font-black text-white">Transfer Executed</p>
+              <p className="text-[9px] text-white/50 tabular-nums mt-0.5">
                 {fmtD(parsedAmt)} moved{" "}
-                <span className="font-semibold text-foreground">{fromAccount} → {toAccount}</span>
+                <span className="font-semibold text-white/80">{fromAccount} → {toAccount}</span>
               </p>
-              <p className="text-[9px] tabular-nums mt-0.5" style={{ color: bgColor }}>
+              <p className="text-[9px] tabular-nums mt-0.5" style={{ color: accentColor }}>
                 New balance: {fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}
               </p>
             </div>
           </div>
-        )}
-
-        {/* Transfer amount input */}
-        {!executed && (
-          <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}>
-            <p className="text-[9px] uppercase tracking-widest font-bold mb-1.5" style={{ color: "#b45309" }}>
-              Transfer Amount
-            </p>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={fmtInput(rawAmt)}
-              onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
-              placeholder="0"
-              className="w-full px-3 py-2 text-sm font-bold tabular-nums rounded-lg focus:outline-none focus:ring-2"
-              style={{ border: "1px solid #f59e0b99", backgroundColor: "#fff9eb", color: "#92400e" }}
-            />
-          </div>
-        )}
-
-        {/* Routing */}
-        {!executed && (
-          <div className="rounded-lg border border-border px-3 py-2.5 bg-secondary/20">
-            <p className="text-[9px] uppercase tracking-wider font-bold mb-2 text-muted-foreground">Route</p>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">From</p>
-                <select
-                  value={fromAccount}
-                  onChange={(e) => { setFromAccount(e.target.value); setExecuted(false); }}
-                  className="w-full text-[11px] font-semibold text-foreground rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer bg-background border border-border"
-                  style={{
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 6px center",
-                    paddingRight: "22px",
-                  }}
-                >
-                  {BUCKET_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-              <span className="flex-shrink-0 mt-4 text-sm text-muted-foreground">→</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">To</p>
-                <select
-                  value={toAccount}
-                  onChange={(e) => { setToAccount(e.target.value); setExecuted(false); }}
-                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer bg-background border border-border"
-                  style={{
-                    color: bgColor,
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 6px center",
-                    paddingRight: "22px",
-                  }}
-                >
-                  {BUCKET_NAMES.filter((n) => n !== fromAccount).map((n) => (
-                    <option key={n} value={n}>{n}</option>
-                  ))}
-                </select>
+        ) : (
+          <>
+            <div className="rounded-lg px-3 py-2.5 bg-slate-800">
+              <p className="text-[9px] uppercase tracking-widest font-bold mb-1.5 text-white/40">
+                Transfer Amount
+              </p>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={fmtInput(rawAmt)}
+                onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
+                placeholder="0"
+                className="w-full px-3 py-2 text-sm font-bold tabular-nums rounded-lg focus:outline-none focus:ring-1 bg-slate-700 text-white placeholder-slate-500"
+                style={{ border: `1px solid ${accentColor}50` }}
+              />
+            </div>
+            <div className="rounded-lg px-3 py-2.5 bg-slate-800">
+              <p className="text-[9px] uppercase tracking-wider font-bold mb-2 text-white/40">Route</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-white/30">From</p>
+                  <select
+                    value={fromAccount}
+                    onChange={(e) => { setFromAccount(e.target.value); setExecuted(false); }}
+                    className="w-full text-[11px] font-semibold text-white rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer bg-slate-600 border border-slate-500"
+                    style={{
+                      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 6px center",
+                      paddingRight: "22px",
+                    }}
+                  >
+                    {BUCKET_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <span className="flex-shrink-0 mt-4 text-sm text-white/30">→</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-white/30">To</p>
+                  <select
+                    value={toAccount}
+                    onChange={(e) => { setToAccount(e.target.value); setExecuted(false); }}
+                    className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer bg-slate-600 border border-slate-500"
+                    style={{
+                      color: accentColor,
+                      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 6px center",
+                      paddingRight: "22px",
+                    }}
+                  >
+                    {BUCKET_NAMES.filter((n) => n !== fromAccount).map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
       {/* Execute / Undo button */}
@@ -3121,8 +3198,7 @@ function BucketExecutionPanel({
         {executed ? (
           <button
             onClick={() => { setExecuted(false); onUndo?.(fromAccount, toAccount); }}
-            className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-colors"
-            style={{ color: bgColor, borderColor: bgColor + "60", background: "transparent" }}
+            className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-colors text-white/70 border-white/20 hover:bg-slate-600"
           >
             Undo Transfer
           </button>
@@ -3131,7 +3207,7 @@ function BucketExecutionPanel({
             onClick={() => { setExecuted(true); onExecute?.(fromAccount, toAccount, parsedAmt); }}
             disabled={parsedAmt <= 0}
             className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
-            style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
+            style={{ background: parsedAmt > 0 ? bgColor : "#475569" }}
           >
             Execute
           </button>
