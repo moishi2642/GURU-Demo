@@ -5061,7 +5061,7 @@ export default function ClientDashboard() {
                 <p className="text-2xl font-black tabular-nums text-emerald-700 leading-tight">
                   {fmt(totalToInvestTop, true)}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                <p className="text-[10px] text-emerald-600 mt-0.5 leading-snug">
                   Available to deploy — where it sits:
                 </p>
                 <div className="mt-1.5 flex flex-col gap-0.5">
