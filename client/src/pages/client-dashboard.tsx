@@ -4022,10 +4022,6 @@ function GuruAllocationView({
                       const isDragTarget = dragItem && dragItem !== r.def.name;
 
                       const isGrowCard = r.def.name === "Grow";
-                      const avgYieldAT = weightedATYield(r.subAccounts, r.current);
-                      const curATIncome = Math.round(r.current * avgYieldAT / 100);
-                      const proATIncome = Math.round(proBalance * avgYieldAT / 100);
-                      const fmtIncome = (v: number) => `$${Math.abs(v).toLocaleString()}/yr`;
 
                       /* ── Option B inline before/after — all buckets with a delta ── */
                       if (hasPending && deltaAmt !== 0 && !proforma) {
@@ -4042,19 +4038,19 @@ function GuruAllocationView({
                                 <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                               </div>
                               <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
-                              {/* Before row — balance + AT income crossed out */}
+                              {/* Before row — balance + yield crossed out */}
                               <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
                                 <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(r.current)}</p>
-                                {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{fmtIncome(curATIncome)}</p>}
+                                {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>}
                               </div>
                               {/* Dotted divider */}
                               <div className="border-t border-dashed border-white/25 my-1.5" />
-                              {/* After row — new balance + new AT income */}
+                              {/* After row — new balance + yield */}
                               <div className="flex items-baseline justify-between gap-1">
                                 <p className="font-black text-white tabular-nums text-[16px]">
                                   {fmtK(proBalance)}
                                 </p>
-                                {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{fmtIncome(proATIncome)}</p>}
+                                {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{avgYieldV.toFixed(2)}%</p>}
                               </div>
                             </div>
                           </div>
@@ -4101,37 +4097,29 @@ function GuruAllocationView({
                               <p className={`${fmtK(balance).length > 9 ? "text-sm" : fmtK(balance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
                                 {fmtK(balance)}
                               </p>
-                              {!isGrowCard && <p className="text-white/60 tabular-nums flex-shrink-0 text-[11px]">{fmtIncome(curATIncome)}</p>}
+                              {!isGrowCard && <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>}
                             </div>
                           </div>
                         </div>
                       );
                     };
 
-                    const renderSubCats = (opacity = 1) => {
-                      const subCats = [
-                        { label: "Real Estate",        value: reVal,   yieldStr: "~5%",  key: "Real Estate" },
-                        { label: "Alternative Assets", value: altVal,  yieldStr: "15%+", key: "Alternative Assets" },
-                        { label: "529 Plans",          value: plan529, yieldStr: "—",    key: "529 Plans" },
-                      ];
+                    const renderSubCats = () => {
+                      const totalOther = reVal + altVal + plan529;
+                      const hc = HERO_COLORS["Grow"] ?? { bg: "#4c1d95", accent: "#c084fc" };
                       return (
-                        <div className="flex flex-col gap-1.5" style={{ opacity }}>
-                          <div className="h-4 mb-0" />
-                          {subCats.map((cat) => {
-                            const hc = HERO_COLORS[cat.key];
-                            return (
-                              <div key={cat.key} className="rounded-lg px-3 py-2 flex items-center justify-between gap-2" style={{ background: hc.bg }}>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1 mb-0.5">
-                                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
-                                    <span className="text-[9px] font-black uppercase text-white/90 leading-none tracking-wide">{cat.label}</span>
-                                  </div>
-                                  <p className="text-sm font-black text-white tabular-nums leading-none">{fmtK(cat.value)}</p>
-                                </div>
-                                <p className="text-[9px] text-white/60 tabular-nums flex-shrink-0">{cat.yieldStr}</p>
-                              </div>
-                            );
-                          })}
+                        <div className="flex flex-col">
+                          <div className="h-5 mb-1" />
+                          <div className="rounded-xl p-4 flex-1" style={{ background: hc.bg }}>
+                            <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
+                              <span className="text-[11px] font-black uppercase text-white leading-tight truncate">Grow (Other)</span>
+                            </div>
+                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">Real estate · alternatives · 529 plans</p>
+                            <p className={`${fmtK(totalOther).length > 9 ? "text-sm" : fmtK(totalOther).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums mt-1`}>
+                              {fmtK(totalOther)}
+                            </p>
+                          </div>
                         </div>
                       );
                     };
