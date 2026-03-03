@@ -2884,6 +2884,7 @@ function BucketExecutionPanel({
   totalAssets,
   onExecute,
   onUndo,
+  monthsInputConfig,
 }: {
   bucketName: string;
   current: number;
@@ -2897,9 +2898,14 @@ function BucketExecutionPanel({
   totalAssets: number;
   onExecute?: (from: string, to: string, amount: number) => void;
   onUndo?: (from: string, to: string) => void;
+  monthsInputConfig?: { defaultMonths: number; monthlyUnit: number; label: string };
 }) {
-  const needsFunding = delta > 1000 && bucketName !== "Grow";
-  const isSurplus = delta < -1000;
+  const [months, setMonths] = useState(monthsInputConfig?.defaultMonths ?? 0);
+  const effTarget = monthsInputConfig ? monthsInputConfig.monthlyUnit * months : target;
+  const effDelta = effTarget - current;
+
+  const needsFunding = effDelta > 1000 && bucketName !== "Grow";
+  const isSurplus = effDelta < -1000;
   const isBalanced = !needsFunding && !isSurplus;
   const isGrow = bucketName === "Grow";
 
@@ -2926,7 +2932,7 @@ function BucketExecutionPanel({
     ? bucketName
     : (BUCKET_NAMES.find((n) => n !== bucketName) ?? "Reserve");
 
-  const suggested = Math.abs(delta);
+  const suggested = Math.abs(effDelta);
   const [rawAmt, setRawAmt] = useState(
     suggested > 0 ? String(Math.round(suggested)) : "",
   );
@@ -2944,28 +2950,54 @@ function BucketExecutionPanel({
   return (
     <div className="w-80 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
       <div className="flex-1 p-5 flex flex-col gap-4">
-        {/* Status + Δ vs Target */}
-        <div className="flex items-start justify-between">
+        {/* Status / Target Coverage */}
+        {monthsInputConfig ? (
           <div>
-            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
-              Status
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-2.5">
+              Target Coverage
             </p>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
-              <span className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>
-                {statusLabel}
+            <div className="flex items-center gap-3 bg-secondary/30 rounded-xl px-4 py-3 border border-border">
+              <button
+                onClick={() => setMonths((m) => Math.max(1, m - 1))}
+                className="w-7 h-7 rounded-full border border-border bg-background flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-secondary transition-colors select-none"
+              >−</button>
+              <div className="flex-1 text-center">
+                <span className="text-3xl font-black tabular-nums leading-none" style={{ color: bgColor }}>
+                  {months}
+                </span>
+                <span className="text-[10px] font-semibold text-muted-foreground ml-1.5 leading-none">
+                  {monthsInputConfig.label}
+                </span>
+              </div>
+              <button
+                onClick={() => setMonths((m) => m + 1)}
+                className="w-7 h-7 rounded-full border border-border bg-background flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-secondary transition-colors select-none"
+              >+</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
+                Status
+              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+                <span className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>
+                  {statusLabel}
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
+                Δ vs Target
+              </p>
+              <span className="text-xs font-black tabular-nums" style={{ color: statusColor }}>
+                {isBalanced ? "—" : (needsFunding ? "+" : "−") + fmtD(Math.abs(effDelta))}
               </span>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
-              Δ vs Target
-            </p>
-            <span className="text-xs font-black tabular-nums" style={{ color: statusColor }}>
-              {isBalanced ? "—" : (needsFunding ? "+" : "−") + fmtD(Math.abs(delta))}
-            </span>
-          </div>
-        </div>
+        )}
 
         {/* Current / Target row */}
         <div className="grid grid-cols-2 gap-2">
@@ -2982,7 +3014,7 @@ function BucketExecutionPanel({
             <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: bgColor }}>
               GURU Target
             </p>
-            <p className="text-sm font-black tabular-nums" style={{ color: bgColor }}>{fmtD(target)}</p>
+            <p className="text-sm font-black tabular-nums" style={{ color: bgColor }}>{fmtD(effTarget)}</p>
           </div>
         </div>
 
@@ -4458,6 +4490,13 @@ function GuruAllocationView({
                           totalAssets={totalAssets}
                           onExecute={handleExecute}
                           onUndo={handleUndo}
+                          monthsInputConfig={
+                            r.def.name === "Operating Cash"
+                              ? { defaultMonths: 2, monthlyUnit: r.target / 2, label: "mos. of expenses" }
+                              : r.def.name === "Reserve"
+                                ? { defaultMonths: 12, monthlyUnit: r.target / 12, label: "mos. of cash flow" }
+                                : undefined
+                          }
                         />
                       );
                     })()}
