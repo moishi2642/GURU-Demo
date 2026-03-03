@@ -3292,14 +3292,15 @@ type BucketProduct = {
   isGuru: boolean;
 };
 const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
+  // Operating Cash: bank checking = ordinary income (fed 35% + state 8% + city 4% = 47%) → keep 53%
   "Operating Cash": [
     {
       name: "Citizens Private Bank Checking",
       institution: "Citizens Bank",
       type: "High-Yield Checking",
       grossYield: "3.78%",
-      atYield: "2.38%",
-      pickup: "+3.67%",
+      atYield: "2.00%",
+      pickup: "+3.77%",
       isGuru: true,
     },
     {
@@ -3307,8 +3308,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "J.P. Morgan",
       type: "High-Yield Checking",
       grossYield: "3.50%",
-      atYield: "2.21%",
-      pickup: "+3.39%",
+      atYield: "1.86%",
+      pickup: "+3.49%",
       isGuru: false,
     },
     {
@@ -3316,8 +3317,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "BofA",
       type: "High-Yield Checking",
       grossYield: "2.85%",
-      atYield: "1.80%",
-      pickup: "+2.74%",
+      atYield: "1.51%",
+      pickup: "+2.84%",
       isGuru: false,
     },
     {
@@ -3325,8 +3326,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Citibank",
       type: "High-Yield Checking",
       grossYield: "3.00%",
-      atYield: "1.89%",
-      pickup: "+2.89%",
+      atYield: "1.59%",
+      pickup: "+2.99%",
       isGuru: false,
     },
     {
@@ -3334,18 +3335,19 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Wells Fargo",
       type: "High-Yield Checking",
       grossYield: "2.50%",
-      atYield: "1.58%",
-      pickup: "+2.39%",
+      atYield: "1.33%",
+      pickup: "+2.49%",
       isGuru: false,
     },
   ],
+  // Reserve: gov't treasury MMFs are state/city exempt (federal 35% only) → keep 65%
   Reserve: [
     {
       name: "JPMorgan 100% Treasuries MMF",
       institution: "J.P. Morgan",
       type: "Money Market Fund",
       grossYield: "4.30%",
-      atYield: "2.71%",
+      atYield: "2.80%",
       pickup: "+0.65%",
       isGuru: true,
     },
@@ -3354,7 +3356,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "BlackRock",
       type: "Money Market Fund",
       grossYield: "4.27%",
-      atYield: "2.69%",
+      atYield: "2.78%",
       pickup: "+0.62%",
       isGuru: false,
     },
@@ -3363,7 +3365,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Fidelity",
       type: "Money Market Fund",
       grossYield: "4.25%",
-      atYield: "2.68%",
+      atYield: "2.76%",
       pickup: "+0.60%",
       isGuru: false,
     },
@@ -3372,7 +3374,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Vanguard",
       type: "Money Market Fund",
       grossYield: "4.22%",
-      atYield: "2.66%",
+      atYield: "2.74%",
       pickup: "+0.57%",
       isGuru: false,
     },
@@ -3381,19 +3383,20 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Schwab",
       type: "Money Market Fund",
       grossYield: "4.18%",
-      atYield: "2.63%",
+      atYield: "2.72%",
       pickup: "+0.53%",
       isGuru: false,
     },
   ],
+  // Build: US Treasuries are state/city exempt (federal 35% only) → keep 65%
   Build: [
     {
       name: "US Treasuries 3–6 Month Ladder",
       institution: "US Treasury",
       type: "T-Bill Ladder",
       grossYield: "4.22%",
-      atYield: "2.66%",
-      pickup: "+0.27%",
+      atYield: "2.74%",
+      pickup: "+0.35%",
       isGuru: true,
     },
     {
@@ -3401,8 +3404,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "US Treasury",
       type: "Treasury Bill",
       grossYield: "4.28%",
-      atYield: "2.70%",
-      pickup: "+0.33%",
+      atYield: "2.78%",
+      pickup: "+0.39%",
       isGuru: false,
     },
     {
@@ -3410,8 +3413,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "US Treasury",
       type: "Treasury Bill",
       grossYield: "4.18%",
-      atYield: "2.63%",
-      pickup: "+0.23%",
+      atYield: "2.72%",
+      pickup: "+0.33%",
       isGuru: false,
     },
     {
@@ -3419,8 +3422,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "US Treasury",
       type: "Treasury Note",
       grossYield: "4.05%",
-      atYield: "2.55%",
-      pickup: "+0.10%",
+      atYield: "2.63%",
+      pickup: "+0.24%",
       isGuru: false,
     },
     {
@@ -3433,13 +3436,15 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: false,
     },
   ],
+  // Grow: equities/PE use long-term cap gains rate (fed 20% + state 8% + city 4% = 32%) → keep 68%
+  // Private credit is interest income (ordinary) → keep 53%
   Grow: [
     {
       name: "S&P 500 / Total Market ETF (VOO/VTI)",
       institution: "Vanguard",
       type: "Index ETF",
       grossYield: "[7.5%]",
-      atYield: "[5.3%]",
+      atYield: "[5.1%]",
       pickup: "Cap gains tax rate",
       isGuru: true,
     },
@@ -3448,7 +3453,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Vanguard",
       type: "Index ETF",
       grossYield: "[7.0%]",
-      atYield: "[4.9%]",
+      atYield: "[4.8%]",
       pickup: "Global diversification",
       isGuru: false,
     },
@@ -3457,7 +3462,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Advisor Sourced",
       type: "Private Equity",
       grossYield: "[15%+]",
-      atYield: "[10%+]",
+      atYield: "[10.2%+]",
       pickup: "Illiquidity premium",
       isGuru: false,
     },
@@ -3466,7 +3471,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Advisor Sourced",
       type: "Private Credit",
       grossYield: "[9.5%]",
-      atYield: "[6.0%]",
+      atYield: "[5.0%]",
       pickup: "+2–3% vs. liquid",
       isGuru: false,
     },
@@ -3475,7 +3480,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Advisor Sourced",
       type: "Real Assets",
       grossYield: "[8.5%]",
-      atYield: "[5.9%]",
+      atYield: "[5.8%]",
       pickup: "Inflation protection",
       isGuru: false,
     },
@@ -3664,10 +3669,14 @@ function GuruAllocationView({
         const toATMuni = (gross: string) => { const n = parseYieldNum(gross); return n > 0 ? `${n.toFixed(2)}%` : "—"; };
         // Equities / cap gains: 20% fed + 8% state + 4% city = 32% → keep 68%
         const toATCapG = (gross: string) => { const n = parseYieldNum(gross); return n > 0 ? `${(n * 0.68).toFixed(2)}%` : "—"; };
-        // Detect money-market / sweep / treasury funds (federal-only tax)
+        // Detect gov't treasury MMFs / sweeps (state+city exempt → federal only at 35%)
+        // Bank money market accounts (Citizens, BofA, etc.) are ordinary interest — fully taxed
         const isTreasuryMM = (desc: string | null) => {
           const d = (desc ?? "").toLowerCase();
-          return d.includes("money market") || d.includes("sweep") || d.includes("treasur") || d.includes("t-bill");
+          // Explicit treasury/sweep keywords — but exclude bank deposit money markets
+          if (d.includes("private bank") || d.includes("citizens") || d.includes("bank of america")) return false;
+          return d.includes("sweep") || d.includes("treasur") || d.includes("t-bill") ||
+            (d.includes("money market") && (d.includes("government") || d.includes("fidelity") || d.includes("vanguard") || d.includes("schwab") || d.includes("jpmorgan") || d.includes("blackrock")));
         };
 
         const reserveAccts: Acct[] = assets
@@ -3830,7 +3839,7 @@ function GuruAllocationView({
             reserveDelta,
             "2 months of core recurring expenses",
             reserveAccts,
-            2.38,
+            2.00, // Citizens Private Bank Checking: 3.78% × 53% (fed+state+city)
           ),
           mkRow(
             GURU_BUCKETS_DEF[1],
@@ -3839,7 +3848,7 @@ function GuruAllocationView({
             flowDelta,
             "12 months of total anticipated outflows",
             flowAccts,
-            2.71,
+            2.80, // JPMorgan 100% Treasuries MMF: 4.30% × 65% (federal only)
           ),
           mkRow(
             GURU_BUCKETS_DEF[2],
@@ -3848,7 +3857,7 @@ function GuruAllocationView({
             0,
             "Maintain short-term reserve position",
             buildAccts,
-            2.66,
+            2.74, // US Treasuries 3–6 Month Ladder: 4.22% × 65% (federal only)
           ),
           mkRow(
             GURU_BUCKETS_DEF[3],
@@ -3857,7 +3866,7 @@ function GuruAllocationView({
             growDelta,
             "Remaining assets — long-term compounding",
             growAccts,
-            5.3,
+            5.10, // S&P 500 / Total Market ETF: 7.5% × 68% (cap gains: fed+state+city)
           ),
         ];
 
