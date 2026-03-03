@@ -5074,22 +5074,50 @@ export default function ClientDashboard() {
                 </div>
               </div>
 
-              {/* 2 · Portfolio Rebalance */}
+              {/* 2 · Portfolio Rebalance — Concentration Flags */}
               <div className="px-4 py-4 flex flex-col gap-0.5">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <RefreshCw className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                  <p className="text-[9px] uppercase tracking-widest font-bold text-blue-700">Portfolio Rebalance</p>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                    <p className="text-[9px] uppercase tracking-widest font-bold text-blue-700">Portfolio Rebalance</p>
+                  </div>
+                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">3 flags</span>
                 </div>
-                <p className={`text-2xl font-black tabular-nums leading-tight ${_liquidDelta > 0 ? "text-amber-600" : "text-blue-700"}`}>
-                  {_liquidDelta > 0 ? "+" : ""}{fmt(Math.abs(_liquidDelta), true)}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                  {_liquidDelta > 0
-                    ? "Excess liquidity vs GURU target — opportunity to redeploy into Grow"
-                    : "Liquidity below GURU target — review reserve coverage"}
-                </p>
-                <div className="mt-1.5 text-[9px] text-muted-foreground">
-                  <span>Liquid: {fmt(_liquidHero, true)} · Target: {fmt(_liquidTarget, true)}</span>
+                <div className="flex flex-col gap-2 mt-1">
+                  {[
+                    {
+                      icon: TrendingUp,
+                      color: "text-violet-600",
+                      bg: "bg-violet-50",
+                      border: "border-violet-200",
+                      title: "Increase US Large Cap",
+                      detail: "Grow allocation underweight domestic large cap equity for long-term appreciation",
+                    },
+                    {
+                      icon: AlertTriangle,
+                      color: "text-amber-600",
+                      bg: "bg-amber-50",
+                      border: "border-amber-200",
+                      title: "Financial Services Concentration",
+                      detail: "BAC single-stock position creates outsized sector risk — consider diversifying",
+                    },
+                    {
+                      icon: Activity,
+                      color: "text-blue-600",
+                      bg: "bg-blue-50",
+                      border: "border-blue-200",
+                      title: "Add Bonds & Commodities",
+                      detail: "No fixed income or commodity exposure — reduces volatility and inflation hedge",
+                    },
+                  ].map(({ icon: Icon, color, bg, border, title, detail }) => (
+                    <div key={title} className={`rounded-md border ${border} ${bg} px-2.5 py-1.5`}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <Icon className={`w-3 h-3 flex-shrink-0 ${color}`} />
+                        <p className={`text-[9px] font-black uppercase tracking-wide ${color}`}>{title}</p>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground leading-snug">{detail}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
