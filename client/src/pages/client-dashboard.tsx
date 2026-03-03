@@ -2930,26 +2930,20 @@ function BucketExecutionPanel({
   const targetPct = Math.min((target / maxBar) * 100, 100);
   const portfolioPct = totalAssets > 0 ? (current / totalAssets) * 100 : 0;
   const deltaAbs = Math.abs(delta);
-  const deltaSign = needsFunding ? "+" : "−";
 
   return (
     <div className="w-72 flex-shrink-0 border-l border-r border-slate-600 bg-slate-700 flex flex-col p-5 gap-4">
-      {/* Section label */}
       <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400">
         GURU Analysis
       </p>
 
-      {/* Animated bars: Current vs GURU Target */}
+      {/* Animated bars */}
       <div className="space-y-3">
         {/* Current bar */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
-              Current
-            </span>
-            <span className="text-[11px] font-black text-white tabular-nums">
-              {fmtD(current)}
-            </span>
+            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Current</span>
+            <span className="text-[11px] font-black text-white tabular-nums">{fmtD(current)}</span>
           </div>
           <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
             <motion.div
@@ -2962,44 +2956,26 @@ function BucketExecutionPanel({
         </div>
 
         {/* Delta badge */}
-        {!isBalanced && (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-slate-600" />
-            <span
-              className="text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
-              style={{ background: statusColor + "25", color: statusColor }}
-            >
-              {deltaSign}{fmtD(deltaAbs)} to rebalance
-            </span>
-            <div className="flex-1 h-px bg-slate-600" />
-          </div>
-        )}
-        {isBalanced && (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-slate-600" />
-            <span
-              className="text-[9px] font-black px-2 py-0.5 rounded-full"
-              style={{ background: statusColor + "25", color: statusColor }}
-            >
-              ✓ On target
-            </span>
-            <div className="flex-1 h-px bg-slate-600" />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-px bg-slate-600" />
+          <span
+            className="text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
+            style={{ background: statusColor + "25", color: statusColor }}
+          >
+            {isBalanced
+              ? "✓ On target"
+              : `${needsFunding ? "+" : "−"}${fmtD(deltaAbs)} to rebalance`}
+          </span>
+          <div className="flex-1 h-px bg-slate-600" />
+        </div>
 
         {/* GURU Target bar */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <span
-              className="text-[9px] uppercase tracking-wider font-semibold"
-              style={{ color: bgColor }}
-            >
+            <span className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: bgColor }}>
               GURU Target
             </span>
-            <span
-              className="text-[11px] font-black tabular-nums"
-              style={{ color: bgColor }}
-            >
+            <span className="text-[11px] font-black tabular-nums" style={{ color: bgColor }}>
               {fmtD(target)}
             </span>
           </div>
@@ -3015,15 +2991,11 @@ function BucketExecutionPanel({
         </div>
       </div>
 
-      {/* Portfolio weight progress bar */}
+      {/* Portfolio weight bar */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
-          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">
-            Portfolio Weight
-          </span>
-          <span className="text-[9px] font-bold text-slate-300 tabular-nums">
-            {portfolioPct.toFixed(1)}%
-          </span>
+          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Portfolio Weight</span>
+          <span className="text-[9px] font-bold text-slate-300 tabular-nums">{portfolioPct.toFixed(1)}%</span>
         </div>
         <div className="h-1.5 bg-slate-600 rounded-full overflow-hidden">
           <motion.div
@@ -3039,58 +3011,32 @@ function BucketExecutionPanel({
       {/* 2×2 metrics grid */}
       <div className="grid grid-cols-2 gap-2 mt-auto">
         <div className="bg-slate-800 rounded-lg px-3 py-2.5">
-          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">
-            Status
-          </p>
+          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">Status</p>
           <div className="flex items-center gap-1">
-            <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: statusColor }}
-            />
-            <span
-              className="text-[9px] font-black leading-tight truncate"
-              style={{ color: statusColor }}
-            >
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+            <span className="text-[9px] font-black leading-tight truncate" style={{ color: statusColor }}>
               {statusLabel === "OPPORTUNITY TO INCREASE" ? "OPPORTUNITY" : statusLabel}
             </span>
           </div>
         </div>
 
         <div className="bg-slate-800 rounded-lg px-3 py-2.5">
-          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">
-            Priority
-          </p>
-          <span
-            className="text-[10px] font-black"
-            style={{ color: priorityColor }}
-          >
-            {priorityLabel}
-          </span>
+          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">Priority</p>
+          <span className="text-[10px] font-black" style={{ color: priorityColor }}>{priorityLabel}</span>
         </div>
 
         <div className="bg-slate-800 rounded-lg px-3 py-2.5">
-          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">
-            Cur. Yield AT
-          </p>
+          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">Cur. Yield AT</p>
           <span className="text-[10px] font-black text-white tabular-nums">
             {avgYieldAT > 0 ? `${avgYieldAT.toFixed(2)}%` : "—"}
           </span>
         </div>
 
         <div className="bg-slate-800 rounded-lg px-3 py-2.5">
-          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">
-            GURU Pickup
-          </p>
+          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">GURU Pickup</p>
           <span
             className="text-[10px] font-black tabular-nums"
-            style={{
-              color:
-                bpPickup > 0
-                  ? "#10b981"
-                  : bpPickup < 0
-                    ? "#f43f5e"
-                    : "#94a3b8",
-            }}
+            style={{ color: bpPickup > 0 ? "#10b981" : bpPickup < 0 ? "#f43f5e" : "#94a3b8" }}
           >
             {bpPickup !== 0 && !isNaN(bpPickup)
               ? `${bpPickup > 0 ? "+" : ""}${bpPickup.toFixed(0)} bps`
