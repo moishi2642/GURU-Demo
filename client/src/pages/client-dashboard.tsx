@@ -3009,12 +3009,12 @@ function BucketExecutionPanel({
           </div>
           <div
             className="rounded-lg border px-3 py-2"
-            style={{ borderColor: bgColor + "40", background: bgColor + "10" }}
+            style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}
           >
-            <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: bgColor }}>
+            <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: "#b45309" }}>
               GURU Target
             </p>
-            <p className="text-sm font-black tabular-nums" style={{ color: bgColor }}>{fmtD(effTarget)}</p>
+            <p className="text-sm font-black tabular-nums" style={{ color: "#92400e" }}>{fmtD(effTarget)}</p>
           </div>
         </div>
 
@@ -3567,6 +3567,8 @@ function GuruAllocationView({
     Record<string, Array<{ product: BucketProduct; alloc: number }>>
   >({});
 
+  const [dragItem, setDragItem] = useState<string | null>(null);
+
   function handleExecute(from: string, to: string, amount: number) {
     setPendingTransfers((prev) => {
       const filtered = prev.filter((t) => !(t.from === from && t.to === to));
@@ -4034,18 +4036,32 @@ function GuruAllocationView({
                         r.current,
                       );
                       const isOverfund = r.delta < -5000;
+                      const isDragTarget = dragItem && dragItem !== r.def.name;
                       return (
                         <div key={r.def.name} className="flex flex-col">
-                          <div className="text-center mb-1 h-4">
+                          <div className="mb-1 h-5 flex items-center justify-center">
                             {isOverfund && (
-                              <span className="text-[8px] font-black uppercase tracking-widest text-rose-500 animate-pulse">
-                                ⚠ OVERFUNDED
-                              </span>
+                              <div
+                                draggable
+                                onDragStart={() => setDragItem(r.def.name)}
+                                onDragEnd={() => setDragItem(null)}
+                                className="flex items-center gap-1 cursor-grab active:cursor-grabbing px-2 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-700 text-[8px] font-black uppercase tracking-widest select-none"
+                                title="Drag to redeploy surplus into another bucket"
+                              >
+                                <span className="opacity-60">⠿</span>
+                                <span>{fmtK(Math.abs(r.delta))} surplus</span>
+                              </div>
                             )}
                           </div>
                           <div
-                            className="rounded-xl p-4 flex-1"
+                            className={`rounded-xl p-4 flex-1 transition-all duration-150 ${isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
                             style={{ background: hc.bg }}
+                            onDragOver={isDragTarget ? (e) => e.preventDefault() : undefined}
+                            onDrop={isDragTarget ? (e) => {
+                              e.preventDefault();
+                              setDragItem(null);
+                              document.getElementById(`guru-bucket-${r.def.name.toLowerCase().replace(/\s+/g, '-')}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                            } : undefined}
                           >
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
                               <span
@@ -4260,6 +4276,7 @@ function GuruAllocationView({
                 return (
                   <div
                     key={r.def.name}
+                    id={`guru-bucket-${r.def.name.toLowerCase().replace(/\s+/g, '-')}`}
                     className="rounded-xl overflow-hidden flex shadow-sm border border-border"
                   >
                     {/* ── LEFT: Header + Accounts ── */}
