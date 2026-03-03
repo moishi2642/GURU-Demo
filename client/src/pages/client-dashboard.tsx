@@ -4829,6 +4829,8 @@ export default function ClientDashboard() {
     yieldBucket: yieldTop,
     tactical: tacticalTop,
     totalLiquid: totalLiquidTop,
+    reserveItems: reserveItemsTop,
+    yieldItems: yieldItemsTop,
   } = cashBuckets(assets);
   const cashTroughTop = computeTrough(_forecastData);
   const cashExcessTop = totalLiquidTop - cashTroughTop; // liquid surplus / deficit
@@ -4848,6 +4850,18 @@ export default function ClientDashboard() {
   const totalToInvestTop = Math.round(
     brokerageCashTop + Math.max(0, cashExcessTop),
   );
+
+  // Cash where it sits — for hero card 1 line items
+  const _brokerageCashItems = assets
+    .filter((a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"))
+    .map((a) => ({
+      label: (a.description ?? "").split("—")[0].split("(")[0].trim(),
+      value: Number(a.value),
+      tag: "Brokerage" as const,
+    }));
+  const _checkingItems = reserveItemsTop.map((i) => ({ ...i, tag: "Operating Cash" as const }));
+  const _savingsItems = yieldItemsTop.map((i) => ({ ...i, tag: "Savings / MM" as const }));
+  const _cashWhereItSits = [..._checkingItems, ..._savingsItems, ..._brokerageCashItems];
 
   // Next month's net cash flow
   const _nextMonthDate = addMonths(new Date(), 1);
@@ -5048,13 +5062,15 @@ export default function ClientDashboard() {
                   {fmt(totalToInvestTop, true)}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                  Idle brokerage cash + liquid surplus above GURU target
+                  Available to deploy — where it sits:
                 </p>
-                <div className="mt-1.5 flex gap-3 text-[9px] text-muted-foreground">
-                  <span>A: {fmt(brokerageCashTop, true)}</span>
-                  <span className={cashExcessTop >= 0 ? "text-emerald-600 font-semibold" : "text-rose-600 font-semibold"}>
-                    B: {cashExcessTop >= 0 ? "+" : ""}{fmt(cashExcessTop, true)}
-                  </span>
+                <div className="mt-1.5 flex flex-col gap-0.5">
+                  {_cashWhereItSits.map((item) => (
+                    <div key={item.label} className="flex items-baseline justify-between gap-2">
+                      <span className="text-[9px] text-muted-foreground truncate">{item.label}</span>
+                      <span className="text-[9px] font-bold tabular-nums text-foreground flex-shrink-0">{fmt(item.value, true)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
