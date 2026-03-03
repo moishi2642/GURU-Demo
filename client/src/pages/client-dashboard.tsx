@@ -3469,7 +3469,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: false,
     },
   ],
-  // Grow: equities/PE use long-term cap gains rate (fed 20% + state 8% + city 4% = 32%) → keep 68%
+  // Grow: equities/PE use federal cap gains only (20%) → keep 80%
   // Private credit is interest income (ordinary) → keep 53%
   Grow: [
     {
@@ -3477,8 +3477,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Vanguard",
       type: "Index ETF",
       grossYield: "[7.5%]",
-      atYield: "[5.1%]",
-      pickup: "Cap gains tax rate",
+      atYield: "[6.0%]",
+      pickup: "20% fed cap gains",
       isGuru: true,
     },
     {
@@ -3486,7 +3486,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Vanguard",
       type: "Index ETF",
       grossYield: "[7.0%]",
-      atYield: "[4.8%]",
+      atYield: "[5.6%]",
       pickup: "Global diversification",
       isGuru: false,
     },
@@ -3495,7 +3495,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Advisor Sourced",
       type: "Private Equity",
       grossYield: "[15%+]",
-      atYield: "[10.2%+]",
+      atYield: "[12.0%+]",
       pickup: "Illiquidity premium",
       isGuru: false,
     },
@@ -3513,7 +3513,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       institution: "Advisor Sourced",
       type: "Real Assets",
       grossYield: "[8.5%]",
-      atYield: "[5.8%]",
+      atYield: "[6.8%]",
       pickup: "Inflation protection",
       isGuru: false,
     },
@@ -3773,14 +3773,16 @@ function GuruAllocationView({
         const altVal = altValEarly;
         const reVal = reValEarly;
         // Grow sub-accounts: detailed breakdown per prototype model
+        // Equities use 20% federal cap gains only → keep 80%
+        const toATGrow = (gross: string) => { const n = parseYieldNum(gross); return n > 0 ? `${(n * 0.80).toFixed(2)}%` : "—"; };
         const growAccts: Acct[] = [
           { name: "Cash — Brokerage Sweep",     value: 222965, yield_: "4.30%", yieldAT: toATFed("4.30%") },
-          { name: "International",               value: 244685, yield_: "~7.0%", yieldAT: toATCapG("7.0%") },
-          { name: "US Total Market",             value: 779878, yield_: "~7.5%", yieldAT: toATCapG("7.5%") },
-          { name: "US Large Cap",                value: 535000, yield_: "~7.5%", yieldAT: toATCapG("7.5%") },
-          { name: "US Small Cap",                value: 323582, yield_: "~8.0%", yieldAT: toATCapG("8.0%") },
-          { name: "US Dividend / Value",         value: 94369,  yield_: "~6.0%", yieldAT: toATCapG("6.0%") },
-          { name: "Single Stock",                value: 238311, yield_: "~7.0%", yieldAT: toATCapG("7.0%") },
+          { name: "International",               value: 244685, yield_: "~7.0%", yieldAT: toATGrow("7.0%") },
+          { name: "US Total Market",             value: 779878, yield_: "~7.5%", yieldAT: toATGrow("7.5%") },
+          { name: "US Large Cap",                value: 535000, yield_: "~7.5%", yieldAT: toATGrow("7.5%") },
+          { name: "US Small Cap",                value: 323582, yield_: "~8.0%", yieldAT: toATGrow("8.0%") },
+          { name: "US Dividend / Value",         value: 94369,  yield_: "~6.0%", yieldAT: toATGrow("6.0%") },
+          { name: "Single Stock",                value: 238311, yield_: "~7.0%", yieldAT: toATGrow("7.0%") },
           { name: "Bonds",                       value: 61210,  yield_: "~4.0%", yieldAT: toATFed("4.0%") },
           { name: "Crypto",                      value: 9500,   yield_: "—",     yieldAT: "—" },
         ];
@@ -3889,7 +3891,7 @@ function GuruAllocationView({
             growDelta,
             "Remaining assets — long-term compounding",
             growAccts,
-            5.10, // S&P 500 / Total Market ETF: 7.5% × 68% (cap gains: fed+state+city)
+            6.00, // S&P 500 / Total Market ETF: 7.5% × 80% (fed cap gains 20% only)
           ),
         ];
 
