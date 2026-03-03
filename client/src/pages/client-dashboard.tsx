@@ -3292,52 +3292,34 @@ type BucketProduct = {
   isGuru: boolean;
 };
 const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
-  // Operating Cash: bank checking = ordinary income (fed 35% + state 8% + city 4% = 47%) → keep 53%
+  // Operating Cash: bank checking/MM = ordinary income (fed 35% + state 8% + city 4% = 47%) → keep 53%
   "Operating Cash": [
     {
-      name: "Citizens Private Bank Checking",
+      name: "Citizens Private Checking",
       institution: "Citizens Bank",
+      type: "Checking",
+      grossYield: "0.01%",
+      atYield: "0.01%",
+      pickup: "—",
+      isGuru: false,
+    },
+    {
+      name: "SoFi Checking",
+      institution: "SoFi",
       type: "High-Yield Checking",
-      grossYield: "3.78%",
-      atYield: "2.00%",
-      pickup: "+3.77%",
+      grossYield: "0.50%",
+      atYield: "0.27%",
+      pickup: "+0.49%",
+      isGuru: false,
+    },
+    {
+      name: "CIT Money Market Fund",
+      institution: "CIT Bank",
+      type: "Money Market",
+      grossYield: "4.30%",
+      atYield: "2.28%",
+      pickup: "+4.29%",
       isGuru: true,
-    },
-    {
-      name: "JPMorgan Private Client Checking",
-      institution: "J.P. Morgan",
-      type: "High-Yield Checking",
-      grossYield: "3.50%",
-      atYield: "1.86%",
-      pickup: "+3.49%",
-      isGuru: false,
-    },
-    {
-      name: "Bank of America Private Checking",
-      institution: "BofA",
-      type: "High-Yield Checking",
-      grossYield: "2.85%",
-      atYield: "1.51%",
-      pickup: "+2.84%",
-      isGuru: false,
-    },
-    {
-      name: "Citi Priority Checking",
-      institution: "Citibank",
-      type: "High-Yield Checking",
-      grossYield: "3.00%",
-      atYield: "1.59%",
-      pickup: "+2.99%",
-      isGuru: false,
-    },
-    {
-      name: "Wells Fargo Premier Checking",
-      institution: "Wells Fargo",
-      type: "High-Yield Checking",
-      grossYield: "2.50%",
-      atYield: "1.33%",
-      pickup: "+2.49%",
-      isGuru: false,
     },
   ],
   // Reserve: gov't treasury MMFs are state/city exempt (federal 35% only) → keep 65%
@@ -3839,7 +3821,7 @@ function GuruAllocationView({
             reserveDelta,
             "2 months of core recurring expenses",
             reserveAccts,
-            2.00, // Citizens Private Bank Checking: 3.78% × 53% (fed+state+city)
+            2.28, // CIT Money Market Fund: 4.30% × 53% (bank MM, ordinary income)
           ),
           mkRow(
             GURU_BUCKETS_DEF[1],
