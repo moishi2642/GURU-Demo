@@ -4666,41 +4666,6 @@ function GuruAllocationView({
               );
             })()}
 
-            {/* Totals summary strip */}
-            <div className="rounded-xl bg-slate-900 px-5 py-3.5 grid grid-cols-4 gap-4 text-white">
-              <div>
-                <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-0.5">
-                  Total Assets
-                </p>
-                <p className="font-bold text-base tabular-nums">
-                  {fmt(totalAssets)}
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-0.5">
-                  GURU Total
-                </p>
-                <p className="font-bold text-base tabular-nums">
-                  {fmt(rows.reduce((s, r) => s + r.target, 0))}
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-0.5">
-                  Net Redeployment
-                </p>
-                <p className="font-bold text-base tabular-nums text-cyan-400">
-                  {excessCash > 0 ? `${fmt(excessCash)} → Grow` : "Balanced"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[9px] uppercase tracking-widest text-slate-400 mb-0.5">
-                  Balance Check
-                </p>
-                <p className="font-bold text-base text-emerald-400">
-                  ✓ Zero Net Change
-                </p>
-              </div>
-            </div>
           </div>
         );
       })()}
