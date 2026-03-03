@@ -3046,36 +3046,37 @@ function BucketExecutionPanel({
 
         {/* Transfer amount input */}
         {!executed && (
-          <div>
+          <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}>
             <div className="flex items-center justify-between mb-1.5">
-              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
+              <p className="text-[9px] uppercase tracking-widest font-bold" style={{ color: "#b45309" }}>
                 Transfer Amount
               </p>
               {suggested > 0 && (
                 <button
                   onClick={() => { setRawAmt(String(Math.round(suggested))); setExecuted(false); }}
                   className="text-[9px] font-semibold underline underline-offset-2 tabular-nums"
-                  style={{ color: bgColor }}
+                  style={{ color: "#b45309" }}
                 >
                   Use {fmtD(suggested)}
                 </button>
               )}
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold" style={{ color: "#92400e" }}>$</span>
               <input
                 type="text"
                 inputMode="numeric"
                 value={fmtInput(rawAmt)}
                 onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
                 placeholder="0"
-                className="w-full pl-6 pr-3 py-2 text-sm font-semibold tabular-nums rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2"
+                className="w-full pl-6 pr-3 py-2 text-sm font-bold tabular-nums rounded-lg border focus:outline-none focus:ring-2"
+                style={{ borderColor: "#f59e0b99", background: "#fff9eb", color: "#92400e" }}
               />
             </div>
             {parsedAmt > 0 && (
-              <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
+              <p className="text-[9px] tabular-nums mt-1.5" style={{ color: "#b45309" }}>
                 New balance:{" "}
-                <span className="font-semibold text-foreground">
+                <span className="font-black">
                   {fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}
                 </span>
               </p>
@@ -3085,17 +3086,20 @@ function BucketExecutionPanel({
 
         {/* Routing */}
         {!executed && (
-          <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Route</p>
+          <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}>
+            <p className="text-[9px] uppercase tracking-wider font-bold mb-2" style={{ color: "#b45309" }}>Route</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">From</p>
+                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold" style={{ color: "#b45309" }}>From</p>
                 <select
                   value={fromAccount}
                   onChange={(e) => { setFromAccount(e.target.value); setExecuted(false); }}
-                  className="w-full text-[11px] font-semibold text-foreground bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
                   style={{
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                    color: "#92400e",
+                    border: "1px solid #f59e0b99",
+                    backgroundColor: "#fff9eb",
+                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "right 6px center",
                     paddingRight: "22px",
@@ -3104,17 +3108,18 @@ function BucketExecutionPanel({
                   {BUCKET_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
-              <span className="text-muted-foreground flex-shrink-0 mt-4 text-sm">→</span>
+              <span className="flex-shrink-0 mt-4 text-sm font-bold" style={{ color: "#b45309" }}>→</span>
               <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">To</p>
+                <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold" style={{ color: "#b45309" }}>To</p>
                 <select
                   value={toAccount}
                   onChange={(e) => { setToAccount(e.target.value); setExecuted(false); }}
-                  className="w-full text-[11px] font-semibold bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                  className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
                   style={{
-                    color: bgColor,
-                    borderColor: bgColor + "60",
-                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                    color: "#92400e",
+                    border: "1px solid #f59e0b99",
+                    backgroundColor: "#fff9eb",
+                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
                     backgroundRepeat: "no-repeat",
                     backgroundPosition: "right 6px center",
                     paddingRight: "22px",
