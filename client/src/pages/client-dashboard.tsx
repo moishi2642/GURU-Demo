@@ -4132,137 +4132,84 @@ function GuruAllocationView({
                       </div>
                     );
                   })()}
-                  {/* ── Org-chart flow lines (preserved, disabled) ── */}
+                  {/* ── Org-chart flow lines — appear only when transfers are pending ── */}
                   {(() => {
-                    return null;
+                    if (pendingTransfers.length === 0) return null;
                     const H = 72;
                     const dropY = 36;
-                    const surplusRows = rows.filter((r) => r.delta < -5000);
-                    const needRows = rows.filter(
-                      (r) => r.delta > 5000 || r.def.name === "Build",
-                    );
-                    if (surplusRows.length === 0 || needRows.length === 0)
-                      return null;
-                    let dotIdx = 0;
+                    const BUCKET_ORDER = ["Operating Cash", "Reserve", "Build", "Grow"] as const;
+                    const bucketPct = (name: string) => {
+                      const idx = BUCKET_ORDER.indexOf(name as typeof BUCKET_ORDER[number]);
+                      if (idx === -1) return null;
+                      return ((idx + 0.5) / 5) * 100;
+                    };
                     return (
                       <div className="relative mt-1 mb-1" style={{ height: H }}>
-                        {/* Vertical drop line + dollar label for every surplus source */}
-                        {surplusRows.map((src) => {
-                          const srcIdx = rows.indexOf(src);
-                          const srcPct =
-                            ((srcIdx + 0.5) / (rows.length + 1)) * 100;
-                          const srcColor =
-                            HERO_COLORS[src.def.name]?.bg ?? "#64748b";
-                          const fmtFull = (v: number) =>
-                            `$${Math.round(v).toLocaleString()}`;
+                        {pendingTransfers.map((pt, di) => {
+                          const srcPct = bucketPct(pt.from);
+                          const tgtPct = bucketPct(pt.to);
+                          if (srcPct === null || tgtPct === null) return null;
+                          const srcRow = rows.find((r) => r.def.name === pt.from);
+                          const tgtRow = rows.find((r) => r.def.name === pt.to);
+                          const srcColor = srcRow?.def.bg ?? "#64748b";
+                          const tgtColor = tgtRow?.def.bg ?? "#64748b";
+                          const leftPct = Math.min(srcPct, tgtPct);
+                          const wPct = Math.abs(srcPct - tgtPct);
+                          const fmtAmt = `$${Math.round(pt.amount).toLocaleString()}`;
                           return (
-                            <div key={`drop-${src.def.name}`}>
-                              <div
-                                className="absolute rounded-full"
+                            <div key={`${pt.from}->${pt.to}`}>
+                              {/* Vertical drop from source */}
+                              <div className="absolute rounded-full" style={{
+                                left: `${srcPct}%`, top: 0,
+                                width: 2, height: dropY,
+                                background: srcColor,
+                                transform: "translateX(-50%)",
+                                opacity: 0.6,
+                              }} />
+                              {/* Amount label beside drop line */}
+                              <div className="absolute text-[9px] font-black tabular-nums bg-white/90 rounded px-1 leading-tight whitespace-nowrap" style={{
+                                left: `calc(${srcPct}% + 6px)`,
+                                top: Math.floor(dropY / 2) - 6,
+                                color: srcColor,
+                              }}>
+                                {fmtAmt}
+                              </div>
+                              {/* Horizontal connector */}
+                              <div className="absolute" style={{
+                                left: `${leftPct}%`, top: dropY,
+                                width: `${wPct}%`, height: 2,
+                                background: `linear-gradient(to ${srcPct < tgtPct ? "right" : "left"}, ${srcColor}80, ${tgtColor}80)`,
+                              }} />
+                              {/* Vertical rise to target */}
+                              <div className="absolute rounded-full" style={{
+                                left: `${tgtPct}%`, top: dropY - 28,
+                                width: 2, height: 28,
+                                background: tgtColor,
+                                transform: "translateX(-50%)",
+                                opacity: 0.6,
+                              }} />
+                              {/* Animated dot traveling from → to */}
+                              <motion.div
+                                className="absolute rounded-full z-10 shadow"
                                 style={{
-                                  left: `${srcPct}%`,
-                                  top: 0,
-                                  width: 2,
-                                  height: dropY,
+                                  width: 9, height: 9,
                                   background: srcColor,
-                                  transform: "translateX(-50%)",
-                                  opacity: 0.6,
+                                  marginLeft: -4, marginTop: -4,
+                                }}
+                                animate={{
+                                  left: [`${srcPct}%`, `${srcPct}%`, `${tgtPct}%`, `${tgtPct}%`],
+                                  top: [0, dropY, dropY, dropY - 28],
+                                }}
+                                transition={{
+                                  duration: 2.8,
+                                  delay: di * 0.8,
+                                  repeat: Infinity,
+                                  ease: "easeInOut",
+                                  times: [0, 0.35, 0.65, 1],
                                 }}
                               />
-                              <div
-                                className="absolute text-[9px] font-black tabular-nums bg-white/90 rounded px-1 leading-tight whitespace-nowrap"
-                                style={{
-                                  left: `calc(${srcPct}% + 6px)`,
-                                  top: Math.floor(dropY / 2) - 6,
-                                  color: srcColor,
-                                }}
-                              >
-                                {fmtFull(Math.abs(src.delta))}
-                              </div>
                             </div>
                           );
-                        })}
-                        {/* Connectors: each surplus → each need */}
-                        {surplusRows.flatMap((src, connIdx) => {
-                          const srcIdx = rows.indexOf(src);
-                          const srcPct =
-                            ((srcIdx + 0.5) / (rows.length + 1)) * 100;
-                          const srcColor =
-                            HERO_COLORS[src.def.name]?.bg ?? "#64748b";
-                          return needRows.map((need, needIdx) => {
-                            const tgtIdx = rows.indexOf(need);
-                            const tgtPct =
-                              ((tgtIdx + 0.5) / (rows.length + 1)) * 100;
-                            const leftPct = Math.min(srcPct, tgtPct);
-                            const wPct = Math.abs(srcPct - tgtPct);
-                            const tgtColor =
-                              HERO_COLORS[need.def.name]?.bg ?? "#64748b";
-                            const midPct = (srcPct + tgtPct) / 2;
-                            const labelIdx =
-                              connIdx * needRows.length + needIdx;
-                            const labelTop = dropY + 6 + labelIdx * 14;
-                            const amount =
-                              need.def.name === "Build"
-                                ? Math.abs(src.delta)
-                                : Math.abs(need.delta);
-                            const fmtAmt = `$${Math.round(amount).toLocaleString()}`;
-                            const di = dotIdx++;
-                            return (
-                              <div key={`${src.def.name}->${need.def.name}`}>
-                                {/* Horizontal connector */}
-                                <div
-                                  className="absolute"
-                                  style={{
-                                    left: `${leftPct}%`,
-                                    top: dropY,
-                                    width: `${wPct}%`,
-                                    height: 2,
-                                    background: `linear-gradient(to ${srcPct < tgtPct ? "right" : "left"}, ${srcColor}80, ${tgtColor}80)`,
-                                  }}
-                                />
-                                {/* Vertical rise to target */}
-                                <div
-                                  className="absolute rounded-full"
-                                  style={{
-                                    left: `${tgtPct}%`,
-                                    top: dropY - 28,
-                                    width: 2,
-                                    height: 28,
-                                    background: tgtColor,
-                                    transform: "translateX(-50%)",
-                                    opacity: 0.6,
-                                  }}
-                                />
-                                {/* Animated dot */}
-                                <motion.div
-                                  className="absolute rounded-full z-10 shadow"
-                                  style={{
-                                    width: 9,
-                                    height: 9,
-                                    background: srcColor,
-                                    marginLeft: -4,
-                                    marginTop: -4,
-                                  }}
-                                  animate={{
-                                    left: [
-                                      `${srcPct}%`,
-                                      `${srcPct}%`,
-                                      `${tgtPct}%`,
-                                      `${tgtPct}%`,
-                                    ],
-                                    top: [0, dropY, dropY, dropY - 28],
-                                  }}
-                                  transition={{
-                                    duration: 2.8,
-                                    delay: di * 0.8,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                    times: [0, 0.35, 0.65, 1],
-                                  }}
-                                />
-                              </div>
-                            );
-                          });
                         })}
                       </div>
                     );
