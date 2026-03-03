@@ -832,47 +832,25 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           })()}
         </div>
       </div>
-      {/* ── Monthly cash flow table ── */}
+      {/* ── Monthly net cash flow — single aligned row ── */}
       <div className="px-3 pt-2 pb-1">
-        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1.5 px-1">Monthly Cash Flow</p>
-        <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-[10px]">
-            <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                <th className="text-left px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Month</th>
-                <th className="text-right px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Inflows</th>
-                <th className="text-right px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Outflows</th>
-                <th className="text-right px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Net</th>
-                <th className="text-right px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Cumulative</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((d, i) => {
-                const isEven = i % 2 === 0;
-                const isTrough = hasTrough && d.month === troughMonth;
-                return (
-                  <tr
-                    key={d.month}
-                    className={`border-b border-border/50 last:border-0 ${isTrough ? "bg-rose-50 dark:bg-rose-950/30" : isEven ? "bg-background" : "bg-muted/20"}`}
-                  >
-                    <td className="px-2.5 py-1.5 font-semibold text-foreground flex items-center gap-1.5">
-                      {isTrough && <span className="text-rose-500 text-[8px] font-black">▼</span>}
-                      {d.month}
-                      {isTrough && <span className="text-[8px] text-rose-500 font-black">TROUGH</span>}
-                    </td>
-                    <td className="px-2.5 py-1.5 text-right tabular-nums text-emerald-600 font-medium">{fmtK(d.inflow ?? 0)}</td>
-                    <td className="px-2.5 py-1.5 text-right tabular-nums text-rose-600 font-medium">{fmtK(d.outflow ?? 0)}</td>
-                    <td className={`px-2.5 py-1.5 text-right tabular-nums font-bold ${d.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                      {d.net >= 0 ? "+" : ""}{fmtK(d.net)}
-                    </td>
-                    <td className={`px-2.5 py-1.5 text-right tabular-nums font-semibold ${d.cumulative >= 0 ? "text-foreground" : "text-rose-600"}`}>
-                      {d.cumulative >= 0 ? "" : ""}{fmtK(d.cumulative)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Monthly Net Cash Flow</p>
+        {/* Left margin matches YAxis width (44px) + right margin (44px) to align with chart */}
+        <div className="flex" style={{ paddingLeft: 44, paddingRight: 44 }}>
+          {data.map((d) => {
+            const isTrough = hasTrough && d.month === troughMonth;
+            return (
+              <div key={d.month} className="flex-1 flex flex-col items-center gap-0.5 min-w-0">
+                <span className="text-[8px] font-semibold text-muted-foreground">{d.month}</span>
+                <span
+                  className={`text-[9px] font-black tabular-nums leading-none ${isTrough ? "text-rose-600" : d.net >= 0 ? "text-emerald-600" : "text-rose-500"}`}
+                >
+                  {d.net >= 0 ? "+" : ""}{fmtK(d.net)}
+                </span>
+                {isTrough && <span className="text-[7px] font-black text-rose-500 leading-none">▼</span>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
