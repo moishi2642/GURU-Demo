@@ -832,43 +832,47 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           })()}
         </div>
       </div>
-      {/* ── Chart 1: Monthly cash flow bars ── */}
-      <div className="px-3 pt-2">
-        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Monthly Cash Flow</p>
-        <div style={{ height: 110 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 4, right: 44, left: 0, bottom: 0 }} barCategoryGap="20%">
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-              <XAxis
-                dataKey="month"
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tickFormatter={fmtK}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
-                axisLine={false}
-                tickLine={false}
-                width={44}
-                domain={["auto", "auto"]}
-              />
-              <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
-              <RechartsTooltip
-                formatter={(v: number) => [fmt(v), "Monthly Net"]}
-                contentStyle={{ fontSize: 11 }}
-              />
-              <Bar dataKey="net" radius={[3, 3, 0, 0]} maxBarSize={18}>
-                {data.map((d, i) => (
-                  <Cell
-                    key={i}
-                    fill={d.net >= 0 ? "hsl(142,60%,50%)" : "hsl(0,72%,58%)"}
-                    fillOpacity={0.85}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+      {/* ── Monthly cash flow table ── */}
+      <div className="px-3 pt-2 pb-1">
+        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1.5 px-1">Monthly Cash Flow</p>
+        <div className="rounded-lg border border-border overflow-hidden">
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="bg-muted/50 border-b border-border">
+                <th className="text-left px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Month</th>
+                <th className="text-right px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Inflows</th>
+                <th className="text-right px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Outflows</th>
+                <th className="text-right px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Net</th>
+                <th className="text-right px-2.5 py-1.5 font-bold uppercase tracking-wider text-muted-foreground">Cumulative</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((d, i) => {
+                const isEven = i % 2 === 0;
+                const isTrough = hasTrough && d.month === troughMonth;
+                return (
+                  <tr
+                    key={d.month}
+                    className={`border-b border-border/50 last:border-0 ${isTrough ? "bg-rose-50 dark:bg-rose-950/30" : isEven ? "bg-background" : "bg-muted/20"}`}
+                  >
+                    <td className="px-2.5 py-1.5 font-semibold text-foreground flex items-center gap-1.5">
+                      {isTrough && <span className="text-rose-500 text-[8px] font-black">▼</span>}
+                      {d.month}
+                      {isTrough && <span className="text-[8px] text-rose-500 font-black">TROUGH</span>}
+                    </td>
+                    <td className="px-2.5 py-1.5 text-right tabular-nums text-emerald-600 font-medium">{fmtK(d.inflow ?? 0)}</td>
+                    <td className="px-2.5 py-1.5 text-right tabular-nums text-rose-600 font-medium">{fmtK(d.outflow ?? 0)}</td>
+                    <td className={`px-2.5 py-1.5 text-right tabular-nums font-bold ${d.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {d.net >= 0 ? "+" : ""}{fmtK(d.net)}
+                    </td>
+                    <td className={`px-2.5 py-1.5 text-right tabular-nums font-semibold ${d.cumulative >= 0 ? "text-foreground" : "text-rose-600"}`}>
+                      {d.cumulative >= 0 ? "" : ""}{fmtK(d.cumulative)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
