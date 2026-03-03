@@ -28,6 +28,7 @@ import {
   ReferenceDot,
   ComposedChart,
   Bar,
+  BarChart,
   LabelList,
   Legend,
 } from "recharts";
@@ -826,220 +827,146 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           })()}
         </div>
       </div>
-      {/* ── Static monthly net strip ── */}
-      <div className="border-b border-border/40 bg-slate-50/60 px-4 py-1.5 flex gap-1">
-        {data.map((d, i) => {
-          const isPos = d.net >= 0;
-          return (
-            <button
-              key={i}
-              onClick={onNavigateToCashflow}
-              className="flex-1 flex flex-col items-center gap-0.5 rounded hover:bg-black/5 transition-colors py-0.5 cursor-pointer group"
-              title={`${d.month}: +${fmtK(d.inflow)} in / −${fmtK(d.outflow)} out`}
-            >
-              <span className="text-[8px] font-black tabular-nums leading-none group-hover:underline" style={{ color: isPos ? "#16a34a" : "#e11d48" }}>
-                {isPos ? "▲" : "▼"}{fmtK(Math.abs(d.net))}
-              </span>
-            </button>
-          );
-        })}
+      {/* ── Chart 1: Monthly cash flow bars ── */}
+      <div className="px-3 pt-2">
+        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Monthly Cash Flow</p>
+        <div style={{ height: 110 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 4, right: 44, left: 0, bottom: 0 }} barCategoryGap="20%">
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={fmtK}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+                width={44}
+                domain={["auto", "auto"]}
+              />
+              <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
+              <RechartsTooltip
+                formatter={(v: number) => [fmt(v), "Monthly Net"]}
+                contentStyle={{ fontSize: 11 }}
+              />
+              <Bar dataKey="net" radius={[3, 3, 0, 0]} maxBarSize={18}>
+                {data.map((d, i) => (
+                  <Cell
+                    key={i}
+                    fill={d.net >= 0 ? "hsl(142,60%,50%)" : "hsl(0,72%,58%)"}
+                    fillOpacity={0.85}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
-      <div className="px-1 pb-2" style={{ height: 198 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={data}
-            margin={{ top: 30, right: 48, left: 0, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="cfGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset={zeroOffset}
-                  stopColor={GREEN}
-                  stopOpacity={0.28}
+
+      {/* ── Chart 2: Cumulative area chart ── */}
+      <div className="px-3 pb-2">
+        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Cumulative Net</p>
+        <div style={{ height: 120 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 16, right: 44, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="cfGrad2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset={zeroOffset} stopColor={GREEN} stopOpacity={0.30} />
+                  <stop offset={zeroOffset} stopColor={RED} stopOpacity={0.22} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={fmtK}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+                width={44}
+                domain={[-150000, 150000]}
+              />
+              <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
+              {hasTrough && (
+                <ReferenceLine
+                  x={troughMonth}
+                  stroke="hsl(0,72%,65%)"
+                  strokeDasharray="5 3"
+                  strokeWidth={1.5}
+                  label={(props: any) => {
+                    const vb = props?.viewBox;
+                    if (!vb) return null;
+                    const { x, y } = vb;
+                    return (
+                      <g>
+                        <rect x={x - 30} y={y - 30} width={60} height={24} rx={3} fill="hsl(0,80%,97%)" stroke="hsl(0,80%,80%)" strokeWidth={1} />
+                        <text x={x} y={y - 20} textAnchor="middle" fill="hsl(0,72%,50%)" fontSize={7} fontWeight="700">TROUGH</text>
+                        <text x={x} y={y - 10} textAnchor="middle" fill="hsl(0,72%,45%)" fontSize={8} fontWeight="800">{fmt(minVal, true)}</text>
+                        <polygon points={`${x - 4},${y - 6} ${x + 4},${y - 6} ${x},${y}`} fill="hsl(0,80%,80%)" />
+                      </g>
+                    );
+                  }}
                 />
-                <stop offset={zeroOffset} stopColor={RED} stopOpacity={0.22} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              vertical={false}
-              stroke="hsl(var(--border))"
-            />
-            <XAxis
-              dataKey="month"
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tickFormatter={fmtK}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
-              axisLine={false}
-              tickLine={false}
-              width={44}
-              domain={[-150000, 150000]}
-            />
-            <ReferenceLine
-              y={0}
-              stroke="hsl(var(--border))"
-              strokeWidth={1.5}
-            />
-            {hasTrough && (
-              <ReferenceLine
-                x={troughMonth}
-                stroke="hsl(0,72%,65%)"
-                strokeDasharray="5 3"
-                strokeWidth={1.5}
-                label={(props: any) => {
-                  const vb = props?.viewBox;
-                  if (!vb) return null;
-                  const { x, y } = vb;
-                  return (
-                    <g>
-                      <rect
-                        x={x - 33}
-                        y={y - 34}
-                        width={66}
-                        height={28}
-                        rx={4}
-                        fill="hsl(0,80%,97%)"
-                        stroke="hsl(0,80%,80%)"
-                        strokeWidth={1}
-                      />
-                      <text
-                        x={x}
-                        y={y - 22}
-                        textAnchor="middle"
-                        fill="hsl(0,72%,50%)"
-                        fontSize={8}
-                        fontWeight="700"
-                      >
-                        TROUGH
-                      </text>
-                      <text
-                        x={x}
-                        y={y - 11}
-                        textAnchor="middle"
-                        fill="hsl(0,72%,45%)"
-                        fontSize={9}
-                        fontWeight="800"
-                      >
-                        {fmt(minVal, true)}
-                      </text>
-                      <polygon
-                        points={`${x - 5},${y - 6} ${x + 5},${y - 6} ${x},${y}`}
-                        fill="hsl(0,80%,80%)"
-                      />
-                    </g>
-                  );
+              )}
+              <RechartsTooltip
+                formatter={(v: number) => [fmt(v), "Cumulative Net"]}
+                contentStyle={{ fontSize: 11 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="cumulative"
+                stroke={isPositive ? GREEN : RED}
+                strokeWidth={2.5}
+                fill="url(#cfGrad2)"
+                activeDot={{ r: 4, stroke: "white", strokeWidth: 2 }}
+                isAnimationActive={true}
+                animationDuration={900}
+                animationEasing="ease-out"
+                dot={(props: any) => {
+                  const { cx, cy, index } = props;
+                  if (index === 0) {
+                    const liveCol = isPositive ? GREEN : RED;
+                    return (
+                      <g key="cf-live">
+                        <circle cx={cx} cy={cy} r={10} fill={liveCol} opacity={0.12} style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
+                        <circle cx={cx} cy={cy} r={4} fill={liveCol} stroke="white" strokeWidth={1.5} />
+                        <text x={cx} y={cy - 10} textAnchor="middle" fill={liveCol} fontSize={7} fontWeight="800">NOW</text>
+                      </g>
+                    );
+                  }
+                  if (index === data.length - 1) {
+                    const col = isPositive ? "hsl(142,71%,35%)" : "hsl(0,72%,50%)";
+                    return (
+                      <g key="end-dot">
+                        <circle cx={cx} cy={cy} r={4.5} fill={isPositive ? GREEN : RED} stroke="white" strokeWidth={2} />
+                        <text x={cx + 7} y={cy + 4} fill={col} fontSize={8} fontWeight="800">
+                          {isPositive ? "▲" : "▼"} {fmtK(finalVal)}
+                        </text>
+                      </g>
+                    );
+                  }
+                  return <g key={index} />;
                 }}
               />
-            )}
-            <RechartsTooltip
-              formatter={(v: number, name: string) => [
-                fmt(v),
-                name === "cumulative" ? "Cumulative Net" : "Monthly Net",
-              ]}
-              contentStyle={{ fontSize: 11 }}
-            />
-            <Bar dataKey="net" radius={[2, 2, 0, 0]} maxBarSize={12}>
-              {data.map((d, i) => (
-                <Cell
-                  key={i}
-                  fill={d.net >= 0 ? "hsl(142,60%,55%)" : "hsl(0,72%,60%)"}
-                  fillOpacity={0.4}
-                />
-              ))}
-            </Bar>
-            <Area
-              type="monotone"
-              dataKey="cumulative"
-              stroke={isPositive ? GREEN : RED}
-              strokeWidth={2.5}
-              fill="url(#cfGrad)"
-              activeDot={{ r: 4, stroke: "white", strokeWidth: 2 }}
-              isAnimationActive={true}
-              animationDuration={900}
-              animationEasing="ease-out"
-              dot={(props: any) => {
-                const { cx, cy, index } = props;
-                if (index === 0) {
-                  const liveCol = isPositive ? GREEN : RED;
-                  return (
-                    <g key="cf-live">
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={11}
-                        fill={liveCol}
-                        opacity={0.12}
-                        style={{
-                          animation: "live-pulse 2s ease-in-out infinite",
-                          transformOrigin: `${cx}px ${cy}px`,
-                        }}
-                      />
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={4.5}
-                        fill={liveCol}
-                        stroke="white"
-                        strokeWidth={1.5}
-                      />
-                      <text
-                        x={cx}
-                        y={cy - 11}
-                        textAnchor="middle"
-                        fill={liveCol}
-                        fontSize={8}
-                        fontWeight="800"
-                      >
-                        NOW
-                      </text>
-                    </g>
-                  );
-                }
-                if (index === data.length - 1) {
-                  const arrowChar = isPositive ? "▲" : "▼";
-                  const col = isPositive
-                    ? "hsl(142,71%,35%)"
-                    : "hsl(0,72%,50%)";
-                  return (
-                    <g key="end-dot">
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={5}
-                        fill={isPositive ? GREEN : RED}
-                        stroke="white"
-                        strokeWidth={2}
-                      />
-                      <text
-                        x={cx + 8}
-                        y={cy + 4}
-                        fill={col}
-                        fontSize={8}
-                        fontWeight="800"
-                      >
-                        {arrowChar} {fmtK(finalVal)}
-                      </text>
-                    </g>
-                  );
-                }
-                return <g key={index} />;
-              }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
-      <div className="flex px-4 pb-3 gap-4 text-xs">
+
+      <div className="flex px-4 pb-3 gap-4 text-xs border-t border-border/40 pt-2">
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />{" "}
-          Surplus
+          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Surplus
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />{" "}
-          Deficit
+          <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> Deficit
         </span>
         {hasTrough && (
           <span className="flex items-center gap-1 ml-auto text-rose-500 font-semibold">
