@@ -4359,16 +4359,36 @@ function GuruAllocationView({
                               No accounts mapped
                             </p>
                           )}
-                          {/* Pending inbound transfers */}
+                          {/* Pending outbound transfers (source bucket) */}
+                          {pendingTransfers
+                            .filter((t) => t.from === r.def.name)
+                            .map((pt) => (
+                              <div
+                                key={`outbound-${pt.to}`}
+                                className="grid items-center gap-2 rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50"
+                                style={{ gridTemplateColumns: "1fr 76px 52px 60px" }}
+                              >
+                                <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden">
+                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
+                                  <span className="truncate font-semibold text-amber-800">
+                                    Transfer out → {pt.to}
+                                  </span>
+                                </span>
+                                <span className="text-[11px] font-bold text-red-600 text-right tabular-nums">
+                                  −{fmt(pt.amount)}
+                                </span>
+                                <span className="text-[10px] text-amber-500 text-right">—</span>
+                                <span className="text-[10px] text-amber-500 text-right">—</span>
+                              </div>
+                            ))}
+                          {/* Pending inbound transfers (destination bucket) */}
                           {pendingTransfers
                             .filter((t) => t.to === r.def.name)
                             .map((pt) => (
                               <div
-                                key={`pending-${pt.from}`}
+                                key={`inbound-${pt.from}`}
                                 className="grid items-center gap-2 rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50"
-                                style={{
-                                  gridTemplateColumns: "1fr 76px 52px 60px",
-                                }}
+                                style={{ gridTemplateColumns: "1fr 76px 52px 60px" }}
                               >
                                 <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden">
                                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
@@ -4377,18 +4397,13 @@ function GuruAllocationView({
                                   </span>
                                 </span>
                                 <span className="text-[11px] font-bold text-amber-700 text-right tabular-nums">
-                                  {fmt(pt.amount)}
+                                  +{fmt(pt.amount)}
                                 </span>
-                                <span className="text-[10px] text-amber-500 text-right">
-                                  —
-                                </span>
-                                <span className="text-[10px] text-amber-500 text-right">
-                                  —
-                                </span>
+                                <span className="text-[10px] text-amber-500 text-right">—</span>
+                                <span className="text-[10px] text-amber-500 text-right">—</span>
                               </div>
                             ))}
-                          {pendingTransfers.filter((t) => t.to === r.def.name)
-                            .length > 0 && (
+                          {pendingTransfers.filter((t) => t.to === r.def.name).length > 0 && (
                             <div className="flex items-center gap-1 mt-1 text-[9px] font-black uppercase tracking-wider text-amber-600">
                               <AlertCircle className="w-3 h-3 flex-shrink-0" />
                               Select a product for incoming funds →
@@ -4398,35 +4413,53 @@ function GuruAllocationView({
                           );
                         })()}
                         {/* Weighted avg yield + totals footer */}
-                        <div className="mt-2.5 pt-2 border-t border-border">
-                          <div
-                            className="grid items-center gap-2"
-                            style={{
-                              gridTemplateColumns: "1fr 76px 52px 60px",
-                            }}
-                          >
-                            <span className="text-[9px] text-muted-foreground italic">
-                              {r.subAccounts.length} position
-                              {r.subAccounts.length !== 1 ? "s" : ""}
-                            </span>
-                            <span className="text-xs font-bold tabular-nums text-foreground text-right">
-                              {fmt(r.current)}
-                            </span>
-                            <span
-                              className="text-[10px] font-bold tabular-nums text-right"
-                              style={{ color: r.def.bg }}
-                            >
-                              {r.current > 0
-                                ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%`
-                                : "—"}
-                            </span>
-                            <span className="text-[9px] text-muted-foreground tabular-nums text-right">
-                              {r.current > 0
-                                ? `${weightedATYield(r.subAccounts, r.current).toFixed(2)}%`
-                                : "—"}
-                            </span>
-                          </div>
-                        </div>
+                        {(() => {
+                          const outAmt = pendingTransfers
+                            .filter((t) => t.from === r.def.name)
+                            .reduce((s, t) => s + t.amount, 0);
+                          const inAmt = pendingTransfers
+                            .filter((t) => t.to === r.def.name)
+                            .reduce((s, t) => s + t.amount, 0);
+                          const netDelta = inAmt - outAmt;
+                          const hasPending = netDelta !== 0;
+                          const adjTotal = r.current + netDelta;
+                          return (
+                            <div className="mt-2.5 pt-2 border-t border-border">
+                              <div
+                                className="grid items-center gap-2"
+                                style={{ gridTemplateColumns: "1fr 76px 52px 60px" }}
+                              >
+                                <span className="text-[9px] text-muted-foreground italic">
+                                  {r.subAccounts.length} position
+                                  {r.subAccounts.length !== 1 ? "s" : ""}
+                                </span>
+                                {hasPending ? (
+                                  <span className="text-xs font-bold tabular-nums text-right flex flex-col items-end leading-tight">
+                                    <span className="text-muted-foreground line-through text-[10px]">{fmt(r.current)}</span>
+                                    <span className="text-amber-600">{fmt(adjTotal)}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs font-bold tabular-nums text-foreground text-right">
+                                    {fmt(r.current)}
+                                  </span>
+                                )}
+                                <span
+                                  className="text-[10px] font-bold tabular-nums text-right"
+                                  style={{ color: r.def.bg }}
+                                >
+                                  {r.current > 0
+                                    ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%`
+                                    : "—"}
+                                </span>
+                                <span className="text-[9px] text-muted-foreground tabular-nums text-right">
+                                  {r.current > 0
+                                    ? `${weightedATYield(r.subAccounts, r.current).toFixed(2)}%`
+                                    : "—"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
