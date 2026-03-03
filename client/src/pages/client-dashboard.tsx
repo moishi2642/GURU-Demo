@@ -4316,18 +4316,58 @@ function GuruAllocationView({
                         {(() => {
                           const activeSels = bucketProductSelections[r.def.name] ?? [];
                           const hasNewAlloc = activeSels.length > 0;
+                          const rowStyle = (indent = false) => ({
+                            gridTemplateColumns: "1fr 76px 52px 60px",
+                            opacity: hasNewAlloc ? 0.35 : 1,
+                            textDecorationLine: hasNewAlloc ? "line-through" : "none",
+                            textDecorationColor: hasNewAlloc ? "#94a3b8" : undefined,
+                            paddingLeft: indent ? "14px" : undefined,
+                          });
+
+                          const isGrow = r.def.name === "Grow";
+                          const equityNames = ["International", "US Total Market", "US Large Cap", "US Small Cap", "US Dividend / Value", "Single Stock"];
+                          const growGroups = isGrow ? [
+                            { label: "Equities", items: r.subAccounts.filter(a => equityNames.includes(a.name)) },
+                            { label: "Fixed Income", items: r.subAccounts.filter(a => a.name === "Bonds") },
+                            { label: "Cash", items: r.subAccounts.filter(a => a.name.startsWith("Cash")) },
+                            { label: "Alternatives", items: r.subAccounts.filter(a => a.name === "Crypto") },
+                          ].filter(g => g.items.length > 0) : [];
+
                           return (
                         <div className="space-y-1.5 flex-1">
-                          {r.subAccounts.map((acct) => (
+                          {isGrow ? (
+                            growGroups.map((group) => {
+                              const groupTotal = group.items.reduce((s, a) => s + a.value, 0);
+                              const multi = group.items.length > 1;
+                              return (
+                                <div key={group.label} className="space-y-1">
+                                  {/* Group header row */}
+                                  <div className="grid items-center gap-2" style={{ gridTemplateColumns: "1fr 76px 52px 60px", opacity: hasNewAlloc ? 0.35 : 1 }}>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{group.label}</span>
+                                    <span className="text-[10px] font-black text-right tabular-nums text-foreground">{fmt(groupTotal)}</span>
+                                    <span />
+                                    <span />
+                                  </div>
+                                  {/* Sub-rows (always indented) */}
+                                  {group.items.map((acct) => (
+                                    <div key={acct.name} className="grid items-center gap-2" style={rowStyle(true)}>
+                                      <span className="flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden text-muted-foreground">
+                                        <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
+                                        <span className="truncate">{acct.name}</span>
+                                      </span>
+                                      <span className="text-[10px] font-semibold text-right tabular-nums text-foreground">{fmt(acct.value)}</span>
+                                      <span className="text-[10px] text-right tabular-nums text-foreground">{acct.yield_}</span>
+                                      <span className="text-[10px] text-right tabular-nums text-muted-foreground">{acct.yieldAT}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })
+                          ) : r.subAccounts.map((acct) => (
                             <div
                               key={acct.name}
                               className="grid items-center gap-2"
-                              style={{
-                                gridTemplateColumns: "1fr 76px 52px 60px",
-                                opacity: hasNewAlloc ? 0.35 : 1,
-                                textDecorationLine: hasNewAlloc ? "line-through" : "none",
-                                textDecorationColor: hasNewAlloc ? "#94a3b8" : undefined,
-                              }}
+                              style={rowStyle()}
                             >
                               <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden text-muted-foreground">
                                 <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
