@@ -1669,7 +1669,6 @@ function BucketProductPanel({
         <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Recommended Products</p>
         <span className="text-[9px] text-muted-foreground tabular-nums">{selected.size} selected</span>
       </div>
-
       <div className="flex-1 px-3 py-3 flex flex-col gap-2">
         {top3.map((p, i) => {
           const checked = selected.has(i);
@@ -1778,7 +1777,6 @@ function BucketProductPanel({
           </div>
         )}
       </div>
-
       <div className="px-3 pb-4">
         <button
           onClick={() => setStaged(true)}
@@ -2092,7 +2090,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hcO.accent }} />
                               <span className="text-[11px] font-black uppercase text-white leading-tight">Grow (Other)</span>
                             </div>
-                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">Alts & Real Estate — illiquid</p>
+                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">Alternative Assets, Real Estate etc</p>
                             <div className="flex items-baseline justify-between mt-1 gap-1">
                               <p className={`${fmtK(otherCurrent).length > 9 ? "text-sm" : fmtK(otherCurrent).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>{fmtK(otherCurrent)}</p>
                               <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{otherYield.toFixed(2)}% yield</p>
