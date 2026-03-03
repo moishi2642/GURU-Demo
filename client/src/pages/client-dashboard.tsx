@@ -4023,6 +4023,15 @@ function GuruAllocationView({
 
                       const isGrowCard = r.def.name === "Grow";
 
+                      /* ── Product-change yield preview ── */
+                      const parseGross = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+                      const productSels = bucketProductSelections[r.def.name] ?? [];
+                      const hasProductChange = !isGrowCard && productSels.length > 0;
+                      const newGrossYield = hasProductChange
+                        ? productSels.reduce((s, sel) => s + parseGross(sel.product.grossYield) * (sel.alloc / 100), 0)
+                        : avgYieldV;
+                      const yieldChanged = hasProductChange && Math.abs(newGrossYield - avgYieldV) > 0.001;
+
                       /* ── Option B inline before/after — all buckets with a delta ── */
                       if (hasPending && deltaAmt !== 0 && !proforma) {
                         return (
@@ -4045,12 +4054,21 @@ function GuruAllocationView({
                               </div>
                               {/* Dotted divider */}
                               <div className="border-t border-dashed border-white/25 my-1.5" />
-                              {/* After row — new balance + yield */}
+                              {/* After row — new balance + yield (updated if product changed) */}
                               <div className="flex items-baseline justify-between gap-1">
                                 <p className="font-black text-white tabular-nums text-[16px]">
                                   {fmtK(proBalance)}
                                 </p>
-                                {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{avgYieldV.toFixed(2)}%</p>}
+                                {!isGrowCard && (
+                                  yieldChanged ? (
+                                    <span className="flex items-baseline gap-1 flex-shrink-0">
+                                      <span className="text-white/40 tabular-nums text-[10px] line-through">{avgYieldV.toFixed(2)}%</span>
+                                      <span className="text-white tabular-nums text-[11px] font-black">{newGrossYield.toFixed(2)}%</span>
+                                    </span>
+                                  ) : (
+                                    <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{avgYieldV.toFixed(2)}%</p>
+                                  )
+                                )}
                               </div>
                             </div>
                           </div>
@@ -4097,7 +4115,16 @@ function GuruAllocationView({
                               <p className={`${fmtK(balance).length > 9 ? "text-sm" : fmtK(balance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
                                 {fmtK(balance)}
                               </p>
-                              {!isGrowCard && <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>}
+                              {!isGrowCard && (
+                                yieldChanged ? (
+                                  <span className="flex items-baseline gap-1 flex-shrink-0">
+                                    <span className="text-white/40 tabular-nums text-[11px] line-through">{avgYieldV.toFixed(2)}%</span>
+                                    <span className="text-white tabular-nums text-[12px] font-black">{newGrossYield.toFixed(2)}%</span>
+                                  </span>
+                                ) : (
+                                  <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>
+                                )
+                              )}
                             </div>
                           </div>
                         </div>
