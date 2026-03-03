@@ -840,7 +840,6 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
               <span className="text-[8px] font-black tabular-nums leading-none group-hover:underline" style={{ color: isPos ? "#16a34a" : "#e11d48" }}>
                 {isPos ? "▲" : "▼"}{fmtK(Math.abs(d.net))}
               </span>
-              <span className="text-[7px] uppercase tracking-wide text-muted-foreground/50 font-semibold leading-none">{d.month.slice(0, 3)}</span>
             </button>
           );
         })}
