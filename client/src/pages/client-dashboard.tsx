@@ -797,11 +797,11 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cash Flow Forecast - Planning Liquidity Need</p>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-baseline gap-2 mt-0.5">
               {isPositive ? (
-                <TrendingUp className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                <TrendingUp className="w-5 h-5 text-emerald-500 flex-shrink-0 self-center" />
               ) : (
-                <TrendingDown className="w-5 h-5 text-rose-500 flex-shrink-0" />
+                <TrendingDown className="w-5 h-5 text-rose-500 flex-shrink-0 self-center" />
               )}
               <p
                 className={`text-xl font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}
@@ -810,12 +810,10 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
                 {isPositive ? "+" : ""}
                 {fmt(annualNet, true)}
               </p>
+              <p className="text-xs text-muted-foreground leading-none">
+                {isPositive ? "Net surplus over 12 months" : "Net deficit over 12 months"}
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isPositive
-                ? "Net surplus over 12 months"
-                : "Net deficit over 12 months"}
-            </p>
           </div>
           {(() => {
             const sorted = [...data.map(d => d.net)].sort((a, b) => a - b);
