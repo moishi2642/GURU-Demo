@@ -790,9 +790,7 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
       <div className="px-4 pt-4 pb-1">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Cumulative Cash Flow
-            </p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cumulative Cash Flow - Planning liquidity needs</p>
             <div className="flex items-center gap-2 mt-0.5">
               {isPositive ? (
                 <TrendingUp className="w-5 h-5 text-emerald-500 flex-shrink-0" />
@@ -824,7 +822,6 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           </div>
         </div>
       </div>
-
       {/* ── Static monthly net strip ── */}
       <div className="border-b border-border/40 bg-slate-50/60 px-4 py-1.5 flex gap-1">
         {data.map((d, i) => {
@@ -844,7 +841,6 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           );
         })}
       </div>
-
       <div className="px-1 pb-2" style={{ height: 198 }}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
