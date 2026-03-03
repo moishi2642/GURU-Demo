@@ -3961,6 +3961,9 @@ function GuruAllocationView({
                 "Alternative Assets": { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
                 "529 Plans":          { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
               };
+              // Total = sum of every displayed mini-card (so header always reconciles)
+              const heroCardTotal =
+                rows.reduce((s, r) => s + r.current, 0) + reVal + altVal + plan529;
               return (
                 <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
                   <div className="flex flex-col sm:flex-row gap-6 items-center">
@@ -3975,7 +3978,7 @@ function GuruAllocationView({
                         </p>
                       </div>
                       <p className="text-4xl font-extrabold leading-tight tabular-nums text-emerald-700">
-                        {fmt(totalAssets)}
+                        {fmt(heroCardTotal)}
                       </p>
                       <p className="text-[10px] text-emerald-600/70 mt-1">
                         GURU Allocation View · {assets.length} accounts
