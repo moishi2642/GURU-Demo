@@ -4123,6 +4123,7 @@ function GuruAllocationView({
                   </div>
                   {/* ── Org-chart flow lines ── */}
                   {(() => {
+                    return null;
                     const H = 72;
                     const dropY = 36;
                     const surplusRows = rows.filter((r) => r.delta < -5000);
