@@ -1480,15 +1480,19 @@ function BucketExecutionPanel({
   accentColor: string; bgColor: string; avgYield: number; bpPickup: number; totalAssets: number;
 }) {
   const suggested = Math.abs(delta);
-  const [amount, setAmount] = useState(suggested > 0 ? String(Math.round(suggested)) : "");
-  const [staged, setStaged] = useState(false);
+  const [rawAmt, setRawAmt] = useState(suggested > 0 ? String(Math.round(suggested)) : "");
+  const [executed, setExecuted] = useState(false);
 
   const needsFunding = delta > 1000 && bucketName !== "Grow";
   const isSurplus    = delta < -1000;
   const isBalanced   = !needsFunding && !isSurplus;
+  const isGrow       = bucketName === "Grow";
 
-  const statusLabel = isBalanced ? "BALANCED" : needsFunding ? "NEEDS FUNDING" : "SURPLUS";
-  const statusColor = isBalanced ? "#22c55e" : needsFunding ? "#f43f5e" : "#10b981";
+  const statusLabel = isGrow && isBalanced
+    ? "OPPORTUNITY TO INCREASE"
+    : isBalanced ? "BALANCED" : needsFunding ? "NEEDS FUNDING" : "SURPLUS";
+  const statusColor = isGrow && isBalanced ? "#8b5cf6"
+    : isBalanced ? "#22c55e" : needsFunding ? "#f43f5e" : "#10b981";
 
   const BUCKET_NAMES = ["Operating Cash", "Reserve", "Build", "Grow"];
   const defaultFrom = needsFunding ? "Grow" : bucketName;
@@ -1496,10 +1500,19 @@ function BucketExecutionPanel({
   const [fromAccount, setFromAccount] = useState(defaultFrom);
   const [toAccount,   setToAccount]   = useState(defaultTo);
 
-  const parsedAmt = parseFloat(amount.replace(/[^0-9.]/g, "")) || 0;
-  const fmtD = (v: number) => v >= 1_000_000
-    ? `$${(v / 1_000_000).toFixed(2)}M`
-    : `$${Math.round(v).toLocaleString()}`;
+  const parsedAmt = parseFloat(rawAmt.replace(/[^0-9.]/g, "")) || 0;
+
+  const fmtD  = (v: number) => `$${Math.round(v).toLocaleString()}`;
+  const fmtInput = (raw: string) => {
+    const n = parseFloat(raw.replace(/[^0-9.]/g, ""));
+    return isNaN(n) ? raw : Math.round(n).toLocaleString();
+  };
+
+  function handleAmtChange(val: string) {
+    const stripped = val.replace(/,/g, "");
+    setRawAmt(stripped);
+    setExecuted(false);
+  }
 
   return (
     <div className="w-80 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
@@ -1511,7 +1524,7 @@ function BucketExecutionPanel({
             <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Status</p>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
-              <span className="text-xs font-black" style={{ color: statusColor }}>{statusLabel}</span>
+              <span className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>{statusLabel}</span>
             </div>
           </div>
           <div className="text-right">
@@ -1527,90 +1540,117 @@ function BucketExecutionPanel({
           <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2">
             <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">Current</p>
             <p className="text-sm font-black tabular-nums text-foreground">{fmtD(current)}</p>
-            <p className="text-[9px] text-muted-foreground tabular-nums">{avgYield.toFixed(2)}% yield</p>
           </div>
           <div className="rounded-lg border px-3 py-2" style={{ borderColor: bgColor + "40", background: bgColor + "10" }}>
             <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: bgColor }}>GURU Target</p>
             <p className="text-sm font-black tabular-nums" style={{ color: bgColor }}>{fmtD(target)}</p>
-            <p className="text-[9px] tabular-nums" style={{ color: bgColor, opacity: 0.7 }}>
-              {bpPickup > 0 ? `+${bpPickup}bps pickup` : "optimal"}
-            </p>
           </div>
         </div>
+
+        {/* Executed confirmation banner */}
+        {executed && (
+          <div className="rounded-lg px-3 py-2.5 flex items-start gap-2" style={{ background: bgColor + "15", border: `1px solid ${bgColor}40` }}>
+            <span className="text-base leading-none mt-0.5">✓</span>
+            <div>
+              <p className="text-[10px] font-black text-foreground">Transfer Executed</p>
+              <p className="text-[9px] text-muted-foreground tabular-nums mt-0.5">
+                {fmtD(parsedAmt)} moved <span className="font-semibold text-foreground">{fromAccount} → {toAccount}</span>
+              </p>
+              <p className="text-[9px] tabular-nums mt-0.5" style={{ color: bgColor }}>
+                New balance: {fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Transfer input */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Transfer Amount</p>
-            {suggested > 0 && (
-              <button
-                onClick={() => { setAmount(String(Math.round(suggested))); setStaged(false); }}
-                className="text-[9px] font-semibold underline underline-offset-2 tabular-nums"
-                style={{ color: bgColor }}
-              >
-                Use {fmtD(suggested)}
-              </button>
+        {!executed && (
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Transfer Amount</p>
+              {suggested > 0 && (
+                <button
+                  onClick={() => { setRawAmt(String(Math.round(suggested))); setExecuted(false); }}
+                  className="text-[9px] font-semibold underline underline-offset-2 tabular-nums"
+                  style={{ color: bgColor }}
+                >
+                  Use {fmtD(suggested)}
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={fmtInput(rawAmt)}
+                onChange={e => handleAmtChange(e.target.value)}
+                placeholder="0"
+                className="w-full pl-6 pr-3 py-2 text-sm font-semibold tabular-nums rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2"
+              />
+            </div>
+            {parsedAmt > 0 && (
+              <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
+                New balance: <span className="font-semibold text-foreground">{fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}</span>
+              </p>
             )}
           </div>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
-            <input
-              type="number"
-              value={amount}
-              onChange={e => { setAmount(e.target.value); setStaged(false); }}
-              placeholder="0"
-              className="w-full pl-6 pr-3 py-2 text-sm font-semibold tabular-nums rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2"
-            />
-          </div>
-          {parsedAmt > 0 && (
-            <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
-              New balance: <span className="font-semibold text-foreground">{fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}</span>
-            </p>
-          )}
-        </div>
+        )}
 
         {/* Routing */}
-        <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
-          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Route</p>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">From</p>
-              <select
-                value={fromAccount}
-                onChange={e => { setFromAccount(e.target.value); setStaged(false); }}
-                className="w-full text-[11px] font-semibold text-foreground bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
-              >
-                {BUCKET_NAMES.map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-            <span className="text-muted-foreground flex-shrink-0 mt-4 text-sm">→</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">To</p>
-              <select
-                value={toAccount}
-                onChange={e => { setToAccount(e.target.value); setStaged(false); }}
-                className="w-full text-[11px] font-semibold bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
-                style={{ color: bgColor, borderColor: bgColor + "60", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
-              >
-                {BUCKET_NAMES.filter(n => n !== fromAccount).map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
+        {!executed && (
+          <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Route</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">From</p>
+                <select
+                  value={fromAccount}
+                  onChange={e => { setFromAccount(e.target.value); setExecuted(false); }}
+                  className="w-full text-[11px] font-semibold text-foreground bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                  style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
+                >
+                  {BUCKET_NAMES.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <span className="text-muted-foreground flex-shrink-0 mt-4 text-sm">→</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">To</p>
+                <select
+                  value={toAccount}
+                  onChange={e => { setToAccount(e.target.value); setExecuted(false); }}
+                  className="w-full text-[11px] font-semibold bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                  style={{ color: bgColor, borderColor: bgColor + "60", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center", paddingRight: "22px" }}
+                >
+                  {BUCKET_NAMES.filter(n => n !== fromAccount).map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
       </div>
 
-      {/* Stage button */}
+      {/* Execute / Undo button */}
       <div className="px-5 pb-4">
-        <button
-          onClick={() => setStaged(true)}
-          disabled={parsedAmt <= 0}
-          className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
-          style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
-        >
-          {staged ? "✓ Staged" : "Stage Transfer"}
-        </button>
+        {executed ? (
+          <button
+            onClick={() => setExecuted(false)}
+            className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-colors"
+            style={{ color: bgColor, borderColor: bgColor + "60", background: "transparent" }}
+          >
+            Undo Transfer
+          </button>
+        ) : (
+          <button
+            onClick={() => setExecuted(true)}
+            disabled={parsedAmt <= 0}
+            className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
+            style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
+          >
+            Execute
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1785,10 +1825,10 @@ function BucketProductPanel({
           style={{ background: bgColor }}
         >
           {staged
-            ? `✓ ${selected.size} Staged`
+            ? `✓ Product Change Saved`
             : multiSelect
-              ? `Stage Split (${selectedArr.map(i => `${allocations[i] ?? 0}%`).join(" / ")})`
-              : `Stage ${selected.size} Selected`}
+              ? `Product Change (${selectedArr.map(i => `${allocations[i] ?? 0}%`).join(" / ")})`
+              : `Product Change`}
         </button>
       </div>
     </div>
