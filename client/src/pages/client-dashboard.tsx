@@ -5109,13 +5109,10 @@ export default function ClientDashboard() {
                       title: "Add Bonds & Commodities",
                       detail: "No fixed income or commodity exposure — reduces volatility and inflation hedge",
                     },
-                  ].map(({ icon: Icon, color, bg, border, title, detail }) => (
-                    <div key={title} className={`rounded-md border ${border} ${bg} px-2.5 py-1.5`}>
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <Icon className={`w-3 h-3 flex-shrink-0 ${color}`} />
-                        <p className={`text-[9px] font-black uppercase tracking-wide ${color}`}>{title}</p>
-                      </div>
-                      <p className="text-[9px] text-muted-foreground leading-snug">{detail}</p>
+                  ].map(({ icon: Icon, color, bg, border, title }) => (
+                    <div key={title} className={`rounded-md border ${border} ${bg} px-2.5 py-1.5 flex items-center gap-1.5`}>
+                      <Icon className={`w-3 h-3 flex-shrink-0 ${color}`} />
+                      <p className={`text-[9px] font-black uppercase tracking-wide ${color}`}>{title}</p>
                     </div>
                   ))}
                 </div>
