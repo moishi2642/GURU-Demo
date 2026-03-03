@@ -328,27 +328,27 @@ const BLUE = "hsl(221, 83%, 53%)";
 // ─── GURU Method: 5 Strategic Bucket Definitions ─────────────────────────────
 const GURU_BUCKETS = {
   reserve: {
-    label: "Reserve",
-    short: "Instantly available transaction accounts",
-    color: "hsl(221,83%,53%)",
-    tagCls: "bg-blue-100   text-blue-700",
+    label: "Operating Cash",
+    short: "Checking — instantly available transaction accounts",
+    color: "#1d4ed8",
+    tagCls: "bg-blue-100 text-blue-700",
   },
   yield: {
-    label: "Yield",
-    short: "Penalty-free, higher-yielding accounts",
-    color: "hsl(43,74%,50%)",
-    tagCls: "bg-amber-100  text-amber-700",
+    label: "Reserve",
+    short: "Savings & money market — penalty-free, higher-yielding",
+    color: "#d97706",
+    tagCls: "bg-amber-100 text-amber-700",
   },
   tactical: {
-    label: "Tactical",
-    short: "1–2 days to settle or committed for a term",
-    color: "hsl(142,71%,40%)",
-    tagCls: "bg-emerald-100 text-emerald-700",
+    label: "Build",
+    short: "Treasuries & fixed income — 1–3 year horizon",
+    color: "#16a34a",
+    tagCls: "bg-green-100 text-green-700",
   },
   growth: {
-    label: "Growth",
-    short: "Long-horizon investments — higher return potential",
-    color: "hsl(262,72%,55%)",
+    label: "Grow",
+    short: "Long-horizon investments — equities, compounding wealth",
+    color: "#7c3aed",
     tagCls: "bg-violet-100 text-violet-700",
   },
   alternatives: {
@@ -3945,19 +3945,11 @@ function GuruAllocationView({
                 string,
                 { bg: string; accent: string; dot: string }
               > = {
-                "Operating Cash": {
-                  bg: "#1d4ed8",
-                  accent: "#93c5fd",
-                  dot: "#60a5fa",
-                },
-                Reserve: { bg: "#047857", accent: "#6ee7b7", dot: "#4ade80" },
-                Build: { bg: "#ca8a04", accent: "#fde68a", dot: "#fde68a" },
-                Grow: { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
-                "Grow (Other)": {
-                  bg: "#6b7280",
-                  accent: "#d1d5db",
-                  dot: "#d1d5db",
-                },
+                "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd", dot: "#60a5fa" },
+                Reserve:          { bg: "#d97706", accent: "#fde68a", dot: "#fbbf24" },
+                Build:            { bg: "#16a34a", accent: "#86efac", dot: "#4ade80" },
+                Grow:             { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
+                "Grow (Other)":   { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
               };
               return (
                 <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
