@@ -2043,12 +2043,12 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
           <div className="space-y-5">
             {/* ── Portfolio Overview Hero ── */}
             {(() => {
-              const HERO_COLORS: Record<string, { bg: string; accent: string }> = {
-                "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd" },
-                Reserve:          { bg: "#047857", accent: "#6ee7b7" },
-                Build:            { bg: "#ca8a04", accent: "#fde68a" },
-                Grow:             { bg: "#5b21b6", accent: "#c084fc" },
-                "Grow (Other)":   { bg: "#6b7280", accent: "#d1d5db" },
+              const HERO_COLORS: Record<string, { bg: string; accent: string; dot: string }> = {
+                "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd", dot: "#60a5fa" },
+                Reserve:          { bg: "#047857", accent: "#6ee7b7", dot: "#4ade80" },
+                Build:            { bg: "#ca8a04", accent: "#fde68a", dot: "#fde68a" },
+                Grow:             { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
+                "Grow (Other)":   { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
               };
               return (
                 <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
@@ -2105,7 +2105,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                           </div>
                           <div className="rounded-xl p-4 flex-1" style={{ background: hc.bg }}>
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot }} />
                               <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                             </div>
                             <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
@@ -2150,18 +2150,28 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                     let dotIdx = 0;
                     return (
                       <div className="relative mt-1 mb-1" style={{ height: H }}>
-                        {/* Vertical drop line for every surplus source */}
+                        {/* Vertical drop line + dollar label for every surplus source */}
                         {surplusRows.map(src => {
                           const srcIdx   = rows.indexOf(src);
                           const srcPct   = (srcIdx + 0.5) / (rows.length + 1) * 100;
                           const srcColor = HERO_COLORS[src.def.name]?.bg ?? "#64748b";
+                          const fmtFull  = (v: number) => `$${Math.round(v).toLocaleString()}`;
                           return (
-                            <div key={`drop-${src.def.name}`} className="absolute rounded-full" style={{
-                              left: `${srcPct}%`, top: 0,
-                              width: 2, height: dropY,
-                              background: srcColor,
-                              transform: "translateX(-50%)", opacity: 0.6,
-                            }} />
+                            <div key={`drop-${src.def.name}`}>
+                              <div className="absolute rounded-full" style={{
+                                left: `${srcPct}%`, top: 0,
+                                width: 2, height: dropY,
+                                background: srcColor,
+                                transform: "translateX(-50%)", opacity: 0.6,
+                              }} />
+                              <div className="absolute text-[9px] font-black tabular-nums bg-white/90 rounded px-1 leading-tight whitespace-nowrap" style={{
+                                left: `calc(${srcPct}% + 6px)`,
+                                top: Math.floor(dropY / 2) - 6,
+                                color: srcColor,
+                              }}>
+                                {fmtFull(src.current)}
+                              </div>
+                            </div>
                           );
                         })}
                         {/* Connectors: each surplus → each need */}
@@ -2181,9 +2191,7 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                             const amount    = need.def.name === "Build"
                               ? Math.abs(src.delta)
                               : Math.abs(need.delta);
-                            const fmtAmt    = amount >= 1_000_000
-                              ? `$${(amount / 1_000_000).toFixed(1)}M`
-                              : `$${Math.round(amount / 1000)}K`;
+                            const fmtAmt    = `$${Math.round(amount).toLocaleString()}`;
                             const di = dotIdx++;
                             return (
                               <div key={`${src.def.name}->${need.def.name}`}>
