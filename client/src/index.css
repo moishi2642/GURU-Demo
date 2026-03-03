@@ -258,6 +258,18 @@
   animation-play-state: paused;
 }
 
+@keyframes cf-ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-cf-ticker {
+  animation: cf-ticker 28s linear infinite;
+  will-change: transform;
+}
+.animate-cf-ticker:hover {
+  animation-play-state: paused;
+}
+
 @keyframes live-pulse {
   0%, 100% { opacity: 1;   transform: scale(1); }
   50%       { opacity: 0.3; transform: scale(1.6); }

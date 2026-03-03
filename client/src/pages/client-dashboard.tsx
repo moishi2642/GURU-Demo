@@ -825,43 +825,25 @@ function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
         </div>
       </div>
 
-      {/* ── Monthly pulse strip ── */}
+      {/* ── Scrolling monthly ticker ── */}
       {(() => {
-        const maxFlow = Math.max(...data.map(d => Math.max(d.inflow, d.outflow)), 1);
-        const BAR_H = 20;
+        const items = [...data, ...data];
         return (
-          <div className="px-4 pt-1 pb-3 border-b border-border/40">
-            <div className="flex items-center gap-3 mb-1.5">
-              <span className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground/60">Monthly Drivers</span>
-              <span className="flex items-center gap-1 text-[8px] text-muted-foreground/50">
-                <span className="w-2 h-1.5 rounded-sm bg-emerald-400/60 inline-block" /> Income
-              </span>
-              <span className="flex items-center gap-1 text-[8px] text-muted-foreground/50">
-                <span className="w-2 h-1.5 rounded-sm bg-rose-400/60 inline-block" /> Expenses
-              </span>
-            </div>
-            <div className="flex gap-0.5">
-              {data.map((d, i) => {
-                const inH = Math.round((d.inflow / maxFlow) * BAR_H);
-                const outH = Math.round((d.outflow / maxFlow) * BAR_H);
+          <div className="border-b border-border/40 overflow-hidden bg-slate-50/60" style={{ height: 32 }}>
+            <div className="animate-cf-ticker flex items-center h-full" style={{ width: "max-content" }}>
+              {items.map((d, i) => {
                 const isPos = d.net >= 0;
+                const sep = i % data.length !== data.length - 1;
                 return (
-                  <div
-                    key={i}
-                    className="flex-1 flex flex-col items-center cursor-default"
-                    title={`${d.month}: +${fmtK(d.inflow)} in / -${fmtK(d.outflow)} out · net ${isPos ? "+" : ""}${fmtK(d.net)}`}
-                  >
-                    {/* Income bar — grows down from top */}
-                    <div className="w-full flex flex-col justify-end rounded-t-[2px] bg-emerald-400/20 overflow-hidden" style={{ height: BAR_H }}>
-                      <div className="w-full rounded-t-[2px] bg-emerald-400/70 transition-all" style={{ height: inH }} />
-                    </div>
-                    {/* 1px zero line */}
-                    <div className={`w-full h-px ${isPos ? "bg-emerald-500/40" : "bg-rose-500/40"}`} />
-                    {/* Expense bar — grows down */}
-                    <div className="w-full flex flex-col justify-start rounded-b-[2px] bg-rose-400/20 overflow-hidden" style={{ height: BAR_H }}>
-                      <div className="w-full rounded-b-[2px] bg-rose-400/70 transition-all" style={{ height: outH }} />
-                    </div>
-                    <span className="text-[7px] text-muted-foreground/50 font-medium mt-0.5 leading-none">{d.month.slice(0, 1)}</span>
+                  <div key={i} className="flex items-center gap-2 px-4 h-full flex-shrink-0">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">{d.month}</span>
+                    <span className="text-[9px] font-black tabular-nums" style={{ color: isPos ? "#16a34a" : "#e11d48" }}>
+                      {isPos ? "▲" : "▼"} {fmtK(Math.abs(d.net))}
+                    </span>
+                    <span className="text-[8px] text-muted-foreground/40 tabular-nums">
+                      +{fmtK(d.inflow)} <span className="text-rose-400/60">−{fmtK(d.outflow)}</span>
+                    </span>
+                    {sep && <span className="text-muted-foreground/20 text-[10px] ml-2">·</span>}
                   </div>
                 );
               })}
