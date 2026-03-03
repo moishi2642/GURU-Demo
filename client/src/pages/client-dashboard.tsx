@@ -3168,9 +3168,10 @@ function BucketProductPanel({
   onSelectionChange?: (selections: Array<{ product: BucketProduct; alloc: number }>) => void;
 }) {
   const top3 = products.slice(0, 3);
-  const defaultSelected = top3.findIndex((p) => p.isGuru);
-  const initialIdx =
-    defaultSelected >= 0 ? defaultSelected : top3.length > 0 ? 0 : -1;
+  const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+  const maxAT = top3.length ? Math.max(...top3.map((p) => parseAT(p.atYield))) : 0;
+  const highestYieldIdx = top3.findIndex((p) => parseAT(p.atYield) === maxAT && maxAT > 0);
+  const initialIdx = highestYieldIdx >= 0 ? highestYieldIdx : top3.length > 0 ? 0 : -1;
 
   const [selected, setSelected] = useState<Set<number>>(
     new Set(initialIdx >= 0 ? [initialIdx] : []),
@@ -3265,12 +3266,9 @@ function BucketProductPanel({
                     {checked && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    {p.isGuru && (
-                      <span
-                        className="inline-block text-[7px] font-black px-1 py-px rounded text-white leading-none mb-1"
-                        style={{ background: bgColor }}
-                      >
-                        ★ GURU
+                    {highestYieldIdx === i && (
+                      <span className="inline-block text-[7px] font-black px-1.5 py-px rounded bg-emerald-100 text-emerald-700 border border-emerald-200 leading-none mb-1">
+                        ▲ Highest Yield
                       </span>
                     )}
                     <p className="text-[11px] font-semibold text-foreground leading-snug">
