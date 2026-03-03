@@ -5144,9 +5144,13 @@ export default function ClientDashboard() {
                 <p className="text-2xl font-black tabular-nums text-amber-700 leading-tight">
                   +{fmt(_yieldPickupAnnual, true)}/yr
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                  Estimated additional AT income by moving to GURU-recommended products
-                </p>
+                <div className="mt-1.5 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 flex items-start gap-1.5">
+                  <TrendingDown className="w-3 h-3 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-wide text-rose-700">Fed Cutting Rates</p>
+                    <p className="text-[9px] text-rose-600 leading-snug mt-0.5">Move reserve cash into Treasuries now to lock yield before rates fall further</p>
+                  </div>
+                </div>
                 <div className="mt-1.5 text-[9px] text-muted-foreground">
                   <span>Current ~{_currentLiquidYield}% AT → GURU target ~{_guruLiquidYield}% AT</span>
                 </div>
