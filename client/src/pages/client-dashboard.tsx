@@ -2937,6 +2937,12 @@ function BucketExecutionPanel({
     suggested > 0 ? String(Math.round(suggested)) : "",
   );
   const [executed, setExecuted] = useState(false);
+
+  useEffect(() => {
+    if (!executed) {
+      setRawAmt(suggested > 0 ? String(Math.round(suggested)) : "");
+    }
+  }, [suggested]);
   const [fromAccount, setFromAccount] = useState(defaultFrom);
   const [toAccount, setToAccount] = useState(defaultTo);
 
@@ -3012,7 +3018,7 @@ function BucketExecutionPanel({
             style={{ borderColor: "#f59e0b66", background: "#fffbeb" }}
           >
             <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: "#b45309" }}>
-              GURU Target
+              Target
             </p>
             <p className="text-sm font-black tabular-nums" style={{ color: "#92400e" }}>{fmtD(effTarget)}</p>
           </div>
@@ -3672,7 +3678,8 @@ function GuruAllocationView({
         const reValEarly = assets
           .filter((a) => a.type === "real_estate")
           .reduce((s, a) => s + Number(a.value), 0);
-        const otherCurrent = altValEarly + reValEarly;
+        const plan529 = 35600;
+        const otherCurrent = altValEarly + reValEarly + plan529;
         // Sum of prototype Grow breakdown: Cash+Intl+US Mkt+LgCap+SmCap+Div+Stock+Bonds+Crypto
         const growCurrent = 222965 + 244685 + 779878 + 535000 + 323582 + 94369 + 238311 + 61210 + 9500; // = 2,509,500
 
@@ -3949,7 +3956,9 @@ function GuruAllocationView({
                 Reserve:          { bg: "#d97706", accent: "#fde68a", dot: "#fbbf24" },
                 Build:            { bg: "#16a34a", accent: "#86efac", dot: "#4ade80" },
                 Grow:             { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
-                "Grow (Other)":   { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
+                "Real Estate":        { bg: "#7c3aed", accent: "#c4b5fd", dot: "#a78bfa" },
+                "Alternative Assets": { bg: "#374151", accent: "#9ca3af", dot: "#9ca3af" },
+                "529 Plans":          { bg: "#0369a1", accent: "#7dd3fc", dot: "#38bdf8" },
               };
               return (
                 <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
@@ -4079,45 +4088,36 @@ function GuruAllocationView({
                         </div>
                       );
                     })}
-                    {/* Grow (Other) — display-only, no reallocation */}
+                    {/* Grow (Other) — three sub-category mini-cards */}
                     {(() => {
-                      const fmtK = (v: number) =>
-                        `$${Math.round(v).toLocaleString()}`;
-                      const otherYield = weightedGrossYield(
-                        otherAccts,
-                        otherCurrent,
-                      );
-                      const hcO = HERO_COLORS["Grow (Other)"];
+                      const fmtK = (v: number) => `$${Math.round(v).toLocaleString()}`;
+                      const subCats = [
+                        { label: "Real Estate",        value: reVal,    yieldStr: "~5%",   key: "Real Estate" },
+                        { label: "Alternative Assets", value: altVal,   yieldStr: "15%+",  key: "Alternative Assets" },
+                        { label: "529 Plans",          value: plan529,  yieldStr: "—",     key: "529 Plans" },
+                      ];
                       return (
-                        <div className="flex flex-col">
-                          <div className="h-4 mb-1" />
-                          <div
-                            className="rounded-xl p-4 flex-1"
-                            style={{ background: hcO.bg }}
-                          >
-                            <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                              <span
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ background: hcO.accent }}
-                              />
-                              <span className="text-[11px] font-black uppercase text-white leading-tight">
-                                Grow (Other)
-                              </span>
-                            </div>
-                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">
-                              Alternative Assets, Real Estate etc
-                            </p>
-                            <div className="flex items-baseline justify-between mt-1 gap-1">
-                              <p
-                                className={`${fmtK(otherCurrent).length > 9 ? "text-sm" : fmtK(otherCurrent).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="h-4 mb-0" />
+                          {subCats.map((cat) => {
+                            const hc = HERO_COLORS[cat.key];
+                            return (
+                              <div
+                                key={cat.key}
+                                className="rounded-lg px-3 py-2 flex items-center justify-between gap-2"
+                                style={{ background: hc.bg }}
                               >
-                                {fmtK(otherCurrent)}
-                              </p>
-                              <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">
-                                {otherYield.toFixed(2)}% yield
-                              </p>
-                            </div>
-                          </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1 mb-0.5">
+                                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
+                                    <span className="text-[9px] font-black uppercase text-white/90 leading-none tracking-wide">{cat.label}</span>
+                                  </div>
+                                  <p className="text-sm font-black text-white tabular-nums leading-none">{fmtK(cat.value)}</p>
+                                </div>
+                                <p className="text-[9px] text-white/60 tabular-nums flex-shrink-0">{cat.yieldStr}</p>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()}
