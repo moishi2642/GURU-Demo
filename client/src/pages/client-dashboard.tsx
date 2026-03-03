@@ -4082,11 +4082,11 @@ function GuruAllocationView({
                                 {!isGrowCard && (
                                   yieldChanged ? (
                                     <span className="flex items-baseline gap-1 flex-shrink-0">
-                                      <span className="text-white/40 tabular-nums text-[10px] line-through">{avgYieldV.toFixed(2)}%</span>
-                                      <span className="text-white tabular-nums text-[11px] font-black">{newGrossYield.toFixed(2)}%</span>
+                                      <span className="text-white/40 tabular-nums text-[10px] line-through">{avgYieldV.toFixed(2)}% yield</span>
+                                      <span className="text-white tabular-nums text-[11px] font-black">{newGrossYield.toFixed(2)}% yield</span>
                                     </span>
                                   ) : (
-                                    <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{avgYieldV.toFixed(2)}%</p>
+                                    <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{avgYieldV.toFixed(2)}% yield</p>
                                   )
                                 )}
                               </div>
@@ -4129,14 +4129,14 @@ function GuruAllocationView({
                                 {/* Before row — faded + crossed out */}
                                 <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
                                   <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(balance)}</p>
-                                  {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>}
+                                  {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}% yield</p>}
                                 </div>
                                 {/* Dotted divider */}
                                 <div className="border-t border-dashed border-white/25 my-1.5" />
                                 {/* After row */}
                                 <div className="flex items-baseline justify-between gap-1">
                                   <p className="font-black text-white tabular-nums text-[16px] leading-none">{fmtK(balance)}</p>
-                                  {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[11px] font-black">{newGrossYield.toFixed(2)}%</p>}
+                                  {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[11px] font-black">{newGrossYield.toFixed(2)}% yield</p>}
                                 </div>
                               </>
                             ) : (
