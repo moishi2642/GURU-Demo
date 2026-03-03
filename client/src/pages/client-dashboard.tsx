@@ -2920,129 +2920,198 @@ function BucketExecutionPanel({
           ? "#f43f5e"
           : "#10b981";
 
-  const priorityLabel = needsFunding ? "HIGH" : isSurplus ? "MEDIUM" : "LOW";
-  const priorityColor = needsFunding ? "#f43f5e" : isSurplus ? "#f59e0b" : "#22c55e";
+  const BUCKET_NAMES = ["Operating Cash", "Reserve", "Build", "Grow"];
+  const defaultFrom = needsFunding ? "Grow" : bucketName;
+  const defaultTo = needsFunding
+    ? bucketName
+    : (BUCKET_NAMES.find((n) => n !== bucketName) ?? "Reserve");
 
+  const suggested = Math.abs(delta);
+  const [rawAmt, setRawAmt] = useState(
+    suggested > 0 ? String(Math.round(suggested)) : "",
+  );
+  const [executed, setExecuted] = useState(false);
+  const [fromAccount, setFromAccount] = useState(defaultFrom);
+  const [toAccount, setToAccount] = useState(defaultTo);
+
+  const parsedAmt = parseFloat(rawAmt.replace(/[^0-9.]/g, "")) || 0;
   const fmtD = (v: number) => `$${Math.round(v).toLocaleString()}`;
-
-  const maxBar = Math.max(current, target, 1);
-  const currentPct = Math.min((current / maxBar) * 100, 100);
-  const targetPct = Math.min((target / maxBar) * 100, 100);
-  const portfolioPct = totalAssets > 0 ? (current / totalAssets) * 100 : 0;
-  const deltaAbs = Math.abs(delta);
+  const fmtInput = (raw: string) => {
+    const n = parseFloat(raw.replace(/[^0-9.]/g, ""));
+    return isNaN(n) ? raw : Math.round(n).toLocaleString();
+  };
 
   return (
-    <div className="w-72 flex-shrink-0 border-l border-r border-slate-600 bg-slate-700 flex flex-col p-5 gap-4">
-      <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400">
-        GURU Analysis
-      </p>
-
-      {/* Animated bars */}
-      <div className="space-y-3">
-        {/* Current bar */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center">
-            <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Current</span>
-            <span className="text-[11px] font-black text-white tabular-nums">{fmtD(current)}</span>
+    <div className="w-80 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
+      <div className="flex-1 p-5 flex flex-col gap-4">
+        {/* Status + Δ vs Target */}
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
+              Status
+            </p>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
+              <span className="text-[10px] font-black leading-tight" style={{ color: statusColor }}>
+                {statusLabel}
+              </span>
+            </div>
           </div>
-          <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-slate-300"
-              initial={{ width: 0 }}
-              animate={{ width: `${currentPct}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
-            />
+          <div className="text-right">
+            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">
+              Δ vs Target
+            </p>
+            <span className="text-xs font-black tabular-nums" style={{ color: statusColor }}>
+              {isBalanced ? "—" : (needsFunding ? "+" : "−") + fmtD(Math.abs(delta))}
+            </span>
           </div>
         </div>
 
-        {/* Delta badge */}
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-px bg-slate-600" />
-          <span
-            className="text-[9px] font-black px-2 py-0.5 rounded-full whitespace-nowrap"
-            style={{ background: statusColor + "25", color: statusColor }}
+        {/* Current / Target row */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-0.5">
+              Current
+            </p>
+            <p className="text-sm font-black tabular-nums text-foreground">{fmtD(current)}</p>
+          </div>
+          <div
+            className="rounded-lg border px-3 py-2"
+            style={{ borderColor: bgColor + "40", background: bgColor + "10" }}
           >
-            {isBalanced
-              ? "✓ On target"
-              : `${needsFunding ? "+" : "−"}${fmtD(deltaAbs)} to rebalance`}
-          </span>
-          <div className="flex-1 h-px bg-slate-600" />
-        </div>
-
-        {/* GURU Target bar */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center">
-            <span className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: bgColor }}>
+            <p className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: bgColor }}>
               GURU Target
-            </span>
-            <span className="text-[11px] font-black tabular-nums" style={{ color: bgColor }}>
-              {fmtD(target)}
-            </span>
-          </div>
-          <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full rounded-full"
-              style={{ background: bgColor }}
-              initial={{ width: 0 }}
-              animate={{ width: `${targetPct}%` }}
-              transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Portfolio weight bar */}
-      <div>
-        <div className="flex justify-between items-center mb-1.5">
-          <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Portfolio Weight</span>
-          <span className="text-[9px] font-bold text-slate-300 tabular-nums">{portfolioPct.toFixed(1)}%</span>
-        </div>
-        <div className="h-1.5 bg-slate-600 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: bgColor + "cc" }}
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(portfolioPct * 3, 100)}%` }}
-            transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-          />
-        </div>
-      </div>
-
-      {/* 2×2 metrics grid */}
-      <div className="grid grid-cols-2 gap-2 mt-auto">
-        <div className="bg-slate-800 rounded-lg px-3 py-2.5">
-          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">Status</p>
-          <div className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: statusColor }} />
-            <span className="text-[9px] font-black leading-tight truncate" style={{ color: statusColor }}>
-              {statusLabel === "OPPORTUNITY TO INCREASE" ? "OPPORTUNITY" : statusLabel}
-            </span>
+            </p>
+            <p className="text-sm font-black tabular-nums" style={{ color: bgColor }}>{fmtD(target)}</p>
           </div>
         </div>
 
-        <div className="bg-slate-800 rounded-lg px-3 py-2.5">
-          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">Priority</p>
-          <span className="text-[10px] font-black" style={{ color: priorityColor }}>{priorityLabel}</span>
-        </div>
-
-        <div className="bg-slate-800 rounded-lg px-3 py-2.5">
-          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">Cur. Yield AT</p>
-          <span className="text-[10px] font-black text-white tabular-nums">
-            {avgYieldAT > 0 ? `${avgYieldAT.toFixed(2)}%` : "—"}
-          </span>
-        </div>
-
-        <div className="bg-slate-800 rounded-lg px-3 py-2.5">
-          <p className="text-[8px] uppercase tracking-wider text-slate-500 mb-1">GURU Pickup</p>
-          <span
-            className="text-[10px] font-black tabular-nums"
-            style={{ color: bpPickup > 0 ? "#10b981" : bpPickup < 0 ? "#f43f5e" : "#94a3b8" }}
+        {/* Executed confirmation banner */}
+        {executed && (
+          <div
+            className="rounded-lg px-3 py-2.5 flex items-start gap-2"
+            style={{ background: bgColor + "15", border: `1px solid ${bgColor}40` }}
           >
-            {bpPickup !== 0 && !isNaN(bpPickup)
-              ? `${bpPickup > 0 ? "+" : ""}${bpPickup.toFixed(0)} bps`
-              : "—"}
-          </span>
-        </div>
+            <span className="text-base leading-none mt-0.5">✓</span>
+            <div>
+              <p className="text-[10px] font-black text-foreground">Transfer Executed</p>
+              <p className="text-[9px] text-muted-foreground tabular-nums mt-0.5">
+                {fmtD(parsedAmt)} moved{" "}
+                <span className="font-semibold text-foreground">{fromAccount} → {toAccount}</span>
+              </p>
+              <p className="text-[9px] tabular-nums mt-0.5" style={{ color: bgColor }}>
+                New balance: {fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Transfer amount input */}
+        {!executed && (
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
+                Transfer Amount
+              </p>
+              {suggested > 0 && (
+                <button
+                  onClick={() => { setRawAmt(String(Math.round(suggested))); setExecuted(false); }}
+                  className="text-[9px] font-semibold underline underline-offset-2 tabular-nums"
+                  style={{ color: bgColor }}
+                >
+                  Use {fmtD(suggested)}
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={fmtInput(rawAmt)}
+                onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
+                placeholder="0"
+                className="w-full pl-6 pr-3 py-2 text-sm font-semibold tabular-nums rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2"
+              />
+            </div>
+            {parsedAmt > 0 && (
+              <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
+                New balance:{" "}
+                <span className="font-semibold text-foreground">
+                  {fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Routing */}
+        {!executed && (
+          <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Route</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">From</p>
+                <select
+                  value={fromAccount}
+                  onChange={(e) => { setFromAccount(e.target.value); setExecuted(false); }}
+                  className="w-full text-[11px] font-semibold text-foreground bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 6px center",
+                    paddingRight: "22px",
+                  }}
+                >
+                  {BUCKET_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <span className="text-muted-foreground flex-shrink-0 mt-4 text-sm">→</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[8px] uppercase tracking-wider text-muted-foreground mb-0.5">To</p>
+                <select
+                  value={toAccount}
+                  onChange={(e) => { setToAccount(e.target.value); setExecuted(false); }}
+                  className="w-full text-[11px] font-semibold bg-background border border-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 appearance-none cursor-pointer"
+                  style={{
+                    color: bgColor,
+                    borderColor: bgColor + "60",
+                    backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 6px center",
+                    paddingRight: "22px",
+                  }}
+                >
+                  {BUCKET_NAMES.filter((n) => n !== fromAccount).map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Execute / Undo button */}
+      <div className="px-5 pb-4">
+        {executed ? (
+          <button
+            onClick={() => { setExecuted(false); onUndo?.(fromAccount, toAccount); }}
+            className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest border transition-colors"
+            style={{ color: bgColor, borderColor: bgColor + "60", background: "transparent" }}
+          >
+            Undo Transfer
+          </button>
+        ) : (
+          <button
+            onClick={() => { setExecuted(true); onExecute?.(fromAccount, toAccount, parsedAmt); }}
+            disabled={parsedAmt <= 0}
+            className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
+            style={{ background: parsedAmt > 0 ? bgColor : "#94a3b8" }}
+          >
+            Execute
+          </button>
+        )}
       </div>
     </div>
   );
