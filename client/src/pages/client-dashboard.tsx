@@ -811,15 +811,19 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
                 : "Net deficit over 12 months"}
             </p>
           </div>
-          <div className="text-right text-xs text-muted-foreground mt-0.5">
-            <p>Monthly avg</p>
-            <p
-              className={`font-bold text-sm ${annualNet / 12 >= 0 ? "text-emerald-600" : "text-rose-600"}`}
-            >
-              {annualNet / 12 >= 0 ? "+" : ""}
-              {fmtK(Math.round(annualNet / 12))}/mo
-            </p>
-          </div>
+          {(() => {
+            const sorted = [...data.map(d => d.net)].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            const medianNet = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+            return (
+              <div className="text-right text-xs text-muted-foreground mt-0.5">
+                <p>Monthly median</p>
+                <p className={`font-bold text-sm ${medianNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  {medianNet >= 0 ? "+" : ""}{fmtK(Math.round(medianNet))}/mo
+                </p>
+              </div>
+            );
+          })()}
         </div>
       </div>
       {/* ── Static monthly net strip ── */}
