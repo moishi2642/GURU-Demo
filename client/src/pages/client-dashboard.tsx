@@ -3403,7 +3403,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: true,
     },
     {
-      name: "Marcus by Goldman Sachs — Time Deposit",
+      name: "Marcus by Goldman Sachs — 3 Month Time Deposit",
       institution: "Goldman Sachs",
       type: "Time Deposit",
       grossYield: "4.50%",
