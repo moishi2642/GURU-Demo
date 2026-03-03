@@ -769,7 +769,7 @@ function NetWorthPanel({
 }
 
 // ─── Panel 2: Projected Cumulative Cash Flow ──────────────────────────────────
-function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
+function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows: CashFlow[]; onNavigateToCashflow?: () => void }) {
   const data = buildForecast(cashFlows);
   const annualNet = data.reduce((s, d) => s + d.net, 0);
   const minVal = Math.min(...data.map((d) => d.cumulative));
@@ -825,32 +825,25 @@ function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
         </div>
       </div>
 
-      {/* ── Scrolling monthly ticker ── */}
-      {(() => {
-        const items = [...data, ...data];
-        return (
-          <div className="border-b border-border/40 overflow-hidden bg-slate-50/60" style={{ height: 32 }}>
-            <div className="animate-cf-ticker flex items-center h-full" style={{ width: "max-content" }}>
-              {items.map((d, i) => {
-                const isPos = d.net >= 0;
-                const sep = i % data.length !== data.length - 1;
-                return (
-                  <div key={i} className="flex items-center gap-2 px-4 h-full flex-shrink-0">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">{d.month}</span>
-                    <span className="text-[9px] font-black tabular-nums" style={{ color: isPos ? "#16a34a" : "#e11d48" }}>
-                      {isPos ? "▲" : "▼"} {fmtK(Math.abs(d.net))}
-                    </span>
-                    <span className="text-[8px] text-muted-foreground/40 tabular-nums">
-                      +{fmtK(d.inflow)} <span className="text-rose-400/60">−{fmtK(d.outflow)}</span>
-                    </span>
-                    {sep && <span className="text-muted-foreground/20 text-[10px] ml-2">·</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
+      {/* ── Static monthly net strip ── */}
+      <div className="border-b border-border/40 bg-slate-50/60 px-4 py-1.5 flex gap-1">
+        {data.map((d, i) => {
+          const isPos = d.net >= 0;
+          return (
+            <button
+              key={i}
+              onClick={onNavigateToCashflow}
+              className="flex-1 flex flex-col items-center gap-0.5 rounded hover:bg-black/5 transition-colors py-0.5 cursor-pointer group"
+              title={`${d.month}: +${fmtK(d.inflow)} in / −${fmtK(d.outflow)} out`}
+            >
+              <span className="text-[8px] font-black tabular-nums leading-none group-hover:underline" style={{ color: isPos ? "#16a34a" : "#e11d48" }}>
+                {isPos ? "▲" : "▼"}{fmtK(Math.abs(d.net))}
+              </span>
+              <span className="text-[7px] uppercase tracking-wide text-muted-foreground/50 font-semibold leading-none">{d.month.slice(0, 3)}</span>
+            </button>
+          );
+        })}
+      </div>
 
       <div className="px-1 pb-2" style={{ height: 198 }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -5042,7 +5035,7 @@ export default function ClientDashboard() {
             </div>
           </div>
 
-          <CashFlowForecastPanel cashFlows={cashFlows} />
+          <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => setActiveView("cashflow")} />
 
           <CashFlowTicker cashFlows={cashFlows} />
 
