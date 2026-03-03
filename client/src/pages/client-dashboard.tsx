@@ -4078,18 +4078,6 @@ function GuruAllocationView({
                       return (
                         <div key={`${r.def.name}-${proforma ? "pro" : "cur"}`} className="flex flex-col">
                           <div className="mb-1 h-5 flex items-center justify-center">
-                            {!proforma && isOverfund && (
-                              <div
-                                draggable
-                                onDragStart={() => setDragItem(r.def.name)}
-                                onDragEnd={() => setDragItem(null)}
-                                className="flex items-center gap-1 cursor-grab active:cursor-grabbing px-2 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-700 text-[8px] font-black uppercase tracking-widest select-none"
-                                title="Drag to redeploy surplus into another bucket"
-                              >
-                                <span className="opacity-60">⠿</span>
-                                <span>{fmtK(Math.abs(r.delta))} surplus</span>
-                              </div>
-                            )}
                             {proforma && deltaAmt !== 0 && (
                               <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border ${deltaAmt > 0 ? "bg-green-50 border-green-300 text-green-700" : "bg-red-50 border-red-300 text-red-700"}`}>
                                 {deltaAmt > 0 ? "▲" : "▼"} {deltaAmt > 0 ? "+" : "−"}{fmtK(Math.abs(deltaAmt))}
@@ -4133,13 +4121,12 @@ function GuruAllocationView({
 
                     const renderSubCats = () => {
                       const totalOther = reVal + altVal + plan529;
-                      const hc = HERO_COLORS["Grow"] ?? { bg: "#4c1d95", accent: "#c084fc" };
                       return (
                         <div className="flex flex-col">
                           <div className="h-5 mb-1" />
-                          <div className="rounded-xl p-4 flex-1" style={{ background: hc.bg }}>
+                          <div className="rounded-xl p-4 flex-1 bg-slate-500">
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.accent }} />
+                              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-slate-300" />
                               <span className="text-[11px] font-black uppercase text-white leading-tight truncate">Grow (Other)</span>
                             </div>
                             <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">Real estate · alternatives · 529 plans</p>
