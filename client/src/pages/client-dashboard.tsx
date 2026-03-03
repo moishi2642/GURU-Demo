@@ -4524,6 +4524,148 @@ function GuruAllocationView({
                 );
               })}
             </div>
+            {/* ── Impact Analysis ── */}
+            {(() => {
+              const fmtD = (v: number) => `$${Math.round(Math.abs(v)).toLocaleString()}`;
+              const fmtPct = (v: number) => `${v.toFixed(2)}%`;
+              const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+
+              const impacts = rows.map((r) => {
+                const inAmt = pendingTransfers.filter((t) => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
+                const outAmt = pendingTransfers.filter((t) => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
+                const newBalance = r.current + inAmt - outAmt;
+
+                const curATYield = weightedATYield(r.subAccounts, r.current);
+                const sels = bucketProductSelections[r.def.name] ?? [];
+                const newATYield = sels.length > 0
+                  ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+                  : curATYield;
+
+                const curIncome = (r.current * curATYield) / 100;
+                const newIncome = (newBalance * newATYield) / 100;
+                const balanceChanged = Math.abs(newBalance - r.current) > 1;
+                const yieldChanged = Math.abs(newATYield - curATYield) > 0.001;
+
+                return { def: r.def, curBalance: r.current, newBalance, curATYield, newATYield, curIncome, newIncome, pickup: newIncome - curIncome, balanceChanged, yieldChanged, changed: balanceChanged || yieldChanged };
+              });
+
+              const totalCur = impacts.reduce((s, i) => s + i.curIncome, 0);
+              const totalNew = impacts.reduce((s, i) => s + i.newIncome, 0);
+              const totalPickup = totalNew - totalCur;
+              const anyChanges = impacts.some((i) => i.changed);
+              const totalBal = rows.reduce((s, r) => s + r.current, 0);
+
+              return (
+                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                  {/* Header */}
+                  <div className="px-5 py-3 border-b border-border flex items-center justify-between bg-slate-50">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-sm font-black text-foreground tracking-tight">Impact Analysis</span>
+                      {anyChanges && (
+                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 uppercase tracking-widest">
+                          Live Preview
+                        </span>
+                      )}
+                    </div>
+                    {anyChanges ? (
+                      <div className="flex items-center gap-1.5 text-[11px] font-black tabular-nums" style={{ color: totalPickup >= 0 ? "#16a34a" : "#e11d48" }}>
+                        <span>{totalPickup >= 0 ? "▲" : "▼"}</span>
+                        <span>{fmtD(totalPickup)} / yr after-tax income {totalPickup >= 0 ? "gain" : "loss"}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">Execute transfers or select products above to preview impact</span>
+                    )}
+                  </div>
+
+                  {/* Column headers */}
+                  <div className="px-5 py-2 grid grid-cols-4 gap-4 bg-slate-50/50 border-b border-border/50">
+                    {["Bucket", "Balance", "After-Tax Yield", "Annual AT Income"].map((h) => (
+                      <span key={h} className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">{h}</span>
+                    ))}
+                  </div>
+
+                  {/* Per-bucket rows */}
+                  <div className="divide-y divide-border/60">
+                    {impacts.map((imp) => (
+                      <div
+                        key={imp.def.name}
+                        className={`px-5 py-3 grid grid-cols-4 gap-4 items-center transition-opacity ${imp.changed ? "" : "opacity-40"}`}
+                      >
+                        {/* Bucket name */}
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 flex-shrink-0" style={{ background: imp.def.bg }} />
+                          <span className="text-[11px] font-bold text-foreground">{imp.def.name}</span>
+                        </div>
+
+                        {/* Balance */}
+                        <div>
+                          {imp.balanceChanged ? (
+                            <div className="flex flex-wrap items-baseline gap-x-1.5">
+                              <span className="text-[10px] text-muted-foreground tabular-nums line-through">{fmtD(imp.curBalance)}</span>
+                              <span className="text-[12px] font-black tabular-nums text-foreground">{fmtD(imp.newBalance)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[12px] font-semibold tabular-nums text-foreground">{fmtD(imp.curBalance)}</span>
+                          )}
+                        </div>
+
+                        {/* AT Yield */}
+                        <div>
+                          {imp.yieldChanged ? (
+                            <div className="flex flex-wrap items-baseline gap-x-1.5">
+                              <span className="text-[10px] text-muted-foreground tabular-nums line-through">{fmtPct(imp.curATYield)}</span>
+                              <span className="text-[12px] font-black tabular-nums" style={{ color: "#16a34a" }}>{fmtPct(imp.newATYield)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[12px] font-semibold tabular-nums text-muted-foreground">{fmtPct(imp.curATYield)}</span>
+                          )}
+                        </div>
+
+                        {/* Annual AT Income */}
+                        <div>
+                          {imp.changed ? (
+                            <div className="flex flex-wrap items-baseline gap-x-1.5">
+                              <span className="text-[10px] text-muted-foreground tabular-nums line-through">{fmtD(imp.curIncome)}</span>
+                              <span className="text-[12px] font-black tabular-nums text-foreground">{fmtD(imp.newIncome)}</span>
+                              <span className="text-[10px] font-black tabular-nums" style={{ color: imp.pickup >= 0 ? "#16a34a" : "#e11d48" }}>
+                                ({imp.pickup >= 0 ? "+" : "−"}{fmtD(imp.pickup)})
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[12px] font-semibold tabular-nums text-muted-foreground">{fmtD(imp.curIncome)}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Summary footer */}
+                  <div className="px-5 py-3 border-t border-border bg-slate-50 grid grid-cols-4 gap-4 items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total</span>
+                    <span className="text-[12px] font-black tabular-nums text-foreground">{fmtD(totalBal)}</span>
+                    <div>
+                      <span className="text-[9px] uppercase tracking-widest text-muted-foreground block mb-0.5">Portfolio AT Yield</span>
+                      <span className="text-[12px] font-black tabular-nums" style={{ color: anyChanges && totalPickup > 0 ? "#16a34a" : undefined }}>
+                        {fmtPct((totalNew / (totalBal || 1)) * 100)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase tracking-widest text-muted-foreground block mb-0.5">Annual AT Income</span>
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        {anyChanges && <span className="text-[10px] text-muted-foreground line-through tabular-nums">{fmtD(totalCur)}</span>}
+                        <span className="text-[13px] font-black tabular-nums" style={{ color: anyChanges && totalPickup > 0 ? "#16a34a" : undefined }}>{fmtD(totalNew)}</span>
+                        {anyChanges && (
+                          <span className="text-[10px] font-black tabular-nums" style={{ color: totalPickup >= 0 ? "#16a34a" : "#e11d48" }}>
+                            ({totalPickup >= 0 ? "+" : "−"}{fmtD(totalPickup)})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Totals summary strip */}
             <div className="rounded-xl bg-slate-900 px-5 py-3.5 grid grid-cols-4 gap-4 text-white">
               <div>
