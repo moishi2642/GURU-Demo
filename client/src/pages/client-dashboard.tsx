@@ -2208,18 +2208,10 @@ function GuruAllocationView({ assets, cashFlows }: { assets: Asset[]; cashFlows:
                                   background: tgtColor,
                                   transform: "translateX(-50%)", opacity: 0.6,
                                 }} />
-                                {/* Dollar amount label — staggered vertically to prevent overlap */}
-                                <div className="absolute text-[9px] font-black tabular-nums bg-white/80 rounded px-1 leading-tight" style={{
-                                  left: `${midPct}%`, top: labelTop,
-                                  transform: "translateX(-50%)",
-                                  color: tgtColor,
-                                }}>
-                                  {fmtAmt}
-                                </div>
                                 {/* Animated dot */}
                                 <motion.div
                                   className="absolute rounded-full z-10 shadow"
-                                  style={{ width: 9, height: 9, background: tgtColor, marginLeft: -4, marginTop: -4 }}
+                                  style={{ width: 9, height: 9, background: srcColor, marginLeft: -4, marginTop: -4 }}
                                   animate={{
                                     left: [`${srcPct}%`, `${srcPct}%`, `${tgtPct}%`, `${tgtPct}%`],
                                     top:  [0, dropY, dropY, dropY - 28],
