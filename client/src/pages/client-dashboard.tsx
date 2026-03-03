@@ -857,7 +857,7 @@ function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
               axisLine={false}
               tickLine={false}
               width={44}
-              domain={[yDomainMin, yDomainMax]}
+              domain={[-150000, 150000]}
             />
             <ReferenceLine
               y={0}
