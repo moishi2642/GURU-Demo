@@ -782,7 +782,7 @@ function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
   const finalVal = data[data.length - 1]?.cumulative ?? 0;
   const pad = range * 0.12;
   const yDomainMin = Math.floor(minVal - pad);
-  const yDomainMax = Math.ceil(maxVal + pad);
+  const yDomainMax = Math.min(Math.ceil(maxVal + pad), 150000);
   const isPositive = annualNet >= 0;
 
   return (
