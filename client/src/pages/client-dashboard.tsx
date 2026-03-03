@@ -52,6 +52,11 @@ import {
   Scale,
   AlertCircle,
   Check,
+  MessageSquare,
+  RefreshCw,
+  Wallet,
+  SlidersHorizontal,
+  Calendar,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
@@ -4854,6 +4859,48 @@ export default function ClientDashboard() {
     0,
   );
 
+  // ── Hero bar: advisor discussion point metrics ───────────────────────────────
+
+  // Portfolio blended AT yield (weighted by rough bucket sizes)
+  const _totalAssetsHero = assets.reduce((s, a) => s + Number(a.value), 0);
+  const _liquidHero = reserveTop + yieldTop + tacticalTop;
+  const _growHero = Math.max(0, _totalAssetsHero - _liquidHero);
+  const _blendedATYield = _totalAssetsHero > 0
+    ? (_liquidHero * 2.6 + _growHero * 5.8) / _totalAssetsHero
+    : 0;
+  const _annualPortfolioReturn = Math.round(_totalAssetsHero * (_blendedATYield / 100));
+
+  // Rebalance: how much the liquid buckets are over/under vs their GURU target
+  const _liquidTarget = cashTroughTop; // GURU liquidity need
+  const _liquidDelta = _liquidHero - _liquidTarget; // positive = over-allocated to liquid
+
+  // Cash management: estimated AT yield pickup if moved to GURU-recommended products
+  // Avg current liquid yield ~1.4% AT (idle bank accounts) → GURU ~2.7% AT
+  const _currentLiquidYield = 1.4;
+  const _guruLiquidYield = 2.7;
+  const _yieldPickupAnnual = Math.round(_liquidHero * ((_guruLiquidYield - _currentLiquidYield) / 100));
+
+  // Upcoming payments — search next 6 months of outflows for these 3 named items
+  const _now = new Date();
+  const _sixMonthsOut = addMonths(_now, 6);
+  const _upcomingAll = cashFlows
+    .filter((cf) => {
+      const d = new Date(cf.date);
+      return cf.type === "outflow" && d >= _now && d <= _sixMonthsOut;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const _findPayment = (keywords: string[]) => {
+    const hit = _upcomingAll.find((cf) =>
+      keywords.some((kw) => (cf.description ?? "").toLowerCase().includes(kw.toLowerCase()))
+    );
+    return hit ? { amount: Number(hit.amount), date: new Date(hit.date), desc: hit.description } : null;
+  };
+
+  const _buckleyPayment  = _findPayment(["tuition", "school"]);
+  const _lakewoodPayment = _findPayment(["sarasota property", "hoa"]);
+  const _warrenPayment   = _findPayment(["nyc property", "tribeca", "property tax"]);
+
   const riskColor: Record<string, string> = {
     conservative: "bg-blue-100 text-blue-700",
     moderate: "bg-amber-100 text-amber-700",
@@ -4977,63 +5024,118 @@ export default function ClientDashboard() {
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
       {activeView === "dashboard" && (
         <div className="space-y-4">
-          {/* ── Cash Position Hero Banner ────────────────────────────────────── */}
-          <div
-            className={`rounded-xl border shadow-sm px-6 py-5 ${isPositiveTop ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200" : "bg-gradient-to-r from-rose-50 to-orange-50 border-rose-200"}`}
-          >
-            <div className="flex flex-col sm:flex-row gap-6">
+          {/* ── Advisor Discussion Points Hero Bar ───────────────────────────── */}
+          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-2 bg-slate-50 border-b border-border">
+              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+              <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                Advisor Discussion Points · Today's Priorities
+              </p>
+            </div>
+            <div className="grid grid-cols-5 divide-x divide-border">
 
-              {/* RIGHT: Cash Available headline + 3 supporting stats */}
-              <div className="sm:w-72 flex-shrink-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="rounded-lg p-1.5 bg-emerald-100">
-                    <TrendingUp className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
-                    Total Cash to Invest
-                  </p>
+              {/* 1 · Total Cash to Invest */}
+              <div className="px-4 py-4 flex flex-col gap-0.5" data-testid="kpi-cash-excess">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Wallet className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <p className="text-[9px] uppercase tracking-widest font-bold text-emerald-700">Total Cash to Invest</p>
                 </div>
-                <p
-                  className="text-4xl font-extrabold leading-tight tabular-nums mb-1 text-emerald-700"
-                  data-testid="kpi-cash-excess"
-                >
-                  {fmt(totalToInvestTop)}
+                <p className="text-2xl font-black tabular-nums text-emerald-700 leading-tight">
+                  {fmt(totalToInvestTop, true)}
                 </p>
-                <p className="text-[10px] text-muted-foreground mb-3">
-                  GURU Optimizer · A + B
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                  Idle brokerage cash + liquid surplus above GURU target
                 </p>
-                <div
-                  className={`grid grid-cols-3 gap-3 border-t pt-3 ${isPositiveTop ? "border-emerald-200" : "border-rose-200"}`}
-                >
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">
-                      A: Idle Cash
-                    </p>
-                    <p className="text-sm font-bold tabular-nums text-foreground">
-                      {fmt(brokerageCashTop, true)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">
-                      B: Liquid Surplus
-                    </p>
-                    <p
-                      className={`text-sm font-bold tabular-nums ${cashExcessTop >= 0 ? "text-emerald-600" : "text-rose-600"}`}
-                    >
-                      {cashExcessTop >= 0 ? "+" : ""}
-                      {fmt(cashExcessTop, true)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground font-medium leading-tight mb-0.5">
-                      12-Mo Req'd
-                    </p>
-                    <p className="text-sm font-bold tabular-nums text-foreground">
-                      {fmt(cashTroughTop, true)}
-                    </p>
-                  </div>
+                <div className="mt-1.5 flex gap-3 text-[9px] text-muted-foreground">
+                  <span>A: {fmt(brokerageCashTop, true)}</span>
+                  <span className={cashExcessTop >= 0 ? "text-emerald-600 font-semibold" : "text-rose-600 font-semibold"}>
+                    B: {cashExcessTop >= 0 ? "+" : ""}{fmt(cashExcessTop, true)}
+                  </span>
                 </div>
               </div>
+
+              {/* 2 · Portfolio Rebalance */}
+              <div className="px-4 py-4 flex flex-col gap-0.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <RefreshCw className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                  <p className="text-[9px] uppercase tracking-widest font-bold text-blue-700">Portfolio Rebalance</p>
+                </div>
+                <p className={`text-2xl font-black tabular-nums leading-tight ${_liquidDelta > 0 ? "text-amber-600" : "text-blue-700"}`}>
+                  {_liquidDelta > 0 ? "+" : ""}{fmt(Math.abs(_liquidDelta), true)}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                  {_liquidDelta > 0
+                    ? "Excess liquidity vs GURU target — opportunity to redeploy into Grow"
+                    : "Liquidity below GURU target — review reserve coverage"}
+                </p>
+                <div className="mt-1.5 text-[9px] text-muted-foreground">
+                  <span>Liquid: {fmt(_liquidHero, true)} · Target: {fmt(_liquidTarget, true)}</span>
+                </div>
+              </div>
+
+              {/* 3 · Annual Portfolio Return */}
+              <div className="px-4 py-4 flex flex-col gap-0.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <TrendingUp className="w-3.5 h-3.5 text-violet-600 flex-shrink-0" />
+                  <p className="text-[9px] uppercase tracking-widest font-bold text-violet-700">Annual Return</p>
+                </div>
+                <p className="text-2xl font-black tabular-nums text-violet-700 leading-tight">
+                  {fmt(_annualPortfolioReturn, true)}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                  Blended after-tax portfolio return at current allocation
+                </p>
+                <div className="mt-1.5 text-[9px] text-muted-foreground">
+                  <span>{_blendedATYield.toFixed(2)}% blended AT yield · {fmt(_totalAssetsHero, true)} AUM</span>
+                </div>
+              </div>
+
+              {/* 4 · Cash Management Optimization */}
+              <div className="px-4 py-4 flex flex-col gap-0.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  <p className="text-[9px] uppercase tracking-widest font-bold text-amber-700">Cash Mgmt Opportunity</p>
+                </div>
+                <p className="text-2xl font-black tabular-nums text-amber-700 leading-tight">
+                  +{fmt(_yieldPickupAnnual, true)}/yr
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                  Estimated additional AT income by moving to GURU-recommended products
+                </p>
+                <div className="mt-1.5 text-[9px] text-muted-foreground">
+                  <span>Current ~{_currentLiquidYield}% AT → GURU target ~{_guruLiquidYield}% AT</span>
+                </div>
+              </div>
+
+              {/* 5 · Upcoming Payments */}
+              <div className="px-4 py-4 flex flex-col gap-0.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Calendar className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                  <p className="text-[9px] uppercase tracking-widest font-bold text-rose-700">Upcoming Payments</p>
+                </div>
+                <div className="flex flex-col gap-1.5 mt-0.5">
+                  {[
+                    { label: "Buckley Tuition", payment: _buckleyPayment },
+                    { label: "Lakewood National HOA", payment: _lakewoodPayment },
+                    { label: "12 Warren Property Taxes", payment: _warrenPayment },
+                  ].map(({ label, payment }) => (
+                    <div key={label} className="flex items-baseline justify-between gap-2">
+                      <span className="text-[10px] text-muted-foreground truncate flex-1">{label}</span>
+                      {payment ? (
+                        <span className="text-[10px] font-bold tabular-nums text-rose-700 flex-shrink-0">
+                          {fmt(payment.amount, true)} · {format(payment.date, "MMM d")}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">None in 6 mo</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5 leading-snug">
+                  Ensure reserve is pre-funded for these obligations
+                </p>
+              </div>
+
             </div>
           </div>
 
