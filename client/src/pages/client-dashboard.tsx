@@ -3298,23 +3298,25 @@ function BucketProductPanel({
                   )}
                 </div>
               </div>
-              {/* Yield metrics row */}
-              <div className="px-3 pb-2.5 flex items-center gap-3 ml-6">
-                <div>
-                  <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Yield</div>
-                  <div className="text-[10px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
-                </div>
-                <div>
-                  <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Tax-Eff</div>
-                  <div className="text-[10px] font-bold text-emerald-600 tabular-nums">{p.atYield}</div>
-                </div>
-                <div className="ml-auto text-right">
-                  <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
-                  <div className="text-[9px] font-semibold tabular-nums" style={{ color: pickupPositive ? bgColor : isNaN(pickupVal) ? "#94a3b8" : "#f43f5e" }}>
-                    {pickupStr}
+              {/* Yield metrics row — hidden for Grow bucket */}
+              {bucketName !== "Grow" && (
+                <div className="px-3 pb-2.5 flex items-center gap-3 ml-6">
+                  <div>
+                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Yield</div>
+                    <div className="text-[10px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Tax-Eff</div>
+                    <div className="text-[10px] font-bold text-foreground tabular-nums">{p.atYield}</div>
+                  </div>
+                  <div className="ml-auto text-right">
+                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
+                    <div className="text-[9px] font-bold tabular-nums" style={{ color: isNaN(pickupVal) ? "#94a3b8" : pickupVal > 0 ? "#16a34a" : "#e11d48" }}>
+                      {pickupStr}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
@@ -3956,9 +3958,9 @@ function GuruAllocationView({
                 Reserve:          { bg: "#d97706", accent: "#fde68a", dot: "#fbbf24" },
                 Build:            { bg: "#16a34a", accent: "#86efac", dot: "#4ade80" },
                 Grow:             { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
-                "Real Estate":        { bg: "#7c3aed", accent: "#c4b5fd", dot: "#a78bfa" },
-                "Alternative Assets": { bg: "#374151", accent: "#9ca3af", dot: "#9ca3af" },
-                "529 Plans":          { bg: "#0369a1", accent: "#7dd3fc", dot: "#38bdf8" },
+                "Real Estate":        { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
+                "Alternative Assets": { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
+                "529 Plans":          { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
               };
               return (
                 <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
