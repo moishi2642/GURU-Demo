@@ -5120,7 +5120,7 @@ export default function ClientDashboard() {
                   <p className="text-[9px] uppercase tracking-widest font-bold text-amber-700">Cash Mgmt Opportunity</p>
                 </div>
                 <p className="text-2xl font-black tabular-nums text-amber-700 leading-tight">
-                  +{fmt(_yieldPickupAnnual, true)}/yr
+                  +{Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps
                 </p>
                 <div className="mt-1.5 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 flex items-start gap-1.5">
                   <TrendingDown className="w-3 h-3 text-rose-600 flex-shrink-0 mt-0.5" />
