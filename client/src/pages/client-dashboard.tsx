@@ -5024,7 +5024,7 @@ export default function ClientDashboard() {
                 Advisor Discussion Points · Today's Priorities
               </p>
             </div>
-            <div className="grid grid-cols-5 divide-x divide-border">
+            <div className="grid grid-cols-4 divide-x divide-border">
 
               {/* 1 · Total Cash to Invest */}
               <div className="px-4 py-4 flex flex-col gap-0.5 cursor-pointer hover:bg-emerald-50/50 transition-colors" data-testid="kpi-cash-excess" onClick={() => setActiveView("guru")}>
@@ -5089,23 +5089,6 @@ export default function ClientDashboard() {
                       <p className={`text-[9px] font-black uppercase tracking-wide ${color}`}>{title}</p>
                     </div>
                   ))}
-                </div>
-              </div>
-
-              {/* 3 · Annual Portfolio Return */}
-              <div className="px-4 py-4 flex flex-col gap-0.5">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <TrendingUp className="w-3.5 h-3.5 text-violet-600 flex-shrink-0" />
-                  <p className="text-[9px] uppercase tracking-widest font-bold text-violet-700">Annual Return</p>
-                </div>
-                <p className="text-2xl font-black tabular-nums text-violet-700 leading-tight">
-                  {fmt(_annualPortfolioReturn, true)}
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-                  Blended after-tax portfolio return at current allocation
-                </p>
-                <div className="mt-1.5 text-[9px] text-muted-foreground">
-                  <span>{_blendedATYield.toFixed(2)}% blended AT yield · {fmt(_totalAssetsHero, true)} AUM</span>
                 </div>
               </div>
 
