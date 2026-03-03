@@ -374,7 +374,7 @@ function buildMonthMap(cashFlows: CashFlow[]) {
 
 function buildForecast(cashFlows: CashFlow[]) {
   const map = buildMonthMap(cashFlows);
-  const now = startOfMonth(new Date());
+  const now = new Date(new Date().getFullYear(), 0, 1);
   let cumulative = 0;
   return Array.from({ length: 12 }, (_, i) => {
     const month = addMonths(now, i);
@@ -788,7 +788,7 @@ function CashFlowForecastPanel({ cashFlows }: { cashFlows: CashFlow[] }) {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              12-Month Cash Flow
+              Cumulative Cash Flow
             </p>
             <div className="flex items-center gap-2 mt-0.5">
               {isPositive ? (
