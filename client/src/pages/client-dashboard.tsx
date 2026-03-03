@@ -4009,7 +4009,7 @@ function GuruAllocationView({
                           <div className="absolute rounded-[10px] bg-amber-50 px-4 py-3 flex flex-col justify-between" style={{ inset: "2px" }}>
                             <div className="flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-                              <p className="text-[8px] uppercase tracking-widest font-black text-amber-700">Impact from Pending Changes</p>
+                              <p className="uppercase tracking-widest font-black text-amber-700 text-[11px]">Impact from Selection</p>
                             </div>
                             <div className="grid grid-cols-2 gap-3 mt-1">
                               <div>
