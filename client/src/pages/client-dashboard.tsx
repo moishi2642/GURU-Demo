@@ -1352,81 +1352,6 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
   );
 }
 
-// ─── Panel 5: Income vs. Expense Projection ───────────────────────────────────
-function IncomeExpensePanel({ cashFlows }: { cashFlows: CashFlow[] }) {
-  const data = buildForecast(cashFlows);
-  return (
-    <div className={PANEL_CLS + " flex flex-col"}>
-      <div className="px-4 pt-4 pb-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Income vs. Expense Projection
-        </p>
-      </div>
-      <div className="flex-1 overflow-x-auto px-4 pb-4">
-        <table className="w-full text-xs" style={{ minWidth: 480 }}>
-          <thead>
-            <tr className="border-b border-border">
-              <td
-                className="pb-1.5 text-muted-foreground font-semibold pr-3"
-                style={{ minWidth: 90 }}
-              ></td>
-              {data.map((d) => (
-                <td
-                  key={d.month}
-                  className="pb-1.5 text-muted-foreground text-center font-medium tabular-nums"
-                  style={{ minWidth: 52 }}
-                >
-                  {d.month}
-                </td>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/40">
-            <tr>
-              <td className="py-1.5 font-semibold text-foreground pr-3">
-                Income
-              </td>
-              {data.map((d) => (
-                <td
-                  key={d.month}
-                  className="py-1.5 text-center tabular-nums text-emerald-700"
-                >
-                  {fmtK(d.inflow)}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td className="py-1.5 font-semibold text-foreground pr-3">
-                Expenses
-              </td>
-              {data.map((d) => (
-                <td
-                  key={d.month}
-                  className="py-1.5 text-center tabular-nums text-rose-600"
-                >
-                  ({fmtK(d.outflow)})
-                </td>
-              ))}
-            </tr>
-            <tr className="bg-secondary/30">
-              <td className="py-1.5 font-bold text-foreground pr-3">
-                Net Cash Flow
-              </td>
-              {data.map((d) => (
-                <td
-                  key={d.month}
-                  className={`py-1.5 text-center font-bold tabular-nums ${d.net >= 0 ? "text-emerald-700" : "text-rose-600"}`}
-                >
-                  {d.net < 0 ? `(${fmtK(Math.abs(d.net))})` : fmtK(d.net)}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 // ─── Panel 6: GURU Optimizer ─────────────────────────────────────────────────
 function GuruOptimizerPanel({
@@ -5169,9 +5094,8 @@ export default function ClientDashboard() {
             />
             <CashManagementPanel assets={assets} cashFlows={cashFlows} />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <BrokeragePanel assets={assets} />
-            <IncomeExpensePanel cashFlows={cashFlows} />
             <GuruOptimizerPanel assets={assets} cashFlows={cashFlows} />
           </div>
 
