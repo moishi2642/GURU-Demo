@@ -5040,7 +5040,7 @@ export default function ClientDashboard() {
                   {fmt(totalToInvestTop, true)}
                 </p>
                 <p className="text-[10px] text-emerald-600 mt-0.5 leading-snug">
-                  Available to deploy — where it sits:
+                  Excess liquidity identified — where it sits:
                 </p>
                 <div className="mt-1.5 flex flex-col gap-0.5">
                   {_cashWhereItSits.map((item) => (
