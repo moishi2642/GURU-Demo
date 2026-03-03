@@ -4051,7 +4051,7 @@ function GuruAllocationView({
                               <div className="border-t border-dashed border-white/25 my-1.5" />
                               {/* After row — new balance + new AT income */}
                               <div className="flex items-baseline justify-between gap-1">
-                                <p className={`${fmtK(proBalance).length > 9 ? "text-sm" : fmtK(proBalance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
+                                <p className="font-black text-white tabular-nums text-[16px]">
                                   {fmtK(proBalance)}
                                 </p>
                                 {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{fmtIncome(proATIncome)}</p>}
@@ -4144,7 +4144,6 @@ function GuruAllocationView({
                       </div>
                     );
                   })()}
-
                   {/* ── Org-chart flow lines (preserved, disabled) ── */}
                   {(() => {
                     return null;
