@@ -853,10 +853,9 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           })}
         </div>
       </div>
-
       {/* ── Chart 2: Cumulative area chart ── */}
       <div className="px-3 pb-2">
-        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Cumulative Net</p>
+        <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Cumulative Net Cash Flow</p>
         <div style={{ height: 120 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 16, right: 44, left: 0, bottom: 0 }}>
@@ -947,7 +946,6 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           </ResponsiveContainer>
         </div>
       </div>
-
       <div className="flex px-4 pb-3 gap-4 text-xs border-t border-border/40 pt-2">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Surplus
