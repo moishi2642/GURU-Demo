@@ -2667,14 +2667,14 @@ function BucketExecutionPanel({
         )}
 
         {/* ── Current / Target side by side ── */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
-            <p className="text-xl font-black tabular-nums text-foreground leading-none">{fmtD(current)}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-border bg-muted/50 px-3 py-2.5">
+            <p className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
+            <p className="text-base font-black tabular-nums text-foreground leading-none">{fmtD(current)}</p>
           </div>
-          <div>
-            <p className="text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
-            <p className="text-xl font-black tabular-nums leading-none" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+            <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
+            <p className="text-base font-black tabular-nums leading-none" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
           </div>
         </div>
 
@@ -2695,8 +2695,8 @@ function BucketExecutionPanel({
           </div>
         ) : (
           <>
-            <div>
-              <p className="text-[9px] uppercase tracking-widest font-bold mb-1.5" style={{ color: AMBER }}>
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+              <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>
                 Transfer Amount
               </p>
               <input
@@ -2705,8 +2705,8 @@ function BucketExecutionPanel({
                 value={fmtInput(rawAmt)}
                 onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
                 placeholder="0"
-                className="w-full px-3 py-2.5 text-base font-black tabular-nums rounded-lg focus:outline-none bg-background border"
-                style={{ color: AMBER, borderColor: `${AMBER}60`, outlineColor: AMBER }}
+                className="w-full text-base font-black tabular-nums focus:outline-none bg-transparent"
+                style={{ color: AMBER }}
               />
             </div>
 
