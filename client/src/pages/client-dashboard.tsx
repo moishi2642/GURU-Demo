@@ -3338,7 +3338,7 @@ function BucketProductPanel({
 const GURU_BUCKETS_DEF = [
   {
     name: "Operating Cash",
-    tagline: "Your safety net",
+    tagline: "Cash for upcoming expenditures",
     rule: "2-3 months of cash",
     bg: "#1a3a8a",
     dark: "#142e6e",
