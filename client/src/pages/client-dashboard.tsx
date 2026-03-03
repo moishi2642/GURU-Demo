@@ -3451,15 +3451,6 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: true,
     },
     {
-      name: "JPMorgan 100% Treasuries Money Market Fund",
-      institution: "J.P. Morgan",
-      type: "Money Market Fund",
-      grossYield: "3.90%",
-      atYield: "2.54%",
-      pickup: "Duration premium",
-      isGuru: false,
-    },
-    {
       name: "The City of New York Muni Bonds Due 02/2028",
       institution: "NYC",
       type: "Municipal Bond",
