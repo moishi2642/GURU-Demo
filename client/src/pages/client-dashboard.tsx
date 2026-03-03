@@ -3981,28 +3981,48 @@ function GuruAllocationView({
                           available to redeploy
                         </p>
                       </div>
-                      <div>
-                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">
-                          Potential After-Tax Income Pickup Per Year
-                        </p>
-                        <p className="text-2xl font-black tabular-nums text-emerald-700">
-                          {fmt(addlIncome)}
-                        </p>
-                        <p className="text-[9px] text-emerald-600/60 mt-0.5">
-                          projected annual gain
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">
-                          Potential Cashflow Increase
-                        </p>
-                        <p className="text-2xl font-black tabular-nums text-emerald-700">
-                          {pctIncrease}%
-                        </p>
-                        <p className="text-[9px] text-emerald-600/60 mt-0.5">
-                          vs. current yield
-                        </p>
-                      </div>
+                      {(() => {
+                        const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(sels => sels.length > 0);
+                        if (!anyChanges) return <><div /><div /></>;
+                        const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+                        const impacts = rows.map((r) => {
+                          const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
+                          const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
+                          const newBalance = r.current + inAmt - outAmt;
+                          const curATYield = weightedATYield(r.subAccounts, r.current);
+                          const sels = bucketProductSelections[r.def.name] ?? [];
+                          const newATYield = sels.length > 0
+                            ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+                            : curATYield;
+                          return {
+                            pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
+                            curIncome: r.current * curATYield / 100,
+                          };
+                        });
+                        const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
+                        const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
+                        const pctChange = totalCurIncome > 0 ? ((totalPickup / totalCurIncome) * 100) : 0;
+                        const isGain = totalPickup >= 0;
+                        const col = isGain ? "text-emerald-700" : "text-red-600";
+                        return (
+                          <>
+                            <div>
+                              <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">AT Income Change / Year</p>
+                              <p className={`text-2xl font-black tabular-nums ${col}`}>
+                                {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
+                              </p>
+                              <p className="text-[9px] text-emerald-600/60 mt-0.5">from pending changes</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Income Δ</p>
+                              <p className={`text-2xl font-black tabular-nums ${col}`}>
+                                {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
+                              </p>
+                              <p className="text-[9px] text-emerald-600/60 mt-0.5">vs. current AT income</p>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   {/* 5 bucket mini-cards — single row normally, two-row pro forma when transfers pending */}
