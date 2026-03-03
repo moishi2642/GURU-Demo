@@ -5034,7 +5034,7 @@ export default function ClientDashboard() {
               <div className="px-4 py-4 flex flex-col gap-0.5 cursor-pointer hover:bg-emerald-50/50 transition-colors" data-testid="kpi-cash-excess" onClick={() => setActiveView("guru")}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <Wallet className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <p className="text-[9px] uppercase tracking-widest font-bold text-emerald-700">Total Cash to Invest</p>
+                  <p className="text-[9px] uppercase tracking-widest font-bold text-emerald-700">Potential Cash to Invest</p>
                 </div>
                 <p className="text-2xl font-black tabular-nums text-emerald-700 leading-tight">
                   {fmt(totalToInvestTop, true)}
