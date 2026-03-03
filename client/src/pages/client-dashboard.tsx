@@ -3439,16 +3439,25 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: false,
     },
   ],
-  // Build: US Treasuries are state/city exempt (federal 35% only) → keep 65%
+  // Build: JPMorgan Treasuries MMF is GURU pick (federal-only exempt → ×0.65); munis triple-exempt (×1.00); equities cap gains (×0.68)
   Build: [
+    {
+      name: "JPMorgan 100% Treasuries Money Market Fund",
+      institution: "J.P. Morgan",
+      type: "Money Market Fund",
+      grossYield: "3.90%",
+      atYield: "2.54%",
+      pickup: "+0.39%",
+      isGuru: true,
+    },
     {
       name: "US Treasury Ladder — 1, 2 & 3-Year Notes",
       institution: "US Treasury",
       type: "Treasury Ladder",
       grossYield: "4.01%",
       atYield: "2.61%",
-      pickup: "+0.22%",
-      isGuru: true,
+      pickup: "Duration lock-in",
+      isGuru: false,
     },
     {
       name: "The City of New York Muni Bonds Due 02/2028",
@@ -3456,7 +3465,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       type: "Municipal Bond",
       grossYield: "2.67%",
       atYield: "2.67%",
-      pickup: "Triple exempt",
+      pickup: "TEY 5.04%",
       isGuru: false,
     },
     {
@@ -3465,7 +3474,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       type: "Index ETF",
       grossYield: "6.50%",
       atYield: "4.42%",
-      pickup: "Cap gains rate",
+      pickup: "+1.62% AT",
       isGuru: false,
     },
   ],
