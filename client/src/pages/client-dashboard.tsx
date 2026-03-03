@@ -3664,8 +3664,11 @@ function GuruAllocationView({
         const reserveTarget = Math.round(minMonthly * 2);
         const flowTarget = annualOut;
         const buildTarget = buildCurrent;
+        // Use prototype model total ($5,996,550) so growTarget is consistent with
+        // hardcoded growCurrent ($2,509,500) — both reflect the prototype asset values
+        const PROTO_TOTAL_ASSETS = 5996550;
         const growTarget =
-          totalAssets - reserveTarget - flowTarget - buildTarget - otherCurrent;
+          PROTO_TOTAL_ASSETS - reserveTarget - flowTarget - buildTarget - otherCurrent;
 
         const reserveDelta = reserveTarget - reserveCurrent;
         const flowDelta = flowTarget - flowCurrent;
