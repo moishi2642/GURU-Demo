@@ -4030,10 +4030,10 @@ function GuruAllocationView({
                       const isOverfund = r.delta < -5000;
                       const isDragTarget = dragItem && dragItem !== r.def.name;
 
-                      /* ── Option B inline style — Operating Cash only ── */
-                      if (r.def.name === "Operating Cash" && hasPending && deltaAmt !== 0 && !proforma) {
+                      /* ── Option B inline before/after — all buckets with a delta ── */
+                      if (hasPending && deltaAmt !== 0 && !proforma) {
                         return (
-                          <div key="op-cash-optB" className="flex flex-col">
+                          <div key={`${r.def.name}-optB`} className="flex flex-col">
                             <div className="mb-1 h-5 flex items-center justify-center">
                               <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border ${deltaAmt > 0 ? "bg-green-50 border-green-300 text-green-700" : "bg-red-50 border-red-300 text-red-700"}`}>
                                 {deltaAmt > 0 ? "▲ +" : "▼ −"}{fmtK(Math.abs(deltaAmt))}
@@ -4041,22 +4041,23 @@ function GuruAllocationView({
                             </div>
                             <div className="rounded-xl p-4 flex-1" style={{ background: hc.bg }}>
                               <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot }} />
+                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot ?? hc.accent }} />
                                 <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                               </div>
                               <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
-                              {/* Before */}
-                              <p className="text-sm font-bold text-white/40 tabular-nums leading-none line-through mt-1">
-                                {fmtK(r.current)}
-                              </p>
+                              {/* Before row — balance + yield both crossed out */}
+                              <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
+                                <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(r.current)}</p>
+                                <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>
+                              </div>
                               {/* Dotted divider */}
                               <div className="border-t border-dashed border-white/25 my-1.5" />
-                              {/* After */}
+                              {/* After row — new balance + yield */}
                               <div className="flex items-baseline justify-between gap-1">
                                 <p className={`${fmtK(proBalance).length > 9 ? "text-sm" : fmtK(proBalance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
                                   {fmtK(proBalance)}
                                 </p>
-                                <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>
+                                <p className="text-white/60 tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>
                               </div>
                             </div>
                           </div>
@@ -4138,106 +4139,11 @@ function GuruAllocationView({
                       );
                     };
 
-                    if (!hasPending) {
-                      return (
-                        <div className="grid grid-cols-5 gap-3 mt-5">
-                          {rows.map((r) => renderBucketCard(r, false))}
-                          {renderSubCats()}
-                        </div>
-                      );
-                    }
-
-                    /* ── Two-row pro forma layout ── */
+                    /* ── Single-row layout — Option B cards are self-contained ── */
                     return (
-                      <div className="mt-5">
-                        {/* CURRENT row label */}
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-[8px] uppercase tracking-widest font-bold text-slate-400">Current</span>
-                          <div className="flex-1 h-px bg-border" />
-                        </div>
-                        {/* Current row — faded */}
-                        <div className="grid grid-cols-5 gap-3">
-                          {rows.map((r) => renderBucketCard(r, false))}
-                          {renderSubCats(0.4)}
-                        </div>
-
-                        {/* Flow arrows between rows */}
-                        <div className="relative mt-1" style={{ height: 48 }}>
-                          {pendingTransfers.map((t, ti) => {
-                            const fromIdx = rows.findIndex(r => r.def.name === t.from);
-                            const toIdx   = rows.findIndex(r => r.def.name === t.to);
-                            if (fromIdx < 0 || toIdx < 0) return null;
-                            const fromPct = ((fromIdx + 0.5) / 5) * 100;
-                            const toPct   = ((toIdx   + 0.5) / 5) * 100;
-                            const midPct  = (fromPct + toPct) / 2;
-                            const fromColor = HERO_COLORS[t.from]?.bg ?? "#64748b";
-                            const toColor   = HERO_COLORS[t.to]?.bg   ?? "#64748b";
-                            const goRight   = fromPct < toPct;
-                            return (
-                              <div key={`flow-${ti}`}>
-                                {/* Horizontal line */}
-                                <div className="absolute" style={{
-                                  left: `${Math.min(fromPct, toPct)}%`,
-                                  top: "50%",
-                                  width: `${Math.abs(toPct - fromPct)}%`,
-                                  height: 2,
-                                  background: `linear-gradient(to ${goRight ? "right" : "left"}, ${fromColor}cc, ${toColor}cc)`,
-                                  transform: "translateY(-50%)",
-                                }} />
-                                {/* Arrowhead at destination */}
-                                <div className="absolute" style={{
-                                  left: `${toPct}%`,
-                                  top: "50%",
-                                  transform: `translate(${goRight ? "-8px" : "2px"}, -50%)`,
-                                  width: 0,
-                                  height: 0,
-                                  borderTop: "5px solid transparent",
-                                  borderBottom: "5px solid transparent",
-                                  [goRight ? "borderLeft" : "borderRight"]: `7px solid ${toColor}`,
-                                }} />
-                                {/* Amount pill */}
-                                <div className="absolute text-[9px] font-black tabular-nums rounded-full px-2 py-0.5 border shadow-sm whitespace-nowrap"
-                                  style={{
-                                    left: `${midPct}%`,
-                                    top: "50%",
-                                    transform: "translate(-50%, -50%)",
-                                    background: "#fff",
-                                    color: fromColor,
-                                    borderColor: fromColor + "55",
-                                  }}
-                                >
-                                  {fmtK(t.amount)}
-                                </div>
-                                {/* Animated traveling dot */}
-                                <motion.div
-                                  className="absolute rounded-full shadow-md z-10"
-                                  style={{ width: 8, height: 8, backgroundColor: fromColor, marginLeft: -4, marginTop: -4 }}
-                                  animate={{ left: [`${fromPct}%`, `${toPct}%`], top: ["50%", "50%"] }}
-                                  transition={{ duration: 1.8, delay: ti * 0.4, repeat: Infinity, ease: "easeInOut" }}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* PRO FORMA row label */}
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-[8px] uppercase tracking-widest font-bold" style={{ color: "#16a34a" }}>Pro Forma</span>
-                          <div className="flex-1 h-px" style={{ background: "#16a34a44" }} />
-                        </div>
-                        {/* Pro forma row — full brightness */}
-                        <div className="grid grid-cols-5 gap-3">
-                          {rows.map((r) => {
-                            /* Op Cash is already self-contained in the current row via Option B */
-                            if (r.def.name === "Operating Cash") {
-                              const inA = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
-                              const outA = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
-                              if (inA - outA !== 0) return <div key="op-cash-spacer" />;
-                            }
-                            return renderBucketCard(r, true);
-                          })}
-                          {renderSubCats(1)}
-                        </div>
+                      <div className="grid grid-cols-5 gap-3 mt-5">
+                        {rows.map((r) => renderBucketCard(r, false))}
+                        {renderSubCats()}
                       </div>
                     );
                   })()}
