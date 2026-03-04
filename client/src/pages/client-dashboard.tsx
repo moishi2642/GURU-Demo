@@ -4728,7 +4728,8 @@ export default function ClientDashboard() {
                     ))}
                   </div>
                 </div>
-                <div className="px-5 py-3 border-t border-border flex items-center justify-end">
+                <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">Review with client</span>
                   <span className="text-[10px] font-bold text-blue-600 flex items-center gap-0.5">Review <ArrowUpRight className="w-3 h-3" /></span>
                 </div>
               </div>
