@@ -649,7 +649,7 @@ function NetWorthPanel({
           </div>
           <div className="text-right flex-shrink-0 mt-0.5">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">5yr Projection</p>
-            <p className="text-lg font-extrabold tabular-nums text-blue-600">{fmt(projYear5, true)}</p>
+            <p className="text-lg font-extrabold tabular-nums text-blue-600">{fmt(projYear5)}</p>
             <p className="text-[9px] text-muted-foreground">at 6.5% growth</p>
           </div>
         </div>
