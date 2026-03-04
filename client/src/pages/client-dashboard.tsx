@@ -3703,7 +3703,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                   style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-blue-400 text-[11px]">↳</span>
                       <span className="text-[10px] font-semibold text-blue-800">Chase Total Checking</span>
                       <span className="text-[8px] text-blue-400 font-mono">Primary</span>
                     </div>
@@ -3725,7 +3724,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                   style={{ backgroundColor: "rgba(29,78,216,0.03)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-blue-400/70 text-[11px]">↳</span>
                       <span className="text-[10px] font-semibold text-blue-700">Citizens Private Banking Checking</span>
                       <span className="text-[8px] text-amber-500 font-mono">Excess</span>
                     </div>
@@ -3790,7 +3788,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                   style={{ backgroundColor: "rgba(217,119,6,0.04)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-amber-500 text-[11px]">↳</span>
                       <span className="text-[10px] font-semibold text-amber-800">Citizens Private Bank Money Market</span>
                       <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
                     </div>
@@ -3812,7 +3809,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                   style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-amber-400/70 text-[11px]">↳</span>
                       <span className="text-[10px] text-slate-600">CapitalOne 360 Performance Savings</span>
                       <span className="text-[8px] text-amber-500 font-mono">3.78%</span>
                     </div>
@@ -3844,7 +3840,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                   style={{ backgroundColor: "rgba(22,163,74,0.04)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-green-500 text-[11px]">↳</span>
                       <span className="text-[10px] font-semibold text-green-800">Treasuries 1 year</span>
                       <span className="text-[8px] text-green-600 font-mono">4.50%</span>
                     </div>
