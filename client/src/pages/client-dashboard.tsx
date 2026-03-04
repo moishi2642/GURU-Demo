@@ -3418,7 +3418,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
             data-testid="mm-month-select"
             value={selectedMonth}
             onChange={e => setSelectedMonth(Number(e.target.value))}
-            className="bg-slate-700 border border-slate-600 text-white text-[11px] rounded-md px-3 py-1.5 focus:outline-none focus:border-blue-400 flex-shrink-0"
+            className="bg-white border border-slate-200 text-slate-700 text-[11px] rounded-md px-3 py-1.5 focus:outline-none focus:border-blue-400 flex-shrink-0 shadow-sm"
           >
             {MONTHS.map((mo, i) => (
               <option key={mo} value={i}>{mo} 2026{i === 3 ? ' (Upcoming)' : ''}</option>
@@ -3438,269 +3438,237 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
           FLOW SCHEMATIC VIEW
           ══════════════════════════════════════════════════════════ */}
       {mmView === 'flow' && (() => {
-        /* ── parse partner names & salaries from client data ── */
-        const raw = clientName ?? '';
-        const ampParts = raw.split(' & ');
-        const p1Words = (ampParts[0] ?? 'Partner 1').split(' ');
-        const p2Words = (ampParts[1] ?? 'Partner 2').split(' ');
-        const p1First = p1Words[0] ?? 'Partner';
-        const p2First = p2Words[0] ?? 'Partner';
-        const sharedLast = p2Words[p2Words.length - 1] ?? '';
+        /* ── parse per-month income ── */
         const salDesc = cashFlows.find(c => c.category === 'salary')?.description ?? '';
         const p1Match = salDesc.match(/P1 \(\$([0-9,]+)\)/);
         const p2Match = salDesc.match(/P2 \(\$([0-9,]+)\)/);
         const p1Salary = p1Match ? parseInt(p1Match[1].replace(/,/g, '')) : Math.round(income * 0.71);
         const p2Salary = p2Match ? parseInt(p2Match[1].replace(/,/g, '')) : Math.round(income * 0.29);
-        const checkingAccts = assets.filter(a =>
-          a.type === 'cash' && (a.description ?? '').toLowerCase().includes('checking')
-        );
         const rentalCf = cashFlows.find(c => c.category === 'investments' && parseFloat(c.amount ?? '0') > 0);
-        const rentalIncome = rentalCf ? Math.round(parseFloat(rentalCf.amount ?? '0')) : 1722;
+        const rentalAmt = rentalCf ? Math.round(parseFloat(rentalCf.amount ?? '0')) : 1722;
+
+        /* ── balances for selected month ── */
+        const citizensCheckBal = CITIZENS_CHECK_BAL[sm];
+        const chaseBal         = CHASE_BAL[sm];
+        const citizensMM       = CITIZENS_MM_BAL[sm];
+        const capOneBal        = CAPONE_BAL[sm];
+
+        /* ── animated flow line: horizontal bar with 3 travelling dots ── */
+        const FlowLine = ({ active = true, color = '#10b981', width = 56 }: { active?: boolean; color?: string; width?: number }) => (
+          <div className="relative flex-shrink-0 overflow-hidden rounded-full" style={{ width, height: 2, backgroundColor: active ? `${color}35` : '#e2e8f0' }}>
+            {active && ([0, 0.5, 1.0] as number[]).map((d, i) => (
+              <motion.div key={i}
+                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
+                style={{ backgroundColor: color, boxShadow: `0 0 4px ${color}80` }}
+                animate={{ left: ['-8px', `${width + 8}px`] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: 'linear', delay: d }}
+              />
+            ))}
+          </div>
+        );
+
+        /* ── all expense items (base + specials) for the tree ── */
+        const allExpenses = [
+          ...BASE_EXP,
+          ...specials.map(s => ({ label: s.label, amount: s.amount, dot: '#f97316' })),
+        ];
 
         return (
-        <div className="bg-slate-900 px-6 py-5 overflow-x-auto" style={{ minHeight: 540 }}>
+        <div className="bg-slate-50 px-5 py-5 overflow-x-auto" style={{ minHeight: 560 }}>
 
-          {/* ── Month title ── */}
-          <div className="mb-4 flex items-center gap-3">
-            <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">GURU Money Flow</span>
-            <span className="text-[11px] font-black text-white bg-slate-800 border border-slate-600 rounded-full px-3 py-1">
+          {/* ── Month / status bar ── */}
+          <div className="mb-5 flex items-center gap-3">
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Money Flow Schematic</span>
+            <span className="text-[11px] font-black text-slate-700 bg-white border border-slate-200 rounded-full px-3 py-1 shadow-sm">
               {MONTHS[sm]} 2026
             </span>
             {rsvDraw > 0 && (
-              <span className="text-[9px] font-black text-amber-400 bg-amber-900/30 border border-amber-700/40 rounded-full px-2.5 py-1">
+              <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
                 ↔ GURU Auto-draw Active
               </span>
             )}
           </div>
 
-          {/* ── 3-column layout: Sources | Hub | Outflows ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px 1fr', minWidth: 900, gap: 0 }}>
+          {/* ── Main 3-zone layout ── */}
+          <div className="flex items-start gap-0" style={{ minWidth: 1060 }}>
 
-            {/* ══ LEFT: Inflow Sources ══ */}
-            <div className="flex flex-col gap-3 pr-3 border-r border-slate-700">
-              <div className="text-[8px] font-black uppercase tracking-widest text-slate-500">Inflow Sources</div>
+            {/* ══ LEFT: Income + Reserve ══ */}
+            <div className="flex flex-col gap-2" style={{ width: 240 }}>
 
-              {/* P1 Salary */}
-              <div className="flex items-stretch gap-0">
-                <div className="flex-1 rounded-xl rounded-r-none border border-r-0 border-emerald-500/30 bg-slate-800 px-3 py-3">
-                  <div className="text-[7px] font-black uppercase tracking-widest text-emerald-400 mb-1">Partner 1 · Monthly Salary</div>
-                  <div className="text-[10px] font-semibold text-white">{p1First} {sharedLast}</div>
-                  <div className="text-[18px] font-black text-emerald-400 tabular-nums mt-1 leading-tight">{fmtBal(p1Salary)}</div>
-                  <div className="text-[7px] text-slate-500 mt-0.5">after-tax · per month</div>
-                </div>
-                <div className="flex flex-col items-center justify-center gap-0.5 px-2 bg-slate-800/40 rounded-r-xl border border-l-0 border-emerald-500/20" style={{ minWidth: 52 }}>
-                  <div className="text-[7px] text-emerald-400 font-mono tabular-nums font-semibold">{fmtBal(p1Salary)}</div>
-                  <div className="text-emerald-400 text-[10px]">→</div>
-                </div>
+              {/* INCOME GROUP BANNER */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <div className="h-px flex-1 bg-emerald-200" />
+                <span className="text-[7px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Income</span>
+                <div className="h-px flex-1 bg-emerald-200" />
               </div>
 
-              {/* P2 Salary */}
-              <div className="flex items-stretch gap-0">
-                <div className="flex-1 rounded-xl rounded-r-none border border-r-0 border-emerald-500/30 bg-slate-800 px-3 py-3">
-                  <div className="text-[7px] font-black uppercase tracking-widest text-emerald-400 mb-1">Partner 2 · Monthly Salary</div>
-                  <div className="text-[10px] font-semibold text-white">{p2First} {sharedLast}</div>
-                  <div className="text-[18px] font-black text-emerald-400 tabular-nums mt-1 leading-tight">{fmtBal(p2Salary)}</div>
-                  <div className="text-[7px] text-slate-500 mt-0.5">after-tax · per month</div>
+              {/* Michael Kessler · P1 After-Tax Salary */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-3 py-2.5 shadow-sm">
+                  <div className="text-[7px] font-black uppercase tracking-widest text-emerald-600 mb-0.5">After-Tax Salary · Partner 1</div>
+                  <div className="text-[10px] font-bold text-slate-800">Michael Kessler</div>
+                  <div className="text-[17px] font-black text-emerald-600 tabular-nums leading-tight">{fmtBal(p1Salary)}</div>
+                  <div className="text-[7px] text-slate-400 mt-0.5">per month</div>
                 </div>
-                <div className="flex flex-col items-center justify-center gap-0.5 px-2 bg-slate-800/40 rounded-r-xl border border-l-0 border-emerald-500/20" style={{ minWidth: 52 }}>
-                  <div className="text-[7px] text-emerald-400 font-mono tabular-nums font-semibold">{fmtBal(p2Salary)}</div>
-                  <div className="text-emerald-400 text-[10px]">→</div>
+                <FlowLine active={true} color="#10b981" />
+              </div>
+
+              {/* Sarah Kessler · P2 After-Tax Salary */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-3 py-2.5 shadow-sm">
+                  <div className="text-[7px] font-black uppercase tracking-widest text-emerald-600 mb-0.5">After-Tax Salary · Partner 2</div>
+                  <div className="text-[10px] font-bold text-slate-800">Sarah Kessler</div>
+                  <div className="text-[17px] font-black text-emerald-600 tabular-nums leading-tight">{fmtBal(p2Salary)}</div>
+                  <div className="text-[7px] text-slate-400 mt-0.5">per month</div>
                 </div>
+                <FlowLine active={true} color="#10b981" />
               </div>
 
               {/* Rental Income */}
-              <div className="flex items-stretch gap-0">
-                <div className="flex-1 rounded-xl rounded-r-none border border-r-0 border-teal-500/30 bg-slate-800 px-3 py-3">
-                  <div className="text-[7px] font-black uppercase tracking-widest text-teal-400 mb-1">Sarasota Investment Property</div>
-                  <div className="text-[10px] font-semibold text-white">Rental Income</div>
-                  <div className="text-[18px] font-black text-teal-400 tabular-nums mt-1 leading-tight">{fmtBal(rentalIncome)}</div>
-                  <div className="text-[7px] text-slate-500 mt-0.5">net of mgmt fee · monthly</div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 bg-white border border-teal-200 rounded-xl px-3 py-2.5 shadow-sm">
+                  <div className="text-[7px] font-black uppercase tracking-widest text-teal-600 mb-0.5">Rental Income</div>
+                  <div className="text-[10px] font-bold text-slate-800">Sarasota Property</div>
+                  <div className="text-[17px] font-black text-teal-600 tabular-nums leading-tight">{fmtBal(rentalAmt)}</div>
+                  <div className="text-[7px] text-slate-400 mt-0.5">net of management fee</div>
                 </div>
-                <div className="flex flex-col items-center justify-center gap-0.5 px-2 bg-slate-800/40 rounded-r-xl border border-l-0 border-teal-500/20" style={{ minWidth: 52 }}>
-                  <div className="text-[7px] text-teal-400 font-mono tabular-nums font-semibold">{fmtBal(rentalIncome)}</div>
-                  <div className="text-teal-400 text-[10px]">→</div>
-                </div>
+                <FlowLine active={true} color="#0d9488" />
               </div>
 
-              {/* Reserve layer divider */}
-              <div className="flex items-center gap-2 py-1">
-                <div className="h-px flex-1 bg-slate-700" />
-                <span className="text-[7px] font-black uppercase tracking-widest text-slate-500">Reserve Layer</span>
-                <div className="h-px flex-1 bg-slate-700" />
+              {/* RESERVE GROUP BANNER */}
+              <div className="flex items-center gap-1.5 mt-3 mb-1">
+                <div className="h-px flex-1 bg-amber-200" />
+                <span className="text-[7px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Reserve</span>
+                <div className="h-px flex-1 bg-amber-200" />
               </div>
 
-              {/* JPMorgan MMF */}
-              <div className="flex items-stretch gap-0">
-                <div className={`flex-1 rounded-xl rounded-r-none border border-r-0 bg-slate-800 px-3 py-3 transition-all ${rsvDraw > 0 ? 'border-blue-500/50' : 'border-slate-700'}`}>
-                  <div className="text-[7px] font-black uppercase tracking-widest mb-1" style={{ color: rsvDraw > 0 ? '#93c5fd' : '#64748b' }}>
-                    JPMorgan 100% Treasury MMF
+              {/* Citizens Private Bank MM */}
+              <div className="flex items-center gap-1.5">
+                <div className={`flex-1 bg-white rounded-xl px-3 py-2.5 shadow-sm transition-all ${rsvDraw > 0 ? 'border-2 border-amber-400' : 'border border-amber-200'}`}>
+                  <div className="text-[7px] font-black uppercase tracking-widest text-amber-600 mb-0.5">Citizens Private Bank MM · 4.85%</div>
+                  <div className="text-[10px] font-bold text-slate-800">Money Market</div>
+                  <div className="text-[17px] font-black text-amber-600 tabular-nums leading-tight">{fmtBal(citizensMM)}</div>
+                  <div className="text-[7px] text-slate-400 mt-0.5">{rsvDraw > 0 ? '→ Auto-draw active this month' : 'Standby · same-day liquidity'}</div>
+                </div>
+                {rsvDraw > 0
+                  ? <FlowLine active={true} color="#d97706" />
+                  : <div className="flex-shrink-0" style={{ width: 56, height: 2, borderTop: '2px dashed #e2e8f0' }} />}
+              </div>
+
+              {/* CapitalOne 360 */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 bg-white border border-amber-100 rounded-xl px-3 py-2.5 shadow-sm">
+                  <div className="text-[7px] font-black uppercase tracking-widest text-amber-500 mb-0.5">CapitalOne 360 · 3.78%</div>
+                  <div className="text-[10px] font-bold text-slate-800">Performance Savings</div>
+                  <div className="text-[17px] font-black text-amber-500 tabular-nums leading-tight">{fmtBal(capOneBal)}</div>
+                  <div className="text-[7px] text-slate-400 mt-0.5">FDIC-insured · stable buffer</div>
+                </div>
+                <div className="flex-shrink-0" style={{ width: 56, height: 2, borderTop: '2px dashed #e2e8f0' }} />
+              </div>
+
+            </div>
+
+            {/* ══ MIDDLE: Operating Cash Hub ══ */}
+            <div className="flex flex-col" style={{ width: 272 }}>
+
+              {/* Blue hub header */}
+              <div className="rounded-t-2xl px-4 py-3" style={{ backgroundColor: '#1d4ed8' }}>
+                <div className="text-[7px] font-black uppercase tracking-widest text-blue-200 mb-0.5">Operating Cash Hub</div>
+                <div className="text-[13px] font-black text-white leading-tight">Citizens Private Banking</div>
+                <div className="text-[10px] font-bold text-white">Checking</div>
+                <div className="text-[7px] text-blue-300/70 mt-0.5">Primary · expenses flow from here</div>
+              </div>
+
+              {/* Citizens account (primary — main expense account) */}
+              <div className="bg-white border-x border-blue-100 px-4 py-3 border-b border-dashed">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="text-[8px] font-black text-blue-700">Citizens Private Banking</div>
+                    <div className="text-[7px] text-slate-400">Primary · all expenses deducted here</div>
                   </div>
-                  <div className="text-[10px] font-semibold text-white">Money Market Fund</div>
-                  <div className="text-[16px] font-black tabular-nums mt-1 leading-tight" style={{ color: rsvDraw > 0 ? '#60a5fa' : '#94a3b8' }}>{fmtBal(mmfBal)}</div>
-                  <div className="text-[7px] mt-0.5" style={{ color: rsvDraw > 0 ? '#93c5fd' : '#475569' }}>
-                    {rsvDraw > 0 ? '→ GURU auto-draw active' : '3-month buffer · 4.85% gross · standby'}
+                  <div className={`text-[14px] font-black tabular-nums ${citizensCheckBal < 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                    {citizensCheckBal < 0 ? `(${Math.abs(citizensCheckBal).toLocaleString()})` : fmtBal(citizensCheckBal)}
                   </div>
-                  {maturingBillIdx >= 0 && (
-                    <div className="text-[7px] text-amber-400 mt-0.5">↓ +$65K T-bill sweep in this month</div>
-                  )}
                 </div>
-                <div className={`flex flex-col items-center justify-center gap-0.5 px-2 rounded-r-xl border border-l-0 ${rsvDraw > 0 ? 'bg-blue-900/30 border-blue-500/30' : 'bg-slate-800/40 border-slate-700'}`} style={{ minWidth: 52 }}>
-                  {rsvDraw > 0 ? (
-                    <>
-                      <div className="text-[7px] text-blue-400 font-mono tabular-nums font-semibold">{fmtBal(rsvDraw)}</div>
-                      <motion.div className="text-blue-400 text-[10px]" animate={{ x: [0, 3, 0] }} transition={{ duration: 0.8, repeat: Infinity }}>→</motion.div>
-                    </>
-                  ) : (
-                    <div className="text-[8px] text-slate-700">—</div>
-                  )}
+                {citizensCheckBal < 0 && (
+                  <div className="mt-1 text-[7px] text-red-500 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
+                    ⚠ Overdrawn · GURU recommends sweeping excess to Reserve
+                  </div>
+                )}
+              </div>
+
+              {/* Chase account (secondary) */}
+              <div className="bg-white border-x border-blue-100 px-4 py-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="text-[8px] font-semibold text-slate-500">Chase Total Checking</div>
+                    <div className="text-[7px] text-slate-400">Secondary account</div>
+                  </div>
+                  <div className="text-[14px] font-black tabular-nums text-blue-600">{fmtBal(chaseBal)}</div>
                 </div>
               </div>
 
-              {/* T-Bill Ladder mini */}
-              <div className="rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2.5">
-                <div className="text-[7px] font-black uppercase tracking-widest text-slate-500 mb-2">T-Bill Ladder · Backing MMF</div>
-                <div className="flex flex-col gap-1.5">
-                  {TBILLS.map((bill, i) => {
-                    const state = getBillState(i);
-                    const col = state === 'maturing' ? '#fbbf24' : state === 'matured' ? '#1e293b' : '#10b981';
-                    const labelCol = state === 'maturing' ? '#fbbf24' : state === 'matured' ? '#334155' : '#94a3b8';
+              {/* Total Outflow footer — this is where the right-side line originates */}
+              <div className="rounded-b-2xl border-x border-b border-blue-100 bg-red-50 px-4 py-3 flex items-center justify-between">
+                <div>
+                  <div className="text-[7px] font-black uppercase tracking-widest text-red-500 mb-0.5">Total Outflow · {MONTHS[sm]}</div>
+                  <div className="text-[20px] font-black text-red-600 tabular-nums leading-none">({fmtBal(totalExp)})</div>
+                  <div className="text-[7px] text-slate-400 mt-1">→ expense breakdown →</div>
+                </div>
+                <FlowLine active={true} color="#dc2626" width={48} />
+              </div>
+
+            </div>
+
+            {/* ══ RIGHT: Expense category org-chart tree ══ */}
+            <div className="flex-1 pl-0" style={{ minWidth: 340 }}>
+              {/* Trunk connector into tree */}
+              <div className="relative" style={{ paddingLeft: 20 }}>
+                {/* Vertical spine */}
+                <div className="absolute left-0 bg-slate-200 rounded-full" style={{ width: 2, top: 20, bottom: 20 }} />
+
+                {/* Expense mini-cards fanning out */}
+                <div className="flex flex-col gap-2">
+                  {allExpenses.map((exp, idx) => {
+                    const isSpecial = idx >= BASE_EXP.length;
                     return (
-                      <div key={i} className="flex items-center justify-between">
-                        <span className="text-[8px]" style={{ color: labelCol }}>{bill.tenor} · {bill.label}</span>
-                        <span className="text-[8px] font-mono tabular-nums font-semibold" style={{ color: col }}>
-                          {state === 'maturing' ? '✓ MATURES' : state === 'matured' ? 'swept' : `$${bill.face.toLocaleString()}`}
-                        </span>
+                      <div key={exp.label} className="flex items-center gap-0">
+                        {/* Horizontal branch from spine */}
+                        <div className="relative flex-shrink-0 overflow-hidden" style={{ width: 20, height: 2, backgroundColor: `${exp.dot}40` }}>
+                          <motion.div
+                            className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: exp.dot, boxShadow: `0 0 3px ${exp.dot}80` }}
+                            animate={{ left: ['-6px', '26px'] }}
+                            transition={{ duration: 0.8, repeat: Infinity, ease: 'linear', delay: idx * 0.15 }}
+                          />
+                        </div>
+
+                        {/* Mini expense card */}
+                        <div
+                          className={`flex-1 rounded-xl px-3 py-2 shadow-sm border ${isSpecial ? 'bg-orange-50' : 'bg-white'}`}
+                          style={{ borderColor: `${exp.dot}35` }}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: exp.dot }} />
+                              <span className="text-[9px] font-bold truncate" style={{ color: isSpecial ? '#ea580c' : '#334155' }}>{exp.label}</span>
+                              {isSpecial && <span className="text-[7px] text-orange-400 flex-shrink-0 font-mono">one-time</span>}
+                            </div>
+                            <span className="text-[11px] font-black tabular-nums flex-shrink-0" style={{ color: exp.dot }}>
+                              ({fmtBal(exp.amount)})
+                            </span>
+                          </div>
+                          {!isSpecial && (
+                            <div className="mt-1 h-0.5 rounded-full bg-slate-100 overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${Math.min((exp.amount / totalExp) * 100, 100)}%`, backgroundColor: exp.dot, opacity: 0.5 }} />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="mt-2 pt-1.5 border-t border-slate-700">
-                  <div className="text-[7px] text-slate-600">4 × $65K rungs · avg 4.80% APY · US Treasuries</div>
-                </div>
               </div>
-            </div>
-
-            {/* ══ MIDDLE: Operating Cash Hub ══ */}
-            <div className="flex flex-col border-r border-slate-700" style={{ background: '#0f172a' }}>
-              {/* Blue header */}
-              <div className="px-5 py-4 flex-shrink-0" style={{ background: '#1d4ed8' }}>
-                <div className="text-[7px] font-black uppercase tracking-widest text-blue-200 mb-0.5">GURU Operating Cash Hub</div>
-                <div className="text-[15px] font-black text-white">Chase Total Checking</div>
-                <div className="text-[8px] text-blue-300/70 mt-0.5">Primary operating account · GURU Autopilot Active</div>
-                <div className="mt-3 flex items-end justify-between">
-                  <div>
-                    <div className="text-[7px] text-blue-200/60">{MONTHS[sm]} 2026 · Closing Balance</div>
-                    <div className="text-[26px] font-black text-white tabular-nums leading-none">{fmtBal(opsEnd)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[7px] text-blue-200/60">Target Floor</div>
-                    <div className="text-[13px] font-black text-blue-300 tabular-nums">{fmtBal(minOps)}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Net flow summary strip */}
-              <div className="flex gap-0 flex-shrink-0 border-b border-slate-700 bg-slate-800/60">
-                <div className="flex-1 text-center py-2.5 border-r border-slate-700">
-                  <div className="text-[7px] text-slate-500 uppercase tracking-wider mb-0.5">Total Inflow</div>
-                  <div className="text-xs font-black text-emerald-400 tabular-nums">+{fmtBal(income + rentalIncome + rsvDraw)}</div>
-                </div>
-                <div className="flex-1 text-center py-2.5 border-r border-slate-700">
-                  <div className="text-[7px] text-slate-500 uppercase tracking-wider mb-0.5">Total Outflow</div>
-                  <div className="text-xs font-black text-red-400 tabular-nums">({fmtBal(totalExp)})</div>
-                </div>
-                <div className="flex-1 text-center py-2.5">
-                  <div className="text-[7px] text-slate-500 uppercase tracking-wider mb-0.5">Net</div>
-                  <div className={`text-xs font-black tabular-nums ${income + rentalIncome + rsvDraw - totalExp >= 0 ? 'text-blue-400' : 'text-orange-400'}`}>
-                    {income + rentalIncome + rsvDraw - totalExp >= 0 ? '+' : ''}{fmtBal(income + rentalIncome + rsvDraw - totalExp)}
-                  </div>
-                </div>
-              </div>
-
-              {/* Expense breakdown */}
-              <div className="px-4 py-3 flex-1 flex flex-col gap-1.5 overflow-y-auto">
-                <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1">Expense Breakdown · {MONTHS[sm]}</div>
-                {BASE_EXP.map((exp) => (
-                  <div key={exp.label} className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: exp.dot }} />
-                    <span className="text-[10px] text-slate-300 flex-1 leading-tight">{exp.label}</span>
-                    <span className="text-[10px] font-mono text-red-400 tabular-nums">({fmtBal(exp.amount)})</span>
-                    <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden flex-shrink-0">
-                      <div className="h-full rounded-full" style={{ width: `${(exp.amount / 9036) * 100}%`, backgroundColor: exp.dot, opacity: 0.65 }} />
-                    </div>
-                  </div>
-                ))}
-                {specials.length > 0 && (
-                  <div className="mt-1 pt-1.5 border-t border-slate-700/60">
-                    <div className="text-[7px] font-black uppercase tracking-widest text-orange-500/70 mb-1">Irregular · This Month</div>
-                    {specials.map((s, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-1">
-                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-orange-400" />
-                        <span className="text-[10px] text-orange-300 flex-1 leading-tight">{s.label}</span>
-                        <span className="text-[10px] font-mono text-orange-400 tabular-nums">({fmtBal(s.amount)})</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {bldSweep > 0 && (
-                  <div className="flex items-center gap-2 pt-1.5 border-t border-slate-700/60 mt-1">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-purple-400" />
-                    <span className="text-[10px] text-purple-300 flex-1">GURU Build Sweep</span>
-                    <span className="text-[10px] font-mono text-purple-400 tabular-nums">({fmtBal(bldSweep)})</span>
-                  </div>
-                )}
-              </div>
-
-              {/* GURU Autopilot callout */}
-              <div className="px-4 py-3 border-t border-blue-600/30 bg-blue-950/25 flex items-start gap-2 flex-shrink-0">
-                <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-[8px] font-black text-white">G</span>
-                </div>
-                <div className="text-[9px] text-slate-400 leading-relaxed">
-                  {maturingBill
-                    ? `${maturingBill.tenor} T-Bill matures this month — GURU sweeps $65K to JPMorgan MMF.${rsvDraw > 0 ? ` Auto-draw of ${fmtBal(rsvDraw)} from MMF covers operating shortfall.` : ' Ops Cash self-sufficient.'}`
-                    : rsvDraw > 0
-                      ? `GURU detects a ${fmtBal(rsvDraw)} shortfall — auto-draws from JPMorgan MMF. No advisor action needed.`
-                      : `Salary income fully covers expenses. No MMF draw needed. T-Bill ladder compounding in background.`
-                  }
-                </div>
-              </div>
-            </div>
-
-            {/* ══ RIGHT: Expense Category Outflows ══ */}
-            <div className="flex flex-col gap-3 pl-3">
-              <div className="text-[8px] font-black uppercase tracking-widest text-slate-500">Expense Categories</div>
-
-              {BASE_EXP.map((exp) => (
-                <div key={exp.label} className="flex items-stretch gap-0">
-                  <div className={`flex flex-col items-center justify-center gap-0.5 px-2 rounded-l-xl border border-r-0 bg-slate-800/40`} style={{ minWidth: 52, borderColor: `${exp.dot}30` }}>
-                    <div className="text-[10px]" style={{ color: `${exp.dot}cc` }}>←</div>
-                    <div className="text-[7px] font-mono tabular-nums font-semibold" style={{ color: `${exp.dot}cc` }}>({fmtBal(exp.amount)})</div>
-                  </div>
-                  <div className="flex-1 rounded-xl rounded-l-none border border-l-0 bg-slate-800 px-3 py-2.5" style={{ borderColor: `${exp.dot}30` }}>
-                    <div className="text-[7px] font-black uppercase tracking-widest mb-0.5" style={{ color: exp.dot }}>{exp.label}</div>
-                    <div className="text-[15px] font-black tabular-nums text-white leading-tight">{fmtBal(exp.amount)}</div>
-                    <div className="text-[7px] text-slate-500 mt-0.5">monthly · recurring</div>
-                  </div>
-                </div>
-              ))}
-
-              {specials.length > 0 && (
-                <div className="text-[7px] font-black uppercase tracking-widest text-orange-500/70 mt-1">Irregular · {MONTHS[sm]}</div>
-              )}
-              {specials.map((s, i) => (
-                <div key={i} className="flex items-stretch gap-0">
-                  <div className="flex flex-col items-center justify-center gap-0.5 px-2 rounded-l-xl border border-r-0 border-orange-500/25 bg-orange-900/10" style={{ minWidth: 52 }}>
-                    <div className="text-[10px] text-orange-400">←</div>
-                    <div className="text-[7px] text-orange-400 font-mono tabular-nums font-semibold">({fmtBal(s.amount)})</div>
-                  </div>
-                  <div className="flex-1 rounded-xl rounded-l-none border border-l-0 border-orange-500/25 bg-slate-800 px-3 py-2.5">
-                    <div className="text-[7px] font-black uppercase tracking-widest text-orange-400 mb-0.5">{s.label}</div>
-                    <div className="text-[15px] font-black tabular-nums text-orange-300 leading-tight">{fmtBal(s.amount)}</div>
-                    <div className="text-[7px] text-slate-500 mt-0.5">one-time · {MONTHS[sm]}</div>
-                  </div>
-                </div>
-              ))}
             </div>
 
           </div>
