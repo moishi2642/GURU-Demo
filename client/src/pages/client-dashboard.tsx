@@ -1263,59 +1263,97 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
         )}
       </div>
 
-      {/* ── Full-width concentric donut ── */}
+      {/* ── Concentric donut + legend ── */}
       <div className="px-4 pb-1">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
           Current vs. Target Model Portfolio
         </p>
-        <div style={{ width: "100%", height: 220 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              {/* Outer ring = Current */}
-              <Pie
-                data={currentDonut}
-                cx="50%" cy="50%"
-                innerRadius={82} outerRadius={104}
-                dataKey="value" paddingAngle={2}
-                label={({ cx, cy, midAngle, outerRadius, percent, name }) => {
-                  if (percent < 0.04) return null;
-                  const RADIAN = Math.PI / 180;
-                  const x = cx + (outerRadius + 14) * Math.cos(-midAngle * RADIAN);
-                  const y = cy + (outerRadius + 14) * Math.sin(-midAngle * RADIAN);
-                  return (
-                    <text x={x} y={y} fill="#374151" fontSize={9} fontWeight={700} textAnchor="middle" dominantBaseline="central">
-                      {`${name} ${(percent * 100).toFixed(0)}%`}
-                    </text>
-                  );
-                }}
-                labelLine={false}
-              >
-                {currentDonut.map((d, i) => <Cell key={i} fill={d.color} />)}
-              </Pie>
-              {/* Inner ring = Target (no gap — outerRadius=80 touches inner ring's innerRadius=82) */}
-              <Pie
-                data={targetDonut}
-                cx="50%" cy="50%"
-                innerRadius={46} outerRadius={80}
-                dataKey="value" paddingAngle={2}
-                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                  if (percent < 0.08) return null;
-                  const RADIAN = Math.PI / 180;
-                  const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-                  const x = cx + r * Math.cos(-midAngle * RADIAN);
-                  const y = cy + r * Math.sin(-midAngle * RADIAN);
-                  return <text x={x} y={y} fill="white" fontSize={9} fontWeight={700} textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>;
-                }}
-                labelLine={false}
-              >
-                {targetDonut.map((d, i) => <Cell key={i} fill={d.color} opacity={0.6} />)}
-              </Pie>
-              <RechartsTooltip
-                formatter={(v: number, n: string) => [`${((v / totalAllAssets) * 100).toFixed(1)}%  (${fmt(v)})`, n]}
-                contentStyle={{ fontSize: 10 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="flex items-center gap-3">
+          {/* Chart — thick rings so % labels sit inside the bands */}
+          <div style={{ width: 190, height: 190, flexShrink: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                {/* Outer ring = Current (innerRadius 72→100, 28px thick) */}
+                <Pie
+                  data={currentDonut}
+                  cx="50%" cy="50%"
+                  innerRadius={72} outerRadius={92}
+                  dataKey="value" paddingAngle={2}
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                    if (percent < 0.05) return null;
+                    const RADIAN = Math.PI / 180;
+                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + r * Math.cos(-midAngle * RADIAN);
+                    const y = cy + r * Math.sin(-midAngle * RADIAN);
+                    return (
+                      <text x={x} y={y} fill="white" fontSize={9} fontWeight={800} textAnchor="middle" dominantBaseline="central" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}>
+                        {`${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    );
+                  }}
+                  labelLine={false}
+                >
+                  {currentDonut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Pie>
+                {/* Inner ring = Target (innerRadius 38→70, 32px thick, 2px gap) */}
+                <Pie
+                  data={targetDonut}
+                  cx="50%" cy="50%"
+                  innerRadius={38} outerRadius={70}
+                  dataKey="value" paddingAngle={2}
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                    if (percent < 0.07) return null;
+                    const RADIAN = Math.PI / 180;
+                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + r * Math.cos(-midAngle * RADIAN);
+                    const y = cy + r * Math.sin(-midAngle * RADIAN);
+                    return (
+                      <text x={x} y={y} fill="white" fontSize={9} fontWeight={800} textAnchor="middle" dominantBaseline="central">
+                        {`${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    );
+                  }}
+                  labelLine={false}
+                >
+                  {targetDonut.map((d, i) => <Cell key={i} fill={d.color} opacity={0.65} />)}
+                </Pie>
+                <RechartsTooltip
+                  formatter={(v: number, n: string) => [`${((v / totalAllAssets) * 100).toFixed(1)}%  (${fmt(v)})`, n]}
+                  contentStyle={{ fontSize: 10 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Legend */}
+          <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+            <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+              <span>Category</span>
+              <div className="flex gap-2">
+                <span className="w-7 text-right">Cur</span>
+                <span className="w-7 text-right">Tgt</span>
+              </div>
+            </div>
+            {PORT_CATS.map(c => {
+              const curPct = Math.round((CURRENT_PCT[c.name] ?? 0) * 100);
+              const tgtPct = Math.round((TARGET_PCT[c.name] ?? 0) * 100);
+              const diff = curPct - tgtPct;
+              return (
+                <div key={c.name} className="flex items-center gap-1.5 text-[10px]">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                  <span className="text-muted-foreground flex-1 truncate text-[9px]">{c.name}</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="tabular-nums font-bold text-foreground w-7 text-right">{curPct}%</span>
+                    <span className="tabular-nums text-muted-foreground w-7 text-right">{tgtPct}%</span>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="mt-1 pt-1 border-t border-border flex gap-3 text-[9px] text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-foreground/20" />Current (outer)</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-foreground/10" />Target (inner)</span>
+            </div>
+          </div>
         </div>
       </div>
 
