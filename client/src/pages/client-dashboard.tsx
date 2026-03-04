@@ -625,8 +625,6 @@ function NetWorthPanel({
   const projData = buildNWProjection(netWorth, cashFlows, assets);
   const projYear5 = projData[projData.length - 1].value;
   const timelineData = buildNWTimeline(netWorth, cashFlows, assets);
-  const annualComp = buildForecast(cashFlows).reduce((s, d) => s + d.inflow, 0);
-
   // Assets sorted by liquidity (most liquid first)
   const sortedAssets = [...assets].sort(
     (a, b) => liquidityScore(a) - liquidityScore(b),
@@ -643,21 +641,17 @@ function NetWorthPanel({
     <div className={PANEL_CLS}>
       {/* ── Header ── */}
       <div className="px-4 pt-4 pb-3 border-b border-border/60">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Net Worth</p>
-        <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">Total assets minus liabilities · Today</p>
-      </div>
-      {/* ── KPI tiles ── */}
-      <div className="grid grid-cols-2 divide-x divide-border/60 border-b border-border/60">
-        <div className="px-3 py-3 flex flex-col gap-0.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Compensation</p>
-          <p className="text-2xl font-extrabold tabular-nums leading-none text-foreground">{fmt(annualComp, true)}</p>
-          <p className="text-[9px] text-muted-foreground">gross inflows (12mo)</p>
-        </div>
-        <div className="px-3 py-3 flex flex-col gap-0.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">5yr Projection</p>
-          <p className="text-2xl font-extrabold tabular-nums leading-none text-blue-600">{fmt(projYear5, true)}</p>
-          <p className="text-[9px] text-muted-foreground">at 6.5% growth rate</p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Net Worth</p>
+            <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Total assets minus liabilities · Today</p>
+          </div>
+          <div className="text-right flex-shrink-0 mt-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">5yr Projection</p>
+            <p className="text-lg font-extrabold tabular-nums text-blue-600">{fmt(projYear5, true)}</p>
+            <p className="text-[9px] text-muted-foreground">at 6.5% growth</p>
+          </div>
         </div>
       </div>
       <div className="h-36 px-1 mt-1">
@@ -816,43 +810,49 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
   const yDomainMax = Math.min(Math.ceil(maxVal + pad), 150000);
   const isPositive = annualNet >= 0;
 
+  const sortedNets = [...data.map(d => d.net)].sort((a, b) => a - b);
+  const midIdx = Math.floor(sortedNets.length / 2);
+  const medianMonthlyNet = sortedNets.length % 2 !== 0 ? sortedNets[midIdx] : (sortedNets[midIdx - 1] + sortedNets[midIdx]) / 2;
+
   return (
     <div className={PANEL_CLS}>
-      <div className="px-4 pt-4 pb-1">
-        <div className="flex items-start justify-between">
+      {/* ── Header ── */}
+      <div className="px-4 pt-4 pb-3 border-b border-border/60">
+        <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cumulative Cash Flow Forecast</p>
-            <div className="flex items-baseline gap-2 mt-0.5">
-              {isPositive ? (
-                <TrendingUp className="w-5 h-5 text-emerald-500 flex-shrink-0 self-center" />
-              ) : (
-                <TrendingDown className="w-5 h-5 text-rose-500 flex-shrink-0 self-center" />
-              )}
-              <p
-                className={`text-xl font-bold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}
-                data-testid="kpi-annual-net"
-              >
-                {isPositive ? "+" : ""}
-                {fmt(annualNet, true)}
-              </p>
-              <p className="text-xs text-muted-foreground leading-none">
-                {isPositive ? "Net surplus over 12 months" : "Net deficit over 12 months"}
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cash Flow Forecast</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {isPositive ? <TrendingUp className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <TrendingDown className="w-4 h-4 text-rose-500 flex-shrink-0" />}
+              <p className={`text-3xl font-extrabold tabular-nums leading-tight ${isPositive ? "text-emerald-600" : "text-rose-600"}`} data-testid="kpi-annual-net">
+                {isPositive ? "+" : ""}{fmt(annualNet, true)}
               </p>
             </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{isPositive ? "Net surplus over 12 months" : "Net deficit over 12 months"}</p>
           </div>
-          {(() => {
-            const sorted = [...data.map(d => d.net)].sort((a, b) => a - b);
-            const mid = Math.floor(sorted.length / 2);
-            const medianNet = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-            return (
-              <div className="text-right text-xs text-muted-foreground mt-0.5">
-                <p>Monthly median</p>
-                <p className={`font-bold text-sm ${medianNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {medianNet >= 0 ? "+" : ""}{fmtK(Math.round(medianNet))}/mo
-                </p>
-              </div>
-            );
-          })()}
+        </div>
+      </div>
+      {/* ── 3 KPI tiles ── */}
+      <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60">
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Median Monthly CF</p>
+          <p className={`text-2xl font-extrabold tabular-nums leading-none ${medianMonthlyNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            {medianMonthlyNet >= 0 ? "+" : ""}{fmtK(Math.round(medianMonthlyNet))}
+          </p>
+          <p className="text-[9px] text-muted-foreground">typical month net</p>
+        </div>
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Trough</p>
+          <p className={`text-2xl font-extrabold tabular-nums leading-none ${minVal >= 0 ? "text-foreground" : "text-rose-600"}`}>
+            {fmtK(Math.round(minVal))}
+          </p>
+          <p className="text-[9px] text-muted-foreground">{hasTrough ? `worst point · ${troughMonth}` : "no deficit in 12mo"}</p>
+        </div>
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">12mo End Balance</p>
+          <p className={`text-2xl font-extrabold tabular-nums leading-none ${finalVal >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            {finalVal >= 0 ? "+" : ""}{fmtK(Math.round(finalVal))}
+          </p>
+          <p className="text-[9px] text-muted-foreground">cumulative at year-end</p>
         </div>
       </div>
       {/* ── Chart 2: Cumulative area chart ── */}
@@ -991,6 +991,9 @@ function CashManagementPanel({
   const trendUp = endCumulative >= 0;
   const coveragePct = monthlyBurn > 0 ? (totalLiquid / (annualOutflows)) * 100 : 999;
   const coverageOk = coveragePct >= 100;
+  const annualSalaryBonus = cashFlows
+    .filter(cf => cf.type === "inflow" && (cf.category === "salary" || cf.category === "bonus"))
+    .reduce((s, cf) => s + Number(cf.amount), 0);
 
   const BUCKETS = [
     { key: "reserve"  as GuroBucket, label: "Operating Cash", value: reserve     },
@@ -1020,11 +1023,19 @@ function CashManagementPanel({
         </div>
       </div>
 
-      {/* ── 3 KPI tiles ── */}
-      <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60">
+      {/* ── 4 KPI tiles ── */}
+      <div className="grid grid-cols-4 divide-x divide-border/60 border-b border-border/60">
+        {/* Annual Salary + Bonus */}
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Salary + Bonus</p>
+          <p className="text-2xl font-extrabold tabular-nums leading-none text-foreground">
+            {fmt(annualSalaryBonus, true)}
+          </p>
+          <p className="text-[9px] text-muted-foreground">Sarah + Michael</p>
+        </div>
         {/* Months Runway */}
         <div className="px-3 py-3 flex flex-col gap-0.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Runway</p>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Runway</p>
           <p className={`text-2xl font-extrabold tabular-nums leading-none ${monthsRunway >= 12 ? "text-emerald-600" : monthsRunway >= 6 ? "text-amber-600" : "text-rose-600"}`}>
             {monthsRunway.toFixed(1)}
           </p>
