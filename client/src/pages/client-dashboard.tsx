@@ -58,6 +58,16 @@ import {
   Wallet,
   SlidersHorizontal,
   Calendar,
+  ArrowLeftRight,
+  Repeat2,
+  CreditCard,
+  Home,
+  Car,
+  GraduationCap,
+  ShieldCheck,
+  Bolt,
+  ChevronRight,
+  Cpu,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
@@ -3047,6 +3057,385 @@ function BucketProductPanel({
   );
 }
 
+// ─── Money Movement View ──────────────────────────────────────────────────────
+const MM_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const MM_BUCKETS = [
+  { key: "op",   label: "Operating Cash", color: "#1a3a8a", accent: "#93c5fd", tag: "Checking + Savings" },
+  { key: "res",  label: "Reserve",        color: "#7c5200", accent: "#fcd34d", tag: "JPMorgan 100% Treasury MMF" },
+  { key: "bld",  label: "Build",          color: "#14532d", accent: "#4ade80", tag: "1yr Treasuries + 2028 Munis" },
+  { key: "grw",  label: "Grow",           color: "#3b0764", accent: "#c084fc", tag: "Growth Equity ETFs" },
+];
+
+// Starting balances (Jan start)
+const MM_BALANCES: Record<string, number[]> = {
+  op:  [20939, 20939, 20939, 65939, 24939, 21939, 40439, 35939, 20939, 20939, 24939, 48392, 38440],
+  res: [129385, 109759, 107912, 61040, 55111, 52121, 30620, 13591, 11517, 9420, 3319, 0, 129389],
+  bld: [226545, 226545, 227042, 227541, 228040, 228541, 229043, 229546, 230050, 230555, 231061, 205324, 273433],
+  grw: [2639681, 2655079, 2670567, 2686146, 2701815, 2717575, 2733428, 2749373, 2765411, 2781542, 2797768, 2814088, 2830504],
+};
+
+type MMLedgerRow = {
+  bucket: string;
+  label: string;
+  values: number[];
+  type: "income" | "expense" | "transfer" | "interest";
+};
+
+const MM_LEDGER: MMLedgerRow[] = [
+  { bucket: "op",  label: "Income Allocation",            type: "income",   values: [18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,38439] },
+  { bucket: "op",  label: "Expenses",                     type: "expense",  values: [-38439,-20939,-20939,-65939,-24939,-21939,-40439,-35939,-20939,-20939,-24939,-48392] },
+  { bucket: "op",  label: "Transfer in from Reserve",     type: "transfer", values: [19626,2126,47126,6126,3126,21626,17126,2126,2126,6126,3334,0] },
+  { bucket: "op",  label: "Transfer in from Build",       type: "transfer", values: [0,0,0,0,0,0,0,0,0,0,26245,0] },
+  { bucket: "res", label: "Transfer to Operating",        type: "transfer", values: [-19626,-2126,-47126,-6126,-3126,-21626,-17126,-2126,-2126,-6126,-3334,0] },
+  { bucket: "res", label: "After-Tax Interest",           type: "interest", values: [0,279,254,197,135,125,97,52,29,24,15,4] },
+  { bucket: "bld", label: "After-Tax Interest",           type: "interest", values: [0,497,499,500,501,502,503,504,505,506,507,480] },
+  { bucket: "bld", label: "Transfer to Operating",        type: "transfer", values: [0,0,0,0,0,0,0,0,0,0,-26245,0] },
+  { bucket: "grw", label: "Market Return (est.)",         type: "income",   values: [15398,15488,15579,15669,15760,15853,15945,16038,16131,16226,16320,16416] },
+];
+
+const MM_BILLS = [
+  { icon: Home,         label: "Mortgage",           institution: "Wells Fargo",     amount: 4847, cadence: "Monthly", bucket: "op",  next: "Apr 1" },
+  { icon: CreditCard,   label: "Credit Cards",       institution: "AmEx / Chase",    amount: 2200, cadence: "Monthly", bucket: "op",  next: "Apr 5" },
+  { icon: GraduationCap,label: "Private School",     institution: "Greenwood Acad.", amount: 2500, cadence: "Monthly", bucket: "op",  next: "Apr 1" },
+  { icon: ShieldCheck,  label: "Home + Auto Ins.",   institution: "Chubb",           amount: 660,  cadence: "Monthly", bucket: "op",  next: "Apr 15" },
+  { icon: Bolt,         label: "Utilities",          institution: "ConEd / PSEG",    amount: 800,  cadence: "Monthly", bucket: "op",  next: "Apr 12" },
+  { icon: Car,          label: "Auto Lease",         institution: "BMW Financial",   amount: 1150, cadence: "Monthly", bucket: "op",  next: "Apr 18" },
+  { icon: ArrowLeftRight,label: "Reserve Top-Up",    institution: "GURU Auto",       amount: 0,    cadence: "As needed",bucket:"op",  next: "On deficit" },
+  { icon: TrendingUp,   label: "401(k) Contribution",institution: "Fidelity",        amount: 3000, cadence: "Bi-weekly",bucket:"grw", next: "Apr 8" },
+];
+
+const MM_GURU_ACTIONS = [
+  { month: "Jan", action: "Operating deficit $19,626 — pulled from Reserve MMF",    type: "pull",    amount: 19626 },
+  { month: "Feb", action: "Operating surplus — no Reserve draw needed",              type: "balanced",amount: 0 },
+  { month: "Mar", action: "Large Q1 tax + tuition — pulled $47,126 from Reserve",   type: "pull",    amount: 47126 },
+  { month: "Apr", action: "Operating deficit $6,126 — pulled from Reserve MMF",     type: "pull",    amount: 6126 },
+  { month: "May", action: "Operating deficit $3,126 — pulled from Reserve MMF",     type: "pull",    amount: 3126 },
+  { month: "Jun", action: "Home repair expense — pulled $21,626 from Reserve",       type: "pull",    amount: 21626 },
+  { month: "Jul", action: "Vacation draw — pulled $17,126 from Reserve",             type: "pull",    amount: 17126 },
+  { month: "Aug", action: "Small operating gap $2,126 — pulled from Reserve MMF",   type: "pull",    amount: 2126 },
+  { month: "Sep", action: "Small operating gap $2,126 — pulled from Reserve MMF",   type: "pull",    amount: 2126 },
+  { month: "Oct", action: "Holiday prep draw $6,126 — pulled from Reserve MMF",     type: "pull",    amount: 6126 },
+  { month: "Nov", action: "Reserve depleted — used Build ladder: $26,245 + $3,334", type: "pull",    amount: 29579 },
+  { month: "Dec", action: "Income surplus — Reserve fully replenished to $129,389", type: "replenish",amount: 129389 },
+];
+
+function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const [selectedMonth, setSelectedMonth] = useState(0);
+  const [expandedBucket, setExpandedBucket] = useState<string | null>(null);
+  const currentAction = MM_GURU_ACTIONS[selectedMonth];
+  const totalMonthlyBills = MM_BILLS.filter(b => b.bucket === "op" && b.cadence === "Monthly").reduce((s, b) => s + b.amount, 0);
+
+  const fmtMM = (v: number, abs = false) => {
+    const n = abs ? Math.abs(v) : v;
+    if (Math.abs(n) >= 1000000) return `$${(n / 1000000).toFixed(2)}M`;
+    if (Math.abs(n) >= 1000) return `$${(n / 1000).toFixed(0)}K`;
+    return `$${n.toLocaleString()}`;
+  };
+
+  const bucketLedger = (bk: string) => MM_LEDGER.filter(r => r.bucket === bk);
+
+  return (
+    <div className="space-y-5">
+
+      {/* ── GURU Autopilot Banner ── */}
+      <div className="rounded-xl border border-slate-700 bg-slate-800 overflow-hidden">
+        <div className="px-5 py-3 flex items-center gap-3 border-b border-slate-700">
+          <div className="flex items-center gap-2">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+              className="w-6 h-6 rounded-full border-2 border-blue-400 border-t-transparent flex items-center justify-center"
+            />
+            <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">GURU Autopilot</span>
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-[10px] text-green-400 font-semibold">ACTIVE</span>
+          </div>
+          <div className="flex-1" />
+          <span className="text-[10px] text-slate-400">Continuous Money Movement · Kessler Household · 2025</span>
+        </div>
+        <div className="px-5 py-4 flex items-center gap-4">
+          <Cpu className="w-5 h-5 text-blue-400 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-slate-300 font-semibold truncate">
+              <span className="text-blue-300">{currentAction.month}:</span> {currentAction.action}
+            </p>
+          </div>
+          {currentAction.amount > 0 && (
+            <div className={`px-3 py-1 rounded-full text-[11px] font-bold border ${currentAction.type === "replenish" ? "bg-emerald-900/40 text-emerald-400 border-emerald-700" : "bg-red-900/30 text-red-400 border-red-700"}`}>
+              {currentAction.type === "replenish" ? "+" : "−"}{fmtMM(currentAction.amount, true)}
+            </div>
+          )}
+          {currentAction.amount === 0 && (
+            <div className="px-3 py-1 rounded-full text-[11px] font-bold border bg-slate-700 text-slate-400 border-slate-600">✓ No action</div>
+          )}
+        </div>
+        {/* Month selector */}
+        <div className="px-5 pb-4 flex gap-1 flex-wrap">
+          {MM_MONTHS.map((m, i) => {
+            const a = MM_GURU_ACTIONS[i];
+            return (
+              <button
+                key={m}
+                onClick={() => setSelectedMonth(i)}
+                className={`px-2.5 py-1 text-[10px] font-bold rounded transition-all ${selectedMonth === i ? "bg-blue-600 text-white" : a.type === "replenish" ? "bg-emerald-900/40 text-emerald-400 hover:bg-emerald-800/50" : a.type === "balanced" ? "bg-slate-700 text-slate-400 hover:bg-slate-600" : "bg-red-900/30 text-red-400 hover:bg-red-900/50"}`}
+              >
+                {m}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Bucket Balance Chart ── */}
+      <div className="rounded-xl border border-border bg-card p-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">12-Month Bucket Balance Trajectory</p>
+        <ResponsiveContainer width="100%" height={220}>
+          <ComposedChart data={MM_MONTHS.map((m, i) => ({
+            month: m,
+            op: MM_BALANCES.op[i],
+            res: MM_BALANCES.res[i],
+            bld: MM_BALANCES.bld[i],
+            grw: MM_BALANCES.grw[i],
+          }))}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+            <YAxis tickFormatter={(v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 9 }} width={50} />
+            <RechartsTooltip
+              formatter={(v: number, n: string) => {
+                const labels: Record<string,string> = { op: "Operating Cash", res: "Reserve", bld: "Build", grw: "Grow" };
+                return [fmtMM(v), labels[n] ?? n];
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: 10 }} formatter={(v) => ({ op:"Operating Cash", res:"Reserve", bld:"Build", grw:"Grow" }[v] ?? v)} />
+            <Area type="monotone" dataKey="grw" fill="#c084fc" stroke="#9333ea" fillOpacity={0.2} strokeWidth={2} name="grw" />
+            <Area type="monotone" dataKey="bld" fill="#4ade80" stroke="#16a34a" fillOpacity={0.3} strokeWidth={2} name="bld" />
+            <Line type="monotone" dataKey="res" stroke="#fbbf24" strokeWidth={2} dot={false} name="res" />
+            <Line type="monotone" dataKey="op" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3 }} name="op" strokeDasharray="4 2" />
+            <ReferenceLine x={MM_MONTHS[selectedMonth]} stroke="#94a3b8" strokeDasharray="4 4" />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* ── Monthly Ledger ── */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+          <p className="text-sm font-bold text-foreground">Monthly Ledger — 2025</p>
+          <span className="text-[10px] text-muted-foreground ml-1">(click bucket to expand)</span>
+        </div>
+        {/* Scrollable table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-[10px]">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left px-4 py-2 text-muted-foreground font-bold uppercase tracking-wider sticky left-0 bg-card z-10 w-[200px]">Bucket / Line Item</th>
+                {MM_MONTHS.map((m, i) => (
+                  <th key={m} className={`text-right px-2 py-2 font-bold uppercase tracking-wider min-w-[62px] ${i === selectedMonth ? "text-blue-600" : "text-muted-foreground"}`}>{m}</th>
+                ))}
+                <th className="text-right px-3 py-2 text-muted-foreground font-bold uppercase tracking-wider min-w-[72px]">End Bal</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/40">
+              {MM_BUCKETS.map((bk) => {
+                const rows = bucketLedger(bk.key);
+                const isExpanded = expandedBucket === bk.key;
+                return [
+                  /* Bucket header row */
+                  <tr
+                    key={`header-${bk.key}`}
+                    className="cursor-pointer hover:bg-muted/30 transition-colors"
+                    onClick={() => setExpandedBucket(isExpanded ? null : bk.key)}
+                  >
+                    <td className="sticky left-0 z-10 px-4 py-2.5" style={{ backgroundColor: bk.color }}>
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className={`w-3 h-3 text-white/70 flex-shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                        <div>
+                          <p className="font-black text-white text-[11px]">{bk.label}</p>
+                          <p className="text-[9px]" style={{ color: bk.accent }}>{bk.tag}</p>
+                        </div>
+                      </div>
+                    </td>
+                    {MM_MONTHS.map((_, i) => (
+                      <td key={i} className={`text-right px-2 py-2.5 font-bold tabular-nums text-white text-[11px] ${i === selectedMonth ? "bg-white/20" : ""}`} style={{ backgroundColor: i === selectedMonth ? undefined : bk.color }}>
+                        {fmtMM(MM_BALANCES[bk.key][i])}
+                      </td>
+                    ))}
+                    <td className="text-right px-3 py-2.5 font-black tabular-nums text-white text-[11px]" style={{ backgroundColor: bk.color }}>
+                      {fmtMM(MM_BALANCES[bk.key][12])}
+                    </td>
+                  </tr>,
+                  /* Expanded line items */
+                  ...(isExpanded ? rows.map((row, ri) => {
+                    const rowTotal = row.values.reduce((s, v) => s + v, 0);
+                    return (
+                      <tr key={`${bk.key}-${ri}`} className="bg-muted/20">
+                        <td className="sticky left-0 bg-muted/20 z-10 pl-10 pr-4 py-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${row.type === "income" ? "bg-emerald-500" : row.type === "expense" ? "bg-rose-500" : row.type === "interest" ? "bg-amber-400" : "bg-blue-400"}`} />
+                            <span className="text-muted-foreground">{row.label}</span>
+                          </div>
+                        </td>
+                        {row.values.map((v, i) => (
+                          <td key={i} className={`text-right px-2 py-1.5 tabular-nums font-semibold ${i === selectedMonth ? "bg-blue-50" : ""} ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                            {v === 0 ? <span className="text-muted-foreground/40">—</span> : `${v > 0 ? "+" : ""}${fmtMM(v)}`}
+                          </td>
+                        ))}
+                        <td className={`text-right px-3 py-1.5 tabular-nums font-bold ${rowTotal > 0 ? "text-emerald-700" : rowTotal < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                          {rowTotal === 0 ? "—" : `${rowTotal > 0 ? "+" : ""}${fmtMM(rowTotal)}`}
+                        </td>
+                      </tr>
+                    );
+                  }) : []),
+                ];
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Bottom 2-col: Flow Diagram + Auto Bill Pay ── */}
+      <div className="grid grid-cols-[1fr_380px] gap-4 items-start">
+
+        {/* ── Money Flow diagram for selected month ── */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-sm font-bold text-foreground">GURU Transfer Flow — {MM_MONTHS[selectedMonth]}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Automated inter-bucket movements executed by GURU Autopilot</p>
+          </div>
+          <div className="p-5">
+            {/* 4 bucket nodes with connecting arrows */}
+            <div className="flex flex-col gap-3">
+              {MM_BUCKETS.map((bk, bi) => {
+                const balance = MM_BALANCES[bk.key][selectedMonth];
+                const endBalance = MM_BALANCES[bk.key][selectedMonth + 1] ?? MM_BALANCES[bk.key][12];
+                const change = endBalance - balance;
+                const monthRows = bucketLedger(bk.key);
+                const transfers = monthRows.filter(r => r.type === "transfer").map(r => ({ label: r.label, value: r.values[selectedMonth] })).filter(t => t.value !== 0);
+                const income = monthRows.filter(r => r.type === "income" || r.type === "interest").reduce((s, r) => s + r.values[selectedMonth], 0);
+                const expenses = monthRows.filter(r => r.type === "expense").reduce((s, r) => s + r.values[selectedMonth], 0);
+
+                return (
+                  <div key={bk.key} className="rounded-lg border overflow-hidden" style={{ borderColor: bk.color + "60" }}>
+                    {/* Bucket header */}
+                    <div className="flex items-center gap-3 px-4 py-2.5" style={{ backgroundColor: bk.color }}>
+                      <div className="flex-1">
+                        <p className="text-xs font-black text-white">{bk.label}</p>
+                        <p className="text-[9px]" style={{ color: bk.accent }}>{bk.tag}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs font-mono font-bold text-white">{fmtMM(balance)}</p>
+                        <p className={`text-[9px] font-semibold ${change >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                          {change >= 0 ? "+" : ""}{fmtMM(change)} this month
+                        </p>
+                      </div>
+                    </div>
+                    {/* Flow items */}
+                    <div className="px-4 py-2 flex flex-wrap gap-x-4 gap-y-1 bg-card">
+                      {income !== 0 && (
+                        <span className="text-[10px] text-emerald-600 font-semibold">
+                          ↑ {fmtMM(income, true)} in
+                        </span>
+                      )}
+                      {expenses !== 0 && (
+                        <span className="text-[10px] text-rose-600 font-semibold">
+                          ↓ {fmtMM(Math.abs(expenses))} out
+                        </span>
+                      )}
+                      {transfers.map((t, i) => (
+                        <span key={i} className={`text-[10px] font-semibold ${t.value > 0 ? "text-blue-600" : "text-amber-600"}`}>
+                          {t.value > 0 ? "→" : "←"} {t.label.replace("Transfer in from ", "").replace("Transfer to ", "").replace("Transfer from ", "")} {fmtMM(Math.abs(t.value), true)}
+                        </span>
+                      ))}
+                      {income === 0 && expenses === 0 && transfers.length === 0 && (
+                        <span className="text-[10px] text-muted-foreground italic">No activity this month</span>
+                      )}
+                    </div>
+                    {/* Progress bar showing month-end balance vs start */}
+                    {bi < 3 && (
+                      <div className="px-4 pb-2.5">
+                        <div className="flex justify-between text-[8px] text-muted-foreground mb-0.5">
+                          <span>Month-end</span>
+                          <span>{fmtMM(endBalance)}</span>
+                        </div>
+                        <div className="h-1 bg-muted rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min((endBalance / Math.max(balance, endBalance)) * 100, 100)}%` }}
+                            transition={{ duration: 0.6 }}
+                            className="h-full rounded-full"
+                            style={{ backgroundColor: bk.accent }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Auto Bill Pay Queue ── */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+            <Repeat2 className="w-4 h-4 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-bold text-foreground">Auto Bill Pay</p>
+              <p className="text-[10px] text-muted-foreground">GURU manages from Operating Cash</p>
+            </div>
+            <div className="ml-auto text-right">
+              <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Monthly Total</p>
+              <p className="text-base font-black text-foreground">{fmtMM(totalMonthlyBills)}</p>
+            </div>
+          </div>
+          <div className="divide-y divide-border/50">
+            {MM_BILLS.map((bill, i) => {
+              const Icon = bill.icon;
+              const bk = MM_BUCKETS.find(b => b.key === bill.bucket)!;
+              return (
+                <div key={i} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bk.color + "22" }}>
+                    <Icon className="w-3.5 h-3.5" style={{ color: bk.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-foreground">{bill.label}</p>
+                    <p className="text-[9px] text-muted-foreground">{bill.institution} · {bill.cadence}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {bill.amount > 0 ? (
+                      <p className="text-[11px] font-bold tabular-nums text-foreground">{fmtMM(bill.amount)}</p>
+                    ) : (
+                      <p className="text-[10px] text-blue-600 font-semibold italic">As needed</p>
+                    )}
+                    <p className="text-[9px] text-muted-foreground">Next: {bill.next}</p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {bill.cadence === "As needed" ? (
+                      <span className="w-2 h-2 rounded-full bg-blue-400 block" />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse block" />
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* GURU note */}
+          <div className="px-4 py-3 border-t border-border bg-muted/30">
+            <div className="flex items-start gap-2">
+              <Cpu className="w-3 h-3 text-blue-500 flex-shrink-0 mt-0.5" />
+              <p className="text-[9px] text-muted-foreground leading-relaxed">
+                GURU automatically replenishes Operating Cash from the Reserve MMF whenever the balance drops below 2 months of expenses. All bill payments are sequenced to avoid overdrafts.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── GURU Asset Allocation View ───────────────────────────────────────────────
 const GURU_BUCKETS_DEF = [
   {
@@ -4592,7 +4981,8 @@ type ActiveView =
   | "strategy"
   | "balancesheet"
   | "cashflow"
-  | "guru";
+  | "guru"
+  | "moneymovement";
 
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -4744,6 +5134,7 @@ export default function ClientDashboard() {
     { key: "balancesheet", label: "Balance Sheet", icon: Scale },
     { key: "cashflow", label: "Cash Flow Forecast", icon: BarChart2 },
     { key: "guru", label: "GURU Allocation", icon: PieChartIcon },
+    { key: "moneymovement", label: "Money Movement", icon: ArrowLeftRight },
   ];
 
   const handleGenerate = () => {
@@ -5029,6 +5420,10 @@ export default function ClientDashboard() {
       {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
       {activeView === "guru" && (
         <GuruAllocationView assets={assets} cashFlows={cashFlows} />
+      )}
+      {/* ── Money Movement View ─────────────────────────────────────────────────── */}
+      {activeView === "moneymovement" && (
+        <MoneyMovementView assets={assets} cashFlows={cashFlows} />
       )}
     </Layout>
   );
