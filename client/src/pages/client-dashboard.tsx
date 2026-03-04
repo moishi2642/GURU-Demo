@@ -1002,9 +1002,9 @@ function CashManagementPanel({
 
   const liquidBuckets: GuroBucket[] = ["reserve", "yield", "tactical"];
   const tabLabels: Record<string, string> = {
-    reserve: "Immediate",
-    yield: "Short-Term",
-    tactical: "Medium-Term",
+    reserve: "Operating Cash",
+    yield: "Reserve",
+    tactical: "Build",
   };
   const liquidDonutData = liquidBuckets
     .filter((k) => (bucketValues[k] ?? 0) > 0)
