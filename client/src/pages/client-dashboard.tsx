@@ -3126,329 +3126,316 @@ const MM_GURU_ACTIONS = [
 ];
 
 function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const fmtMM = (v: number) => {
-    if (v >= 1000000) return `$${(v / 1000000).toFixed(2)}M`;
-    if (v >= 1000) return `$${(v / 1000).toFixed(0)}K`;
-    return `$${v.toLocaleString()}`;
-  };
+  const MONTHS = ["Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb"];
 
-  // ── Annual Sankey data (Kessler 2025) ──────────────────────────────────────
-  // Income: P1 $13,302×12 + P2 $5,511×12 + rental $1,722×12 + bonuses $216,641
-  // Expenses grouped for readability, surplus goes to GURU savings buckets
-  const SANKEY_DATA = {
-    nodes: [
-      { id: "P1 Net Salary" },
-      { id: "P2 Net Salary" },
-      { id: "Rental Income" },
-      { id: "Year-End Bonuses" },
-      { id: "GURU Operating Cash" },
-      { id: "Housing & Real Estate" },
-      { id: "Childcare & Family" },
-      { id: "Food & Lifestyle" },
-      { id: "Tax Payments" },
-      { id: "Education" },
-      { id: "Debt Service" },
-      { id: "Travel" },
-      { id: "GURU Savings" },
-    ],
-    links: [
-      { source: "P1 Net Salary",      target: "GURU Operating Cash", value: 159624 },
-      { source: "P2 Net Salary",      target: "GURU Operating Cash", value: 66132  },
-      { source: "Rental Income",      target: "GURU Operating Cash", value: 20664  },
-      { source: "Year-End Bonuses",   target: "GURU Operating Cash", value: 216641 },
-      { source: "GURU Operating Cash", target: "Housing & Real Estate", value: 108432 },
-      { source: "GURU Operating Cash", target: "Childcare & Family",    value: 51996  },
-      { source: "GURU Operating Cash", target: "Food & Lifestyle",       value: 46102  },
-      { source: "GURU Operating Cash", target: "Tax Payments",           value: 69697  },
-      { source: "GURU Operating Cash", target: "Education",              value: 60000  },
-      { source: "GURU Operating Cash", target: "Debt Service",           value: 14244  },
-      { source: "GURU Operating Cash", target: "Travel",                 value: 17000  },
-      { source: "GURU Operating Cash", target: "GURU Savings",           value: 95590  },
-    ],
-  };
-
-  const nodeColor = (node: { id: unknown }) => {
-    const id = String(node.id);
-    if (id.includes("Salary") || id.includes("Rental") || id.includes("Bonus")) return "#0d9488";
-    if (id.includes("Operating")) return "#6366f1";
-    if (id.includes("Housing"))   return "#f97316";
-    if (id.includes("Childcare")) return "#ec4899";
-    if (id.includes("Food"))      return "#a78bfa";
-    if (id.includes("Tax"))       return "#64748b";
-    if (id.includes("Education")) return "#7c3aed";
-    if (id.includes("Debt"))      return "#ef4444";
-    if (id.includes("Travel"))    return "#f59e0b";
-    if (id.includes("Savings"))   return "#10b981";
-    return "#94a3b8";
-  };
-
-  const DETAIL_ROWS = [
-    { label: "Housing & Real Estate", sub: "Tribeca mortgage + Sarasota expenses", value: 108432, color: "#f97316" },
-    { label: "Tax Payments",          sub: "NYC property taxes + FL tax + Q4 est.", value: 69697,  color: "#64748b" },
-    { label: "Childcare & Family",    sub: "Childcare / babysitter",                value: 51996,  color: "#ec4899" },
-    { label: "Education",             sub: "Private school tuition (4 installments)", value: 60000, color: "#7c3aed" },
-    { label: "Food & Lifestyle",      sub: "Food, dining, golf club dues",          value: 46102,  color: "#a78bfa" },
-    { label: "Travel",                sub: "Memorial Day, weekend, Europe summer",  value: 17000,  color: "#f59e0b" },
-    { label: "Debt Service",          sub: "PE loan + student loan payments",       value: 14244,  color: "#ef4444" },
-    { label: "GURU Savings",          sub: "→ Reserve, Build & Grow buckets",       value: 95590,  color: "#10b981" },
+  // ── Income line items — sourced from actual Kessler DB records ──────────────
+  const INCOME_LINES: { label: string; sub: string; amounts: number[] }[] = [
+    {
+      label: "Net Salary — P1 + P2",
+      sub:   "After-tax W-2  ·  P1 $13,302 / mo  +  P2 $5,511 / mo",
+      amounts: [18813,18813,18813,18813,18813,18813,18813,18813,18813,18813,18813,18813],
+    },
+    {
+      label: "Sarasota Rental Income",
+      sub:   "Investment property — net of 8% mgmt fee",
+      amounts: [1722,1722,1722,1722,1722,1722,1722,1722,1722,1722,1722,1722],
+    },
+    {
+      label: "Year-End Bonus",
+      sub:   "P1 $191,556  +  P2 $25,085  (after-tax est.)",
+      amounts: [0,0,0,0,0,0,0,0,0,216641,0,0],
+    },
   ];
 
-  const totalIncome   = 463061;
-  const totalExpenses = 367471;
-  const totalSavings  = 95590;
-  const savingsRate   = ((totalSavings / totalIncome) * 100).toFixed(1);
+  // ── Expense line items — every number matches the database cashFlow records ─
+  const EXPENSE_LINES: { label: string; sub: string; amounts: number[]; cat: string }[] = [
+    {
+      label: "Housing — Tribeca Condo",
+      sub:   "Mortgage (3.15%) + maintenance + insurance + utilities",
+      amounts: [7793,7793,7793,7793,7793,7793,7793,7793,7793,7793,7793,7793],
+      cat: "housing",
+    },
+    {
+      label: "Housing — Sarasota",
+      sub:   "Mgmt fee + HOA + mortgage (2.55%) on investment property",
+      amounts: [1243,1243,1243,1243,1243,1243,1243,1243,1243,1243,1243,1243],
+      cat: "housing",
+    },
+    {
+      label: "Childcare",
+      sub:   "Babysitter / nanny",
+      amounts: [4333,4333,4333,4333,4333,4333,4333,4333,4333,4333,4333,4333],
+      cat: "living",
+    },
+    {
+      label: "Food & Dining",
+      sub:   "Groceries, restaurants, delivery",
+      amounts: [3500,3500,3500,3500,3500,3500,3500,3500,3500,3500,3500,3500],
+      cat: "living",
+    },
+    {
+      label: "Debt Service",
+      sub:   "PE Fund II loan $677 + student loans $510",
+      amounts: [1187,1187,1187,1187,1187,1187,1187,1187,1187,1187,1187,1187],
+      cat: "debt",
+    },
+    {
+      label: "NYC Property Taxes",
+      sub:   "Tribeca condo — semi-annual installments",
+      amounts: [17500,0,0,0,0,0,17500,0,0,0,0,0],
+      cat: "taxes",
+    },
+    {
+      label: "FL Property Tax",
+      sub:   "Sarasota — annual",
+      amounts: [0,0,0,0,0,4697,0,0,0,0,0,0],
+      cat: "taxes",
+    },
+    {
+      label: "Q4 Federal Est. Tax",
+      sub:   "Quarterly estimated income tax payment",
+      amounts: [0,0,0,0,0,0,0,0,30000,0,0,0],
+      cat: "taxes",
+    },
+    {
+      label: "Private School Tuition",
+      sub:   "Greenwood Academy — 4 installments",
+      amounts: [0,0,15000,15000,15000,0,15000,0,0,0,0,0],
+      cat: "education",
+    },
+    {
+      label: "Travel",
+      sub:   "Memorial Day $4K  ·  Weekend $1K  ·  Europe summer $12K",
+      amounts: [0,0,4000,1000,12000,0,0,0,0,0,0,0],
+      cat: "lifestyle",
+    },
+    {
+      label: "Golf Club Dues",
+      sub:   "Annual membership",
+      amounts: [0,0,0,0,0,0,0,0,0,0,4102,0],
+      cat: "lifestyle",
+    },
+  ];
 
-  const [expandedBucket, setExpandedBucket] = useState<string | null>("op");
+  const totalIncome   = INCOME_LINES.reduce((s, l) => s + l.amounts.reduce((a, b) => a + b, 0), 0);
+  const totalExpenses = EXPENSE_LINES.reduce((s, l) => s + l.amounts.reduce((a, b) => a + b, 0), 0);
+  const netSurplus    = totalIncome - totalExpenses;
 
-  // Compute net monthly flow per bucket from ledger
-  const bucketNet = (bkKey: string, mIdx: number) =>
-    MM_LEDGER.filter(r => r.bucket === bkKey).reduce((s, r) => s + (r.values[mIdx] ?? 0), 0);
-
-  const fmtCell = (v: number, forceSign = false) => {
+  const fmtK = (v: number, sign = false) => {
     if (v === 0) return "—";
     const abs = Math.abs(v);
-    const str = abs >= 1000 ? `$${(abs / 1000).toFixed(0)}K` : `$${abs.toLocaleString()}`;
-    return forceSign ? (v > 0 ? `+${str}` : `−${str}`) : (v < 0 ? `−${str}` : str);
+    const s = abs >= 1000000
+      ? `${(abs / 1000000).toFixed(2)}M`
+      : abs >= 1000
+        ? `${Math.round(abs / 1000)}K`
+        : abs.toLocaleString("en-US");
+    if (sign) return v < 0 ? `(${s})` : `+${s}`;
+    return s;
   };
 
+  const monthIncomeTot = (i: number) => INCOME_LINES.reduce((s, l) => s + l.amounts[i], 0);
+  const monthExpTot    = (i: number) => EXPENSE_LINES.reduce((s, l) => s + l.amounts[i], 0);
+  const monthNet       = (i: number) => monthIncomeTot(i) - monthExpTot(i);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 font-mono">
 
-      {/* ── Header ── */}
-      <div className="rounded-xl bg-card border border-border px-5 py-3.5 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-black text-foreground">Annual Cash Flow — Kessler Family · 2025</p>
-          <p className="text-[10px] text-muted-foreground">Where every dollar flows from and where it goes</p>
+      {/* ── Terminal Header ── */}
+      <div className="bg-[#060d1a] rounded-xl border border-[#1e3a5f] px-5 py-3.5 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#f5a623] animate-pulse flex-shrink-0" />
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#f5a623]">GURU · CASH FLOW MONITOR</span>
+          </div>
+          <span className="text-[9px] text-slate-600 tracking-wider">KESSLER HOUSEHOLD  ·  MAR 2026 – FEB 2027</span>
         </div>
-        <div className="flex items-center gap-5">
-          <div className="text-right">
-            <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Total Income</p>
-            <p className="text-lg font-black text-emerald-600">{fmtMM(totalIncome)}</p>
-          </div>
-          <div className="w-px h-8 bg-border" />
-          <div className="text-right">
-            <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Expenses</p>
-            <p className="text-lg font-black text-rose-600">{fmtMM(totalExpenses)}</p>
-          </div>
-          <div className="w-px h-8 bg-border" />
-          <div className="text-right">
-            <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">GURU Savings</p>
-            <p className="text-lg font-black text-blue-600">{fmtMM(totalSavings)}</p>
-          </div>
-          <div className="rounded-full px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black">
-            {savingsRate}% savings rate
-          </div>
+        <div className="flex items-center gap-8">
+          {[
+            { label: "TOTAL INFLOWS",  val: `$${Math.round(totalIncome / 1000)}K`,  col: "#00d4aa" },
+            { label: "TOTAL OUTFLOWS", val: `($${Math.round(totalExpenses / 1000)}K)`, col: "#ff6b6b" },
+            { label: "NET SURPLUS",    val: `+$${Math.round(netSurplus / 1000)}K`,   col: "#00d4aa" },
+            { label: "SAVINGS RATE",   val: `${((netSurplus / totalIncome) * 100).toFixed(1)}%`,   col: "#e2e8f0" },
+          ].map(({ label, val, col }) => (
+            <div key={label} className="text-right">
+              <p className="text-[8px] uppercase tracking-[0.15em] text-slate-600">{label}</p>
+              <p className="text-[13px] font-black" style={{ color: col }}>{val}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ── Sankey Diagram — hero ── */}
-      <div className="rounded-xl bg-card border border-border overflow-hidden">
-        <div className="px-5 py-3 border-b border-border flex items-center gap-2">
-          <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-          <p className="text-sm font-bold text-foreground">Cash Flow Diagram</p>
-          <span className="text-[10px] text-muted-foreground ml-1">Hover nodes and flows for details</span>
-        </div>
-        <div style={{ height: 480 }}>
-          <ResponsiveSankey
-            data={SANKEY_DATA}
-            margin={{ top: 20, right: 200, bottom: 20, left: 160 }}
-            align="justify"
-            colors={nodeColor}
-            nodeOpacity={1}
-            nodeHoverOpacity={1}
-            nodeThickness={20}
-            nodeInnerPadding={4}
-            nodeSpacing={18}
-            nodeBorderWidth={0}
-            nodeBorderRadius={4}
-            linkOpacity={0.35}
-            linkHoverOpacity={0.65}
-            linkContract={4}
-            enableLinkGradient={true}
-            labelPosition="outside"
-            labelOrientation="horizontal"
-            labelPadding={16}
-            labelTextColor={{ from: "color", modifiers: [["darker", 1.6]] }}
-            animate={true}
-            motionConfig="gentle"
-            nodeTooltip={({ node }) => (
-              <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>{String(node.id)}</div>
-                <div style={{ fontSize: 15, fontWeight: 900, color: "#0f172a" }}>{fmtMM(node.value)}</div>
-                <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
-                  {((node.value / totalIncome) * 100).toFixed(1)}% of total income
-                </div>
-              </div>
-            )}
-            linkTooltip={({ link }) => (
-              <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
-                <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4 }}>{String(link.source.id)} → {String(link.target.id)}</div>
-                <div style={{ fontSize: 15, fontWeight: 900, color: "#0f172a" }}>{fmtMM(link.value)}</div>
-                <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
-                  {((link.value / totalIncome) * 100).toFixed(1)}% of income
-                </div>
-              </div>
-            )}
-          />
-        </div>
-      </div>
-
-      {/* ── Monthly Movement Table ── */}
-      <div className="rounded-xl bg-card border border-border overflow-hidden">
-        <div className="px-5 py-3 border-b border-border flex items-center gap-3">
-          <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-bold text-foreground">Monthly Money Movement</p>
-            <p className="text-[10px] text-muted-foreground">GURU bucket-by-bucket cashflows · click a bucket to expand</p>
-          </div>
-          <div className="ml-auto flex items-center gap-3 text-[9px]">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Income / Interest</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" />Expense</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" />Transfer</span>
-          </div>
-        </div>
-
+      {/* ── Main Cash Flow Statement ── */}
+      <div className="bg-[#060d1a] rounded-xl border border-[#1a2a3a] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[10px] border-collapse">
-            {/* Month headers */}
             <thead>
-              <tr className="border-b border-border bg-muted/40">
-                <th className="sticky left-0 z-10 bg-muted/40 text-left px-4 py-2.5 font-bold uppercase tracking-wider text-muted-foreground w-[200px]">
-                  Bucket / Line Item
-                </th>
-                {MM_MONTHS.map((m) => (
-                  <th key={m} className="text-right px-2.5 py-2.5 font-bold uppercase tracking-wider text-muted-foreground min-w-[68px]">{m}</th>
+              <tr className="border-b border-[#1e3a5f] bg-[#080f1c]">
+                <th className="sticky left-0 z-10 bg-[#080f1c] text-left px-5 py-3 text-[8px] uppercase tracking-[0.15em] text-slate-600 w-[230px]">LINE ITEM</th>
+                {MONTHS.map((m) => (
+                  <th key={m} className="text-right px-2.5 py-3 text-[8px] uppercase tracking-[0.12em] text-slate-600 min-w-[62px]">{m}</th>
                 ))}
-                <th className="text-right px-3 py-2.5 font-bold uppercase tracking-wider text-muted-foreground min-w-[72px] border-l border-border">Total</th>
+                <th className="text-right px-4 py-3 text-[8px] uppercase tracking-[0.12em] text-[#f5a623] min-w-[76px] border-l border-[#1e3a5f]">ANNUAL</th>
               </tr>
             </thead>
+
             <tbody>
-              {MM_BUCKETS.map((bk) => {
-                const isOpen = expandedBucket === bk.key;
-                const ledgerRows = MM_LEDGER.filter(r => r.bucket === bk.key);
-                const annualNet = MM_MONTHS.reduce((s, _, i) => s + bucketNet(bk.key, i), 0);
 
-                return [
-                  /* ── Bucket header row ── */
-                  <tr
-                    key={`${bk.key}-header`}
-                    onClick={() => setExpandedBucket(isOpen ? null : bk.key)}
-                    className="cursor-pointer border-b border-border/60 hover:brightness-110 transition-all"
-                    style={{ backgroundColor: bk.color }}
-                  >
-                    <td className="sticky left-0 z-10 px-4 py-3" style={{ backgroundColor: bk.color }}>
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className={`w-3.5 h-3.5 text-white/60 flex-shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
-                        <div>
-                          <p className="font-black text-white text-[11px] leading-tight">{bk.label}</p>
-                          <p className="text-[9px] font-medium" style={{ color: bk.accent }}>{bk.tag}</p>
-                        </div>
-                      </div>
+              {/* ── INCOME SECTION ── */}
+              <tr className="bg-[#00150f]">
+                <td colSpan={14} className="sticky left-0 z-10 bg-[#00150f] px-5 py-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-[#00d4aa]">
+                  ▸  INCOME
+                </td>
+              </tr>
+
+              {INCOME_LINES.map((line, idx) => {
+                const annual = line.amounts.reduce((s, v) => s + v, 0);
+                return (
+                  <tr key={idx} className="border-b border-[#0b1622] hover:bg-[#0a1a10]/40 transition-colors">
+                    <td className="sticky left-0 z-10 bg-[#060d1a] px-5 py-2">
+                      <p className="text-slate-300 text-[10px] leading-tight">{line.label}</p>
+                      <p className="text-slate-700 text-[8px] mt-0.5 leading-tight">{line.sub}</p>
                     </td>
-                    {MM_MONTHS.map((_, i) => {
-                      const net = bucketNet(bk.key, i);
-                      return (
-                        <td key={i} className="text-right px-2.5 py-3 tabular-nums font-bold text-[11px]"
-                          style={{ color: net > 0 ? bk.accent : net < 0 ? "#fca5a5" : "rgba(255,255,255,0.4)" }}>
-                          {fmtCell(net, true)}
-                        </td>
-                      );
-                    })}
-                    <td className="text-right px-3 py-3 tabular-nums font-black text-[11px] border-l border-white/20"
-                      style={{ color: annualNet > 0 ? bk.accent : annualNet < 0 ? "#fca5a5" : "rgba(255,255,255,0.4)" }}>
-                      {fmtCell(annualNet, true)}
-                    </td>
-                  </tr>,
-
-                  /* ── Start balance sub-row ── */
-                  ...(isOpen ? [
-                    <tr key={`${bk.key}-start`} className="border-b border-border/30 bg-muted/20">
-                      <td className="sticky left-0 z-10 bg-muted/20 pl-10 pr-4 py-2 italic text-muted-foreground">Start Balance</td>
-                      {MM_MONTHS.map((_, i) => (
-                        <td key={i} className="text-right px-2.5 py-2 tabular-nums text-muted-foreground font-semibold">
-                          {fmtMM(MM_BALANCES[bk.key][i])}
-                        </td>
-                      ))}
-                      <td className="text-right px-3 py-2 tabular-nums text-muted-foreground border-l border-border/40">—</td>
-                    </tr>,
-                  ] : []),
-
-                  /* ── Line item rows ── */
-                  ...(isOpen ? ledgerRows.map((row, ri) => {
-                    const rowTotal = row.values.reduce((s, v) => s + v, 0);
-                    const typeColor = row.type === "income" ? "text-emerald-700" : row.type === "expense" ? "text-rose-600" : row.type === "interest" ? "text-emerald-600" : "text-blue-600";
-                    const typeDot = row.type === "income" ? "bg-emerald-500" : row.type === "expense" ? "bg-rose-500" : row.type === "interest" ? "bg-emerald-400" : "bg-blue-400";
-                    return (
-                      <tr key={`${bk.key}-row-${ri}`} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
-                        <td className="sticky left-0 z-10 bg-background pl-10 pr-4 py-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${typeDot}`} />
-                            <span className="text-muted-foreground">{row.label}</span>
-                          </div>
-                        </td>
-                        {row.values.map((v, i) => (
-                          <td key={i} className={`text-right px-2.5 py-1.5 tabular-nums font-semibold ${v === 0 ? "text-muted-foreground/30" : v > 0 ? "text-emerald-700" : "text-rose-600"}`}>
-                            {v === 0 ? "—" : fmtCell(v, true)}
-                          </td>
-                        ))}
-                        <td className={`text-right px-3 py-1.5 tabular-nums font-bold border-l border-border/40 ${rowTotal > 0 ? "text-emerald-700" : rowTotal < 0 ? "text-rose-600" : "text-muted-foreground/40"}`}>
-                          {fmtCell(rowTotal, true)}
-                        </td>
-                      </tr>
-                    );
-                  }) : []),
-
-                  /* ── End balance sub-row ── */
-                  ...(isOpen ? [
-                    <tr key={`${bk.key}-end`} className="border-b-2 border-border bg-muted/30">
-                      <td className="sticky left-0 z-10 bg-muted/30 pl-10 pr-4 py-2 font-bold text-foreground">End Balance</td>
-                      {MM_MONTHS.map((_, i) => (
-                        <td key={i} className="text-right px-2.5 py-2 tabular-nums font-black text-foreground text-[11px]">
-                          {fmtMM(MM_BALANCES[bk.key][i + 1] ?? MM_BALANCES[bk.key][12])}
-                        </td>
-                      ))}
-                      <td className="text-right px-3 py-2 tabular-nums font-black text-foreground border-l border-border/40 text-[11px]">
-                        {fmtMM(MM_BALANCES[bk.key][12])}
+                    {line.amounts.map((v, i) => (
+                      <td key={i} className={`text-right px-2.5 py-2 tabular-nums ${v === 0 ? "text-slate-800" : "text-[#00d4aa]"}`}>
+                        {v === 0 ? "—" : fmtK(v)}
                       </td>
-                    </tr>,
-                  ] : []),
-                ];
+                    ))}
+                    <td className="text-right px-4 py-2 tabular-nums font-bold text-[#00d4aa] border-l border-[#1e3a5f]">
+                      {fmtK(annual)}
+                    </td>
+                  </tr>
+                );
               })}
+
+              {/* Total Income */}
+              <tr className="border-y border-[#00d4aa]/20 bg-[#001a10]">
+                <td className="sticky left-0 z-10 bg-[#001a10] px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#00d4aa]">
+                  TOTAL INCOME
+                </td>
+                {MONTHS.map((_, i) => (
+                  <td key={i} className="text-right px-2.5 py-2.5 tabular-nums font-black text-[#00d4aa] text-[11px]">
+                    {fmtK(monthIncomeTot(i))}
+                  </td>
+                ))}
+                <td className="text-right px-4 py-2.5 tabular-nums font-black text-[#00d4aa] text-[11px] border-l border-[#1e3a5f]">
+                  {fmtK(totalIncome)}
+                </td>
+              </tr>
+
+              <tr><td colSpan={14} className="py-1" /></tr>
+
+              {/* ── OUTFLOWS SECTION ── */}
+              <tr className="bg-[#150a0a]">
+                <td colSpan={14} className="sticky left-0 z-10 bg-[#150a0a] px-5 py-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-[#ff6b6b]">
+                  ▸  OUTFLOWS
+                </td>
+              </tr>
+
+              {EXPENSE_LINES.map((line, idx) => {
+                const annual = line.amounts.reduce((s, v) => s + v, 0);
+                return (
+                  <tr key={idx} className="border-b border-[#0b1622] hover:bg-[#1a0a0a]/40 transition-colors">
+                    <td className="sticky left-0 z-10 bg-[#060d1a] px-5 py-2">
+                      <p className="text-slate-300 text-[10px] leading-tight">{line.label}</p>
+                      <p className="text-slate-700 text-[8px] mt-0.5 leading-tight">{line.sub}</p>
+                    </td>
+                    {line.amounts.map((v, i) => (
+                      <td key={i} className={`text-right px-2.5 py-2 tabular-nums ${v === 0 ? "text-slate-800" : "text-[#ff6b6b]"}`}>
+                        {v === 0 ? "—" : `(${fmtK(v)})`}
+                      </td>
+                    ))}
+                    <td className="text-right px-4 py-2 tabular-nums font-bold text-[#ff6b6b] border-l border-[#1e3a5f]">
+                      {annual === 0 ? "—" : `(${fmtK(annual)})`}
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {/* Total Outflows */}
+              <tr className="border-y border-[#ff6b6b]/20 bg-[#1a0500]">
+                <td className="sticky left-0 z-10 bg-[#1a0500] px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#ff6b6b]">
+                  TOTAL OUTFLOWS
+                </td>
+                {MONTHS.map((_, i) => (
+                  <td key={i} className="text-right px-2.5 py-2.5 tabular-nums font-black text-[#ff6b6b] text-[11px]">
+                    ({fmtK(monthExpTot(i))})
+                  </td>
+                ))}
+                <td className="text-right px-4 py-2.5 tabular-nums font-black text-[#ff6b6b] text-[11px] border-l border-[#1e3a5f]">
+                  ({fmtK(totalExpenses)})
+                </td>
+              </tr>
+
+              <tr><td colSpan={14} className="py-0.5 border-b border-[#1e3a5f]" /></tr>
+
+              {/* NET CASH FLOW */}
+              <tr className="bg-[#080f1c]">
+                <td className="sticky left-0 z-10 bg-[#080f1c] px-5 py-3.5 text-[11px] font-black uppercase tracking-wider text-white">
+                  NET CASH FLOW
+                </td>
+                {MONTHS.map((_, i) => {
+                  const net = monthNet(i);
+                  return (
+                    <td key={i} className={`text-right px-2.5 py-3.5 tabular-nums font-black text-[12px] ${net >= 0 ? "text-[#00d4aa]" : "text-[#ff6b6b]"}`}>
+                      {fmtK(net, true)}
+                    </td>
+                  );
+                })}
+                <td className="text-right px-4 py-3.5 tabular-nums font-black text-[#00d4aa] text-[12px] border-l border-[#1e3a5f]">
+                  +{fmtK(netSurplus)}
+                </td>
+              </tr>
+
+              {/* GURU RESERVE DRAW */}
+              <tr className="border-t border-[#1e3a5f] bg-[#0a0d18]">
+                <td className="sticky left-0 z-10 bg-[#0a0d18] px-5 py-2.5 text-[9px] uppercase tracking-wider text-[#f5a623] font-bold">
+                  GURU Reserve Draw
+                </td>
+                {MM_GURU_ACTIONS.map((a, i) => (
+                  <td key={i} className={`text-right px-2.5 py-2.5 tabular-nums text-[9px] font-bold ${a.type === "replenish" ? "text-[#00d4aa]" : a.amount === 0 ? "text-slate-700" : "text-[#f5a623]"}`}>
+                    {a.amount === 0 ? "—" : a.type === "replenish" ? `+${fmtK(a.amount)}` : `(${fmtK(a.amount)})`}
+                  </td>
+                ))}
+                <td className="text-right px-4 py-2.5 text-slate-600 text-[9px] border-l border-[#1e3a5f]">auto</td>
+              </tr>
+
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ── GURU Autopilot Action Log ── */}
-      <div className="rounded-xl bg-card border border-border overflow-hidden">
-        <div className="px-5 py-3 border-b border-border flex items-center gap-2">
-          <Cpu className="w-4 h-4 text-blue-500" />
-          <p className="text-sm font-bold text-foreground">GURU Autopilot — Monthly Actions</p>
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse ml-1" />
-          <span className="text-[10px] text-green-600 font-semibold">ACTIVE</span>
+      {/* ── GURU Actions Log ── */}
+      <div className="bg-[#060d1a] rounded-xl border border-[#1a2a3a] overflow-hidden">
+        <div className="px-5 py-2.5 border-b border-[#1e3a5f] flex items-center gap-2.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+          <span className="text-[8px] font-black uppercase tracking-[0.18em] text-[#f5a623]">GURU AUTOPILOT · MONTHLY ACTIONS</span>
+          <span className="ml-auto text-[8px] text-slate-600">Automatic inter-bucket transfers · Reserve → Operating Cash when deficit detected</span>
         </div>
-        <div className="grid grid-cols-4 divide-x divide-border">
-          {MM_GURU_ACTIONS.map((a, i) => (
-            <div key={i} className={`px-4 py-3 border-b border-border ${a.type === "replenish" ? "bg-emerald-50" : a.type === "balanced" ? "bg-muted/20" : "bg-rose-50/60"}`}>
-              <div className="flex items-center gap-2 mb-1">
-                <span className={`text-[10px] font-black uppercase tracking-wider ${a.type === "replenish" ? "text-emerald-700" : a.type === "balanced" ? "text-muted-foreground" : "text-rose-700"}`}>
-                  {a.month}
-                </span>
-                {a.amount > 0 && (
-                  <span className={`ml-auto text-[10px] font-black tabular-nums ${a.type === "replenish" ? "text-emerald-600" : "text-rose-600"}`}>
-                    {a.type === "replenish" ? "+" : "−"}${(a.amount / 1000).toFixed(0)}K
+        <div className="grid grid-cols-6 divide-x divide-[#1a2a3a]">
+          {MM_GURU_ACTIONS.map((a, i) => {
+            const net = monthNet(i);
+            return (
+              <div key={i} className={`px-3.5 py-3 border-b border-[#1a2a3a] ${a.type === "replenish" ? "bg-[#00150f]" : a.amount === 0 ? "" : "bg-[#150500]"}`}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[8px] font-black tracking-widest text-slate-500">{a.month.toUpperCase()}</span>
+                  <span className={`text-[9px] font-black tabular-nums ${net >= 0 ? "text-[#00d4aa]" : "text-[#ff6b6b]"}`}>
+                    {fmtK(net, true)}
                   </span>
-                )}
+                </div>
+                <p className={`text-[8px] leading-snug ${a.type === "replenish" ? "text-[#4ade80]" : a.amount === 0 ? "text-slate-600" : "text-[#f5a623]"}`}>
+                  {a.action}
+                </p>
               </div>
-              <p className="text-[9px] text-muted-foreground leading-snug">{a.action}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
     </div>
   );
 }
+
+
 
 // ─── GURU Asset Allocation View ───────────────────────────────────────────────
 const GURU_BUCKETS_DEF = [
