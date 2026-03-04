@@ -3197,7 +3197,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths }: { assets: Asset
 
   const minOpsOk = Math.min(...IMM_BAL) >= minOps;
 
-  type SubRow = { label: string; values: number[]; linkId?: string };
+  type SubRow = { label: string; values: number[]; linkId?: string; ticker?: boolean };
 
   const Section = ({
     subrows,
@@ -3215,19 +3215,52 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths }: { assets: Asset
         const isLess = row.label.startsWith("Less:");
         const isPlus = row.label.startsWith("Plus:");
         const linkBorder = row.linkId === 'rsv-ops' ? 'border-l-4 border-blue-400' : '';
+        const hasAnyValue = row.values.some(v => v !== 0);
         return (
-          <tr key={i} className={`border-b transition-colors border-slate-100 ${isLess ? 'bg-red-50/50 hover:bg-red-50' : isPlus ? 'bg-emerald-50/40 hover:bg-emerald-50/70' : 'hover:bg-slate-50/60'}`}>
-            <td className={`py-2 text-[11px] leading-snug w-[300px] ${linkBorder ? `pl-2 pr-4 ${linkBorder}` : 'px-4'} ${isLess ? 'text-red-600 font-semibold' : isPlus ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-              {isLess && <span className="mr-1 opacity-60">↓</span>}
-              {isPlus && <span className="mr-1 opacity-60">↑</span>}
-              {row.label.replace(/^Less: /, '').replace(/^Plus: /, '')}
-            </td>
-            {row.values.map((v, mi) => (
-              <td key={mi} className="px-2 py-2 text-[11px] text-center tabular-nums whitespace-nowrap">
-                {fmtN(v)}
+          <React.Fragment key={i}>
+            <tr className={`border-b transition-colors border-slate-100 ${isLess ? 'bg-red-50/50 hover:bg-red-50' : isPlus ? 'bg-emerald-50/40 hover:bg-emerald-50/70' : 'hover:bg-slate-50/60'}`}>
+              <td className={`py-2 text-[11px] leading-snug w-[300px] ${linkBorder ? `pl-2 pr-4 ${linkBorder}` : 'px-4'} ${isLess ? 'text-red-600 font-semibold' : isPlus ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+                {isLess && <span className="mr-1 opacity-60">↓</span>}
+                {isPlus && <span className="mr-1 opacity-60">↑</span>}
+                {row.label.replace(/^Less: /, '').replace(/^Plus: /, '')}
               </td>
-            ))}
-          </tr>
+              {row.values.map((v, mi) => (
+                <td key={mi} className="px-2 py-2 text-[11px] text-center tabular-nums whitespace-nowrap">
+                  {fmtN(v)}
+                </td>
+              ))}
+            </tr>
+            {row.ticker && hasAnyValue && (
+              <tr className="h-5 border-b border-blue-100/60" style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
+                <td colSpan={13} className="px-4 py-0 overflow-hidden">
+                  <div className="relative h-4 flex items-center gap-2.5">
+                    <span className="text-[7px] font-black uppercase tracking-widest text-blue-400 flex-shrink-0 z-10 whitespace-nowrap">GURU Autopilot</span>
+                    <div className="flex-1 relative h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(29,78,216,0.12)" }}>
+                      <motion.div
+                        className="absolute top-0 h-full w-10 rounded-full"
+                        style={{ backgroundColor: "#3b82f6", boxShadow: "0 0 8px #3b82f6, 0 0 16px #3b82f680" }}
+                        animate={{ x: ["-40px", "120%"] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }}
+                      />
+                      <motion.div
+                        className="absolute top-0 h-full w-6 rounded-full"
+                        style={{ backgroundColor: "#93c5fd", boxShadow: "0 0 6px #93c5fd" }}
+                        animate={{ x: ["-24px", "120%"] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: "linear", delay: 0.9 }}
+                      />
+                      <motion.div
+                        className="absolute top-0 h-full w-4 rounded-full"
+                        style={{ backgroundColor: "#bfdbfe" }}
+                        animate={{ x: ["-16px", "120%"] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: "linear", delay: 1.7 }}
+                      />
+                    </div>
+                    <span className="text-[7px] font-black uppercase tracking-widest text-blue-400 flex-shrink-0 z-10 whitespace-nowrap">Auto-draw active</span>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </React.Fragment>
         );
       })}
       <tr className="border-y-2 border-white/20" style={{ backgroundColor: color }}>
@@ -3662,7 +3695,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths }: { assets: Asset
                   subrows={[
                     { label: "Plus: Income Allocation to Operating Cash",       values: INCOME_TO_IMM },
                     { label: "Less: Expenses",                                  values: EXPENSES },
-                    { label: "Plus: Cash Moved from Reserve",                   values: FROM_ST_TO_IMM, linkId: 'rsv-ops' },
+                    { label: "Plus: Auto-draw from Reserve",                    values: FROM_ST_TO_IMM, linkId: 'rsv-ops', ticker: true },
                     { label: "Plus: After-Tax Interest Income",                 values: IMM_INT },
                   ]}
                   bucketLabel="Operating Cash"
