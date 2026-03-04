@@ -4669,130 +4669,137 @@ export default function ClientDashboard() {
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
       {activeView === "dashboard" && (
         <div className="space-y-4">
-          {/* ── Advisor Discussion Points Hero Bar ───────────────────────────── */}
-          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-2 bg-slate-50 border-b border-border">
+          {/* ── Advisor Discussion Points — Action Cards ─────────────────────── */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
               <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-              <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Advisor Discussion Points · Today's Priorities
               </p>
             </div>
-            {/* Category banners */}
-            <div className="grid grid-cols-2 border-b border-border">
-              <div className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-50/60 border-r border-border">
-                <PieChartIcon className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                <p className="text-[8px] uppercase tracking-widest font-black text-blue-600">Investment Portfolio</p>
-              </div>
-              <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-50/60">
-                <Wallet className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                <p className="text-[8px] uppercase tracking-widest font-black text-amber-600">Cash Management</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 divide-x divide-border">
+            <div className="grid grid-cols-4 gap-3">
 
-              {/* 1 · Total Cash to Invest */}
-              <div className="px-4 py-4 flex flex-col gap-0.5 cursor-pointer hover:bg-emerald-50/50 transition-colors" data-testid="kpi-cash-excess" onClick={() => setActiveView("guru")}>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Wallet className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                  <p className="text-[9px] uppercase tracking-widest font-bold text-emerald-700">Potential Cash to Invest</p>
-                </div>
-                <p className="text-2xl font-black tabular-nums text-emerald-700 leading-tight">
-                  {fmt(totalToInvestTop, true)}
-                </p>
-              </div>
-
-              {/* 2 · Portfolio Rebalance — Concentration Flags */}
-              <div className="px-4 py-4 flex flex-col gap-0.5">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <RefreshCw className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                    <p className="text-[9px] uppercase tracking-widest font-bold text-blue-700">Portfolio Rebalance</p>
-                  </div>
-                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">3 flags</span>
-                </div>
-                <div className="flex flex-col gap-2 mt-1">
-                  {[
-                    {
-                      icon: TrendingUp,
-                      color: "text-violet-600",
-                      bg: "bg-violet-50",
-                      border: "border-violet-200",
-                      title: "Increase US Large Cap",
-                      detail: "Grow allocation underweight domestic large cap equity for long-term appreciation",
-                    },
-                    {
-                      icon: AlertTriangle,
-                      color: "text-amber-600",
-                      bg: "bg-amber-50",
-                      border: "border-amber-200",
-                      title: "Financial Services Concentration",
-                      detail: "BAC single-stock position creates outsized sector risk — consider diversifying",
-                    },
-                    {
-                      icon: Activity,
-                      color: "text-blue-600",
-                      bg: "bg-blue-50",
-                      border: "border-blue-200",
-                      title: "Add Bonds & Commodities",
-                      detail: "No fixed income or commodity exposure — reduces volatility and inflation hedge",
-                    },
-                  ].map(({ icon: Icon, color, bg, border, title }) => (
-                    <div key={title} className={`rounded-md border ${border} ${bg} px-2.5 py-1.5 flex items-center gap-1.5`}>
-                      <Icon className={`w-3 h-3 flex-shrink-0 ${color}`} />
-                      <p className={`text-[9px] font-black uppercase tracking-wide ${color}`}>{title}</p>
+              {/* Card 1 — Deploy Excess Liquidity */}
+              <div
+                className="rounded-xl border border-border bg-card shadow-sm flex flex-col overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                style={{ borderTop: "3px solid #10b981" }}
+                onClick={() => setActiveView("guru")}
+                data-testid="kpi-cash-excess"
+              >
+                <div className="px-5 pt-5 pb-4 flex flex-col flex-1 gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Wallet className="w-4 h-4 text-emerald-600" />
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 4 · Cash Management Optimization */}
-              <div className="px-4 py-4 flex flex-col gap-0.5">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                  <p className="text-[9px] uppercase tracking-widest font-bold text-amber-700">Cash Mgmt Opportunity</p>
-                </div>
-                <p className="text-2xl font-black tabular-nums text-amber-700 leading-tight">
-                  +{Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps
-                </p>
-                <div className="mt-1.5 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 flex items-start gap-1.5">
-                  <TrendingDown className="w-3 h-3 text-rose-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Cash Mgmt</span>
+                  </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-wide text-rose-700">Fed Cutting Rates</p>
-                    <p className="text-[9px] text-rose-600 leading-snug mt-0.5">Move reserve cash into Treasuries now to lock yield before rates fall further</p>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Deploy Excess Liquidity</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Idle cash earning below-market yields — deploy into higher-return positions</p>
                   </div>
+                  <p className="text-2xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToInvestTop, true)}</p>
+                  <p className="text-[9px] text-emerald-700 font-semibold">available to invest</p>
                 </div>
-                <div className="mt-1.5 text-[9px] text-muted-foreground">
-                  <span>Current ~{_currentLiquidYield}% AT → GURU target ~{_guruLiquidYield}% AT</span>
+                <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">Click to open GURU Allocation</span>
+                  <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">Review <ArrowUpRight className="w-3 h-3" /></span>
                 </div>
               </div>
 
-              {/* 5 · Upcoming Payments */}
-              <div className="px-4 py-4 flex flex-col gap-0.5">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Calendar className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                  <p className="text-[9px] uppercase tracking-widest font-bold text-rose-700">Upcoming Payments</p>
-                </div>
-                <div className="flex flex-col gap-1.5 mt-0.5">
-                  {[
-                    { label: "Buckley Tuition", payment: _buckleyPayment },
-                    { label: "Lakewood National HOA", payment: _lakewoodPayment },
-                    { label: "12 Warren Property Taxes", payment: _warrenPayment },
-                  ].map(({ label, payment }) => (
-                    <div key={label} className="flex items-baseline justify-between gap-2">
-                      <span className="text-[10px] text-muted-foreground truncate flex-1">{label}</span>
-                      {payment ? (
-                        <span className="text-[10px] font-bold tabular-nums text-rose-700 flex-shrink-0">
-                          {fmt(payment.amount, true)} · {format(payment.date, "MMM d")}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground flex-shrink-0">None in 6 mo</span>
-                      )}
+              {/* Card 2 — Portfolio Rebalancing */}
+              <div
+                className="rounded-xl border border-border bg-card shadow-sm flex flex-col overflow-hidden"
+                style={{ borderTop: "3px solid #3b82f6" }}
+              >
+                <div className="px-5 pt-5 pb-4 flex flex-col flex-1 gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <RefreshCw className="w-4 h-4 text-blue-600" />
                     </div>
-                  ))}
+                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Portfolio</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Portfolio Rebalancing Needed</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Concentration risk in single stocks and missing asset classes</p>
+                  </div>
+                  <p className="text-2xl font-black tabular-nums text-blue-600 leading-none">3 flags</p>
+                  <div className="flex flex-col gap-1">
+                    {["Increase US Large Cap", "Financial Services Risk", "Add Bonds & Commodities"].map((f) => (
+                      <div key={f} className="flex items-center gap-1.5">
+                        <div className="w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
+                        <span className="text-[9px] text-muted-foreground">{f}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1.5 leading-snug">
-                  Ensure reserve is pre-funded for these obligations
-                </p>
+                <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">Discuss with client</span>
+                  <span className="text-[10px] font-bold text-blue-600 flex items-center gap-0.5">Review <ArrowUpRight className="w-3 h-3" /></span>
+                </div>
+              </div>
+
+              {/* Card 3 — Yield Pickup */}
+              <div
+                className="rounded-xl border border-border bg-card shadow-sm flex flex-col overflow-hidden"
+                style={{ borderTop: "3px solid #d97706" }}
+              >
+                <div className="px-5 pt-5 pb-4 flex flex-col flex-1 gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <SlidersHorizontal className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Yield</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Yield Pickup Available</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Lock in Treasury yields before Fed cuts rates further</p>
+                  </div>
+                  <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps</p>
+                  <p className="text-[9px] text-amber-700 font-semibold">{_currentLiquidYield}% → {_guruLiquidYield}% AT yield</p>
+                </div>
+                <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+                  <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-1"><TrendingDown className="w-3 h-3" /> Fed cutting rates</span>
+                  <span className="text-[10px] font-bold text-amber-600 flex items-center gap-0.5">Review <ArrowUpRight className="w-3 h-3" /></span>
+                </div>
+              </div>
+
+              {/* Card 4 — Upcoming Payments */}
+              <div
+                className="rounded-xl border border-border bg-card shadow-sm flex flex-col overflow-hidden"
+                style={{ borderTop: "3px solid #f43f5e" }}
+              >
+                <div className="px-5 pt-5 pb-4 flex flex-col flex-1 gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-4 h-4 text-rose-600" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">Payments</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Pre-fund Upcoming Obligations</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Ensure reserve is funded ahead of these known expenses</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {[
+                      { label: "Buckley Tuition", payment: _buckleyPayment },
+                      { label: "Lakewood HOA", payment: _lakewoodPayment },
+                      { label: "Warren Property Tax", payment: _warrenPayment },
+                    ].map(({ label, payment }) => (
+                      <div key={label} className="flex items-baseline justify-between gap-2">
+                        <span className="text-[9px] text-muted-foreground truncate flex-1">{label}</span>
+                        {payment ? (
+                          <span className="text-[9px] font-bold tabular-nums text-rose-700 flex-shrink-0">{fmt(payment.amount, true)} · {format(payment.date, "MMM d")}</span>
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground flex-shrink-0">None in 6 mo</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">Verify reserve coverage</span>
+                  <span className="text-[10px] font-bold text-rose-600 flex items-center gap-0.5">Review <ArrowUpRight className="w-3 h-3" /></span>
+                </div>
               </div>
 
             </div>
