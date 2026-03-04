@@ -4158,33 +4158,120 @@ function GuruAllocationView({
                         })()}
                       </div>
                     </div>
-                    {/* ── MIDDLE: Execution panel ── */}
+                    {/* ── MIDDLE: Figma Animated Analysis Panel ── */}
                     {(() => {
-                      const avgYield = weightedGrossYield(r.subAccounts, r.current);
                       const avgYieldAT = weightedATYield(r.subAccounts, r.current);
+                      const pctCurrent = totalAssets > 0 ? Math.min((r.current / totalAssets) * 100, 100) : 0;
+                      const pctTarget = totalAssets > 0 ? Math.min((r.target / totalAssets) * 100, 100) : 0;
+                      const delta = r.target - r.current;
+                      const isOver = r.current > r.target * 1.05;
+                      const isUnder = r.current < r.target * 0.95;
+                      const status = isOver ? "Over-funded" : isUnder ? "Under-funded" : "On Target";
+                      const statusColor = isOver ? "#f43f5e" : isUnder ? "#f59e0b" : "#10b981";
+                      const priorityMap: Record<string, string> = { "Operating Cash": "High", "Reserve": "High", "Build": "Medium", "Grow": "Low" };
+                      const priority = priorityMap[r.def.name] ?? "Medium";
+                      const priorityColor = priority === "High" ? "#f43f5e" : priority === "Medium" ? "#f59e0b" : "#10b981";
                       return (
-                        <BucketExecutionPanel
-                          key={r.def.name}
-                          bucketName={r.def.name}
-                          current={r.current}
-                          target={r.target}
-                          delta={r.delta}
-                          accentColor={r.def.accent}
-                          bgColor={r.def.bg}
-                          avgYield={avgYield}
-                          avgYieldAT={avgYieldAT}
-                          bpPickup={r.bpPickup}
-                          totalAssets={totalAssets}
-                          onExecute={handleExecute}
-                          onUndo={handleUndo}
-                          monthsInputConfig={
-                            r.def.name === "Operating Cash"
-                              ? { defaultMonths: 2, monthlyUnit: r.target / 2, label: "mos. of expenses" }
-                              : r.def.name === "Reserve"
-                                ? { defaultMonths: 12, monthlyUnit: r.target / 12, label: "mos. of cumulative cash outflow" }
-                                : undefined
-                          }
-                        />
+                        <div className="w-72 flex-shrink-0 border-l border-r border-border bg-slate-800 flex flex-col">
+                          <div className="flex-1 px-5 py-5 flex flex-col gap-4">
+
+                            <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400">GURU Analysis</p>
+
+                            {/* Animated bars */}
+                            <div className="flex flex-col gap-3">
+                              {/* Current */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Current</span>
+                                  <span className="text-[10px] font-black tabular-nums text-white">{fmt(r.current)}</span>
+                                </div>
+                                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                  <motion.div
+                                    className="h-full rounded-full"
+                                    style={{ background: r.def.bg }}
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: `${pctCurrent}%` }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Delta badge */}
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-px bg-slate-700" />
+                                <span
+                                  className="text-[9px] font-black tabular-nums px-2 py-0.5 rounded-full flex-shrink-0"
+                                  style={{
+                                    background: delta > 0 ? "#fef3c7" : delta < 0 ? "#fee2e2" : "#d1fae5",
+                                    color: delta > 0 ? "#d97706" : delta < 0 ? "#dc2626" : "#059669",
+                                  }}
+                                >
+                                  {delta >= 0 ? "+" : ""}{fmt(Math.abs(delta))} {delta > 0 ? "needed" : delta < 0 ? "excess" : "balanced"}
+                                </span>
+                                <div className="flex-1 h-px bg-slate-700" />
+                              </div>
+
+                              {/* GURU Target */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400">GURU Target</span>
+                                  <span className="text-[10px] font-black tabular-nums text-amber-400">{fmt(r.target)}</span>
+                                </div>
+                                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                  <motion.div
+                                    className="h-full rounded-full bg-amber-500"
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: `${pctTarget}%` }}
+                                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* % of portfolio progress bar */}
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">% of Portfolio</span>
+                                <span className="text-[9px] font-bold text-slate-400 tabular-nums">{pctCurrent.toFixed(1)}%</span>
+                              </div>
+                              <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ background: r.def.accent }}
+                                  initial={{ width: "0%" }}
+                                  animate={{ width: `${pctCurrent}%` }}
+                                  transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* 2×2 metrics grid */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-slate-700/60 rounded-lg px-3 py-2.5">
+                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-500 mb-1">Status</p>
+                                <p className="text-[11px] font-black leading-tight" style={{ color: statusColor }}>{status}</p>
+                              </div>
+                              <div className="bg-slate-700/60 rounded-lg px-3 py-2.5">
+                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-500 mb-1">Priority</p>
+                                <p className="text-[11px] font-black" style={{ color: priorityColor }}>{priority}</p>
+                              </div>
+                              <div className="bg-slate-700/60 rounded-lg px-3 py-2.5">
+                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-500 mb-1">Current Yield</p>
+                                <p className="text-[11px] font-black text-white tabular-nums">{avgYieldAT.toFixed(2)}%</p>
+                              </div>
+                              <div className="bg-slate-700/60 rounded-lg px-3 py-2.5">
+                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-500 mb-1">Yield Pickup</p>
+                                <p
+                                  className="text-[11px] font-black tabular-nums"
+                                  style={{ color: r.bpPickup > 0 ? "#10b981" : r.bpPickup < 0 ? "#f43f5e" : "#94a3b8" }}
+                                >
+                                  {r.bpPickup > 0 ? "+" : ""}{r.bpPickup} bps
+                                </p>
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
                       );
                     })()}
                     {/* ── RIGHT: Products panel ── */}
@@ -4800,9 +4887,10 @@ export default function ClientDashboard() {
             </div>
           </div>
 
-          <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => setActiveView("cashflow")} />
-
-          <CashFlowTicker cashFlows={cashFlows} />
+          <div className="grid grid-cols-[3fr_2fr] gap-4 items-start">
+            <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => setActiveView("cashflow")} />
+            <CashFlowTicker cashFlows={cashFlows} />
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <NetWorthPanel
