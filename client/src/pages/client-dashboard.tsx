@@ -4867,7 +4867,7 @@ export default function ClientDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-black text-foreground leading-snug mb-1">Plan For Money Movement</p>
-                    <p className="text-xs text-muted-foreground leading-snug">Upcoming obligations require coordinated cash transfers. Ensure reserves are pre-funded.</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Coordinated cash transfers for client</p>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     {[
