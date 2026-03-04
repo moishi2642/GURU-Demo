@@ -4693,7 +4693,7 @@ export default function ClientDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-black text-foreground leading-snug mb-1">Harvest Excess Liquidity</p>
-                    <p className="text-xs text-muted-foreground leading-snug">GURU estimates significant excess liquidity. Work with client to position cash for better returns.</p>
+                    <p className="text-xs text-muted-foreground leading-snug">GURU estimates significant excess liquidity due to bonus. Work with client to position cash for better returns.</p>
                   </div>
                   <p className="text-2xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToInvestTop, true)}</p>
                   <p className="text-[9px] text-emerald-700 font-semibold">estimated excess liquidity</p>
