@@ -3706,7 +3706,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[10px] font-semibold text-blue-800">Chase Total Checking</span>
                       <span className="text-[8px] text-blue-400 font-mono">Primary</span>
                     </div>
-                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Salary deposit · operating expenses paid here</div>
                   </td>
                   {CHASE_BAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-blue-700 cursor-help relative group">
@@ -3729,7 +3728,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[10px] font-semibold text-blue-700">Citizens Private Banking Checking</span>
                       <span className="text-[8px] text-amber-500 font-mono">Excess</span>
                     </div>
-                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Excess cash · drains Aug–Nov · GURU recommends sweeping to Reserve</div>
                   </td>
                   {CITIZENS_CHECK_BAL.map((v, mi) => (
                     <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold cursor-help relative group ${v < 0 ? 'text-red-600' : 'text-blue-600'}`}>
@@ -3742,23 +3740,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       ])}
                     </td>
                   ))}
-                </tr>
-                {/* ↳ Surplus above floor */}
-                <tr className="border-b border-[#1d4ed8]/08 transition-colors"
-                  style={{ backgroundColor: "rgba(29,78,216,0.02)" }}>
-                  <td className="pl-7 pr-4 py-1 w-[300px]">
-                    <span className="text-[8px] text-slate-400 pl-3.5">
-                      ↳ Surplus above {opsCashMonths}-month floor ({fmtBal(minOps)})
-                    </span>
-                  </td>
-                  {IMM_BAL.map((v, mi) => {
-                    const surplus = v - minOps;
-                    return (
-                      <td key={mi} className={`px-2 py-1 text-[9px] text-center tabular-nums ${surplus >= 0 ? 'text-emerald-600' : 'text-red-500 font-semibold'}`}>
-                        {surplus >= 0 ? `+${fmtBal(surplus)}` : `(${fmtBal(Math.abs(surplus))})`}
-                      </td>
-                    );
-                  })}
                 </tr>
                 {/* GURU Autopilot ticker — only when any month has a Reserve draw */}
                 {FROM_ST_TO_IMM.some(v => v > 0) && (
@@ -3801,19 +3782,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                     </td>
                   ))}
                 </tr>
-                {/* GURU note — excess checking swept to Reserve */}
-                {excessOpsAccts.length > 0 && (
-                  <tr style={{ backgroundColor: "rgba(29,78,216,0.06)" }} className="border-b border-[#1d4ed8]/15">
-                    <td className="pl-7 pr-4 py-1 w-[300px]">
-                      <div className="text-[8px] text-blue-500 pl-3.5 italic">
-                        ↳ {excessOpsAccts.map(a => _sn(a.description)).join(", ")} — excess swept to Reserve per GURU plan
-                      </div>
-                    </td>
-                    {Array.from({ length: 12 }).map((_, mi) => (
-                      <td key={mi} className="px-2 py-1 text-[9px] text-center text-blue-300/60 italic">swept</td>
-                    ))}
-                  </tr>
-                )}
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
                 {/* ══ RESERVE ══ */}
@@ -3826,7 +3794,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[10px] font-semibold text-amber-800">Citizens Private Bank Money Market</span>
                       <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
                     </div>
-                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Primary reserve · high-yield money market · same-day liquidity</div>
                   </td>
                   {CITIZENS_MM_BAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-amber-700 cursor-help relative group">
@@ -3849,7 +3816,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[10px] text-slate-600">CapitalOne 360 Performance Savings</span>
                       <span className="text-[8px] text-amber-500 font-mono">3.78%</span>
                     </div>
-                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">FDIC-insured · stable savings buffer</div>
                   </td>
                   {CAPONE_BAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums text-amber-600 cursor-help relative group">
@@ -3882,7 +3848,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[10px] font-semibold text-green-800">Treasuries 1 year</span>
                       <span className="text-[8px] text-green-600 font-mono">4.50%</span>
                     </div>
-                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Rolling 1-year T-Note ladder · backed by US government</div>
                   </td>
                   {TREASURIES_BAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-green-700 cursor-help relative group">
