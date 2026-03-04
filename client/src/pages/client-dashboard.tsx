@@ -3303,6 +3303,28 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
     { label: "Other Recurring",     amount: 2883,  dot: "#64748b" },
   ];
 
+  // ── Treasury ladder (GURU's strategic reserve structure) — shared across both views ──
+  const TBILLS = [
+    { label: "Jul '26", maturesSm: 6,  face: 65000, rate: '4.95', tenor: '3-mo' },
+    { label: "Oct '26", maturesSm: 9,  face: 65000, rate: '4.85', tenor: '6-mo' },
+    { label: "Jan '27", maturesSm: 12, face: 65000, rate: '4.75', tenor: '9-mo' },
+    { label: "Apr '27", maturesSm: 15, face: 65000, rate: '4.65', tenor: '12-mo' },
+  ] as const;
+  // MMF balance per month — 3-month buffer, drains on draws, refills when T-bills mature
+  const MMF_DISPLAY = [62777,43151,59277,62777,59651,42525,62777,62777,62777,62777,33198,62777];
+  const mmfBal = MMF_DISPLAY[sm];
+  const maturingBillIdx = sm === 6 ? 0 : sm === 9 ? 1 : -1;
+  const maturingBill = maturingBillIdx >= 0 ? TBILLS[maturingBillIdx as 0 | 1] : null;
+  const getBillState = (i: number): 'upcoming' | 'maturing' | 'matured' => {
+    const b = TBILLS[i];
+    if (b.maturesSm === sm) return 'maturing';
+    if (b.maturesSm < 12 && sm > b.maturesSm) return 'matured';
+    return 'upcoming';
+  };
+  const upcomingLabels = TBILLS
+    .filter((b, i) => getBillState(i) === 'upcoming' && b.maturesSm < 12)
+    .map(b => b.label);
+
   return (
     <div className="rounded-xl overflow-hidden shadow-xl border border-slate-200">
       {/* ── Title bar: title + view toggle + controls ── */}
@@ -3369,28 +3391,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
         const checkingAccts = assets.filter(a =>
           a.type === 'cash' && (a.description ?? '').toLowerCase().includes('checking')
         );
-
-        // ── Treasury ladder (GURU's strategic reserve structure) ────────────────
-        const TBILLS = [
-          { label: "Jul '26", maturesSm: 6,  face: 65000, rate: '4.95', tenor: '3-mo' },
-          { label: "Oct '26", maturesSm: 9,  face: 65000, rate: '4.85', tenor: '6-mo' },
-          { label: "Jan '27", maturesSm: 12, face: 65000, rate: '4.75', tenor: '9-mo' },
-          { label: "Apr '27", maturesSm: 15, face: 65000, rate: '4.65', tenor: '12-mo' },
-        ] as const;
-        // MMF balance per month — 3-month buffer, drains on large draws, refills on T-bill maturities
-        const MMF_DISPLAY = [62777,43151,59277,62777,59651,42525,62777,62777,62777,62777,33198,62777];
-        const mmfBal = MMF_DISPLAY[sm];
-        const maturingBillIdx = sm === 6 ? 0 : sm === 9 ? 1 : -1;
-        const maturingBill = maturingBillIdx >= 0 ? TBILLS[maturingBillIdx as 0 | 1] : null;
-        const getBillState = (i: number): 'upcoming' | 'maturing' | 'matured' => {
-          const b = TBILLS[i];
-          if (b.maturesSm === sm) return 'maturing';
-          if (b.maturesSm < 12 && sm > b.maturesSm) return 'matured';
-          return 'upcoming';
-        };
-        const upcomingLabels = TBILLS
-          .filter((b, i) => getBillState(i) === 'upcoming' && b.maturesSm < 12)
-          .map(b => b.label);
 
         return (
         <div className="bg-slate-900 px-8 py-6 overflow-auto">
@@ -3656,6 +3656,92 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
           ══════════════════════════════════════════════════════════ */}
       {mmView === 'table' && (
         <>
+          {/* ── GURU Treasury Ladder timeline (Planned Movement view) ── */}
+          <div className="bg-slate-900 border-b-2 border-slate-700 overflow-x-auto">
+            <div style={{ minWidth: 'max-content' }}>
+              {/* Section header */}
+              <div className="flex items-center px-4 pt-3 pb-2 gap-2">
+                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500" style={{ width: 300, flexShrink: 0 }}>
+                  GURU Treasury Ladder · Reserve Structure
+                </span>
+                {MONTHS.map((mo, mi) => (
+                  <div key={mo} className={`text-[8px] font-black text-center uppercase tracking-wide`}
+                    style={{ minWidth: 76, color: mi === 6 ? '#f59e0b' : mi === 9 ? '#f59e0b' : '#475569' }}>
+                    {mo}
+                    {(mi === 6 || mi === 9) && <div className="text-[6px] font-normal mt-0.5" style={{ color: '#f59e0b' }}>maturity</div>}
+                  </div>
+                ))}
+              </div>
+
+              {/* T-bill rows */}
+              {TBILLS.map((bill, bi) => (
+                <div key={bi} className="flex items-center px-4 py-1.5 border-t border-slate-800 hover:bg-slate-800/30 transition-colors">
+                  <div style={{ width: 300, flexShrink: 0 }}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: bill.maturesSm >= 12 ? '#8b5cf6' : '#10b981' }} />
+                      <span className="text-[9px] font-semibold text-slate-300">{bill.tenor} T-Bill · matures {bill.label}</span>
+                      <span className="text-[8px] text-emerald-400 tabular-nums">{bill.rate}%</span>
+                    </div>
+                  </div>
+                  {MONTHS.map((mo, mi) => {
+                    const isMaturity = mi === bill.maturesSm;
+                    const isAfter = mi > bill.maturesSm && bill.maturesSm < 12;
+                    const isNextYr = bill.maturesSm >= 12 && mi === 11;
+                    return (
+                      <div key={mo}
+                        className={`text-center text-[9px] tabular-nums font-mono px-1 py-0.5 rounded ${
+                          isMaturity ? 'font-black' : isAfter ? 'text-slate-700' : 'text-slate-400'
+                        }`}
+                        style={{ minWidth: 76, color: isMaturity ? '#fbbf24' : undefined }}>
+                        {isMaturity
+                          ? '✓ MATURES'
+                          : isAfter
+                            ? '—'
+                            : isNextYr
+                              ? `→ ${bill.label}`
+                              : `$${bill.face.toLocaleString()}`
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* MMF buffer row */}
+              <div className="flex items-center px-4 py-2 border-t border-slate-700 bg-slate-800/40">
+                <div style={{ width: 300, flexShrink: 0 }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-blue-400" />
+                    <span className="text-[9px] font-semibold text-blue-300">JPMorgan MMF · Liquidity Buffer</span>
+                    <span className="text-[8px] text-slate-500">~3-month reserve</span>
+                  </div>
+                </div>
+                {MMF_DISPLAY.map((v, mi) => (
+                  <div key={mi} style={{ minWidth: 76 }}
+                    className={`text-center text-[9px] tabular-nums font-mono ${mi === 6 || mi === 9 ? 'font-black text-amber-400' : 'text-blue-400'}`}>
+                    ${v.toLocaleString()}
+                  </div>
+                ))}
+              </div>
+
+              {/* Auto-draw row (from MMF to Ops Cash) */}
+              <div className="flex items-center px-4 py-2 border-t border-slate-800 pb-3">
+                <div style={{ width: 300, flexShrink: 0 }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-slate-500" />
+                    <span className="text-[9px] text-slate-500">→ GURU Auto-draw (MMF → Operating Cash)</span>
+                  </div>
+                </div>
+                {FROM_ST_TO_IMM.map((v, mi) => (
+                  <div key={mi} style={{ minWidth: 76 }}
+                    className={`text-center text-[9px] tabular-nums font-mono ${v > 0 ? 'text-blue-400 font-semibold' : 'text-slate-700'}`}>
+                    {v > 0 ? `($${v.toLocaleString()})` : '—'}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="overflow-auto bg-white" style={{ maxHeight: 580 }}>
             <table className="w-full border-collapse min-w-max">
 
