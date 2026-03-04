@@ -816,7 +816,7 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
       <div className="px-4 pt-4 pb-3 border-b border-border/60">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cash Flow Forecast</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">12 Month Cumulative Cash Flow Forecast</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               {isPositive ? <TrendingUp className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <TrendingDown className="w-4 h-4 text-rose-500 flex-shrink-0" />}
               <p className={`text-3xl font-extrabold tabular-nums leading-tight ${isPositive ? "text-emerald-600" : "text-rose-600"}`} data-testid="kpi-annual-net">
