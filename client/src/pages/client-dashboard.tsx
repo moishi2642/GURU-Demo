@@ -4714,7 +4714,7 @@ export default function ClientDashboard() {
                     <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
                       <RefreshCw className="w-4 h-4 text-blue-600" />
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Rebalance</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Investments</span>
                   </div>
                   <div>
                     <p className="text-sm font-black text-foreground leading-snug mb-1">Deploy Liquidity into Investments</p>
