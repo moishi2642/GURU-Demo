@@ -3198,6 +3198,19 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
   const totalSavings  = 95590;
   const savingsRate   = ((totalSavings / totalIncome) * 100).toFixed(1);
 
+  const [expandedBucket, setExpandedBucket] = useState<string | null>("op");
+
+  // Compute net monthly flow per bucket from ledger
+  const bucketNet = (bkKey: string, mIdx: number) =>
+    MM_LEDGER.filter(r => r.bucket === bkKey).reduce((s, r) => s + (r.values[mIdx] ?? 0), 0);
+
+  const fmtCell = (v: number, forceSign = false) => {
+    if (v === 0) return "—";
+    const abs = Math.abs(v);
+    const str = abs >= 1000 ? `$${(abs / 1000).toFixed(0)}K` : `$${abs.toLocaleString()}`;
+    return forceSign ? (v > 0 ? `+${str}` : `−${str}`) : (v < 0 ? `−${str}` : str);
+  };
+
   return (
     <div className="space-y-4">
 
@@ -3280,70 +3293,156 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
         </div>
       </div>
 
-      {/* ── Expense Breakdown Table + Bucket Trajectory ── */}
-      <div className="grid grid-cols-[1fr_420px] gap-4">
-
-        {/* Expense breakdown */}
-        <div className="rounded-xl bg-card border border-border overflow-hidden">
-          <div className="px-5 py-3 border-b border-border">
-            <p className="text-sm font-bold text-foreground">Annual Expense Breakdown</p>
+      {/* ── Monthly Movement Table ── */}
+      <div className="rounded-xl bg-card border border-border overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center gap-3">
+          <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-bold text-foreground">Monthly Money Movement</p>
+            <p className="text-[10px] text-muted-foreground">GURU bucket-by-bucket cashflows · click a bucket to expand</p>
           </div>
-          <div className="divide-y divide-border/60">
-            {DETAIL_ROWS.map((row) => (
-              <div key={row.label} className="px-5 py-3 flex items-center gap-4">
-                <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold text-foreground">{row.label}</p>
-                  <p className="text-[9px] text-muted-foreground">{row.sub}</p>
-                </div>
-                <div className="w-28 flex-shrink-0">
-                  <div className="flex justify-between text-[9px] text-muted-foreground mb-1">
-                    <span>{((row.value / (totalExpenses + totalSavings)) * 100).toFixed(1)}%</span>
-                    <span className="font-bold tabular-nums text-foreground">{fmtMM(row.value)}</span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${(row.value / Math.max(...DETAIL_ROWS.map(r => r.value))) * 100}%`, backgroundColor: row.color }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="px-5 py-3 border-t border-border bg-muted/30 flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Total Deployed</span>
-            <span className="text-sm font-black text-foreground tabular-nums">{fmtMM(totalExpenses + totalSavings)}</span>
+          <div className="ml-auto flex items-center gap-3 text-[9px]">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Income / Interest</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" />Expense</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" />Transfer</span>
           </div>
         </div>
 
-        {/* 12-Month Bucket Balance Chart */}
-        <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">12-Month GURU Bucket Balance Trajectory</p>
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={MM_MONTHS.map((m, i) => ({
-              month: m,
-              op: MM_BALANCES.op[i],
-              res: MM_BALANCES.res[i],
-              bld: MM_BALANCES.bld[i],
-              grw: MM_BALANCES.grw[i],
-            }))}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-              <YAxis tickFormatter={(v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 9 }} width={50} />
-              <RechartsTooltip
-                formatter={(v: number, n: string) => {
-                  const labels: Record<string,string> = { op: "Operating Cash", res: "Reserve", bld: "Build", grw: "Grow" };
-                  return [fmtMM(v), labels[n] ?? n];
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 10 }} formatter={(v) => ({ op:"Operating Cash", res:"Reserve", bld:"Build", grw:"Grow" }[v] ?? v)} />
-              <Area type="monotone" dataKey="grw" fill="#c084fc" stroke="#9333ea" fillOpacity={0.2} strokeWidth={2} name="grw" />
-              <Area type="monotone" dataKey="bld" fill="#4ade80" stroke="#16a34a" fillOpacity={0.3} strokeWidth={2} name="bld" />
-              <Line type="monotone" dataKey="res" stroke="#fbbf24" strokeWidth={2} dot={false} name="res" />
-              <Line type="monotone" dataKey="op" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3 }} name="op" strokeDasharray="4 2" />
-            </ComposedChart>
-          </ResponsiveContainer>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[10px] border-collapse">
+            {/* Month headers */}
+            <thead>
+              <tr className="border-b border-border bg-muted/40">
+                <th className="sticky left-0 z-10 bg-muted/40 text-left px-4 py-2.5 font-bold uppercase tracking-wider text-muted-foreground w-[200px]">
+                  Bucket / Line Item
+                </th>
+                {MM_MONTHS.map((m) => (
+                  <th key={m} className="text-right px-2.5 py-2.5 font-bold uppercase tracking-wider text-muted-foreground min-w-[68px]">{m}</th>
+                ))}
+                <th className="text-right px-3 py-2.5 font-bold uppercase tracking-wider text-muted-foreground min-w-[72px] border-l border-border">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {MM_BUCKETS.map((bk) => {
+                const isOpen = expandedBucket === bk.key;
+                const ledgerRows = MM_LEDGER.filter(r => r.bucket === bk.key);
+                const annualNet = MM_MONTHS.reduce((s, _, i) => s + bucketNet(bk.key, i), 0);
+
+                return [
+                  /* ── Bucket header row ── */
+                  <tr
+                    key={`${bk.key}-header`}
+                    onClick={() => setExpandedBucket(isOpen ? null : bk.key)}
+                    className="cursor-pointer border-b border-border/60 hover:brightness-110 transition-all"
+                    style={{ backgroundColor: bk.color }}
+                  >
+                    <td className="sticky left-0 z-10 px-4 py-3" style={{ backgroundColor: bk.color }}>
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className={`w-3.5 h-3.5 text-white/60 flex-shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                        <div>
+                          <p className="font-black text-white text-[11px] leading-tight">{bk.label}</p>
+                          <p className="text-[9px] font-medium" style={{ color: bk.accent }}>{bk.tag}</p>
+                        </div>
+                      </div>
+                    </td>
+                    {MM_MONTHS.map((_, i) => {
+                      const net = bucketNet(bk.key, i);
+                      return (
+                        <td key={i} className="text-right px-2.5 py-3 tabular-nums font-bold text-[11px]"
+                          style={{ color: net > 0 ? bk.accent : net < 0 ? "#fca5a5" : "rgba(255,255,255,0.4)" }}>
+                          {fmtCell(net, true)}
+                        </td>
+                      );
+                    })}
+                    <td className="text-right px-3 py-3 tabular-nums font-black text-[11px] border-l border-white/20"
+                      style={{ color: annualNet > 0 ? bk.accent : annualNet < 0 ? "#fca5a5" : "rgba(255,255,255,0.4)" }}>
+                      {fmtCell(annualNet, true)}
+                    </td>
+                  </tr>,
+
+                  /* ── Start balance sub-row ── */
+                  ...(isOpen ? [
+                    <tr key={`${bk.key}-start`} className="border-b border-border/30 bg-muted/20">
+                      <td className="sticky left-0 z-10 bg-muted/20 pl-10 pr-4 py-2 italic text-muted-foreground">Start Balance</td>
+                      {MM_MONTHS.map((_, i) => (
+                        <td key={i} className="text-right px-2.5 py-2 tabular-nums text-muted-foreground font-semibold">
+                          {fmtMM(MM_BALANCES[bk.key][i])}
+                        </td>
+                      ))}
+                      <td className="text-right px-3 py-2 tabular-nums text-muted-foreground border-l border-border/40">—</td>
+                    </tr>,
+                  ] : []),
+
+                  /* ── Line item rows ── */
+                  ...(isOpen ? ledgerRows.map((row, ri) => {
+                    const rowTotal = row.values.reduce((s, v) => s + v, 0);
+                    const typeColor = row.type === "income" ? "text-emerald-700" : row.type === "expense" ? "text-rose-600" : row.type === "interest" ? "text-emerald-600" : "text-blue-600";
+                    const typeDot = row.type === "income" ? "bg-emerald-500" : row.type === "expense" ? "bg-rose-500" : row.type === "interest" ? "bg-emerald-400" : "bg-blue-400";
+                    return (
+                      <tr key={`${bk.key}-row-${ri}`} className="border-b border-border/20 hover:bg-muted/10 transition-colors">
+                        <td className="sticky left-0 z-10 bg-background pl-10 pr-4 py-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${typeDot}`} />
+                            <span className="text-muted-foreground">{row.label}</span>
+                          </div>
+                        </td>
+                        {row.values.map((v, i) => (
+                          <td key={i} className={`text-right px-2.5 py-1.5 tabular-nums font-semibold ${v === 0 ? "text-muted-foreground/30" : v > 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                            {v === 0 ? "—" : fmtCell(v, true)}
+                          </td>
+                        ))}
+                        <td className={`text-right px-3 py-1.5 tabular-nums font-bold border-l border-border/40 ${rowTotal > 0 ? "text-emerald-700" : rowTotal < 0 ? "text-rose-600" : "text-muted-foreground/40"}`}>
+                          {fmtCell(rowTotal, true)}
+                        </td>
+                      </tr>
+                    );
+                  }) : []),
+
+                  /* ── End balance sub-row ── */
+                  ...(isOpen ? [
+                    <tr key={`${bk.key}-end`} className="border-b-2 border-border bg-muted/30">
+                      <td className="sticky left-0 z-10 bg-muted/30 pl-10 pr-4 py-2 font-bold text-foreground">End Balance</td>
+                      {MM_MONTHS.map((_, i) => (
+                        <td key={i} className="text-right px-2.5 py-2 tabular-nums font-black text-foreground text-[11px]">
+                          {fmtMM(MM_BALANCES[bk.key][i + 1] ?? MM_BALANCES[bk.key][12])}
+                        </td>
+                      ))}
+                      <td className="text-right px-3 py-2 tabular-nums font-black text-foreground border-l border-border/40 text-[11px]">
+                        {fmtMM(MM_BALANCES[bk.key][12])}
+                      </td>
+                    </tr>,
+                  ] : []),
+                ];
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── GURU Autopilot Action Log ── */}
+      <div className="rounded-xl bg-card border border-border overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center gap-2">
+          <Cpu className="w-4 h-4 text-blue-500" />
+          <p className="text-sm font-bold text-foreground">GURU Autopilot — Monthly Actions</p>
+          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse ml-1" />
+          <span className="text-[10px] text-green-600 font-semibold">ACTIVE</span>
+        </div>
+        <div className="grid grid-cols-4 divide-x divide-border">
+          {MM_GURU_ACTIONS.map((a, i) => (
+            <div key={i} className={`px-4 py-3 border-b border-border ${a.type === "replenish" ? "bg-emerald-50" : a.type === "balanced" ? "bg-muted/20" : "bg-rose-50/60"}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-[10px] font-black uppercase tracking-wider ${a.type === "replenish" ? "text-emerald-700" : a.type === "balanced" ? "text-muted-foreground" : "text-rose-700"}`}>
+                  {a.month}
+                </span>
+                {a.amount > 0 && (
+                  <span className={`ml-auto text-[10px] font-black tabular-nums ${a.type === "replenish" ? "text-emerald-600" : "text-rose-600"}`}>
+                    {a.type === "replenish" ? "+" : "−"}${(a.amount / 1000).toFixed(0)}K
+                  </span>
+                )}
+              </div>
+              <p className="text-[9px] text-muted-foreground leading-snug">{a.action}</p>
+            </div>
+          ))}
         </div>
       </div>
 
