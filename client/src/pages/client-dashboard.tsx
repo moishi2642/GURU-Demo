@@ -3128,390 +3128,206 @@ const MM_GURU_ACTIONS = [
 function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
   const MONTHS = ["Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb"];
 
-  const INCOME_AMOUNTS = [
-    [18813,18813,18813,18813,18813,18813,18813,18813,18813,18813,18813,18813],
-    [1722,1722,1722,1722,1722,1722,1722,1722,1722,1722,1722,1722],
-    [0,0,0,0,0,0,0,0,0,216641,0,0],
-  ];
-  const EXPENSE_AMOUNTS = [
-    [7793,7793,7793,7793,7793,7793,7793,7793,7793,7793,7793,7793],
-    [1243,1243,1243,1243,1243,1243,1243,1243,1243,1243,1243,1243],
-    [4333,4333,4333,4333,4333,4333,4333,4333,4333,4333,4333,4333],
-    [3500,3500,3500,3500,3500,3500,3500,3500,3500,3500,3500,3500],
-    [1187,1187,1187,1187,1187,1187,1187,1187,1187,1187,1187,1187],
-    [17500,0,0,0,0,0,17500,0,0,0,0,0],
-    [0,0,0,0,0,4697,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,30000,0,0,0],
-    [0,0,15000,15000,15000,0,15000,0,0,0,0,0],
-    [0,0,4000,1000,12000,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0,0,0,4102,0],
-  ];
+  // ── Computed monthly flow data (sourced from DB records) ────────────────────
+  const INCOME_TO_OPS   = [20535,20535,20535,20535,20535,20535,20535,20535,20535,237176,20535,20535];
+  const EXPENSES        = [-35556,-18056,-37056,-34056,-45056,-22753,-50556,-18056,-48056,-18056,-22158,-18056];
+  const DRAW_FROM_RSV   = [15021,0,16521,13521,24521,2218,30021,0,27521,0,1623,0];
+  const DRAW_FROM_BLD   = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const OPS_INT         = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const OPS_BALANCE     = [25050,25050,25050,25050,25050,25050,25050,25050,25050,25050,25050,25050];
 
-  const monthIncome = (i: number) => INCOME_AMOUNTS.reduce((s, l) => s + l[i], 0);
-  const monthExp    = (i: number) => EXPENSE_AMOUNTS.reduce((s, l) => s + l[i], 0);
-  const monthNet    = (i: number) => monthIncome(i) - monthExp(i);
+  const PUSH_TO_RSV     = [0,2479,0,0,0,0,0,2479,0,124386,0,2479];
+  const TRANSFER_OUT_RSV= [-15021,0,-16521,-13521,-24521,-2218,-30021,0,-27521,0,-1623,0];
+  const RSV_INT         = [684,639,646,595,555,480,473,382,390,306,683,681];
+  const RSV_BALANCE     = [209979,212458,195937,182416,157895,155677,125656,128135,100614,225000,223377,225856];
 
-  const fmt = (v: number) =>
-    v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M`
-    : v >= 1_000   ? `$${Math.round(v / 1_000)}K`
-    : `$${v.toLocaleString()}`;
+  const SWEEP_TO_BLD    = [0,0,0,0,0,0,0,0,0,94734,0,0];
+  const TRANSFER_OUT_BLD= [0,0,0,0,0,0,0,0,0,0,0,0];
+  const BLD_INT         = [2487,2487,2487,2487,2487,2487,2487,2487,2487,2776,2906,2908];
+  const BLD_BALANCE     = [757487,759974,762461,764948,767435,769922,772409,774896,777383,875117,878023,880931];
 
-  const BUCKETS = [
-    {
-      id: "operating",
-      name: "OPERATING CASH",
-      desc: "Daily liquidity",
-      balance: 558636,
-      displayMax: 700000,
-      targetMin: 50000,
-      targetMax: 150000,
-      targetLabel: "Target  $50K – $150K",
-      status: "OVERFULL",
-      accent: "#3b82f6",
-      accentDark: "#1e3a8a",
-      fillPct: 80,
-    },
-    {
-      id: "reserve",
-      name: "RESERVE BUFFER",
-      desc: "GURU auto-draw",
-      balance: 225000,
-      displayMax: 400000,
-      targetMin: 200000,
-      targetMax: 300000,
-      targetLabel: "Target  $200K – $300K",
-      status: "ON TARGET",
-      accent: "#d97706",
-      accentDark: "#78350f",
-      fillPct: 56,
-    },
-    {
-      id: "build",
-      name: "BUILD",
-      desc: "Mid-term growth",
-      balance: 755000,
-      displayMax: 1200000,
-      targetMin: 500000,
-      targetMax: 1000000,
-      targetLabel: "Target  $500K – $1M",
-      status: "ON TARGET",
-      accent: "#22c55e",
-      accentDark: "#14532d",
-      fillPct: 63,
-    },
-    {
-      id: "grow",
-      name: "GROW",
-      desc: "Long-term wealth",
-      balance: 2204726,
-      displayMax: 3000000,
-      targetMin: 2000000,
-      targetMax: 3000000,
-      targetLabel: "Target  > $2M",
-      status: "ON TARGET",
-      accent: "#a855f7",
-      accentDark: "#3b0764",
-      fillPct: 73,
-    },
-  ];
+  const GROW_BALANCE    = [2219424,2234122,2248820,2263518,2278216,2292914,2307612,2322310,2337008,2351706,2366404,2381102];
 
-  const PIPE_LABELS = [
-    { dir: "⟷", label: "GURU Reserve Line", sub: "auto-draw / replenish" },
-    { dir: "→",  label: "Surplus Sweep",     sub: "when Reserve full" },
-    { dir: "→",  label: "Growth Allocation", sub: "long-term assets" },
-  ];
+  const fmtN = (v: number) => {
+    if (v === 0) return <span className="text-slate-300">—</span>;
+    const abs = Math.abs(v);
+    const s = abs >= 1_000_000
+      ? `$${(abs / 1_000_000).toFixed(2)}M`
+      : abs >= 1_000
+        ? `$${(abs / 1_000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}K`
+        : `$${abs.toLocaleString()}`;
+    if (v > 0) return <span className="text-emerald-700 font-medium">+{s}</span>;
+    return <span className="text-red-600 font-medium">({s})</span>;
+  };
+
+  const fmtBal = (v: number) => {
+    const abs = Math.abs(v);
+    if (abs >= 1_000_000) return `$${(abs / 1_000_000).toFixed(2)}M`;
+    if (abs >= 1_000) return `$${Math.round(abs / 1_000).toLocaleString()}K`;
+    return `$${abs.toLocaleString()}`;
+  };
+
+  type SubRow = { label: string; values: number[] };
+
+  const Section = ({
+    subbrows,
+    bucketLabel,
+    accountLabel,
+    balances,
+    color,
+    textColor = "text-white",
+  }: {
+    subbrows: SubRow[];
+    bucketLabel: string;
+    accountLabel: string;
+    balances: number[];
+    color: string;
+    textColor?: string;
+  }) => (
+    <>
+      {subbrows.map((row, i) => (
+        <tr key={i} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
+          <td className="px-4 py-2 text-[11px] text-slate-500 leading-tight max-w-[220px]">
+            {row.label}
+          </td>
+          <td className="px-3 py-2 text-[11px] text-slate-400 italic" />
+          {row.values.map((v, mi) => (
+            <td key={mi} className="px-2 py-2 text-[11px] text-center tabular-nums whitespace-nowrap">
+              {fmtN(v)}
+            </td>
+          ))}
+        </tr>
+      ))}
+      {/* Bucket summary row */}
+      <tr className={`${color} border-y-2 border-white/20`}>
+        <td className={`px-4 py-3 text-[12px] font-black uppercase tracking-wide ${textColor}`}>
+          {bucketLabel}
+        </td>
+        <td className={`px-3 py-3 text-[9px] font-semibold leading-tight ${textColor} opacity-80 max-w-[140px]`}>
+          {accountLabel}
+        </td>
+        {balances.map((v, mi) => (
+          <td key={mi} className={`px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap ${textColor}`}>
+            {fmtBal(v)}
+          </td>
+        ))}
+      </tr>
+    </>
+  );
 
   return (
-    <div className="space-y-3 font-mono">
+    <div className="rounded-xl overflow-hidden shadow-xl border border-slate-200">
 
-      {/* ── Header ── */}
-      <div className="bg-[#060d1a] rounded-xl border border-[#1e3a5f] px-5 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-[#f5a623] animate-pulse flex-shrink-0" />
-          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#f5a623]">GURU · BUCKET FLOW SCHEMATIC</span>
-          <span className="text-[9px] text-slate-600 tracking-wider">KESSLER  ·  MAR 2026 – FEB 2027</span>
-        </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-950/60 border border-green-700/40 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-          <span className="text-[8px] font-bold tracking-widest text-green-400 uppercase">Autopilot Active</span>
-        </div>
+      {/* ── Title ── */}
+      <div className="bg-slate-800 px-6 py-4">
+        <h2 className="text-white text-[15px] leading-snug">
+          <span className="font-black">Continuous Money Movement:</span>
+          <span className="font-light ml-2">A Glimpse into How GURU Will Move Your Money</span>
+        </h2>
       </div>
 
-      {/* ── Schematic ── */}
-      <div className="bg-[#060d1a] rounded-xl border border-[#1a2a3a] p-6 overflow-x-auto">
+      {/* ── Table ── */}
+      <div className="overflow-x-auto bg-white">
+        <table className="w-full border-collapse min-w-max">
 
-        {/* Income source + vertical pipe */}
-        <div className="flex mb-0 pl-2">
-          <div className="flex flex-col items-center" style={{ width: 164 }}>
-            <div className="bg-[#001a10] border border-[#00d4aa]/40 rounded-lg px-4 py-2.5 w-full">
-              <p className="text-[7px] uppercase tracking-[0.18em] text-slate-600 mb-0.5">INCOME FEED</p>
-              <p className="text-[17px] font-black text-[#00d4aa] leading-none">+$20.5K</p>
-              <p className="text-[7px] text-slate-600 mt-1">/ mo  ·  +$216.6K Dec bonus</p>
-            </div>
-            {/* pipe down */}
-            <div className="flex flex-col items-center mt-0">
-              <div className="w-px h-7 bg-gradient-to-b from-[#00d4aa] to-[#00d4aa]/20" />
-              <div
-                className="w-0 h-0"
-                style={{
-                  borderLeft: "5px solid transparent",
-                  borderRight: "5px solid transparent",
-                  borderTop: "8px solid #00d4aa",
-                }}
-              />
-            </div>
-          </div>
-        </div>
+          {/* Column headers */}
+          <thead>
+            <tr className="bg-slate-100 border-b-2 border-slate-200">
+              <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 w-[220px]" />
+              <th className="px-3 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 w-[140px]">Account</th>
+              {MONTHS.map(m => (
+                <th key={m} className="px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 min-w-[68px]">
+                  {m}
+                </th>
+              ))}
+            </tr>
+          </thead>
 
-        {/* Tanks row */}
-        <div className="flex items-end min-w-max">
+          <tbody>
 
-          {BUCKETS.map((b, idx) => {
-            const targetMaxPct = (b.targetMax / b.displayMax) * 100;
-            const targetMinPct = (b.targetMin / b.displayMax) * 100;
-            const pipe = PIPE_LABELS[idx];
+            {/* ── SECTION 1: Operating Cash ── */}
+            <Section
+              subbrows={[
+                { label: "Plus: Income Allocation to Operating Cash",        values: INCOME_TO_OPS },
+                { label: "Less: Household Expenses",                         values: EXPENSES },
+                { label: "Plus: Cash Moved from Reserve Buffer to Operating", values: DRAW_FROM_RSV },
+                { label: "Plus: Cash Moved from Build to Operating",          values: DRAW_FROM_BLD },
+                { label: "Plus: After-Tax Interest Income",                   values: OPS_INT },
+              ]}
+              bucketLabel="Operating Cash"
+              accountLabel="Chase Total Checking"
+              balances={OPS_BALANCE}
+              color="bg-emerald-700"
+            />
 
-            return (
-              <div key={b.id} className="flex items-center">
+            {/* spacer */}
+            <tr className="h-2 bg-slate-50"><td colSpan={15} /></tr>
 
-                {/* ── Tank ── */}
-                <div style={{ width: 164 }}>
-                  {/* Tank body */}
-                  <div
-                    className="relative rounded-xl overflow-hidden border"
-                    style={{
-                      height: 200,
-                      borderColor: b.accent + "50",
-                      backgroundColor: "#080f1e",
-                    }}
-                  >
-                    {/* Liquid fill */}
-                    <div
-                      className="absolute bottom-0 left-0 right-0"
-                      style={{
-                        height: `${b.fillPct}%`,
-                        backgroundColor: b.accentDark,
-                        transition: "height 1.2s ease-out",
-                      }}
-                    >
-                      {/* Wave shimmer on top */}
-                      <div
-                        className="absolute top-0 left-0 right-0 h-[2px]"
-                        style={{ backgroundColor: b.accent }}
-                      />
-                    </div>
+            {/* ── SECTION 2: Reserve Buffer ── */}
+            <Section
+              subbrows={[
+                { label: "Plus: Surplus Transferred to Reserve Buffer",      values: PUSH_TO_RSV },
+                { label: "Less: Cash Moved from Reserve to Operating Cash",  values: TRANSFER_OUT_RSV },
+                { label: "Plus: After-Tax Interest Income (3.65%)",          values: RSV_INT },
+              ]}
+              bucketLabel="Reserve Buffer"
+              accountLabel="Citizens Private Bank Money Market"
+              balances={RSV_BALANCE}
+              color="bg-blue-600"
+            />
 
-                    {/* Target max marker (dashed line) */}
-                    <div
-                      className="absolute left-0 right-0 border-t border-dashed opacity-50 z-10"
-                      style={{
-                        bottom: `${targetMaxPct}%`,
-                        borderColor: b.accent,
-                      }}
-                    >
-                      <span
-                        className="absolute right-1 -top-3 text-[6px] uppercase tracking-wider"
-                        style={{ color: b.accent }}
-                      >
-                        max
-                      </span>
-                    </div>
+            {/* spacer */}
+            <tr className="h-2 bg-slate-50"><td colSpan={15} /></tr>
 
-                    {/* Target min marker */}
-                    <div
-                      className="absolute left-0 right-0 border-t border-dotted opacity-30 z-10"
-                      style={{
-                        bottom: `${targetMinPct}%`,
-                        borderColor: b.accent,
-                      }}
-                    >
-                      <span
-                        className="absolute right-1 -top-3 text-[6px] uppercase tracking-wider"
-                        style={{ color: b.accent, opacity: 0.6 }}
-                      >
-                        min
-                      </span>
-                    </div>
+            {/* ── SECTION 3: Build ── */}
+            <Section
+              subbrows={[
+                { label: "Plus: Year-End Bonus Surplus Sweep",               values: SWEEP_TO_BLD },
+                { label: "Less: Cash Moved to Operating Cash",               values: TRANSFER_OUT_BLD },
+                { label: "Plus: After-Tax Interest Income (3.95%)",          values: BLD_INT },
+              ]}
+              bucketLabel="Build"
+              accountLabel="US Treasuries · 3.95% yield"
+              balances={BLD_BALANCE}
+              color="bg-blue-900"
+            />
 
-                    {/* Center labels */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-                      <p
-                        className="text-[13px] font-black tabular-nums leading-none"
-                        style={{ color: "#fff" }}
-                      >
-                        {fmt(b.balance)}
-                      </p>
-                      <p className="text-[7px] text-white/50 uppercase tracking-widest mt-1">{b.desc}</p>
-                    </div>
+            {/* spacer */}
+            <tr className="h-2 bg-slate-50"><td colSpan={15} /></tr>
 
-                    {/* Status badge */}
-                    <div className="absolute top-2 left-2 z-20">
-                      <span
-                        className="text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
-                        style={{ backgroundColor: b.accent + "30", color: b.accent }}
-                      >
-                        {b.status}
-                      </span>
-                    </div>
-                  </div>
+            {/* ── SECTION 4: Grow (no sub-rows) ── */}
+            <tr className="bg-violet-700 border-y-2 border-white/20">
+              <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Grow</td>
+              <td className="px-3 py-3 text-[9px] font-semibold text-white/80 leading-tight">
+                Fidelity Brokerage + IRA + Roth IRA
+              </td>
+              {GROW_BALANCE.map((v, mi) => (
+                <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
+                  {fmtBal(v)}
+                </td>
+              ))}
+            </tr>
 
-                  {/* Tank label */}
-                  <div className="mt-2.5 text-center">
-                    <p
-                      className="text-[9px] font-black uppercase tracking-wider"
-                      style={{ color: b.accent }}
-                    >
-                      {b.name}
-                    </p>
-                    <p className="text-[7px] text-slate-700 mt-0.5">{b.targetLabel}</p>
-                  </div>
-                </div>
-
-                {/* ── Pipe connector (except after last) ── */}
-                {idx < BUCKETS.length - 1 && (
-                  <div className="flex flex-col items-center mx-1" style={{ width: 52, marginBottom: 46 }}>
-                    {/* Pipe label above */}
-                    <p className="text-[6px] uppercase tracking-wider text-slate-600 text-center whitespace-nowrap mb-1">
-                      {pipe.label}
-                    </p>
-
-                    {/* Pipe body with GURU valve */}
-                    <div className="relative w-full flex items-center">
-                      {/* Left half of pipe */}
-                      <div
-                        className="h-[3px] flex-1"
-                        style={{ backgroundColor: BUCKETS[idx + 1].accent + "50" }}
-                      />
-
-                      {/* GURU valve diamond */}
-                      <div
-                        className="w-4 h-4 rotate-45 border flex-shrink-0 z-10"
-                        style={{
-                          borderColor: "#f5a623",
-                          backgroundColor: "#060d1a",
-                        }}
-                      />
-
-                      {/* Right half of pipe */}
-                      <div
-                        className="h-[3px] flex-1"
-                        style={{ backgroundColor: BUCKETS[idx + 1].accent + "50" }}
-                      />
-
-                      {/* Arrow */}
-                      <div
-                        className="w-0 h-0 flex-shrink-0"
-                        style={{
-                          borderTop: "4px solid transparent",
-                          borderBottom: "4px solid transparent",
-                          borderLeft: `6px solid ${BUCKETS[idx + 1].accent}70`,
-                        }}
-                      />
-                    </div>
-
-                    {/* Direction + sub label */}
-                    <p className="text-[8px] font-black text-[#f5a623] mt-1">{pipe.dir}</p>
-                    <p className="text-[6px] text-slate-700 text-center whitespace-nowrap">{pipe.sub}</p>
-                  </div>
-                )}
-
-              </div>
-            );
-          })}
-
-        </div>
-
-        {/* Expense drain */}
-        <div className="flex pl-2 mt-0">
-          <div className="flex flex-col items-center" style={{ width: 164 }}>
-            {/* pipe up */}
-            <div className="flex flex-col items-center">
-              <div
-                className="w-0 h-0"
-                style={{
-                  borderLeft: "5px solid transparent",
-                  borderRight: "5px solid transparent",
-                  borderBottom: "8px solid #ff6b6b",
-                }}
-              />
-              <div className="w-px h-7 bg-gradient-to-t from-[#ff6b6b] to-[#ff6b6b]/20" />
-            </div>
-            <div className="bg-[#1a0505] border border-[#ff6b6b]/30 rounded-lg px-4 py-2.5 w-full">
-              <p className="text-[7px] uppercase tracking-[0.18em] text-slate-600 mb-0.5">EXPENSE DRAIN</p>
-              <p className="text-[17px] font-black text-[#ff6b6b] leading-none">–$18K</p>
-              <p className="text-[7px] text-slate-600 mt-1">/ mo  ·  up to –$51K (lumpy)</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="mt-6 pt-4 border-t border-[#1a2a3a] flex items-center gap-6 flex-wrap">
-          {[
-            { symbol: "◆", color: "#f5a623", label: "GURU valve — auto-opens on trigger" },
-            { symbol: "⟷", color: "#3b82f6", label: "Bidirectional: draw deficit / push surplus" },
-            { symbol: "→", color: "#22c55e", label: "One-way: excess sweeps forward" },
-          ].map(({ symbol, color, label }) => (
-            <div key={label} className="flex items-center gap-2">
-              <span className="text-[12px]" style={{ color }}>{symbol}</span>
-              <span className="text-[8px] text-slate-500">{label}</span>
-            </div>
-          ))}
-          <div className="ml-auto flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-px border-t border-dashed border-blue-400 opacity-60" />
-              <span className="text-[7px] text-slate-600">target max</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-px border-t border-dotted border-blue-400 opacity-30" />
-              <span className="text-[7px] text-slate-600">target min</span>
-            </div>
-          </div>
-        </div>
-
+          </tbody>
+        </table>
       </div>
 
-      {/* ── Monthly Flow Calendar ── */}
-      <div className="bg-[#060d1a] rounded-xl border border-[#1a2a3a] overflow-hidden">
-        <div className="px-5 py-2.5 border-b border-[#1e3a5f] flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#f5a623] animate-pulse flex-shrink-0" />
-          <span className="text-[8px] font-black uppercase tracking-[0.18em] text-[#f5a623]">MONTHLY CASH FLOW · GURU RESERVE ACTIONS</span>
-        </div>
-        <div className="grid grid-cols-12 divide-x divide-[#1a2a3a]">
-          {MONTHS.map((m, i) => {
-            const net = monthNet(i);
-            const inc = monthIncome(i);
-            const exp = monthExp(i);
-            const isDeficit = net < 0;
-            return (
-              <div key={m} className={`px-2 py-3 ${isDeficit ? "bg-[#120500]" : "bg-[#001208]"}`}>
-                <p className="text-[8px] font-black uppercase tracking-widest text-center text-slate-500">{m}</p>
-
-                <p
-                  className={`text-[12px] font-black tabular-nums text-center mt-1.5 leading-none ${isDeficit ? "text-[#ff6b6b]" : "text-[#00d4aa]"}`}
-                >
-                  {net >= 0 ? "+" : ""}{Math.round(net / 1000)}K
-                </p>
-
-                <div className="mt-2 space-y-0.5">
-                  <div className="flex justify-between">
-                    <span className="text-[6px] text-slate-700">IN</span>
-                    <span className="text-[6px] text-[#00d4aa] tabular-nums">{Math.round(inc / 1000)}K</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[6px] text-slate-700">OUT</span>
-                    <span className="text-[6px] text-[#ff6b6b] tabular-nums">({Math.round(exp / 1000)}K)</span>
-                  </div>
-                </div>
-
-                <div className="mt-2 pt-1.5 border-t border-[#1a2a3a]">
-                  <p className={`text-[6px] text-center font-bold uppercase tracking-wider ${isDeficit ? "text-[#d97706]" : "text-[#22c55e]"}`}>
-                    {isDeficit ? "⬆ draw reserve" : "⬇ push reserve"}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      {/* ── Footer legend ── */}
+      <div className="bg-slate-50 border-t border-slate-200 px-6 py-3 flex items-center gap-6 flex-wrap">
+        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">GURU Autopilot Logic</span>
+        {[
+          { color: "bg-emerald-100 text-emerald-700", label: "+Value = inflow / transfer in" },
+          { color: "bg-red-50 text-red-600",          label: "(Value) = outflow / transfer out" },
+          { color: "bg-emerald-700 text-white",       label: "Operating Cash — daily liquidity target" },
+          { color: "bg-blue-600 text-white",          label: "Reserve Buffer — GURU auto-draw source" },
+          { color: "bg-blue-900 text-white",          label: "Build — medium-term fixed income" },
+          { color: "bg-violet-700 text-white",        label: "Grow — long-term market appreciation" },
+        ].map(({ color, label }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <span className={`inline-block w-3 h-3 rounded-sm ${color} flex-shrink-0`} />
+            <span className="text-[9px] text-slate-500">{label}</span>
+          </div>
+        ))}
       </div>
 
     </div>
