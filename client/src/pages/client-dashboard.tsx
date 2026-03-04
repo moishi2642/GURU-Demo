@@ -4820,7 +4820,7 @@ export default function ClientDashboard() {
                     {["Increase US Large Cap", "Hedge Financial Services Concentration", "Add Bonds & Commodities"].map((f) => (
                       <div key={f} className="flex items-center gap-1.5">
                         <div className="w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
-                        <span className="text-blue-700 font-bold text-[11px]">{f}</span>
+                        <span className="text-blue-700 font-bold text-[12px]">{f}</span>
                       </div>
                     ))}
                   </div>
@@ -4843,10 +4843,6 @@ export default function ClientDashboard() {
                     <span className="text-[8px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Fixed Income</span>
                   </div>
                   <p className="text-sm font-black text-foreground leading-snug">Fixed Income Product Recommendation</p>
-                  <div className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-2 flex items-center gap-1.5">
-                    <TrendingDown className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                    <span className="text-[11px] font-bold text-rose-700">Fed cutting rates</span>
-                  </div>
                   <div>
                     <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps</p>
                   </div>
