@@ -1175,26 +1175,25 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
   const totalRet = retirementAssets.reduce((s, a) => s + Number(a.value), 0);
   const total = totalBrok + totalRet;
 
-  // ── Concentric donut: Current vs Target Model Portfolio ──
+  // ── Concentric donut: exact labels & % from Figma spec ──
   const PORT_CATS = [
-    { name: "Cash",         color: "#f59e0b" },
-    { name: "Equities",     color: "#3b82f6" },
-    { name: "Fixed Income", color: "#8b5cf6" },
-    { name: "Alternatives", color: "#10b981" },
-    { name: "Real Estate",  color: "#f43f5e" },
+    { name: "Cash",          color: "#1e3a5f" },
+    { name: "International", color: "#f97316" },
+    { name: "US",            color: "#38bdf8" },
+    { name: "Meta",          color: "#ec4899" },
+    { name: "Crypto",        color: "#a855f7" },
+    { name: "Bonds",         color: "#22c55e" },
   ];
-  const currentMap: Record<string, number> = { Cash: 0, Equities: 0, "Fixed Income": 0, Alternatives: 0, "Real Estate": 0 };
-  for (const a of assets) {
-    if (a.type === "cash") currentMap.Cash += Number(a.value);
-    else if (a.type === "equity") currentMap.Equities += Number(a.value);
-    else if (a.type === "fixed_income") currentMap["Fixed Income"] += Number(a.value);
-    else if (a.type === "alternative") currentMap.Alternatives += Number(a.value);
-    else if (a.type === "real_estate") currentMap["Real Estate"] += Number(a.value);
-  }
-  const totalAllAssets = Object.values(currentMap).reduce((s, v) => s + v, 0);
-  // Target model: conservative growth allocation
-  const TARGET_PCT: Record<string, number> = { Cash: 0.05, Equities: 0.52, "Fixed Income": 0.28, Alternatives: 0.08, "Real Estate": 0.07 };
-  const currentDonut = PORT_CATS.filter(c => currentMap[c.name] > 0).map(c => ({ ...c, value: currentMap[c.name] }));
+  // Outer ring = Current Portfolio (from image)
+  const CURRENT_PCT: Record<string, number> = {
+    Cash: 0.09, International: 0.19, US: 0.42, Meta: 0.02, Crypto: 0.10, Bonds: 0.18,
+  };
+  // Inner ring = Target Model Portfolio (from image)
+  const TARGET_PCT: Record<string, number> = {
+    Cash: 0.10, International: 0.10, US: 0.69, Meta: 0.01, Crypto: 0.06, Bonds: 0.04,
+  };
+  const totalAllAssets = assets.reduce((s, a) => s + Number(a.value), 0);
+  const currentDonut = PORT_CATS.map(c => ({ ...c, value: (CURRENT_PCT[c.name] ?? 0) * totalAllAssets })).filter(d => d.value > 0);
   const targetDonut  = PORT_CATS.map(c => ({ ...c, value: (TARGET_PCT[c.name] ?? 0) * totalAllAssets })).filter(d => d.value > 0);
 
   const spyUp = (spyQuote?.changePercent ?? 0) >= 0;
@@ -1274,25 +1273,22 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
             </ResponsiveContainer>
           </div>
           {/* Legend */}
-          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            <div className="flex gap-3 text-[9px] text-muted-foreground mb-0.5">
-              <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-sm bg-foreground/20 inline-block" />Current</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-sm bg-foreground/10 inline-block" />Model</span>
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <div className="flex gap-3 text-[9px] text-muted-foreground mb-1 font-semibold">
+              <span className="flex-1">Category</span>
+              <span className="w-8 text-right">Cur</span>
+              <span className="w-8 text-right">Tgt</span>
             </div>
-            {PORT_CATS.filter(c => currentMap[c.name] > 0 || (TARGET_PCT[c.name] ?? 0) > 0).map(c => {
-              const curPct = totalAllAssets > 0 ? (currentMap[c.name] / totalAllAssets) * 100 : 0;
-              const tgtPct = (TARGET_PCT[c.name] ?? 0) * 100;
+            {PORT_CATS.map(c => {
+              const curPct = Math.round((CURRENT_PCT[c.name] ?? 0) * 100);
+              const tgtPct = Math.round((TARGET_PCT[c.name] ?? 0) * 100);
               const diff = curPct - tgtPct;
               return (
                 <div key={c.name} className="flex items-center gap-1.5 text-[10px]">
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
                   <span className="text-muted-foreground flex-1 truncate">{c.name}</span>
-                  <span className="tabular-nums font-semibold text-foreground">{curPct.toFixed(0)}%</span>
-                  {Math.abs(diff) >= 1 && (
-                    <span className={`tabular-nums text-[9px] font-bold ${diff > 0 ? "text-rose-500" : "text-emerald-600"}`}>
-                      {diff > 0 ? "+" : ""}{diff.toFixed(0)}
-                    </span>
-                  )}
+                  <span className="tabular-nums font-bold text-foreground w-8 text-right">{curPct}%</span>
+                  <span className="tabular-nums text-muted-foreground w-8 text-right">{tgtPct}%</span>
                 </div>
               );
             })}
@@ -4163,112 +4159,138 @@ function GuruAllocationView({
                     {/* ── MIDDLE: Figma Animated Analysis Panel ── */}
                     {(() => {
                       const avgYieldAT = weightedATYield(r.subAccounts, r.current);
-                      const pctCurrent = totalAssets > 0 ? Math.min((r.current / totalAssets) * 100, 100) : 0;
-                      const pctTarget = totalAssets > 0 ? Math.min((r.target / totalAssets) * 100, 100) : 0;
                       const delta = r.target - r.current;
-                      const isOver = r.current > r.target * 1.05;
-                      const isUnder = r.current < r.target * 0.95;
-                      const status = isOver ? "Over-funded" : isUnder ? "Under-funded" : "On Target";
-                      const statusColor = isOver ? "#f43f5e" : isUnder ? "#f59e0b" : "#10b981";
-                      const priorityMap: Record<string, string> = { "Operating Cash": "High", "Reserve": "High", "Build": "Medium", "Grow": "Low" };
-                      const priority = priorityMap[r.def.name] ?? "Medium";
-                      const priorityColor = priority === "High" ? "#f43f5e" : priority === "Medium" ? "#f59e0b" : "#10b981";
+                      const needsFunding = delta > 0;
+                      const isBalanced = Math.abs(delta) < 1000;
+                      const maxValue = Math.max(r.current, r.target);
+                      const progressPct = r.target > 0 ? Math.min((r.current / r.target) * 100, 100) : 100;
                       return (
-                        <div className="w-72 flex-shrink-0 border-l border-r border-border bg-slate-800 flex flex-col">
-                          <div className="flex-1 px-5 py-5 flex flex-col gap-4">
+                        <div className="w-72 flex-shrink-0 border-l border-r border-slate-600 bg-slate-700 flex flex-col">
+                          <div className="flex-1 p-5 flex flex-col gap-4">
 
-                            <p className="text-[9px] uppercase tracking-widest font-bold text-slate-400">GURU Analysis</p>
-
-                            {/* Animated bars */}
-                            <div className="flex flex-col gap-3">
-                              {/* Current */}
-                              <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Current</span>
-                                  <span className="text-[10px] font-black tabular-nums text-white">{fmt(r.current)}</span>
-                                </div>
-                                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                                  <motion.div
-                                    className="h-full rounded-full"
-                                    style={{ background: r.def.bg }}
-                                    initial={{ width: "0%" }}
-                                    animate={{ width: `${pctCurrent}%` }}
-                                    transition={{ duration: 0.8, ease: "easeOut" }}
-                                  />
-                                </div>
+                            {/* Current bar */}
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[10px] text-slate-400 uppercase tracking-wider">Current</span>
+                                <span className="text-sm font-mono text-white">${(r.current / 1000).toFixed(0)}K</span>
                               </div>
-
-                              {/* Delta badge */}
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-px bg-slate-700" />
-                                <span
-                                  className="text-[9px] font-black tabular-nums px-2 py-0.5 rounded-full flex-shrink-0"
-                                  style={{
-                                    background: delta > 0 ? "#fef3c7" : delta < 0 ? "#fee2e2" : "#d1fae5",
-                                    color: delta > 0 ? "#d97706" : delta < 0 ? "#dc2626" : "#059669",
-                                  }}
+                              <div className="relative h-8 bg-slate-800 rounded border border-slate-600 overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${maxValue > 0 ? (r.current / maxValue) * 100 : 0}%` }}
+                                  transition={{ duration: 1, delay: 0.2 }}
+                                  className="h-full rounded flex items-center justify-end px-2"
+                                  style={{ backgroundColor: r.def.accent }}
                                 >
-                                  {delta >= 0 ? "+" : ""}{fmt(Math.abs(delta))} {delta > 0 ? "needed" : delta < 0 ? "excess" : "balanced"}
-                                </span>
-                                <div className="flex-1 h-px bg-slate-700" />
-                              </div>
-
-                              {/* GURU Target */}
-                              <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[9px] font-bold uppercase tracking-widest text-amber-400">GURU Target</span>
-                                  <span className="text-[10px] font-black tabular-nums text-amber-400">{fmt(r.target)}</span>
-                                </div>
-                                <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                                  <motion.div
-                                    className="h-full rounded-full bg-amber-500"
-                                    initial={{ width: "0%" }}
-                                    animate={{ width: `${pctTarget}%` }}
-                                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                                  />
-                                </div>
+                                  <span className="text-[10px] font-mono font-semibold text-white">
+                                    {totalAssets > 0 ? ((r.current / totalAssets) * 100).toFixed(1) : "0.0"}%
+                                  </span>
+                                </motion.div>
                               </div>
                             </div>
 
-                            {/* % of portfolio progress bar */}
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">% of Portfolio</span>
-                                <span className="text-[9px] font-bold text-slate-400 tabular-nums">{pctCurrent.toFixed(1)}%</span>
-                              </div>
-                              <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            {/* Delta indicator */}
+                            <div className="flex items-center justify-center my-1">
+                              {isBalanced ? (
+                                <div className="flex items-center gap-2 text-green-400">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                  <span className="text-xs font-medium">BALANCED</span>
+                                </div>
+                              ) : needsFunding ? (
                                 <motion.div
-                                  className="h-full rounded-full"
-                                  style={{ background: r.def.accent }}
-                                  initial={{ width: "0%" }}
-                                  animate={{ width: `${pctCurrent}%` }}
-                                  transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                                  initial={{ opacity: 0, y: -8 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.8 }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <div className="text-red-400 text-xs font-mono">▼ +${Math.abs(delta / 1000).toFixed(0)}K GAP</div>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                </motion.div>
+                              ) : (
+                                <motion.div
+                                  initial={{ opacity: 0, y: -8 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.8 }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <div className="text-blue-400 text-xs font-mono">▲ ${Math.abs(delta / 1000).toFixed(0)}K SURPLUS</div>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                </motion.div>
+                              )}
+                            </div>
+
+                            {/* GURU Target bar */}
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[10px] text-orange-400 uppercase tracking-wider flex items-center gap-1">
+                                  <Activity className="w-3 h-3" />GURU Target
+                                </span>
+                                <span className="text-sm font-mono text-orange-400">${(r.target / 1000).toFixed(0)}K</span>
+                              </div>
+                              <div className="relative h-8 bg-slate-800 rounded border border-orange-500/30 overflow-hidden">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${maxValue > 0 ? (r.target / maxValue) * 100 : 0}%` }}
+                                  transition={{ duration: 1, delay: 0.5 }}
+                                  className="h-full rounded flex items-center justify-end px-2 bg-gradient-to-r from-orange-600 to-orange-500"
+                                >
+                                  <span className="text-[10px] font-mono font-semibold text-white">
+                                    {totalAssets > 0 ? ((r.target / totalAssets) * 100).toFixed(1) : "0.0"}%
+                                  </span>
+                                </motion.div>
+                              </div>
+                            </div>
+
+                            {/* Progress to Target */}
+                            <div className="pb-4 border-b border-slate-600">
+                              <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                                <span>Progress to Target</span>
+                                <span className="font-mono">{progressPct.toFixed(0)}%</span>
+                              </div>
+                              <div className="h-1 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${progressPct}%` }}
+                                  transition={{ duration: 1, delay: 1 }}
+                                  className={`h-full ${isBalanced ? "bg-green-500" : needsFunding ? "bg-red-500" : "bg-blue-400"}`}
                                 />
                               </div>
                             </div>
 
                             {/* 2×2 metrics grid */}
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="bg-slate-700/60 rounded-lg px-3 py-2.5">
-                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-500 mb-1">Status</p>
-                                <p className="text-[11px] font-black leading-tight" style={{ color: statusColor }}>{status}</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
+                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Status</div>
+                                <div className={`text-xs font-medium ${isBalanced ? "text-green-400" : needsFunding ? "text-red-400" : "text-blue-400"}`}>
+                                  {isBalanced ? "BALANCED" : needsFunding ? "UNDERFUNDED" : "SURPLUS"}
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">
+                                  {isBalanced ? "No action needed" : needsFunding ? "Requires funding" : "Ready to redeploy"}
+                                </div>
                               </div>
-                              <div className="bg-slate-700/60 rounded-lg px-3 py-2.5">
-                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-500 mb-1">Priority</p>
-                                <p className="text-[11px] font-black" style={{ color: priorityColor }}>{priority}</p>
+                              <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
+                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Priority</div>
+                                <div className="text-xs font-mono text-white">
+                                  {Math.abs(delta) > 300000 ? "HIGH" : Math.abs(delta) > 100000 ? "MEDIUM" : "LOW"}
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">Execution: T+2</div>
                               </div>
-                              <div className="bg-slate-700/60 rounded-lg px-3 py-2.5">
-                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-500 mb-1">Current Yield</p>
-                                <p className="text-[11px] font-black text-white tabular-nums">{avgYieldAT.toFixed(2)}%</p>
+                              <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
+                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Current Yield</div>
+                                <div className="text-xs font-mono text-white tabular-nums">{avgYieldAT.toFixed(2)}%</div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">After-tax weighted</div>
                               </div>
-                              <div className="bg-slate-700/60 rounded-lg px-3 py-2.5">
-                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-500 mb-1">Yield Pickup</p>
-                                <p
-                                  className="text-[11px] font-black tabular-nums"
-                                  style={{ color: r.bpPickup > 0 ? "#10b981" : r.bpPickup < 0 ? "#f43f5e" : "#94a3b8" }}
-                                >
+                              <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
+                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                  Yield Pickup
+                                  {r.bpPickup > 50 && <AlertCircle className="w-3 h-3 text-orange-500" />}
+                                </div>
+                                <div className={`text-xs font-mono tabular-nums ${r.bpPickup > 50 ? "text-orange-400" : r.bpPickup > 0 ? "text-green-400" : "text-slate-400"}`}>
                                   {r.bpPickup > 0 ? "+" : ""}{r.bpPickup} bps
-                                </p>
+                                </div>
+                                <div className="text-[10px] text-green-500 mt-0.5">
+                                  ${((r.bpPickup / 10000) * r.current).toLocaleString("en-US", { maximumFractionDigits: 0 })}/yr
+                                </div>
                               </div>
                             </div>
 
