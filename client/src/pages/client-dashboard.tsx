@@ -4848,7 +4848,6 @@ export default function ClientDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps</p>
-                    <p className="text-[9px] text-amber-700 font-semibold mt-1">{_currentLiquidYield}% → {_guruLiquidYield}% AT yield</p>
                   </div>
                 </div>
                 <div className="px-5 py-3 border-t border-border flex items-center justify-end">
