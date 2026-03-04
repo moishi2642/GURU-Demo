@@ -2755,7 +2755,6 @@ function BucketExecutionPanel({
           </>
         )}
       </div>
-
       {/* Execute / Undo button */}
       <div className="px-5 pb-5 pt-3 border-t border-border">
         {executed ? (
@@ -4665,7 +4664,6 @@ export default function ClientDashboard() {
           ))}
         </div>
       </div>
-
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
       {activeView === "dashboard" && (
         <div className="space-y-4">
@@ -4694,7 +4692,7 @@ export default function ClientDashboard() {
                     <span className="text-[8px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Liquidity</span>
                   </div>
                   <div>
-                    <p className="text-sm font-black text-foreground leading-snug mb-1">Identify Excess Liquidity</p>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Harvest Excess Liquidity</p>
                     <p className="text-xs text-muted-foreground leading-snug">GURU estimates significant excess liquidity. Work with client to position cash for better returns.</p>
                   </div>
                   <p className="text-2xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToInvestTop, true)}</p>
@@ -4821,7 +4819,6 @@ export default function ClientDashboard() {
 
         </div>
       )}
-
       {/* ── Strategy View ─────────────────────────────────────────────────────── */}
       {activeView === "strategy" && (
         <StrategyView
@@ -4831,7 +4828,6 @@ export default function ClientDashboard() {
           onGenerate={handleGenerate}
         />
       )}
-
       {/* ── Balance Sheet View ─────────────────────────────────────────────────── */}
       {activeView === "balancesheet" && (
         <DetailsView
@@ -4841,12 +4837,10 @@ export default function ClientDashboard() {
           clientId={clientId}
         />
       )}
-
       {/* ── Cash Flow Forecast View ────────────────────────────────────────────── */}
       {activeView === "cashflow" && (
         <CashFlowForecastView assets={assets} cashFlows={cashFlows} />
       )}
-
       {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
       {activeView === "guru" && (
         <GuruAllocationView assets={assets} cashFlows={cashFlows} />
