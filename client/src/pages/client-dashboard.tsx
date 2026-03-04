@@ -4668,12 +4668,15 @@ export default function ClientDashboard() {
       {activeView === "dashboard" && (
         <div className="space-y-4">
           {/* ── Advisor Discussion Points — Action Cards ─────────────────────── */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Advisor Discussion Points · Today's Priorities
-              </p>
+          <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-indigo-50/40 border border-indigo-100 p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-foreground tracking-tight">Advisor Discussion Points</p>
+                <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-widest">Today's Priorities</p>
+              </div>
             </div>
             <div className="grid grid-cols-4 gap-3">
 
