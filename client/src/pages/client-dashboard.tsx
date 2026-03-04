@@ -625,6 +625,7 @@ function NetWorthPanel({
   const projData = buildNWProjection(netWorth, cashFlows, assets);
   const projYear5 = projData[projData.length - 1].value;
   const timelineData = buildNWTimeline(netWorth, cashFlows, assets);
+  const annualComp = buildForecast(cashFlows).reduce((s, d) => s + d.inflow, 0);
 
   // Assets sorted by liquidity (most liquid first)
   const sortedAssets = [...assets].sort(
@@ -640,28 +641,23 @@ function NetWorthPanel({
 
   return (
     <div className={PANEL_CLS}>
-      <div className="px-4 pt-4 pb-0 flex items-start justify-between">
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">
-            Net Worth{" "}
-            <span className="text-muted-foreground/60 font-normal normal-case tracking-normal">
-              · Today
-            </span>
-          </p>
-          <p
-            className="text-2xl font-bold text-foreground"
-            data-testid="kpi-net-worth"
-          >
-            {fmt(netWorth)}
-          </p>
+      {/* ── Header ── */}
+      <div className="px-4 pt-4 pb-3 border-b border-border/60">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Net Worth</p>
+        <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5">Total assets minus liabilities · Today</p>
+      </div>
+      {/* ── KPI tiles ── */}
+      <div className="grid grid-cols-2 divide-x divide-border/60 border-b border-border/60">
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Compensation</p>
+          <p className="text-2xl font-extrabold tabular-nums leading-none text-foreground">{fmt(annualComp, true)}</p>
+          <p className="text-[9px] text-muted-foreground">gross inflows (12mo)</p>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            5-Year Projection
-          </p>
-          <p className="text-base font-bold text-blue-600">
-            {fmt(projYear5, true)}
-          </p>
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">5yr Projection</p>
+          <p className="text-2xl font-extrabold tabular-nums leading-none text-blue-600">{fmt(projYear5, true)}</p>
+          <p className="text-[9px] text-muted-foreground">at 6.5% growth rate</p>
         </div>
       </div>
       <div className="h-36 px-1 mt-1">
