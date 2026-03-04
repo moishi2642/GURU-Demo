@@ -4717,7 +4717,7 @@ export default function ClientDashboard() {
                     <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Rebalance</span>
                   </div>
                   <div>
-                    <p className="text-sm font-black text-foreground leading-snug mb-1">Deploy Liquidity to Rebalance Portfolio</p>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Deploy Liquidity into Investments</p>
                     <p className="text-xs text-muted-foreground leading-snug">Mitigate concentration risks by reallocating excess cash into underweight asset classes.</p>
                   </div>
                   <p className="font-black tabular-nums text-blue-600 text-[14px]">Rebalance Portfolio</p>
