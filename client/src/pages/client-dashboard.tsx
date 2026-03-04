@@ -3162,8 +3162,8 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
   const cellTip = (lines: Array<string | null>) => {
     const filtered = lines.filter(Boolean) as string[];
     return (
-      <div className="absolute bottom-full left-0 z-[999] hidden group-hover:block pointer-events-none min-w-[200px]">
-        <div className="bg-slate-900 border border-slate-600 text-white text-[9px] rounded-lg shadow-2xl px-3 py-2.5 mb-1">
+      <div className="absolute top-full left-0 z-[999] hidden group-hover:block pointer-events-none min-w-[200px]">
+        <div className="bg-slate-900 border border-slate-600 text-white text-[9px] rounded-lg shadow-2xl px-3 py-2.5 mt-1">
           {filtered.map((l, i) =>
             l.startsWith("─")
               ? <div key={i} className="border-t border-slate-600 my-1.5" />
@@ -3187,8 +3187,9 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
   // ══════════════════════════════════════════════════════════════════════════════
 
   // ── OPERATING CASH sub-accounts ──────────────────────────────────────────────
-  const CHASE_BAL          = [25050,18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,38439];
-  const CITIZENS_CHECK_BAL = [87374,91485,89360,42234,36109,32983,11357,-5768,-7894,-10020,-16146,11319];
+  // Citizens is floored at $0; any shortfall is absorbed by Chase so the total stays identical.
+  const CHASE_BAL          = [25050,18814,18814,18814,18814,18814,18814,13046,10920, 8794, 2668,38439];
+  const CITIZENS_CHECK_BAL = [87374,91485,89360,42234,36109,32983,11357,    0,    0,    0,    0,11319];
   const IMM_BAL            = CHASE_BAL.map((v, i) => v + CITIZENS_CHECK_BAL[i]);
   // Jan→Dec: 112424, 110299, 108173, 61048, 54922, 51797, 30171, 13045, 10920, 8794, 2668, 49759
 
@@ -3730,13 +3731,12 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                     </div>
                   </td>
                   {CITIZENS_CHECK_BAL.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold cursor-help relative group ${v < 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                      {v < 0 ? `(${Math.abs(v).toLocaleString()})` : `$${v.toLocaleString()}`}
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold cursor-help relative group text-blue-600">
+                      {fmtBal(v)}
                       {cellTip([
-                        v < 0 ? `⚠ Overdrawn this month` : `Balance: $${v.toLocaleString()}`,
-                        `GURU: sweep excess to Citizens MM (Reserve)`,
+                        `Balance: $${v.toLocaleString()}`,
                         `──────────────────`,
-                        v < 0 ? `Deficit: ($${Math.abs(v).toLocaleString()})` : `Month-end: $${v.toLocaleString()}`,
+                        v === 0 ? `Shortfall covered by Chase Checking` : `Month-end balance`,
                       ])}
                     </td>
                   ))}
