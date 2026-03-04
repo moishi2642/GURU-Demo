@@ -4842,7 +4842,7 @@ export default function ClientDashboard() {
                     </div>
                     <span className="text-[8px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Fixed Income</span>
                   </div>
-                  <p className="text-sm font-black text-foreground leading-snug">Better Product For GURU Reserve Accounts</p>
+                  <p className="text-sm font-black text-foreground leading-snug">Better Product For GURU <em>Reserve</em> Accounts</p>
                   <div>
                     <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps</p>
                     <p className="text-[9px] text-amber-700 font-semibold mt-1">Lock in treasury rates before Fed cuts rates further</p>
