@@ -1069,13 +1069,24 @@ function CashManagementPanel({
           <div style={{ width: 190, height: 190, flexShrink: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                {/* Outer ring = Current allocation */}
+                {/* Outer ring = Current allocation — $ labels inside band */}
                 <Pie
                   data={liquidDonutData}
                   cx="50%" cy="50%"
                   innerRadius={58} outerRadius={90}
                   dataKey="value" paddingAngle={3}
-                  label={false} labelLine={false}
+                  labelLine={false}
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
+                    const RADIAN = Math.PI / 180;
+                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + r * Math.cos(-midAngle * RADIAN);
+                    const y = cy + r * Math.sin(-midAngle * RADIAN);
+                    return (
+                      <text x={x} y={y} fill="white" fontSize={9} fontWeight={800} textAnchor="middle" dominantBaseline="central">
+                        {fmt(value, true)}
+                      </text>
+                    );
+                  }}
                 >
                   {liquidDonutData.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
