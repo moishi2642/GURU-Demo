@@ -827,22 +827,13 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           </div>
         </div>
       </div>
-      {/* ── 2 KPI tiles ── */}
-      <div className="grid grid-cols-2 divide-x divide-border/60 border-b border-border/60">
-        <div className="px-3 py-3 flex flex-col gap-0.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Trough</p>
-          <p className={`text-2xl font-extrabold tabular-nums leading-none ${minVal >= 0 ? "text-foreground" : "text-rose-600"}`}>
-            {fmtK(Math.round(minVal))}
-          </p>
-          <p className="text-[9px] text-muted-foreground">{hasTrough ? `worst point · ${troughMonth}` : "no deficit in 12mo"}</p>
-        </div>
-        <div className="px-3 py-3 flex flex-col gap-0.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">12mo End Balance</p>
-          <p className={`text-2xl font-extrabold tabular-nums leading-none ${finalVal >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-            {finalVal >= 0 ? "+" : ""}{fmtK(Math.round(finalVal))}
-          </p>
-          <p className="text-[9px] text-muted-foreground">cumulative at year-end</p>
-        </div>
+      {/* ── KPI tile ── */}
+      <div className="px-3 py-3 border-b border-border/60 flex flex-col gap-0.5">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Trough</p>
+        <p className={`text-2xl font-extrabold tabular-nums leading-none ${minVal >= 0 ? "text-foreground" : "text-rose-600"}`}>
+          {fmtK(Math.round(minVal))}
+        </p>
+        <p className="text-[9px] text-muted-foreground">{hasTrough ? `worst point · ${troughMonth}` : "no deficit in 12mo"}</p>
       </div>
       {/* ── Chart 2: Cumulative area chart ── */}
       <div className="px-3 pb-2">
