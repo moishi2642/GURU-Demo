@@ -4720,7 +4720,7 @@ export default function ClientDashboard() {
                     <p className="text-sm font-black text-foreground leading-snug mb-1">Deploy Liquidity to Rebalance Portfolio</p>
                     <p className="text-xs text-muted-foreground leading-snug">Mitigate concentration risks by reallocating excess cash into underweight asset classes.</p>
                   </div>
-                  <p className="font-black tabular-nums text-blue-600 text-[14px]">3 flags</p>
+                  <p className="font-black tabular-nums text-blue-600 text-[14px]">Rebalance Portfolio</p>
                   <div className="flex flex-col gap-1">
                     {["Increase US Large Cap", "Financial Services Risk", "Add Bonds & Commodities"].map((f) => (
                       <div key={f} className="flex items-center gap-1.5">
