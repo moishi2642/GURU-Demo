@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -3125,7 +3125,7 @@ const MM_GURU_ACTIONS = [
   { month: "Dec", action: "Income surplus — Reserve fully replenished to $129,389", type: "replenish",amount: 129389 },
 ];
 
-function MoneyMovementView({ assets, cashFlows, opsCashMonths }: { assets: Asset[]; cashFlows: CashFlow[]; opsCashMonths: number }) {
+function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { assets: Asset[]; cashFlows: CashFlow[]; opsCashMonths: number; clientName?: string }) {
   const BASE_MONTHLY_EXPENSE = 20940; // ~monthly recurring expenses from cash flow model
   const minOps = opsCashMonths * BASE_MONTHLY_EXPENSE;
   const [mmView, setMmView] = useState<'table'|'flow'>('table');
@@ -3330,6 +3330,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths }: { assets: Asset
         {/* Month selector — only relevant for flow view */}
         {mmView === 'flow' && (
           <select
+            data-testid="mm-month-select"
             value={selectedMonth}
             onChange={e => setSelectedMonth(Number(e.target.value))}
             className="bg-slate-700 border border-slate-600 text-white text-[11px] rounded-md px-3 py-1.5 focus:outline-none focus:border-blue-400 flex-shrink-0"
@@ -3351,325 +3352,182 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths }: { assets: Asset
       {/* ══════════════════════════════════════════════════════════
           FLOW SCHEMATIC VIEW
           ══════════════════════════════════════════════════════════ */}
-      {mmView === 'flow' && (
-        <div className="bg-slate-50 p-6 overflow-auto">
+      {mmView === 'flow' && (() => {
+        /* ── parse partner names & salaries from client data ── */
+        const raw = clientName ?? '';
+        const ampParts = raw.split(' & ');
+        const p1Words = (ampParts[0] ?? 'Partner 1').split(' ');
+        const p2Words = (ampParts[1] ?? 'Partner 2').split(' ');
+        const p1First = p1Words[0] ?? 'Partner';
+        const p2First = p2Words[0] ?? 'Partner';
+        const sharedLast = p2Words[p2Words.length - 1] ?? '';
+        const salDesc = cashFlows.find(c => c.category === 'salary')?.description ?? '';
+        const p1Match = salDesc.match(/P1 \(\$([0-9,]+)\)/);
+        const p2Match = salDesc.match(/P2 \(\$([0-9,]+)\)/);
+        const p1Salary = p1Match ? parseInt(p1Match[1].replace(/,/g, '')) : Math.round(income * 0.71);
+        const p2Salary = p2Match ? parseInt(p2Match[1].replace(/,/g, '')) : Math.round(income * 0.29);
+        const checkingAccts = assets.filter(a =>
+          a.type === 'cash' && (a.description ?? '').toLowerCase().includes('checking')
+        );
+        return (
+        <div className="bg-slate-900 px-8 py-6 overflow-auto">
 
           {/* ── Month title ── */}
-          <div className="mb-5 flex items-center gap-3">
+          <div className="mb-8 flex items-center gap-3">
             <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">GURU Money Flow</span>
-            <span className="text-[11px] font-black text-slate-800 bg-white border border-slate-200 rounded-full px-3 py-0.5 shadow-sm">
+            <span className="text-[11px] font-black text-white bg-slate-800 border border-slate-600 rounded-full px-3 py-1">
               {MONTHS[sm]} 2026
             </span>
-            {(rsvDraw > 0 || bldDraw > 0) && (
-              <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
-                GURU Auto-draw Active
+            {rsvDraw > 0 && (
+              <span className="text-[9px] font-black text-amber-400 bg-amber-900/30 border border-amber-700/40 rounded-full px-2.5 py-1">
+                ↔ GURU Auto-draw Active
               </span>
             )}
           </div>
 
-          {/* ── 3-panel flow layout ── */}
-          <div className="flex gap-4 items-stretch min-w-[900px]">
+          {/* ── Two-column org-chart layout ── */}
+          <div className="flex gap-0 mx-auto" style={{ width: 650 }}>
 
-            {/* ── LEFT: All source accounts ── */}
-            <div className="flex flex-col gap-3 w-[210px] flex-shrink-0">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Source Accounts</p>
-
-              {/* Salary income — always present */}
-              <div className="rounded-xl border-2 border-emerald-400 bg-white shadow-sm p-3.5">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-[10px] font-black uppercase tracking-wide text-slate-700">Income</span>
-                </div>
-                <p className="text-[10px] text-slate-500 leading-tight mb-1">Monthly Net Salary</p>
-                <p className="text-[10px] text-slate-400 leading-tight mb-2">P1 ($13,302) + P2 ($5,512)</p>
-                <p className="text-[17px] font-black text-emerald-700 tabular-nums leading-none">{fmtBal(income)}</p>
-              </div>
-
-              {/* Reserve — always show (with draw highlighted if active) */}
-              <div className={`rounded-xl border-2 bg-white shadow-sm p-3.5 ${rsvDraw > 0 ? 'border-blue-500' : 'border-slate-200'}`}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span className="text-[10px] font-black uppercase tracking-wide text-slate-700">Reserve</span>
-                  {rsvDraw > 0 && <span className="ml-auto text-[8px] font-black text-blue-600 bg-blue-50 border border-blue-200 rounded px-1.5">AUTO-DRAW</span>}
-                </div>
-                <p className="text-[10px] text-slate-400 leading-tight mb-1">JPMorgan 100% Treasury MMF</p>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-[9px] text-slate-400">Start</span>
-                  <span className="text-[11px] font-bold text-slate-700 tabular-nums">{fmtBal(rsvStart)}</span>
-                </div>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-[9px] text-slate-400">Interest</span>
-                  <span className="text-[10px] text-emerald-600 tabular-nums">+{fmtBal(rsvInt)}</span>
-                </div>
-                {rsvDraw > 0 && (
-                  <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-[9px] font-black text-blue-600">→ Draw</span>
-                    <span className="text-[10px] font-black text-blue-700 tabular-nums">{fmtBal(rsvDraw)}</span>
+            {/* ── LEFT column: Reserve card + animated connector ── */}
+            <div className="flex-shrink-0" style={{ width: 220, paddingTop: 170 }}>
+              <div className={`flex items-center transition-opacity duration-300 ${rsvDraw > 0 ? 'opacity-100' : 'opacity-35'}`}>
+                {/* Reserve card */}
+                <div className="rounded-2xl border-2 p-4 bg-slate-800 flex-shrink-0" style={{ width: 178, borderColor: rsvDraw > 0 ? '#f59e0b' : '#475569' }}>
+                  <div className="text-[7px] font-black uppercase tracking-widest mb-1" style={{ color: rsvDraw > 0 ? '#fbbf24' : '#94a3b8' }}>Reserve</div>
+                  <div className="text-[10px] font-semibold text-white leading-snug mb-2">JPMorgan Treasury MMF</div>
+                  <div className="text-[11px] text-slate-400 tabular-nums">{fmtBal(rsvStart)}</div>
+                  <div className="border-t border-slate-700 mt-2 pt-2">
+                    <div className="text-[7px] font-black uppercase tracking-widest" style={{ color: rsvDraw > 0 ? '#fbbf24' : '#64748b' }}>
+                      {rsvDraw > 0 ? 'Auto-draw this month' : 'No draw this month'}
+                    </div>
+                    <div className="text-[18px] font-black tabular-nums leading-tight" style={{ color: rsvDraw > 0 ? '#fbbf24' : '#64748b' }}>
+                      {rsvDraw > 0 ? fmtBal(rsvDraw) : '—'}
+                    </div>
                   </div>
-                )}
-                {rsvSweep > 0 && (
-                  <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-[9px] font-black text-emerald-600">← Sweep</span>
-                    <span className="text-[10px] font-black text-emerald-700 tabular-nums">+{fmtBal(rsvSweep)}</span>
-                  </div>
-                )}
-                <div className="border-t border-slate-100 pt-1 mt-1 flex items-baseline justify-between">
-                  <span className="text-[9px] text-slate-400">End</span>
-                  <span className="text-[12px] font-black text-blue-700 tabular-nums">{fmtBal(rsvEnd)}</span>
                 </div>
-              </div>
-
-              {/* Build — always show */}
-              <div className={`rounded-xl border-2 bg-white shadow-sm p-3.5 ${bldDraw > 0 ? 'border-blue-800' : 'border-slate-200'}`}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-900" />
-                  <span className="text-[10px] font-black uppercase tracking-wide text-slate-700">Build</span>
-                  {bldDraw > 0 && <span className="ml-auto text-[8px] font-black text-blue-900 bg-blue-50 border border-blue-200 rounded px-1.5">DRAW</span>}
+                {/* Animated horizontal connector */}
+                <div className="relative overflow-hidden rounded-full flex-shrink-0" style={{ width: 30, height: 6, backgroundColor: 'rgba(59,130,246,0.15)' }}>
+                  {rsvDraw > 0 && (
+                    <>
+                      <motion.div className="absolute top-0 left-0 h-full rounded-full"
+                        style={{ width: '45%', backgroundColor: '#3b82f6', boxShadow: '0 0 8px #3b82f680' }}
+                        animate={{ x: ['-45%', '280%'] }}
+                        transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
+                      />
+                      <motion.div className="absolute top-0 left-0 h-full rounded-full"
+                        style={{ width: '25%', backgroundColor: '#93c5fd' }}
+                        animate={{ x: ['-25%', '500%'] }}
+                        transition={{ duration: 1.1, repeat: Infinity, ease: 'linear', delay: 0.55 }}
+                      />
+                    </>
+                  )}
                 </div>
-                <p className="text-[10px] text-slate-400 leading-tight mb-1">1yr Treasuries + 2028 Munis</p>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-[9px] text-slate-400">Start</span>
-                  <span className="text-[11px] font-bold text-slate-700 tabular-nums">{fmtBal(bldStart)}</span>
-                </div>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-[9px] text-slate-400">Interest</span>
-                  <span className="text-[10px] text-emerald-600 tabular-nums">+{fmtBal(bldInt)}</span>
-                </div>
-                {bldDraw > 0 && (
-                  <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-[9px] font-black text-blue-900">→ Draw</span>
-                    <span className="text-[10px] font-black text-blue-900 tabular-nums">{fmtBal(bldDraw)}</span>
-                  </div>
-                )}
-                {bldSweep > 0 && (
-                  <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-[9px] font-black text-emerald-600">← Sweep</span>
-                    <span className="text-[10px] font-black text-emerald-700 tabular-nums">+{fmtBal(bldSweep)}</span>
-                  </div>
-                )}
-                <div className="border-t border-slate-100 pt-1 mt-1 flex items-baseline justify-between">
-                  <span className="text-[9px] text-slate-400">End</span>
-                  <span className="text-[12px] font-black text-blue-900 tabular-nums">{fmtBal(bldEnd)}</span>
-                </div>
-              </div>
-
-              {/* Grow — always show */}
-              <div className="rounded-xl border-2 border-slate-200 bg-white shadow-sm p-3.5">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-violet-600" />
-                  <span className="text-[10px] font-black uppercase tracking-wide text-slate-700">Grow</span>
-                </div>
-                <p className="text-[10px] text-slate-400 leading-tight mb-1">Growth Equity ETFs</p>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-[9px] text-slate-400">Start</span>
-                  <span className="text-[11px] font-bold text-slate-700 tabular-nums">{fmtBal(growStart)}</span>
-                </div>
-                <div className="flex items-baseline justify-between mb-1">
-                  <span className="text-[9px] text-slate-400">Market Return</span>
-                  <span className="text-[10px] text-emerald-600 tabular-nums">+{fmtBal(growEnd - growStart)}</span>
-                </div>
-                <div className="border-t border-slate-100 pt-1 mt-1 flex items-baseline justify-between">
-                  <span className="text-[9px] text-slate-400">End</span>
-                  <span className="text-[12px] font-black text-violet-700 tabular-nums">{fmtBal(growEnd)}</span>
-                </div>
+                {/* Arrowhead */}
+                <div className="flex-shrink-0" style={{ width: 0, height: 0, borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: `8px solid ${rsvDraw > 0 ? '#3b82f6' : 'transparent'}` }} />
               </div>
             </div>
 
-            {/* ── CENTER: inflow arrows + hub + outflow arrows ── */}
-            <div className="flex-1 flex flex-col min-w-0">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">GURU Autopilot Hub</p>
+            {/* ── RIGHT column: Income → Hub → Accounts ── */}
+            <div className="flex flex-col items-center" style={{ width: 430 }}>
 
-              {/* Inflow arrows — animated moving dots */}
-              <div className="flex flex-col gap-2 mb-2">
-                {/* Salary income line */}
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1 h-2 rounded-full bg-emerald-100 overflow-hidden">
-                    <motion.div
-                      className="absolute top-0 h-full w-4 rounded-full bg-emerald-400"
-                      style={{ boxShadow: '0 0 6px #10b981' }}
-                      animate={{ x: ['-16px', '100%'] }}
-                      transition={{ duration: 1.0, repeat: Infinity, ease: 'linear' }}
-                    />
+              {/* Income cards */}
+              <div className="flex w-full gap-5">
+                {[
+                  { name: `${p1First} ${sharedLast}`, salary: p1Salary },
+                  { name: `${p2First} ${sharedLast}`, salary: p2Salary },
+                ].map((p, i) => (
+                  <div key={i} className="flex-1 rounded-2xl border-2 border-emerald-500/40 bg-slate-800 px-4 py-3.5">
+                    <div className="text-[7px] font-black uppercase tracking-widest text-emerald-400 mb-1.5">Monthly Net Salary</div>
+                    <div className="text-[12px] font-semibold text-white leading-tight">{p.name}</div>
+                    <div className="text-[20px] font-black text-emerald-400 tabular-nums mt-1 leading-none">{fmtBal(p.salary)}</div>
+                    <div className="text-[7px] text-slate-500 mt-0.5">after-tax · per month</div>
                   </div>
-                  <span className="text-[9px] font-black text-emerald-700 tabular-nums whitespace-nowrap">+{fmtBal(income)}</span>
-                  <div className="w-0 h-0" style={{ borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '8px solid #10b981' }} />
-                </div>
-                {/* Reserve auto-draw line */}
-                {rsvDraw > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1 h-2 rounded-full bg-blue-100 overflow-hidden">
-                      <motion.div
-                        className="absolute top-0 h-full w-4 rounded-full bg-blue-500"
-                        style={{ boxShadow: '0 0 6px #3b82f6' }}
-                        animate={{ x: ['-16px', '100%'] }}
-                        transition={{ duration: 1.3, repeat: Infinity, ease: 'linear', delay: 0.2 }}
-                      />
-                    </div>
-                    <span className="text-[9px] font-black text-blue-600 tabular-nums whitespace-nowrap">+{fmtBal(rsvDraw)} reserve</span>
-                    <div className="w-0 h-0" style={{ borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '8px solid #3b82f6' }} />
-                  </div>
-                )}
-                {/* Build draw line */}
-                {bldDraw > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1 h-2 rounded-full bg-blue-900/20 overflow-hidden">
-                      <motion.div
-                        className="absolute top-0 h-full w-4 rounded-full bg-blue-900"
-                        style={{ boxShadow: '0 0 6px #1e3a8a' }}
-                        animate={{ x: ['-16px', '100%'] }}
-                        transition={{ duration: 1.6, repeat: Infinity, ease: 'linear', delay: 0.4 }}
-                      />
-                    </div>
-                    <span className="text-[9px] font-black text-blue-900 tabular-nums whitespace-nowrap">+{fmtBal(bldDraw)} build</span>
-                    <div className="w-0 h-0" style={{ borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '8px solid #1e3a8a' }} />
-                  </div>
-                )}
+                ))}
               </div>
 
-              {/* Operating Cash Hub Card */}
-              <div className="rounded-2xl border-2 bg-white shadow-lg overflow-hidden flex-1" style={{ borderColor: "#1d4ed8" }}>
-                {/* Card header */}
-                <div className="px-5 py-3 flex items-center justify-between" style={{ backgroundColor: "#1d4ed8" }}>
+              {/* V-junction: two income lines merge into one */}
+              <div className="flex w-full" style={{ height: 30 }}>
+                <div className="flex-1 border-b-2 border-l-2 border-emerald-500/25 rounded-bl-lg" />
+                <div className="flex-1 border-b-2 border-r-2 border-emerald-500/25 rounded-br-lg" />
+              </div>
+
+              {/* Animated vertical drop to hub */}
+              <div className="relative overflow-hidden w-0.5" style={{ height: 28, backgroundColor: 'rgba(16,185,129,0.2)' }}>
+                <motion.div className="absolute w-full rounded-full"
+                  style={{ height: '35%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }}
+                  animate={{ y: ['-35%', '135%'] }}
+                  transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+                />
+              </div>
+
+              {/* Operating Cash Hub */}
+              <div className="w-full rounded-2xl border-2 overflow-hidden shadow-2xl" style={{ borderColor: '#1d4ed8' }}>
+                <div className="px-5 py-3.5 flex items-center justify-between" style={{ backgroundColor: '#1d4ed8' }}>
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-widest text-white">Operating Cash</p>
-                    <p className="text-[9px] text-blue-200">Chase Total Checking — GURU Hub</p>
+                    <div className="text-[7px] font-black uppercase tracking-widest text-blue-200 mb-0.5">GURU Operating Cash Hub</div>
+                    <div className="text-[14px] font-black text-white">Chase Total Checking</div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-blue-200">End Balance</p>
-                    <p className="text-[18px] font-black text-white tabular-nums">{fmtBal(opsEnd)}</p>
+                    <div className="text-[7px] text-blue-200 mb-0.5">{MONTHS[sm]} Closing Balance</div>
+                    <div className="text-[26px] font-black text-white tabular-nums leading-none">{fmtBal(opsEnd)}</div>
                   </div>
                 </div>
+                <div className="bg-slate-800 px-5 py-3 grid grid-cols-3 gap-2">
+                  <div className="bg-slate-700 rounded-xl p-2.5">
+                    <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1">Salary In</div>
+                    <div className="text-[13px] font-black text-emerald-400 tabular-nums">+{fmtBal(income)}</div>
+                  </div>
+                  <div className={`rounded-xl p-2.5 ${rsvDraw > 0 ? 'bg-amber-900/30 border border-amber-700/30' : 'bg-slate-700 opacity-40'}`}>
+                    <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1">Reserve Draw</div>
+                    <div className={`text-[13px] font-black tabular-nums ${rsvDraw > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                      {rsvDraw > 0 ? `+${fmtBal(rsvDraw)}` : '—'}
+                    </div>
+                  </div>
+                  <div className="bg-slate-700 rounded-xl p-2.5">
+                    <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1">Expenses Out</div>
+                    <div className="text-[13px] font-black text-red-400 tabular-nums">({fmtBal(totalExp)})</div>
+                  </div>
+                </div>
+              </div>
 
-                {/* Flow lines */}
-                <div className="px-5 py-4 space-y-2.5">
-                  <div className="flex justify-between items-baseline border-b border-dashed border-slate-100 pb-2">
-                    <span className="text-[10px] text-slate-500">Opening Balance</span>
-                    <span className="text-[12px] font-bold text-slate-700 tabular-nums">{fmtBal(opsStart)}</span>
-                  </div>
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-[10px] text-slate-500">+ Income Allocation</span>
-                    <span className="text-[11px] font-semibold text-emerald-700 tabular-nums">+{fmtBal(income)}</span>
-                  </div>
-                  {rsvDraw > 0 && (
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-[10px] text-blue-600 font-semibold">+ Reserve Auto-Draw</span>
-                      <span className="text-[11px] font-semibold text-blue-700 tabular-nums">+{fmtBal(rsvDraw)}</span>
-                    </div>
-                  )}
-                  {bldDraw > 0 && (
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-[10px] text-blue-900 font-semibold">+ Build Draw</span>
-                      <span className="text-[11px] font-semibold text-blue-900 tabular-nums">+{fmtBal(bldDraw)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-baseline border-b border-dashed border-slate-100 pb-2">
-                    <span className="text-[10px] text-slate-500">– Total Expenses</span>
-                    <span className="text-[11px] font-semibold text-red-600 tabular-nums">({fmtBal(totalExp)})</span>
-                  </div>
-                  <div className="flex justify-between items-baseline pt-1">
-                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-wide">Net Movement</span>
-                    <span className={`text-[13px] font-black tabular-nums ${opsEnd >= opsStart ? 'text-emerald-700' : 'text-red-600'}`}>
-                      {opsEnd >= opsStart ? '+' : ''}{fmtBal(opsEnd - opsStart)}
-                    </span>
-                  </div>
-
-                  {/* Progress bar showing vs min target */}
-                  <div className="pt-2">
-                    <div className="flex justify-between text-[9px] text-slate-400 mb-1">
-                      <span>End Balance vs. Min Target (${minOps.toLocaleString()})</span>
-                      <span className={opsEnd >= minOps ? 'text-emerald-600 font-black' : 'text-red-600 font-black'}>
-                        {opsEnd >= minOps ? '✓ Above target' : '⚠ Below target'}
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min((opsEnd / Math.max(opsEnd, minOps * 1.5)) * 100, 100)}%` }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className={`h-full rounded-full ${opsEnd >= minOps ? 'bg-emerald-500' : 'bg-red-500'}`}
+              {/* Animated drops to account cards */}
+              <div className="flex w-full px-10">
+                {[0, 1].map(i => (
+                  <div key={i} className="flex-1 flex justify-center">
+                    <div className="relative overflow-hidden w-0.5" style={{ height: 28, backgroundColor: 'rgba(29,78,216,0.2)' }}>
+                      <motion.div className="absolute w-full rounded-full"
+                        style={{ height: '35%', backgroundColor: '#1d4ed8' }}
+                        animate={{ y: ['-35%', '135%'] }}
+                        transition={{ duration: 0.85, repeat: Infinity, ease: 'linear', delay: i * 0.3 }}
                       />
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Outflow arrows */}
-              <div className="flex flex-col gap-1 mt-2">
-                {BASE_EXP.map(exp => (
-                  <div key={exp.label} className="flex items-center gap-2">
-                    <div className="w-0 h-0" style={{ borderTop: '3px solid transparent', borderBottom: '3px solid transparent', borderLeft: `6px solid ${exp.dot}` }} />
-                    <div className="flex-1 h-px" style={{ backgroundColor: exp.dot, opacity: 0.4 }} />
-                    <span className="text-[8px] tabular-nums text-slate-500 whitespace-nowrap">{fmtBal(exp.amount)}</span>
-                  </div>
-                ))}
-                {specials.map(s => (
-                  <div key={s.label} className="flex items-center gap-2">
-                    <div className="w-0 h-0" style={{ borderTop: '3px solid transparent', borderBottom: '3px solid transparent', borderLeft: '6px solid #dc2626' }} />
-                    <div className="flex-1 h-px bg-red-400 opacity-60" />
-                    <span className="text-[8px] tabular-nums text-red-600 font-semibold whitespace-nowrap">{fmtBal(s.amount)}</span>
-                  </div>
                 ))}
               </div>
-            </div>
 
-            {/* ── RIGHT: Expense destinations ── */}
-            <div className="flex flex-col gap-3 w-[210px] flex-shrink-0">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Expense Destinations</p>
-
-              {/* Base recurring expenses */}
-              {BASE_EXP.map(exp => (
-                <div key={exp.label} className="rounded-xl border border-slate-200 bg-white shadow-sm p-3 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: exp.dot }} />
-                    <span className="text-[10px] text-slate-600 truncate">{exp.label}</span>
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700 tabular-nums flex-shrink-0">{fmtBal(exp.amount)}</span>
-                </div>
-              ))}
-
-              {/* Special/irregular expenses for this month */}
-              {specials.length > 0 && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-3 flex flex-col gap-2">
-                  <p className="text-[8px] font-black uppercase tracking-wider text-red-600 mb-0.5">Irregular / One-time</p>
-                  {specials.map(s => (
-                    <div key={s.label} className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0 bg-red-500" />
-                        <span className="text-[10px] text-red-700 truncate">{s.label}</span>
-                      </div>
-                      <span className="text-[11px] font-bold text-red-700 tabular-nums flex-shrink-0">{fmtBal(s.amount)}</span>
+              {/* Destination account cards */}
+              <div className="flex w-full gap-4">
+                {(checkingAccts.length > 0 ? checkingAccts.slice(0, 2) : [
+                  { id: 'ops', description: 'Chase Total Checking', value: String(opsEnd) },
+                ]).map((acct, i) => {
+                  const acctName = (acct.description ?? '').split(' (')[0].split(' —')[0].trim();
+                  return (
+                    <div key={acct.id ?? i} className="flex-1 rounded-2xl border border-slate-600 bg-slate-800 px-4 py-3.5">
+                      <div className="text-[7px] font-black uppercase tracking-widest text-blue-400 mb-1.5">Bank Account</div>
+                      <div className="text-[11px] font-semibold text-slate-300 leading-snug mb-2">{acctName}</div>
+                      <div className="text-[20px] font-black text-white tabular-nums">{fmtBal(Number(acct.value))}</div>
+                      <div className="text-[7px] text-slate-500 mt-0.5">current balance</div>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Total expense summary */}
-              <div className="rounded-xl border-2 border-slate-300 bg-slate-700 p-3 flex items-center justify-between">
-                <span className="text-[10px] font-black text-white uppercase tracking-wide">Total Out</span>
-                <span className="text-[14px] font-black text-white tabular-nums">{fmtBal(totalExp)}</span>
+                  );
+                })}
               </div>
+
             </div>
 
-          </div>
-
-          {/* ── Legend ── */}
-          <div className="mt-6 flex items-center gap-5 flex-wrap">
-            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Legend</span>
-            {[
-              { color: "#10b981", label: "Inflow / Income" },
-              { color: "#3b82f6", label: "GURU Auto-draw (Reserve)" },
-              { color: "#1e3a8a", label: "GURU Draw (Build)" },
-              { color: "#64748b", label: "Recurring Expense" },
-              { color: "#dc2626", label: "Irregular / One-time Expense" },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-                <span className="text-[9px] text-slate-500">{label}</span>
-              </div>
-            ))}
           </div>
         </div>
-      )}
+        );
+      })()}
       {/* ══════════════════════════════════════════════════════════
           SPREADSHEET VIEW
           ══════════════════════════════════════════════════════════ */}
@@ -6027,7 +5885,7 @@ export default function ClientDashboard() {
       )}
       {/* ── Money Movement View ─────────────────────────────────────────────────── */}
       {activeView === "moneymovement" && (
-        <MoneyMovementView assets={assets} cashFlows={cashFlows} opsCashMonths={opsCashMonths} />
+        <MoneyMovementView assets={assets} cashFlows={cashFlows} opsCashMonths={opsCashMonths} clientName={client.name} />
       )}
     </Layout>
   );
