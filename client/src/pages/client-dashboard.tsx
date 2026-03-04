@@ -3125,8 +3125,9 @@ const MM_GURU_ACTIONS = [
   { month: "Dec", action: "Income surplus — Reserve fully replenished to $129,389", type: "replenish",amount: 129389 },
 ];
 
-function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const [minOps, setMinOps] = useState(41879); // 2× base monthly expenses
+function MoneyMovementView({ assets, cashFlows, opsCashMonths }: { assets: Asset[]; cashFlows: CashFlow[]; opsCashMonths: number }) {
+  const BASE_MONTHLY_EXPENSE = 20940; // ~monthly recurring expenses from cash flow model
+  const minOps = opsCashMonths * BASE_MONTHLY_EXPENSE;
   const [mmView, setMmView] = useState<'table'|'flow'>('table');
   const [selectedMonth, setSelectedMonth] = useState(3); // April = upcoming
 
@@ -3306,23 +3307,11 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
           </select>
         )}
 
-        {/* Min operating cash — only relevant for spreadsheet */}
+        {/* Min operating cash status — set on GURU tab */}
         {mmView === 'table' && (
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <label className="text-[9px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Min Ops Cash</label>
-            <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px] pointer-events-none">$</span>
-              <input
-                type="number"
-                value={minOps}
-                onChange={e => setMinOps(Number(e.target.value))}
-                className="pl-5 pr-2 py-1.5 bg-slate-700 border border-slate-600 text-white text-[11px] rounded-md w-[100px] tabular-nums focus:outline-none focus:border-blue-400"
-              />
-            </div>
-            <div className="flex items-center gap-1 px-2 py-1.5 rounded bg-slate-700 border border-slate-600">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: minOpsOk ? "#22c55e" : "#f59e0b" }} />
-              <span className="text-[9px] text-slate-300">{minOpsOk ? "✓ Covered" : "⚠ Gap"}</span>
-            </div>
+          <div className="flex items-center gap-2 flex-shrink-0 px-2.5 py-1.5 rounded bg-slate-700 border border-slate-600">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: minOpsOk ? "#22c55e" : "#f59e0b" }} />
+            <span className="text-[9px] text-slate-300">{opsCashMonths}-month floor: ${minOps.toLocaleString()} — {minOpsOk ? "✓ Covered" : "⚠ Gap"}</span>
           </div>
         )}
       </div>
@@ -3682,10 +3671,10 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                 />
 
                 {/* ── Min Operating Cash target row ── */}
-                <tr className="bg-emerald-50 border-b border-emerald-100">
+                <tr style={{ backgroundColor: "rgba(29,78,216,0.08)" }} className="border-b border-[#1d4ed8]/20">
                   <td className="px-4 py-1.5 w-[300px]">
-                    <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-semibold italic">
-                      <span className="text-emerald-500">⤷</span> Min target (2-month floor: ${minOps.toLocaleString()})
+                    <div className="flex items-center gap-1 text-[10px] font-semibold italic" style={{ color: "#1d4ed8" }}>
+                      <span style={{ color: "#1d4ed8" }}>⤷</span> Always holds enough cash for {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses (${minOps.toLocaleString()})
                     </div>
                   </td>
                   {IMM_BAL.map((bal, mi) => (
@@ -3990,9 +3979,13 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
 function GuruAllocationView({
   assets,
   cashFlows,
+  opsCashMonths,
+  setOpsCashMonths,
 }: {
   assets: Asset[];
   cashFlows: CashFlow[];
+  opsCashMonths: number;
+  setOpsCashMonths: (n: number) => void;
 }) {
   const [pendingTransfers, setPendingTransfers] = useState<
     { from: string; to: string; amount: number }[]
@@ -4131,7 +4124,7 @@ function GuruAllocationView({
           .filter((c) => c.type === "inflow" && c.category === "salary")
           .reduce((s, c) => s + Number(c.amount), 0);
 
-        const reserveTarget = Math.round(minMonthly * 2);
+        const reserveTarget = Math.round(minMonthly * opsCashMonths);
         const flowTarget = cashTrough; // target the 12-month cumulative cash flow trough
         const buildTarget = buildCurrent;
         // Use prototype model total ($5,996,550) so growTarget is consistent with
@@ -4975,6 +4968,24 @@ function GuruAllocationView({
                         <div className="w-72 flex-shrink-0 border-l border-r border-slate-600 bg-slate-700 flex flex-col">
                           <div className="flex-1 p-5 flex flex-col gap-4">
 
+                            {/* Months-of-expenses stepper — Operating Cash only */}
+                            {r.def.name === "Operating Cash" && (
+                              <div className="flex items-center justify-between bg-slate-800 border border-slate-600 rounded px-3 py-2">
+                                <span className="text-[9px] text-slate-400 uppercase tracking-wider leading-tight">Cash Floor<br/><span className="text-[8px] normal-case">months of expenses</span></span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setOpsCashMonths(Math.max(1, opsCashMonths - 1))}
+                                    className="w-6 h-6 rounded bg-slate-700 border border-slate-500 text-white text-sm font-bold flex items-center justify-center hover:bg-slate-600 transition-colors"
+                                  >−</button>
+                                  <span className="text-base font-black text-white w-4 text-center tabular-nums">{opsCashMonths}</span>
+                                  <button
+                                    onClick={() => setOpsCashMonths(Math.min(12, opsCashMonths + 1))}
+                                    className="w-6 h-6 rounded bg-slate-700 border border-slate-500 text-white text-sm font-bold flex items-center justify-center hover:bg-slate-600 transition-colors"
+                                  >+</button>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Current bar */}
                             <div>
                               <div className="flex items-center justify-between mb-1.5">
@@ -5703,6 +5714,7 @@ export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
+  const [opsCashMonths, setOpsCashMonths] = useState(2);
 
   const { data, isLoading, isError } = useClientDashboard(clientId);
 
@@ -5994,11 +6006,11 @@ export default function ClientDashboard() {
       )}
       {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
       {activeView === "guru" && (
-        <GuruAllocationView assets={assets} cashFlows={cashFlows} />
+        <GuruAllocationView assets={assets} cashFlows={cashFlows} opsCashMonths={opsCashMonths} setOpsCashMonths={setOpsCashMonths} />
       )}
       {/* ── Money Movement View ─────────────────────────────────────────────────── */}
       {activeView === "moneymovement" && (
-        <MoneyMovementView assets={assets} cashFlows={cashFlows} />
+        <MoneyMovementView assets={assets} cashFlows={cashFlows} opsCashMonths={opsCashMonths} />
       )}
     </Layout>
   );
