@@ -4720,12 +4720,11 @@ export default function ClientDashboard() {
                     <p className="text-sm font-black text-foreground leading-snug mb-1">Deploy Liquidity into Investments</p>
                     <p className="text-xs text-muted-foreground leading-snug">Mitigate concentration risks by reallocating excess cash into underweight asset classes.</p>
                   </div>
-                  <p className="font-black tabular-nums text-blue-600 text-[14px]">Rebalance Portfolio</p>
                   <div className="flex flex-col gap-1">
                     {["Increase US Large Cap", "Hedge Financial Services Concentration", "Add Bonds & Commodities"].map((f) => (
                       <div key={f} className="flex items-center gap-1.5">
                         <div className="w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
-                        <span className="text-muted-foreground text-[12px]">{f}</span>
+                        <span className="text-blue-700 font-bold text-[12px]">{f}</span>
                       </div>
                     ))}
                   </div>
