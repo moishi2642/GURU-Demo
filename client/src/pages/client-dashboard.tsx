@@ -3649,93 +3649,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
           ══════════════════════════════════════════════════════════ */}
       {mmView === 'table' && (
         <>
-          {/* ── GURU Treasury Ladder timeline (Planned Movement view) ── */}
-          <div className="bg-slate-900 border-b-2 border-slate-700 overflow-x-auto">
-            <div style={{ minWidth: 'max-content' }}>
-              {/* Section header */}
-              <div className="flex items-center px-4 pt-3 pb-2 gap-2">
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500" style={{ width: 300, flexShrink: 0 }}>
-                  GURU Treasury Ladder · Reserve Structure
-                </span>
-                {MONTHS.map((mo, mi) => (
-                  <div key={mo} className={`text-[8px] font-black text-center uppercase tracking-wide`}
-                    style={{ minWidth: 76, color: mi === 6 ? '#f59e0b' : mi === 9 ? '#f59e0b' : '#475569' }}>
-                    {mo}
-                    {(mi === 6 || mi === 9) && <div className="text-[6px] font-normal mt-0.5" style={{ color: '#f59e0b' }}>maturity</div>}
-                  </div>
-                ))}
-              </div>
-
-              {/* T-bill rows */}
-              {TBILLS.map((bill, bi) => (
-                <div key={bi} className="flex items-center px-4 py-1.5 border-t border-slate-800 hover:bg-slate-800/30 transition-colors">
-                  <div style={{ width: 300, flexShrink: 0 }}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: bill.maturesSm >= 12 ? '#8b5cf6' : '#10b981' }} />
-                      <span className="text-[9px] font-semibold text-slate-300">{bill.tenor} T-Bill · matures {bill.label}</span>
-                      <span className="text-[8px] text-emerald-400 tabular-nums">{bill.rate}%</span>
-                    </div>
-                  </div>
-                  {MONTHS.map((mo, mi) => {
-                    const isMaturity = mi === bill.maturesSm;
-                    const isAfter = mi > bill.maturesSm && bill.maturesSm < 12;
-                    const isNextYr = bill.maturesSm >= 12 && mi === 11;
-                    return (
-                      <div key={mo}
-                        className={`text-center text-[9px] tabular-nums font-mono px-1 py-0.5 rounded ${
-                          isMaturity ? 'font-black' : isAfter ? 'text-slate-700' : 'text-slate-400'
-                        }`}
-                        style={{ minWidth: 76, color: isMaturity ? '#fbbf24' : undefined }}>
-                        {isMaturity
-                          ? '✓ MATURES'
-                          : isAfter
-                            ? '—'
-                            : isNextYr
-                              ? `→ ${bill.label}`
-                              : `$${bill.face.toLocaleString()}`
-                        }
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-
-              {/* MMF buffer row */}
-              <div className="flex items-center px-4 py-2 border-t border-slate-700 bg-slate-800/40">
-                <div style={{ width: 300, flexShrink: 0 }}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-blue-400" />
-                    <span className="text-[9px] font-semibold text-blue-300">JPMorgan MMF · Liquidity Buffer</span>
-                    <span className="text-[8px] text-slate-500">~3-month reserve</span>
-                  </div>
-                </div>
-                {MMF_DISPLAY.map((v, mi) => (
-                  <div key={mi} style={{ minWidth: 76 }}
-                    className={`text-center text-[9px] tabular-nums font-mono ${mi === 6 || mi === 9 ? 'font-black text-amber-400' : 'text-blue-400'}`}>
-                    ${v.toLocaleString()}
-                  </div>
-                ))}
-              </div>
-
-              {/* Auto-draw row (from MMF to Ops Cash) */}
-              <div className="flex items-center px-4 py-2 border-t border-slate-800 pb-3">
-                <div style={{ width: 300, flexShrink: 0 }}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-slate-500" />
-                    <span className="text-[9px] text-slate-500">→ GURU Auto-draw (MMF → Operating Cash)</span>
-                  </div>
-                </div>
-                {FROM_ST_TO_IMM.map((v, mi) => (
-                  <div key={mi} style={{ minWidth: 76 }}
-                    className={`text-center text-[9px] tabular-nums font-mono ${v > 0 ? 'text-blue-400 font-semibold' : 'text-slate-700'}`}>
-                    {v > 0 ? `($${v.toLocaleString()})` : '—'}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-auto bg-white" style={{ maxHeight: 580 }}>
+          <div className="overflow-auto bg-white" style={{ maxHeight: 620 }}>
             <table className="w-full border-collapse min-w-max">
 
               <thead className="sticky top-0 z-20">
@@ -3751,23 +3665,89 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
               </thead>
 
               <tbody>
-                <Section
-                  subrows={[
-                    { label: "Plus: Income Allocation to Operating Cash",       values: INCOME_TO_IMM },
-                    { label: "Less: Expenses",                                  values: EXPENSES },
-                    { label: "Plus: Auto-draw from Reserve",                    values: FROM_ST_TO_IMM, linkId: 'rsv-ops', ticker: true },
-                    { label: "Plus: After-Tax Interest Income",                 values: IMM_INT },
-                  ]}
-                  bucketLabel="Operating Cash"
-                  balances={IMM_BAL}
-                  color="#1d4ed8"
-                />
-
-                {/* ── Min Operating Cash target row ── */}
+                {/* ══ OPERATING CASH ══ */}
+                {/* ↳ Chase Total Checking — ending balance per month, hover for flows */}
+                <tr className="border-b border-[#1d4ed8]/10 hover:bg-blue-50/40 transition-colors group"
+                  style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-blue-400 text-[11px]">↳</span>
+                      <span className="text-[10px] font-semibold text-blue-800">Chase Total Checking</span>
+                      <span className="text-[8px] text-blue-400 font-mono">Primary Account</span>
+                    </div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Hover any month for inflow / outflow detail</div>
+                  </td>
+                  {IMM_BAL.map((v, mi) => {
+                    const hasAutoDraw = FROM_ST_TO_IMM[mi] > 0;
+                    const tip = [
+                      `Salary → Ops: +$${INCOME_TO_IMM[mi].toLocaleString()}`,
+                      `Expenses out: −$${EXPENSES[mi].toLocaleString()}`,
+                      hasAutoDraw ? `GURU Reserve draw: +$${FROM_ST_TO_IMM[mi].toLocaleString()}` : null,
+                      `After-tax interest: +$${IMM_INT[mi].toLocaleString()}`,
+                      `──────────────────`,
+                      `Month-end balance: $${v.toLocaleString()}`,
+                    ].filter(Boolean).join('\n');
+                    return (
+                      <td key={mi} title={tip}
+                        className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-blue-700 cursor-help relative">
+                        {fmtBal(v)}
+                        {hasAutoDraw && (
+                          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-orange-400" title="GURU auto-draw from Reserve" />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+                {/* ↳ Surplus above floor */}
+                <tr className="border-b border-[#1d4ed8]/08 transition-colors"
+                  style={{ backgroundColor: "rgba(29,78,216,0.02)" }}>
+                  <td className="pl-7 pr-4 py-1 w-[300px]">
+                    <span className="text-[8px] text-slate-400 pl-3.5">
+                      ↳ Surplus above {opsCashMonths}-month floor ({fmtBal(minOps)})
+                    </span>
+                  </td>
+                  {IMM_BAL.map((v, mi) => {
+                    const surplus = v - minOps;
+                    return (
+                      <td key={mi} className={`px-2 py-1 text-[9px] text-center tabular-nums ${surplus >= 0 ? 'text-emerald-600' : 'text-red-500 font-semibold'}`}>
+                        {surplus >= 0 ? `+${fmtBal(surplus)}` : `(${fmtBal(Math.abs(surplus))})`}
+                      </td>
+                    );
+                  })}
+                </tr>
+                {/* GURU Autopilot ticker — only when any month has a Reserve draw */}
+                {FROM_ST_TO_IMM.some(v => v > 0) && (
+                  <tr className="h-5 border-b border-blue-100/60" style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
+                    <td colSpan={13} className="px-4 py-0 overflow-hidden">
+                      <div className="relative h-4 flex items-center gap-2.5">
+                        <span className="text-[7px] font-black uppercase tracking-widest text-blue-400 flex-shrink-0 z-10 whitespace-nowrap">GURU Autopilot</span>
+                        <div className="flex-1 relative h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(29,78,216,0.12)" }}>
+                          <motion.div className="absolute top-0 h-full w-10 rounded-full"
+                            style={{ backgroundColor: "#3b82f6", boxShadow: "0 0 8px #3b82f6, 0 0 16px #3b82f680" }}
+                            animate={{ x: ["-40px", "120%"] }} transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }} />
+                          <motion.div className="absolute top-0 h-full w-6 rounded-full"
+                            style={{ backgroundColor: "#93c5fd", boxShadow: "0 0 6px #93c5fd" }}
+                            animate={{ x: ["-24px", "120%"] }} transition={{ duration: 2.2, repeat: Infinity, ease: "linear", delay: 0.9 }} />
+                          <motion.div className="absolute top-0 h-full w-4 rounded-full" style={{ backgroundColor: "#bfdbfe" }}
+                            animate={{ x: ["-16px", "120%"] }} transition={{ duration: 2.2, repeat: Infinity, ease: "linear", delay: 1.7 }} />
+                        </div>
+                        <span className="text-[7px] font-black uppercase tracking-widest text-blue-400 flex-shrink-0 z-10 whitespace-nowrap">Auto-draw active</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {/* Operating Cash TOTAL */}
+                <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#1d4ed8" }}>
+                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Operating Cash</td>
+                  {IMM_BAL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
+                  ))}
+                </tr>
+                {/* Min ops floor check */}
                 <tr style={{ backgroundColor: "rgba(29,78,216,0.08)" }} className="border-b border-[#1d4ed8]/20">
                   <td className="px-4 py-1.5 w-[300px]">
                     <div className="flex items-center gap-1 text-[10px] font-semibold italic" style={{ color: "#1d4ed8" }}>
-                      <span style={{ color: "#1d4ed8" }}>⤷</span> Always holds enough cash for {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses (${minOps.toLocaleString()})
+                      <span style={{ color: "#1d4ed8" }}>⤷</span> Holds ≥ {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses ({fmtBal(minOps)} floor)
                     </div>
                   </td>
                   {IMM_BAL.map((bal, mi) => (
@@ -3776,29 +3756,131 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                     </td>
                   ))}
                 </tr>
+                <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
-                <Section
-                  subrows={[
-                    { label: "Plus: Income Allocation to Reserve",              values: INCOME_TO_ST },
-                    { label: "Less: Cash Moved to Operating Cash",              values: FROM_ST_OUT, linkId: 'rsv-ops' },
-                    { label: "Plus: After-Tax Interest Income",                 values: ST_INT },
-                  ]}
-                  bucketLabel="Reserve"
-                  balances={ST_BAL}
-                  color="#d97706"
-                />
+                {/* ══ RESERVE ══ */}
+                {/* ↳ JPMorgan 100% Treasury MMF */}
+                <tr className="border-b border-amber-200/40 hover:bg-amber-50/30 transition-colors"
+                  style={{ backgroundColor: "rgba(217,119,6,0.04)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-amber-500 text-[11px]">↳</span>
+                      <span className="text-[10px] font-semibold text-amber-800">JPMorgan 100% Treasury MMF</span>
+                      <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
+                    </div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Hover any month for inflow / outflow detail</div>
+                  </td>
+                  {MMF_DISPLAY.map((v, mi) => {
+                    const tip = [
+                      `Salary → Reserve: +$${INCOME_TO_ST[mi].toLocaleString()}`,
+                      `Drawn to Ops Cash: −$${FROM_ST_OUT[mi].toLocaleString()}`,
+                      `After-tax interest: +$${ST_INT[mi].toLocaleString()}`,
+                      `──────────────────`,
+                      `Month-end balance: $${v.toLocaleString()}`,
+                    ].join('\n');
+                    return (
+                      <td key={mi} title={tip}
+                        className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold cursor-help ${mi === 6 || mi === 9 ? 'text-amber-500' : 'text-amber-700'}`}>
+                        {fmtBal(v)}
+                      </td>
+                    );
+                  })}
+                </tr>
+                {/* ↳ T-Bill ladder rungs */}
+                {TBILLS.map((bill, bi) => (
+                  <tr key={bi} className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
+                    style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
+                    <td className="pl-7 pr-4 py-2 w-[300px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-amber-400/60 text-[11px]">↳</span>
+                        <span className="text-[10px] text-slate-600">{bill.tenor} T-Bill · matures {bill.label}</span>
+                        <span className={`text-[8px] font-mono ${bill.maturesSm >= 12 ? 'text-violet-500' : 'text-emerald-600'}`}>{bill.rate}%</span>
+                      </div>
+                    </td>
+                    {Array.from({ length: 12 }, (_, mi) => {
+                      const isMaturity = mi === bill.maturesSm;
+                      const isAfter = bill.maturesSm < 12 && mi > bill.maturesSm;
+                      const tip = isMaturity
+                        ? `Bill matures this month\nFace: $${bill.face.toLocaleString()}\nProceeds swept to JPMorgan MMF`
+                        : isAfter
+                          ? `Already matured — swept to MMF in ${bill.label}`
+                          : `Held to maturity: ${bill.label}\nFace value: $${bill.face.toLocaleString()}\nRate: ${bill.rate}%`;
+                      return (
+                        <td key={mi} title={tip} className="px-2 py-2 text-[10px] text-center tabular-nums whitespace-nowrap cursor-help">
+                          {isMaturity
+                            ? <span className="font-black text-amber-600">✓ MATURES</span>
+                            : isAfter
+                              ? <span className="text-slate-300">— swept</span>
+                              : <span className="text-slate-600">${bill.face.toLocaleString()}</span>
+                          }
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+                {/* Reserve TOTAL */}
+                <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#d97706" }}>
+                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Reserve</td>
+                  {ST_BAL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
+                  ))}
+                </tr>
+                <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
-                <Section
-                  subrows={[
-                    { label: "Plus: Income Allocation to Build",                values: INCOME_TO_MT },
-                    { label: "Less: Cash Moved to Reserve",                     values: FROM_MT_OUT },
-                    { label: "Plus: After-Tax Interest Income",                 values: MT_INT },
-                  ]}
-                  bucketLabel="Build"
-                  balances={MT_BAL}
-                  color="#16a34a"
-                />
-
+                {/* ══ BUILD ══ */}
+                {/* ↳ CapitalOne 360 Savings */}
+                <tr className="border-b border-green-100/40 hover:bg-green-50/30 transition-colors"
+                  style={{ backgroundColor: "rgba(22,163,74,0.04)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-green-500 text-[11px]">↳</span>
+                      <span className="text-[10px] font-semibold text-green-800">CapitalOne 360 Performance Savings</span>
+                      <span className="text-[8px] text-green-600 font-mono">3.78%</span>
+                    </div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">FDIC-insured · instant liquidity</div>
+                  </td>
+                  {Array.from({ length: 12 }, (_, mi) => {
+                    const tip = `Fixed allocation · FDIC-insured\nBalance: $15,000\nMonthly interest: +$${(15000 * 0.0378 / 12).toFixed(0)}\nRate: 3.78% APY`;
+                    return (
+                      <td key={mi} title={tip} className="px-2 py-2 text-[10px] text-center tabular-nums text-green-700 cursor-help">$15,000</td>
+                    );
+                  })}
+                </tr>
+                {/* ↳ 1yr Treasury Notes */}
+                <tr className="border-b border-green-100/30 hover:bg-green-50/20 transition-colors"
+                  style={{ backgroundColor: "rgba(22,163,74,0.03)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-green-400/70 text-[11px]">↳</span>
+                      <span className="text-[10px] text-slate-600">1yr Treasury Notes · rolling ladder</span>
+                      <span className="text-[8px] text-green-600 font-mono">4.50%</span>
+                    </div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Hover any month for inflow / outflow detail</div>
+                  </td>
+                  {MT_BAL.map((v, mi) => {
+                    const notesVal = Math.max(0, v - 15000);
+                    const tip = [
+                      `Salary → Build: +$${INCOME_TO_MT[mi].toLocaleString()}`,
+                      FROM_MT_OUT[mi] > 0 ? `Moved to Reserve: −$${FROM_MT_OUT[mi].toLocaleString()}` : null,
+                      `After-tax interest: +$${MT_INT[mi].toLocaleString()}`,
+                      `──────────────────`,
+                      `1yr T-Notes balance: $${notesVal.toLocaleString()}`,
+                      `Build total: $${v.toLocaleString()}`,
+                    ].filter(Boolean).join('\n');
+                    return (
+                      <td key={mi} title={tip} className="px-2 py-2 text-[10px] text-center tabular-nums text-slate-600 cursor-help">
+                        {fmtBal(notesVal)}
+                      </td>
+                    );
+                  })}
+                </tr>
+                {/* Build TOTAL */}
+                <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#16a34a" }}>
+                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Build</td>
+                  {MT_BAL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
+                  ))}
+                </tr>
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#5b21b6" }}>
