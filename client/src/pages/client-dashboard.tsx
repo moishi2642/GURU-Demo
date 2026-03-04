@@ -974,7 +974,7 @@ function CashManagementPanel({
       <div className="px-4 pt-4 pb-3 border-b border-border/60">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cash Management</p>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Liquidity Position</p>
             <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5">{fmt(totalLiquid, true)}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Total liquid position</p>
           </div>
