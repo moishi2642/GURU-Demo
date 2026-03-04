@@ -70,6 +70,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { ResponsiveSankey } from "@nivo/sankey";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
 import type { Asset, Liability, CashFlow, Strategy } from "@shared/schema";
 
