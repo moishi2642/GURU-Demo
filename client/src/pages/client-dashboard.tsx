@@ -999,154 +999,121 @@ function CashManagementPanel({
 
   const activeItems = bucketItems[active] ?? [];
   const activeTotal = bucketValues[active] ?? 0;
-  const isLiquid =
-    active === "reserve" || active === "yield" || active === "tactical";
+
+  const liquidBuckets: GuroBucket[] = ["reserve", "yield", "tactical"];
+  const tabLabels: Record<string, string> = {
+    reserve: "Immediate",
+    yield: "Short-Term",
+    tactical: "Medium-Term",
+  };
+  const liquidDonutData = liquidBuckets
+    .filter((k) => (bucketValues[k] ?? 0) > 0)
+    .map((k) => ({ name: tabLabels[k], value: bucketValues[k] ?? 0, color: GURU_BUCKETS[k].color }));
 
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
-      <div className="px-4 pt-4 pb-2 border-b border-border">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Liquidity Monitor</p>
-        <div
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold ${isSufficient ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}
-        >
-          {isSufficient ? (
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          ) : (
-            <AlertTriangle className="w-3.5 h-3.5" />
-          )}
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-border">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Cash Management Monitor</p>
+        <div className={`flex items-center gap-1.5 text-sm font-black mb-3 ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>
           {isSufficient
-            ? "LIQUID RESERVES SUFFICIENT"
-            : "CASH SHORTFALL — ACTION NEEDED"}
+            ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            : <AlertTriangle className="w-4 h-4 flex-shrink-0" />}
+          {isSufficient ? "SUFFICIENT FUNDS FOR 12 MONTHS" : "CASH SHORTFALL — ACTION NEEDED"}
         </div>
-      </div>
-      {/* Donut + legend */}
-      {(() => {
-        const liquidBuckets: GuroBucket[] = ["reserve", "yield", "tactical"];
-        const liquidDonutData = donutData.filter(d =>
-          liquidBuckets.some(k => GURU_BUCKETS[k].label === d.name)
-        );
-        const liquidTotal = liquidBuckets.reduce((s, k) => s + (bucketValues[k] ?? 0), 0);
-        return (
-          <div className="flex items-center px-3 py-3 gap-3">
-            <div style={{ width: 130, height: 130, flexShrink: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={liquidDonutData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={36}
-                    outerRadius={58}
-                    dataKey="value"
-                    paddingAngle={3}
-                  >
-                    {liquidDonutData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip
-                    formatter={(v: number, n: string) => [fmt(v), n]}
-                    contentStyle={{ fontSize: 11 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex-1 space-y-1 text-xs min-w-0">
-              {liquidBuckets.map((k) => {
-                const v = bucketValues[k];
-                if (!v) return null;
-                const pct = liquidTotal > 0 ? Math.round((v / liquidTotal) * 100) : 0;
-                return (
-                  <button
-                    key={k}
-                    onClick={() => setActive(k)}
-                    className={`w-full flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors text-left ${active === k ? "bg-secondary" : "hover:bg-secondary/50"}`}
-                    data-testid={`bucket-${k}`}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: GURU_BUCKETS[k].color }}
-                    />
-                    <span
-                      className={`font-bold flex-shrink-0 ${active === k ? "text-foreground" : "text-muted-foreground"}`}
-                    >
-                      {GURU_BUCKETS[k].label}
-                    </span>
-                    <span className="text-muted-foreground ml-auto tabular-nums flex-shrink-0">
-                      {pct}%
-                    </span>
-                    <span className="font-semibold tabular-nums flex-shrink-0">
-                      {fmt(v, true)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Cash required for next 12 months</span>
+            <span className={`font-bold tabular-nums ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>{fmt(cashTrough, true)}</span>
           </div>
-        );
-      })()}
-      {/* Active bucket detail */}
-      <div className="px-3 pb-3 flex-1">
-        <div
-          className={`rounded-lg px-3 py-2 mb-2 border ${GURU_BUCKETS[
-            active
-          ].tagCls
-            .split(" ")
-            .map((c) =>
-              c
-                .replace("text-", "border-")
-                .replace("700", "200")
-                .replace("bg-", "bg-"),
-            )
-            .join(" ")}`}
-          style={{ borderColor: GURU_BUCKETS[active].color + "40" }}
-        >
-          <p
-            className="text-[10px] font-bold uppercase tracking-wider"
-            style={{ color: GURU_BUCKETS[active].color }}
-          >
-            {GURU_BUCKETS[active].label}
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            {GURU_BUCKETS[active].short}
-          </p>
-        </div>
-        <div className="space-y-0.5">
-          {activeItems.map((item, i) => (
-            <div
-              key={`${item.label}-${i}`}
-              className="flex justify-between text-xs"
-            >
-              <span className="text-muted-foreground truncate pr-2">
-                {item.label}
-              </span>
-              <span className="font-semibold tabular-nums">
-                {fmt(item.value)}
-              </span>
-            </div>
-          ))}
-          {activeItems.length > 0 && (
-            <div className="flex justify-between text-xs font-bold border-t border-border pt-1 mt-1">
-              <span>{GURU_BUCKETS[active].label} Total</span>
-              <span>{fmt(activeTotal)}</span>
-            </div>
-          )}
-          {activeItems.length === 0 && (
-            <p className="text-xs text-muted-foreground italic">
-              No assets in this bucket
-            </p>
-          )}
-          {!isLiquid && (
-            <p className="text-[10px] text-muted-foreground mt-1 italic">
-              Not included in 12-month liquidity calculation
-            </p>
-          )}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">Funds to cover cash need</span>
+            <span className="font-bold tabular-nums text-emerald-600">{fmt(totalLiquid, true)}</span>
+          </div>
         </div>
       </div>
-      {/* Liquidity vs trough footer */}
+
+      {/* Donut + right panel */}
+      <div className="flex gap-3 px-3 pt-3 pb-2 flex-1">
+        {/* Donut + legend below */}
+        <div className="flex flex-col items-start gap-2 flex-shrink-0">
+          <div style={{ width: 120, height: 120 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={liquidDonutData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={30}
+                  outerRadius={54}
+                  dataKey="value"
+                  paddingAngle={3}
+                >
+                  {liquidDonutData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <RechartsTooltip
+                  formatter={(v: number, n: string) => [fmt(v), n]}
+                  contentStyle={{ fontSize: 11 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-1 w-full">
+            {liquidBuckets.map((k) => (
+              <div key={k} className="flex items-center gap-1.5 text-[10px]">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[k].color }} />
+                <span className="text-muted-foreground">{tabLabels[k]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: tab pills + account list */}
+        <div className="flex-1 flex flex-col gap-2 min-w-0">
+          {/* Tab pills */}
+          <div className="flex gap-1 flex-wrap">
+            {liquidBuckets.map((k) => (
+              <button
+                key={k}
+                onClick={() => setActive(k)}
+                className="px-2.5 py-1 rounded-full text-[10px] font-bold transition-all"
+                style={{
+                  background: active === k ? GURU_BUCKETS[k].color : "hsl(var(--muted))",
+                  color: active === k ? "white" : "hsl(var(--muted-foreground))",
+                }}
+                data-testid={`bucket-${k}`}
+              >
+                {tabLabels[k]}
+              </button>
+            ))}
+          </div>
+          {/* Account rows */}
+          <div className="space-y-1">
+            {activeItems.map((item, i) => (
+              <div key={`${item.label}-${i}`} className="flex justify-between items-center text-xs gap-2">
+                <span className="text-muted-foreground truncate">{item.label}</span>
+                <span className="font-semibold tabular-nums flex-shrink-0">{fmt(item.value)}</span>
+              </div>
+            ))}
+            {activeItems.length > 0 && (
+              <div className="flex justify-between items-center text-xs font-black border-t border-border pt-1.5 mt-1">
+                <span>Total {tabLabels[active]}</span>
+                <span className="tabular-nums">{fmt(activeTotal)}</span>
+              </div>
+            )}
+            {activeItems.length === 0 && (
+              <p className="text-xs text-muted-foreground italic">No assets in this bucket</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
       <div className="grid grid-cols-2 divide-x divide-border border-t border-border text-xs">
         <div className="px-3 py-2">
-          <p className="text-muted-foreground">Liquid (R+Y+T)</p>
+          <p className="text-muted-foreground">Liquid Total</p>
           <p className="font-bold text-emerald-600">{fmt(totalLiquid, true)}</p>
         </div>
         <div className="px-3 py-2">
