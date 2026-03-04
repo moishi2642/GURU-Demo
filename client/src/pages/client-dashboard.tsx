@@ -3125,7 +3125,21 @@ const MM_GURU_ACTIONS = [
   { month: "Dec", action: "Income surplus — Reserve fully replenished to $129,389", type: "replenish",amount: 129389 },
 ];
 
-function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { assets: Asset[]; cashFlows: CashFlow[]; opsCashMonths: number; clientName?: string }) {
+function MoneyMovementView({
+  assets,
+  cashFlows,
+  opsCashMonths,
+  clientName,
+  pendingTransfers = [],
+  bucketProductSelections = {},
+}: {
+  assets: Asset[];
+  cashFlows: CashFlow[];
+  opsCashMonths: number;
+  clientName?: string;
+  pendingTransfers?: { from: string; to: string; amount: number }[];
+  bucketProductSelections?: Record<string, Array<{ product: BucketProduct; alloc: number }>>;
+}) {
   const BASE_MONTHLY_EXPENSE = 20940; // ~monthly recurring expenses from cash flow model
   const minOps = opsCashMonths * BASE_MONTHLY_EXPENSE;
 
@@ -3225,11 +3239,107 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
   // ── TOTAL NET WORTH ──────────────────────────────────────────────────────────
   const NET_WORTH = IMM_BAL.map((v, i) => v + ST_BAL[i] + MT_BAL[i] + GROW_BAL[i]);
 
+  // ══════════════════════════════════════════════════════════════════════════════
+  // GURU PENDING CHANGES — adjust baseline arrays when advisor has made changes
+  // on the GURU Allocation tab (transfers between buckets + product selections).
+  // ══════════════════════════════════════════════════════════════════════════════
+  const _parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+
+  // Transfer amounts (look up by bucket name)
+  const opsToRsv  = pendingTransfers.find(t => t.from === "Operating Cash" && t.to === "Reserve")?.amount ?? 0;
+  const rsvToBld  = pendingTransfers.find(t => t.from === "Reserve"        && t.to === "Build")?.amount ?? 0;
+  const opsToRsvOther = pendingTransfers
+    .filter(t => t.from === "Operating Cash" && t.to !== "Reserve")
+    .reduce((s, t) => s + t.amount, 0);
+
+  const hasChanges =
+    pendingTransfers.length > 0 ||
+    Object.values(bucketProductSelections).some(s => s.length > 0);
+
+  // ── Effective Citizens Checking ───────────────────────────────────────────────
+  // Total Ops outflow = opsToRsv + other transfers. Citizens absorbs first (floored 0).
+  const _opsDelta = opsToRsv + opsToRsvOther;
+  const EFF_CITIZENS_CHECK = hasChanges
+    ? CITIZENS_CHECK_BAL.map(v => Math.max(0, v - _opsDelta))
+    : CITIZENS_CHECK_BAL;
+
+  // ── Effective Chase ───────────────────────────────────────────────────────────
+  // Chase absorbs whatever Citizens couldn't cover.
+  const EFF_CHASE = hasChanges
+    ? CHASE_BAL.map((v, i) => {
+        const citizensAbsorbed = Math.min(CITIZENS_CHECK_BAL[i], _opsDelta);
+        const chaseNeed = Math.max(0, _opsDelta - citizensAbsorbed);
+        return Math.max(0, v - chaseNeed);
+      })
+    : CHASE_BAL;
+
+  const EFF_IMM = EFF_CHASE.map((v, i) => v + EFF_CITIZENS_CHECK[i]);
+
+  // ── Effective Citizens MM yield (Reserve) ────────────────────────────────────
+  // Baseline inferred AT yield: $388/month on $225,000 opening → ~2.069% p.a.
+  const _baseRsvMonthly = 388 / 225000;
+  const rsvSels = bucketProductSelections["Reserve"] ?? [];
+  const _rsvATYield = rsvSels.length > 0
+    ? rsvSels.reduce((s, sel) => s + _parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+    : null;
+  const _rsvMonthly = _rsvATYield !== null ? _rsvATYield / 100 / 12 : _baseRsvMonthly;
+
+  // Citizens MM opening after transfers: original 225K + inflow from Ops - outflow to Build
+  const _rsvOpeningBase = 225000 + opsToRsv - rsvToBld;
+  const EFF_CITIZENS_MM: number[] = (() => {
+    if (!hasChanges && _rsvATYield === null) return CITIZENS_MM_BAL;
+    const result: number[] = [];
+    let bal = _rsvOpeningBase;
+    for (let i = 0; i < 12; i++) {
+      const interest = Math.round(bal * _rsvMonthly);
+      bal += interest;
+      result.push(bal);
+    }
+    return result;
+  })();
+
+  const EFF_CAPONE = CAPONE_BAL; // CapOne unchanged (advisor changes Citizens MM)
+  const EFF_ST = EFF_CITIZENS_MM.map((v, i) => v + EFF_CAPONE[i]);
+
+  // ── Effective Treasuries yield (Build) ───────────────────────────────────────
+  // Baseline inferred AT yield: $289/month on $135,000 opening → ~2.569% p.a.
+  const _baseBldMonthly = 289 / 135000;
+  const bldSels = bucketProductSelections["Build"] ?? [];
+  const _bldATYield = bldSels.length > 0
+    ? bldSels.reduce((s, sel) => s + _parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+    : null;
+  const _bldMonthly = _bldATYield !== null ? _bldATYield / 100 / 12 : _baseBldMonthly;
+
+  const _bldOpeningBase = 135000 + rsvToBld;
+  const EFF_TREASURIES: number[] = (() => {
+    if (!hasChanges && _bldATYield === null) return TREASURIES_BAL;
+    const result: number[] = [];
+    let bal = _bldOpeningBase;
+    for (let i = 0; i < 12; i++) {
+      const interest = Math.round(bal * _bldMonthly);
+      bal += interest;
+      result.push(bal);
+    }
+    return result;
+  })();
+
+  const EFF_MT    = EFF_TREASURIES;
+  const EFF_GROW  = GROW_BAL; // Grow bucket not affected by liquid transfers
+  const EFF_NET_WORTH = EFF_IMM.map((v, i) => v + EFF_ST[i] + EFF_MT[i] + EFF_GROW[i]);
+
+  // ── Effective interest arrays (for hover tooltips) ────────────────────────────
+  const EFF_ST_INT: number[] = EFF_CITIZENS_MM.map((v, i) =>
+    i === 0 ? 0 : Math.round(_rsvOpeningBase * _rsvMonthly)
+  );
+  const EFF_MT_INT: number[] = EFF_TREASURIES.map((v, i) =>
+    i === 0 ? 0 : Math.round(_bldOpeningBase * _bldMonthly)
+  );
+
   // ── Starting balances (prior month end; first month uses model opening) ──────
-  const OPS_START  = [132050, ...IMM_BAL.slice(0, 11)];   // Chase $25,050 + Citizens $107,000
-  const RSV_START  = [240000, ...ST_BAL.slice(0, 11)];
-  const BLD_START  = [135000, ...MT_BAL.slice(0, 11)];
-  const GROW_START = [2603496,...GROW_BAL.slice(0, 11)];
+  const OPS_START  = [132050, ...EFF_IMM.slice(0, 11)];
+  const RSV_START  = [240000, ...EFF_ST.slice(0, 11)];
+  const BLD_START  = [135000, ...EFF_MT.slice(0, 11)];
+  const GROW_START = [2603496,...EFF_GROW.slice(0, 11)];
 
   // ── Per-month special/irregular expenses (total = base $20,939 + specials) ────
   type SpecialItem = { label: string; amount: number };
@@ -3259,7 +3369,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
     ? `(${Math.abs(v).toLocaleString("en-US")})`
     : `$${v.toLocaleString("en-US")}`;
 
-  const minOpsOk = Math.min(...IMM_BAL) >= minOps;
+  const minOpsOk = Math.min(...EFF_IMM) >= minOps;
 
   type SubRow = { label: string; values: number[]; linkId?: string; ticker?: boolean };
 
@@ -3347,12 +3457,12 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
   const income    = INCOME_TO_IMM[sm];
   const rsvDraw   = FROM_ST_TO_IMM[sm];
   const bldDraw   = 0; // Build no longer draws to Ops directly
-  const opsEnd    = IMM_BAL[sm];
-  const rsvEnd    = ST_BAL[sm];
-  const bldEnd    = MT_BAL[sm];
-  const growEnd   = GROW_BAL[sm];
-  const rsvInt    = ST_INT[sm];
-  const bldInt    = MT_INT[sm];
+  const opsEnd    = EFF_IMM[sm];
+  const rsvEnd    = EFF_ST[sm];
+  const bldEnd    = EFF_MT[sm];
+  const growEnd   = EFF_GROW[sm];
+  const rsvInt    = EFF_ST_INT[sm];
+  const bldInt    = EFF_MT_INT[sm];
   const rsvSweep  = INCOME_TO_ST[sm];
   const bldSweep  = INCOME_TO_MT[sm];
   const specials  = SPECIALS[sm];
@@ -3435,6 +3545,35 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
           </div>
         )}
       </div>
+
+      {/* ── Pending changes banner ─────────────────────────────────────────────── */}
+      {hasChanges && (
+        <div className="flex items-center gap-3 px-6 py-2.5 bg-amber-50 border-b border-amber-200">
+          <div className="flex items-center gap-1.5 flex-1">
+            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+            <span className="text-[11px] font-semibold text-amber-800">
+              Shows Pending Changes Made to Asset Allocation and Product Selection
+            </span>
+          </div>
+          <div className="flex items-center gap-4 flex-shrink-0 text-[10px] text-amber-700">
+            {pendingTransfers.length > 0 && (
+              <span>
+                {pendingTransfers.length} transfer{pendingTransfers.length !== 1 ? "s" : ""} pending:{" "}
+                {pendingTransfers.map(t => `${t.from} → ${t.to} ($${(t.amount / 1000).toFixed(0)}K)`).join(", ")}
+              </span>
+            )}
+            {Object.values(bucketProductSelections).some(s => s.length > 0) && (
+              <span>
+                {Object.entries(bucketProductSelections)
+                  .filter(([, sels]) => sels.length > 0)
+                  .map(([bucket, sels]) => `${bucket}: ${sels.map(s => s.product.name.split("—")[0].trim()).join(", ")}`)
+                  .join(" · ")}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ══════════════════════════════════════════════════════════
           FLOW SCHEMATIC VIEW
           ══════════════════════════════════════════════════════════ */}
@@ -3707,7 +3846,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[8px] text-blue-400 font-mono">Primary</span>
                     </div>
                   </td>
-                  {CHASE_BAL.map((v, mi) => (
+                  {EFF_CHASE.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-blue-700 cursor-help relative group">
                       {fmtBal(v)}
                       {cellTip([
@@ -3728,7 +3867,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[8px] text-amber-500 font-mono">Excess</span>
                     </div>
                   </td>
-                  {CITIZENS_CHECK_BAL.map((v, mi) => (
+                  {EFF_CITIZENS_CHECK.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold cursor-help relative group text-blue-600">
                       {fmtBal(v)}
                       {cellTip([
@@ -3763,7 +3902,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                 {/* Operating Cash TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#1d4ed8" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Operating Cash</td>
-                  {IMM_BAL.map((v, mi) => (
+                  {EFF_IMM.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
                   ))}
                 </tr>
@@ -3774,7 +3913,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span style={{ color: "#1d4ed8" }}>⤷</span> Holds ≥ {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses ({fmtBal(minOps)} floor)
                     </div>
                   </td>
-                  {IMM_BAL.map((bal, mi) => (
+                  {EFF_IMM.map((bal, mi) => (
                     <td key={mi} className={`px-2 py-1.5 text-[10px] text-center font-black tabular-nums ${bal >= minOps ? 'text-emerald-600' : 'text-red-600'}`}>
                       {bal >= minOps ? '✓' : '⚠'}
                     </td>
@@ -3792,11 +3931,11 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
                     </div>
                   </td>
-                  {CITIZENS_MM_BAL.map((v, mi) => (
+                  {EFF_CITIZENS_MM.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-amber-700 cursor-help relative group">
                       {fmtBal(v)}
                       {cellTip([
-                        ST_INT[mi] > 0 ? `Interest earned: +$${ST_INT[mi].toLocaleString()}` : null,
+                        EFF_ST_INT[mi] > 0 ? `Interest earned: +$${EFF_ST_INT[mi].toLocaleString()}` : null,
                         FROM_ST_OUT[mi] !== 0 ? `Drawn to Ops: −$${Math.abs(FROM_ST_OUT[mi]).toLocaleString()}` : null,
                         `──────────────────`,
                         `Month-end balance: $${v.toLocaleString()}`,
@@ -3813,7 +3952,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[8px] text-amber-500 font-mono">3.78%</span>
                     </div>
                   </td>
-                  {CAPONE_BAL.map((v, mi) => (
+                  {EFF_CAPONE.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums text-amber-600 cursor-help relative group">
                       {fmtBal(v)}
                       {cellTip([
@@ -3828,7 +3967,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                 {/* Reserve TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#d97706" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Reserve</td>
-                  {ST_BAL.map((v, mi) => (
+                  {EFF_ST.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
                   ))}
                 </tr>
@@ -3844,11 +3983,11 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                       <span className="text-[8px] text-green-600 font-mono">4.50%</span>
                     </div>
                   </td>
-                  {TREASURIES_BAL.map((v, mi) => (
+                  {EFF_TREASURIES.map((v, mi) => (
                     <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-green-700 cursor-help relative group">
                       {fmtBal(v)}
                       {cellTip([
-                        MT_INT[mi] > 0 ? `Interest accrued: +$${MT_INT[mi].toLocaleString()}` : null,
+                        EFF_MT_INT[mi] > 0 ? `Interest accrued: +$${EFF_MT_INT[mi].toLocaleString()}` : null,
                         FROM_MT_OUT[mi] > 0 ? `Proceeds to Reserve: −$${FROM_MT_OUT[mi].toLocaleString()}` : null,
                         `──────────────────`,
                         `Month-end balance: $${v.toLocaleString()}`,
@@ -3859,7 +3998,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                 {/* Build TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#16a34a" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Build</td>
-                  {MT_BAL.map((v, mi) => (
+                  {EFF_MT.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
                   ))}
                 </tr>
@@ -3870,7 +4009,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                     Grow
                     <span className="ml-1.5 text-[9px] font-normal text-white/60 normal-case">(Brokerage &amp; Retirement)</span>
                   </td>
-                  {GROW_BAL.map((v, mi) => (
+                  {EFF_GROW.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
                       {fmtBal(v)}
                     </td>
@@ -3881,7 +4020,7 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
 
                 <tr className="bg-slate-700">
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Total Net Worth</td>
-                  {NET_WORTH.map((v, mi) => (
+                  {EFF_NET_WORTH.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[12px] font-black text-center tabular-nums whitespace-nowrap text-white">
                       {fmtBal(v)}
                     </td>
@@ -4122,19 +4261,20 @@ function GuruAllocationView({
   cashFlows,
   opsCashMonths,
   setOpsCashMonths,
+  pendingTransfers,
+  setPendingTransfers,
+  bucketProductSelections,
+  setBucketProductSelections,
 }: {
   assets: Asset[];
   cashFlows: CashFlow[];
   opsCashMonths: number;
   setOpsCashMonths: (n: number) => void;
+  pendingTransfers: { from: string; to: string; amount: number }[];
+  setPendingTransfers: React.Dispatch<React.SetStateAction<{ from: string; to: string; amount: number }[]>>;
+  bucketProductSelections: Record<string, Array<{ product: BucketProduct; alloc: number }>>;
+  setBucketProductSelections: React.Dispatch<React.SetStateAction<Record<string, Array<{ product: BucketProduct; alloc: number }>>>>;
 }) {
-  const [pendingTransfers, setPendingTransfers] = useState<
-    { from: string; to: string; amount: number }[]
-  >([]);
-
-  const [bucketProductSelections, setBucketProductSelections] = useState<
-    Record<string, Array<{ product: BucketProduct; alloc: number }>>
-  >({});
 
   const [dragItem, setDragItem] = useState<string | null>(null);
 
@@ -5269,6 +5409,21 @@ function GuruAllocationView({
                         setBucketProductSelections(prev => ({ ...prev, [r.def.name]: sels }))
                       }
                     />
+                    {/* ── FAR RIGHT: Transfer Execution panel ── */}
+                    <BucketExecutionPanel
+                      bucketName={r.def.name}
+                      current={r.current}
+                      target={r.target}
+                      delta={r.target - r.current}
+                      accentColor={r.def.accent}
+                      bgColor={r.def.bg}
+                      avgYield={weightedGrossYield(r.subAccounts, r.current)}
+                      avgYieldAT={weightedATYield(r.subAccounts, r.current)}
+                      bpPickup={r.bpPickup}
+                      totalAssets={totalAssets}
+                      onExecute={handleExecute}
+                      onUndo={handleUndo}
+                    />
                   </div>
                 );
               })}
@@ -5856,6 +6011,12 @@ export default function ClientDashboard() {
   const clientId = Number(id);
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
+  const [pendingTransfers, setPendingTransfers] = useState<
+    { from: string; to: string; amount: number }[]
+  >([]);
+  const [bucketProductSelections, setBucketProductSelections] = useState<
+    Record<string, Array<{ product: BucketProduct; alloc: number }>>
+  >({});
 
   const { data, isLoading, isError } = useClientDashboard(clientId);
 
@@ -6147,11 +6308,27 @@ export default function ClientDashboard() {
       )}
       {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
       {activeView === "guru" && (
-        <GuruAllocationView assets={assets} cashFlows={cashFlows} opsCashMonths={opsCashMonths} setOpsCashMonths={setOpsCashMonths} />
+        <GuruAllocationView
+          assets={assets}
+          cashFlows={cashFlows}
+          opsCashMonths={opsCashMonths}
+          setOpsCashMonths={setOpsCashMonths}
+          pendingTransfers={pendingTransfers}
+          setPendingTransfers={setPendingTransfers}
+          bucketProductSelections={bucketProductSelections}
+          setBucketProductSelections={setBucketProductSelections}
+        />
       )}
       {/* ── Money Movement View ─────────────────────────────────────────────────── */}
       {activeView === "moneymovement" && (
-        <MoneyMovementView assets={assets} cashFlows={cashFlows} opsCashMonths={opsCashMonths} clientName={client.name} />
+        <MoneyMovementView
+          assets={assets}
+          cashFlows={cashFlows}
+          opsCashMonths={opsCashMonths}
+          clientName={client.name}
+          pendingTransfers={pendingTransfers}
+          bucketProductSelections={bucketProductSelections}
+        />
       )}
     </Layout>
   );
