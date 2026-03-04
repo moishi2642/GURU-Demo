@@ -1176,61 +1176,55 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
 
   return (
     <div className={PANEL_CLS}>
-      <div className="px-4 pt-4 pb-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Investment Portfolio
-        </p>
-        <p className="text-2xl font-bold text-foreground" data-testid="kpi-brokerage">
-          {fmt(total, true)}
-        </p>
-        <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
-          <span>Brokerage <span className="font-semibold text-foreground">{fmt(totalBrok, true)}</span></span>
-          <span>Retirement <span className="font-semibold text-foreground">{fmt(totalRet, true)}</span></span>
+      <div className="px-4 pt-3 pb-2 border-b border-border/60">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Investment Portfolio</p>
+            <p className="text-2xl font-bold text-foreground leading-tight mt-0.5" data-testid="kpi-brokerage">{fmt(total, true)}</p>
+            <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
+              <span>Brokerage <span className="font-semibold text-foreground">{fmt(totalBrok, true)}</span></span>
+              <span>Retirement <span className="font-semibold text-foreground">{fmt(totalRet, true)}</span></span>
+            </div>
+          </div>
+          {spyQuote ? (
+            <div className={`flex items-center gap-1 text-xs font-semibold flex-shrink-0 px-2.5 py-1.5 rounded-lg border ${spyUp ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-600 border-rose-200"}`}>
+              {spyUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+              S&P {spyUp ? "+" : ""}{spyQuote.changePercent?.toFixed(2)}%
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-xs font-semibold flex-shrink-0 px-2.5 py-1.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200">
+              <ArrowUpRight className="w-3.5 h-3.5" />4.32% YTD
+            </div>
+          )}
         </div>
-        {spyQuote ? (
-          <div className="flex items-center gap-3 text-xs mt-1">
-            <span className={`font-semibold flex items-center gap-0.5 ${spyUp ? "text-emerald-600" : "text-rose-600"}`}>
-              {spyUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              S&P {spyUp ? "+" : ""}{spyQuote.changePercent?.toFixed(2)}% today
-            </span>
-            <span className="text-muted-foreground/50">·</span>
-            <span className="text-muted-foreground">SPY ${spyQuote.price?.toFixed(2)}</span>
-          </div>
-        ) : (
-          <div className="flex gap-4 text-xs mt-1">
-            <span className="text-emerald-600 font-semibold flex items-center gap-0.5">
-              <ArrowUpRight className="w-3 h-3" />4.32% YTD
-            </span>
-          </div>
-        )}
       </div>
 
       {/* ── Concentric donut + legend ── */}
-      <div className="px-4 pb-1">
+      <div className="px-4 py-3">
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
           Current vs. Target Model Portfolio
         </p>
         <div className="flex items-center gap-3">
           {/* Chart — thick rings so % labels sit inside the bands */}
-          <div style={{ width: 190, height: 190, flexShrink: 0 }}>
+          <div style={{ width: 160, height: 160, flexShrink: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                {/* Outer ring = Current (innerRadius 72→100, 28px thick) */}
+                {/* Outer ring = Current */}
                 <Pie
                   data={currentDonut}
                   cx="50%" cy="50%"
-                  innerRadius={72} outerRadius={92}
+                  innerRadius={60} outerRadius={76}
                   dataKey="value" paddingAngle={2}
                   label={false}
                   labelLine={false}
                 >
                   {currentDonut.map((d, i) => <Cell key={i} fill={d.color} />)}
                 </Pie>
-                {/* Inner ring = Target (innerRadius 38→70, 32px thick, 2px gap) */}
+                {/* Inner ring = Target */}
                 <Pie
                   data={targetDonut}
                   cx="50%" cy="50%"
-                  innerRadius={38} outerRadius={70}
+                  innerRadius={30} outerRadius={58}
                   dataKey="value" paddingAngle={2}
                   label={false}
                   labelLine={false}
@@ -1278,8 +1272,7 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
       </div>
 
       {/* ── Category dropdown + sub-items ── */}
-      <div className="px-4 pb-4">
-        {/* Dropdown selector */}
+      <div className="px-4 pb-3">
         <div className="relative">
           <select
             className="w-full appearance-none rounded-t text-sm font-semibold text-white px-3 py-2 pr-8 cursor-pointer border-0 outline-none"
@@ -1294,18 +1287,115 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
           </select>
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
         </div>
-        {/* Sub-items */}
         <div className="border border-t-0 border-border rounded-b overflow-hidden">
           {(CATEGORY_SUBS[selectedCat] ?? []).map((item, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-3 py-2 text-xs border-t border-border first:border-t-0 hover:bg-muted/40 transition-colors"
-            >
+            <div key={i} className="flex items-center justify-between px-3 py-1.5 text-xs border-t border-border first:border-t-0 hover:bg-muted/40 transition-colors">
               <span className="text-foreground">{item.name}</span>
               <span className="tabular-nums font-semibold text-foreground">{fmt(item.value, true)}</span>
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Panel: Liabilities ────────────────────────────────────────────────────────
+const MARKET_RATES: Record<string, number> = {
+  mortgage:      6.85,
+  credit_card:   24.50,
+  student_loan:  6.50,
+  personal_loan: 9.50,
+  auto_loan:     7.25,
+  heloc:         8.50,
+};
+
+function LiabilitiesPanel({ liabilities }: { liabilities: Liability[] }) {
+  const totalDebt = liabilities.reduce((s, l) => s + Number(l.value), 0);
+  const wtdRate = liabilities.reduce((s, l) => s + parseFloat(l.interestRate) * Number(l.value), 0) / (totalDebt || 1);
+
+  const TYPE_LABEL: Record<string, string> = {
+    mortgage: "Mortgage",
+    credit_card: "Credit Card",
+    student_loan: "Student Loan",
+    personal_loan: "Personal Loan",
+    auto_loan: "Auto Loan",
+    heloc: "HELOC",
+  };
+
+  return (
+    <div className={PANEL_CLS + " flex flex-col"}>
+      {/* Header */}
+      <div className="px-4 pt-3 pb-3 border-b border-border/60">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Liabilities</p>
+            <p className="text-2xl font-bold text-rose-600 leading-tight mt-0.5">{fmt(totalDebt, true)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Total outstanding debt</p>
+          </div>
+          <div className="text-right flex-shrink-0">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Wtd. Avg Rate</p>
+            <p className="text-lg font-extrabold tabular-nums text-foreground">{wtdRate.toFixed(2)}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Column headers */}
+      <div className="grid px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/60" style={{ gridTemplateColumns: "1fr 70px 52px 52px 72px" }}>
+        <span>Loan</span>
+        <span className="text-right">Balance</span>
+        <span className="text-right">Rate</span>
+        <span className="text-right">Market</span>
+        <span className="text-right">vs Market</span>
+      </div>
+
+      {/* Rows */}
+      <div className="divide-y divide-border/50 flex-1">
+        {liabilities.map((l) => {
+          const rate = parseFloat(l.interestRate);
+          const market = MARKET_RATES[l.type] ?? 7.0;
+          const diff = rate - market;
+          const isAbove = diff > 0.5;
+          const isBelow = diff < -0.5;
+          const label = l.description.split("(")[0].split("@")[0].split("—")[0].trim();
+          const typeLabel = TYPE_LABEL[l.type] ?? l.type;
+
+          return (
+            <div key={l.id} className="grid px-4 py-2.5 items-center gap-1 hover:bg-muted/20 transition-colors" style={{ gridTemplateColumns: "1fr 70px 52px 52px 72px" }}>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-foreground truncate">{label}</p>
+                <p className="text-[9px] text-muted-foreground">{typeLabel}</p>
+              </div>
+              <span className="text-[11px] font-semibold tabular-nums text-rose-600 text-right">{fmt(Number(l.value))}</span>
+              <span className="text-[11px] font-mono tabular-nums text-foreground text-right">
+                {rate === 0 ? "—" : `${rate.toFixed(2)}%`}
+              </span>
+              <span className="text-[10px] tabular-nums text-muted-foreground text-right">{market.toFixed(2)}%</span>
+              <div className="flex justify-end">
+                {rate === 0 ? (
+                  <span className="text-[9px] text-muted-foreground italic">N/A</span>
+                ) : isBelow ? (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+                    ↓ {Math.abs(diff).toFixed(2)}% below
+                  </span>
+                ) : isAbove ? (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200 whitespace-nowrap">
+                    ↑ {diff.toFixed(2)}% above
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border whitespace-nowrap">
+                    ≈ at market
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-2 border-t border-border/60 bg-muted/30">
+        <p className="text-[9px] text-muted-foreground">Market rates as of Mar 2026 · 30yr mortgage 6.85% · CC avg 24.5% · Student 6.5%</p>
       </div>
     </div>
   );
@@ -4907,7 +4997,10 @@ export default function ClientDashboard() {
             <CashFlowTicker cashFlows={cashFlows} />
           </div>
 
-          <BrokeragePanel assets={assets} />
+          <div className="grid grid-cols-[3fr_2fr] gap-4 items-start">
+            <BrokeragePanel assets={assets} />
+            <LiabilitiesPanel liabilities={liabilities} />
+          </div>
 
         </div>
       )}
