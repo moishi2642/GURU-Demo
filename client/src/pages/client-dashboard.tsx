@@ -3126,317 +3126,227 @@ const MM_GURU_ACTIONS = [
 ];
 
 function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const [selectedMonth, setSelectedMonth] = useState(0);
-  const [expandedBucket, setExpandedBucket] = useState<string | null>(null);
-  const currentAction = MM_GURU_ACTIONS[selectedMonth];
-  const totalMonthlyBills = MM_BILLS.filter(b => b.bucket === "op" && b.cadence === "Monthly").reduce((s, b) => s + b.amount, 0);
-
-  const fmtMM = (v: number, abs = false) => {
-    const n = abs ? Math.abs(v) : v;
-    if (Math.abs(n) >= 1000000) return `$${(n / 1000000).toFixed(2)}M`;
-    if (Math.abs(n) >= 1000) return `$${(n / 1000).toFixed(0)}K`;
-    return `$${n.toLocaleString()}`;
+  const fmtMM = (v: number) => {
+    if (v >= 1000000) return `$${(v / 1000000).toFixed(2)}M`;
+    if (v >= 1000) return `$${(v / 1000).toFixed(0)}K`;
+    return `$${v.toLocaleString()}`;
   };
 
-  const bucketLedger = (bk: string) => MM_LEDGER.filter(r => r.bucket === bk);
+  // ── Annual Sankey data (Kessler 2025) ──────────────────────────────────────
+  // Income: P1 $13,302×12 + P2 $5,511×12 + rental $1,722×12 + bonuses $216,641
+  // Expenses grouped for readability, surplus goes to GURU savings buckets
+  const SANKEY_DATA = {
+    nodes: [
+      { id: "P1 Net Salary" },
+      { id: "P2 Net Salary" },
+      { id: "Rental Income" },
+      { id: "Year-End Bonuses" },
+      { id: "GURU Operating Cash" },
+      { id: "Housing & Real Estate" },
+      { id: "Childcare & Family" },
+      { id: "Food & Lifestyle" },
+      { id: "Tax Payments" },
+      { id: "Education" },
+      { id: "Debt Service" },
+      { id: "Travel" },
+      { id: "GURU Savings" },
+    ],
+    links: [
+      { source: "P1 Net Salary",      target: "GURU Operating Cash", value: 159624 },
+      { source: "P2 Net Salary",      target: "GURU Operating Cash", value: 66132  },
+      { source: "Rental Income",      target: "GURU Operating Cash", value: 20664  },
+      { source: "Year-End Bonuses",   target: "GURU Operating Cash", value: 216641 },
+      { source: "GURU Operating Cash", target: "Housing & Real Estate", value: 108432 },
+      { source: "GURU Operating Cash", target: "Childcare & Family",    value: 51996  },
+      { source: "GURU Operating Cash", target: "Food & Lifestyle",       value: 46102  },
+      { source: "GURU Operating Cash", target: "Tax Payments",           value: 69697  },
+      { source: "GURU Operating Cash", target: "Education",              value: 60000  },
+      { source: "GURU Operating Cash", target: "Debt Service",           value: 14244  },
+      { source: "GURU Operating Cash", target: "Travel",                 value: 17000  },
+      { source: "GURU Operating Cash", target: "GURU Savings",           value: 95590  },
+    ],
+  };
+
+  const nodeColor = (node: { id: unknown }) => {
+    const id = String(node.id);
+    if (id.includes("Salary") || id.includes("Rental") || id.includes("Bonus")) return "#0d9488";
+    if (id.includes("Operating")) return "#6366f1";
+    if (id.includes("Housing"))   return "#f97316";
+    if (id.includes("Childcare")) return "#ec4899";
+    if (id.includes("Food"))      return "#a78bfa";
+    if (id.includes("Tax"))       return "#64748b";
+    if (id.includes("Education")) return "#7c3aed";
+    if (id.includes("Debt"))      return "#ef4444";
+    if (id.includes("Travel"))    return "#f59e0b";
+    if (id.includes("Savings"))   return "#10b981";
+    return "#94a3b8";
+  };
+
+  const DETAIL_ROWS = [
+    { label: "Housing & Real Estate", sub: "Tribeca mortgage + Sarasota expenses", value: 108432, color: "#f97316" },
+    { label: "Tax Payments",          sub: "NYC property taxes + FL tax + Q4 est.", value: 69697,  color: "#64748b" },
+    { label: "Childcare & Family",    sub: "Childcare / babysitter",                value: 51996,  color: "#ec4899" },
+    { label: "Education",             sub: "Private school tuition (4 installments)", value: 60000, color: "#7c3aed" },
+    { label: "Food & Lifestyle",      sub: "Food, dining, golf club dues",          value: 46102,  color: "#a78bfa" },
+    { label: "Travel",                sub: "Memorial Day, weekend, Europe summer",  value: 17000,  color: "#f59e0b" },
+    { label: "Debt Service",          sub: "PE loan + student loan payments",       value: 14244,  color: "#ef4444" },
+    { label: "GURU Savings",          sub: "→ Reserve, Build & Grow buckets",       value: 95590,  color: "#10b981" },
+  ];
+
+  const totalIncome   = 463061;
+  const totalExpenses = 367471;
+  const totalSavings  = 95590;
+  const savingsRate   = ((totalSavings / totalIncome) * 100).toFixed(1);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
 
-      {/* ── GURU Autopilot Banner ── */}
-      <div className="rounded-xl border border-slate-700 bg-slate-800 overflow-hidden">
-        <div className="px-5 py-3 flex items-center gap-3 border-b border-slate-700">
-          <div className="flex items-center gap-2">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-              className="w-6 h-6 rounded-full border-2 border-blue-400 border-t-transparent flex items-center justify-center"
-            />
-            <span className="text-[11px] font-black uppercase tracking-widest text-blue-400">GURU Autopilot</span>
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-[10px] text-green-400 font-semibold">ACTIVE</span>
-          </div>
-          <div className="flex-1" />
-          <span className="text-[10px] text-slate-400">Continuous Money Movement · Kessler Household · 2025</span>
+      {/* ── Header ── */}
+      <div className="rounded-xl bg-card border border-border px-5 py-3.5 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-black text-foreground">Annual Cash Flow — Kessler Family · 2025</p>
+          <p className="text-[10px] text-muted-foreground">Where every dollar flows from and where it goes</p>
         </div>
-        <div className="px-5 py-4 flex items-center gap-4">
-          <Cpu className="w-5 h-5 text-blue-400 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-slate-300 font-semibold truncate">
-              <span className="text-blue-300">{currentAction.month}:</span> {currentAction.action}
-            </p>
+        <div className="flex items-center gap-5">
+          <div className="text-right">
+            <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Total Income</p>
+            <p className="text-lg font-black text-emerald-600">{fmtMM(totalIncome)}</p>
           </div>
-          {currentAction.amount > 0 && (
-            <div className={`px-3 py-1 rounded-full text-[11px] font-bold border ${currentAction.type === "replenish" ? "bg-emerald-900/40 text-emerald-400 border-emerald-700" : "bg-red-900/30 text-red-400 border-red-700"}`}>
-              {currentAction.type === "replenish" ? "+" : "−"}{fmtMM(currentAction.amount, true)}
-            </div>
-          )}
-          {currentAction.amount === 0 && (
-            <div className="px-3 py-1 rounded-full text-[11px] font-bold border bg-slate-700 text-slate-400 border-slate-600">✓ No action</div>
-          )}
-        </div>
-        {/* Month selector */}
-        <div className="px-5 pb-4 flex gap-1 flex-wrap">
-          {MM_MONTHS.map((m, i) => {
-            const a = MM_GURU_ACTIONS[i];
-            return (
-              <button
-                key={m}
-                onClick={() => setSelectedMonth(i)}
-                className={`px-2.5 py-1 text-[10px] font-bold rounded transition-all ${selectedMonth === i ? "bg-blue-600 text-white" : a.type === "replenish" ? "bg-emerald-900/40 text-emerald-400 hover:bg-emerald-800/50" : a.type === "balanced" ? "bg-slate-700 text-slate-400 hover:bg-slate-600" : "bg-red-900/30 text-red-400 hover:bg-red-900/50"}`}
-              >
-                {m}
-              </button>
-            );
-          })}
+          <div className="w-px h-8 bg-border" />
+          <div className="text-right">
+            <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Expenses</p>
+            <p className="text-lg font-black text-rose-600">{fmtMM(totalExpenses)}</p>
+          </div>
+          <div className="w-px h-8 bg-border" />
+          <div className="text-right">
+            <p className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">GURU Savings</p>
+            <p className="text-lg font-black text-blue-600">{fmtMM(totalSavings)}</p>
+          </div>
+          <div className="rounded-full px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black">
+            {savingsRate}% savings rate
+          </div>
         </div>
       </div>
 
-      {/* ── Bucket Balance Chart ── */}
-      <div className="rounded-xl border border-border bg-card p-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">12-Month Bucket Balance Trajectory</p>
-        <ResponsiveContainer width="100%" height={220}>
-          <ComposedChart data={MM_MONTHS.map((m, i) => ({
-            month: m,
-            op: MM_BALANCES.op[i],
-            res: MM_BALANCES.res[i],
-            bld: MM_BALANCES.bld[i],
-            grw: MM_BALANCES.grw[i],
-          }))}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-            <YAxis tickFormatter={(v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 9 }} width={50} />
-            <RechartsTooltip
-              formatter={(v: number, n: string) => {
-                const labels: Record<string,string> = { op: "Operating Cash", res: "Reserve", bld: "Build", grw: "Grow" };
-                return [fmtMM(v), labels[n] ?? n];
-              }}
-            />
-            <Legend wrapperStyle={{ fontSize: 10 }} formatter={(v) => ({ op:"Operating Cash", res:"Reserve", bld:"Build", grw:"Grow" }[v] ?? v)} />
-            <Area type="monotone" dataKey="grw" fill="#c084fc" stroke="#9333ea" fillOpacity={0.2} strokeWidth={2} name="grw" />
-            <Area type="monotone" dataKey="bld" fill="#4ade80" stroke="#16a34a" fillOpacity={0.3} strokeWidth={2} name="bld" />
-            <Line type="monotone" dataKey="res" stroke="#fbbf24" strokeWidth={2} dot={false} name="res" />
-            <Line type="monotone" dataKey="op" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3 }} name="op" strokeDasharray="4 2" />
-            <ReferenceLine x={MM_MONTHS[selectedMonth]} stroke="#94a3b8" strokeDasharray="4 4" />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* ── Monthly Ledger ── */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+      {/* ── Sankey Diagram — hero ── */}
+      <div className="rounded-xl bg-card border border-border overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center gap-2">
           <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-          <p className="text-sm font-bold text-foreground">Monthly Ledger — 2025</p>
-          <span className="text-[10px] text-muted-foreground ml-1">(click bucket to expand)</span>
+          <p className="text-sm font-bold text-foreground">Cash Flow Diagram</p>
+          <span className="text-[10px] text-muted-foreground ml-1">Hover nodes and flows for details</span>
         </div>
-        {/* Scrollable table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-[10px]">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left px-4 py-2 text-muted-foreground font-bold uppercase tracking-wider sticky left-0 bg-card z-10 w-[200px]">Bucket / Line Item</th>
-                {MM_MONTHS.map((m, i) => (
-                  <th key={m} className={`text-right px-2 py-2 font-bold uppercase tracking-wider min-w-[62px] ${i === selectedMonth ? "text-blue-600" : "text-muted-foreground"}`}>{m}</th>
-                ))}
-                <th className="text-right px-3 py-2 text-muted-foreground font-bold uppercase tracking-wider min-w-[72px]">End Bal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/40">
-              {MM_BUCKETS.map((bk) => {
-                const rows = bucketLedger(bk.key);
-                const isExpanded = expandedBucket === bk.key;
-                return [
-                  /* Bucket header row */
-                  <tr
-                    key={`header-${bk.key}`}
-                    className="cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => setExpandedBucket(isExpanded ? null : bk.key)}
-                  >
-                    <td className="sticky left-0 z-10 px-4 py-2.5" style={{ backgroundColor: bk.color }}>
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className={`w-3 h-3 text-white/70 flex-shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-                        <div>
-                          <p className="font-black text-white text-[11px]">{bk.label}</p>
-                          <p className="text-[9px]" style={{ color: bk.accent }}>{bk.tag}</p>
-                        </div>
-                      </div>
-                    </td>
-                    {MM_MONTHS.map((_, i) => (
-                      <td key={i} className={`text-right px-2 py-2.5 font-bold tabular-nums text-white text-[11px] ${i === selectedMonth ? "bg-white/20" : ""}`} style={{ backgroundColor: i === selectedMonth ? undefined : bk.color }}>
-                        {fmtMM(MM_BALANCES[bk.key][i])}
-                      </td>
-                    ))}
-                    <td className="text-right px-3 py-2.5 font-black tabular-nums text-white text-[11px]" style={{ backgroundColor: bk.color }}>
-                      {fmtMM(MM_BALANCES[bk.key][12])}
-                    </td>
-                  </tr>,
-                  /* Expanded line items */
-                  ...(isExpanded ? rows.map((row, ri) => {
-                    const rowTotal = row.values.reduce((s, v) => s + v, 0);
-                    return (
-                      <tr key={`${bk.key}-${ri}`} className="bg-muted/20">
-                        <td className="sticky left-0 bg-muted/20 z-10 pl-10 pr-4 py-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${row.type === "income" ? "bg-emerald-500" : row.type === "expense" ? "bg-rose-500" : row.type === "interest" ? "bg-amber-400" : "bg-blue-400"}`} />
-                            <span className="text-muted-foreground">{row.label}</span>
-                          </div>
-                        </td>
-                        {row.values.map((v, i) => (
-                          <td key={i} className={`text-right px-2 py-1.5 tabular-nums font-semibold ${i === selectedMonth ? "bg-blue-50" : ""} ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                            {v === 0 ? <span className="text-muted-foreground/40">—</span> : `${v > 0 ? "+" : ""}${fmtMM(v)}`}
-                          </td>
-                        ))}
-                        <td className={`text-right px-3 py-1.5 tabular-nums font-bold ${rowTotal > 0 ? "text-emerald-700" : rowTotal < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                          {rowTotal === 0 ? "—" : `${rowTotal > 0 ? "+" : ""}${fmtMM(rowTotal)}`}
-                        </td>
-                      </tr>
-                    );
-                  }) : []),
-                ];
-              })}
-            </tbody>
-          </table>
+        <div style={{ height: 480 }}>
+          <ResponsiveSankey
+            data={SANKEY_DATA}
+            margin={{ top: 20, right: 200, bottom: 20, left: 160 }}
+            align="justify"
+            colors={nodeColor}
+            nodeOpacity={1}
+            nodeHoverOpacity={1}
+            nodeThickness={20}
+            nodeInnerPadding={4}
+            nodeSpacing={18}
+            nodeBorderWidth={0}
+            nodeBorderRadius={4}
+            linkOpacity={0.35}
+            linkHoverOpacity={0.65}
+            linkContract={4}
+            enableLinkGradient={true}
+            labelPosition="outside"
+            labelOrientation="horizontal"
+            labelPadding={16}
+            labelTextColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+            animate={true}
+            motionConfig="gentle"
+            nodeTooltip={({ node }) => (
+              <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>{String(node.id)}</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: "#0f172a" }}>{fmtMM(node.value)}</div>
+                <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
+                  {((node.value / totalIncome) * 100).toFixed(1)}% of total income
+                </div>
+              </div>
+            )}
+            linkTooltip={({ link }) => (
+              <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }}>
+                <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4 }}>{String(link.source.id)} → {String(link.target.id)}</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: "#0f172a" }}>{fmtMM(link.value)}</div>
+                <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
+                  {((link.value / totalIncome) * 100).toFixed(1)}% of income
+                </div>
+              </div>
+            )}
+          />
         </div>
       </div>
 
-      {/* ── Bottom 2-col: Flow Diagram + Auto Bill Pay ── */}
-      <div className="grid grid-cols-[1fr_380px] gap-4 items-start">
+      {/* ── Expense Breakdown Table + Bucket Trajectory ── */}
+      <div className="grid grid-cols-[1fr_420px] gap-4">
 
-        {/* ── Money Flow diagram for selected month ── */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="px-4 py-3 border-b border-border">
-            <p className="text-sm font-bold text-foreground">GURU Transfer Flow — {MM_MONTHS[selectedMonth]}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Automated inter-bucket movements executed by GURU Autopilot</p>
+        {/* Expense breakdown */}
+        <div className="rounded-xl bg-card border border-border overflow-hidden">
+          <div className="px-5 py-3 border-b border-border">
+            <p className="text-sm font-bold text-foreground">Annual Expense Breakdown</p>
           </div>
-          <div className="p-5">
-            {/* 4 bucket nodes with connecting arrows */}
-            <div className="flex flex-col gap-3">
-              {MM_BUCKETS.map((bk, bi) => {
-                const balance = MM_BALANCES[bk.key][selectedMonth];
-                const endBalance = MM_BALANCES[bk.key][selectedMonth + 1] ?? MM_BALANCES[bk.key][12];
-                const change = endBalance - balance;
-                const monthRows = bucketLedger(bk.key);
-                const transfers = monthRows.filter(r => r.type === "transfer").map(r => ({ label: r.label, value: r.values[selectedMonth] })).filter(t => t.value !== 0);
-                const income = monthRows.filter(r => r.type === "income" || r.type === "interest").reduce((s, r) => s + r.values[selectedMonth], 0);
-                const expenses = monthRows.filter(r => r.type === "expense").reduce((s, r) => s + r.values[selectedMonth], 0);
-
-                return (
-                  <div key={bk.key} className="rounded-lg border overflow-hidden" style={{ borderColor: bk.color + "60" }}>
-                    {/* Bucket header */}
-                    <div className="flex items-center gap-3 px-4 py-2.5" style={{ backgroundColor: bk.color }}>
-                      <div className="flex-1">
-                        <p className="text-xs font-black text-white">{bk.label}</p>
-                        <p className="text-[9px]" style={{ color: bk.accent }}>{bk.tag}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-mono font-bold text-white">{fmtMM(balance)}</p>
-                        <p className={`text-[9px] font-semibold ${change >= 0 ? "text-emerald-300" : "text-red-300"}`}>
-                          {change >= 0 ? "+" : ""}{fmtMM(change)} this month
-                        </p>
-                      </div>
-                    </div>
-                    {/* Flow items */}
-                    <div className="px-4 py-2 flex flex-wrap gap-x-4 gap-y-1 bg-card">
-                      {income !== 0 && (
-                        <span className="text-[10px] text-emerald-600 font-semibold">
-                          ↑ {fmtMM(income, true)} in
-                        </span>
-                      )}
-                      {expenses !== 0 && (
-                        <span className="text-[10px] text-rose-600 font-semibold">
-                          ↓ {fmtMM(Math.abs(expenses))} out
-                        </span>
-                      )}
-                      {transfers.map((t, i) => (
-                        <span key={i} className={`text-[10px] font-semibold ${t.value > 0 ? "text-blue-600" : "text-amber-600"}`}>
-                          {t.value > 0 ? "→" : "←"} {t.label.replace("Transfer in from ", "").replace("Transfer to ", "").replace("Transfer from ", "")} {fmtMM(Math.abs(t.value), true)}
-                        </span>
-                      ))}
-                      {income === 0 && expenses === 0 && transfers.length === 0 && (
-                        <span className="text-[10px] text-muted-foreground italic">No activity this month</span>
-                      )}
-                    </div>
-                    {/* Progress bar showing month-end balance vs start */}
-                    {bi < 3 && (
-                      <div className="px-4 pb-2.5">
-                        <div className="flex justify-between text-[8px] text-muted-foreground mb-0.5">
-                          <span>Month-end</span>
-                          <span>{fmtMM(endBalance)}</span>
-                        </div>
-                        <div className="h-1 bg-muted rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.min((endBalance / Math.max(balance, endBalance)) * 100, 100)}%` }}
-                            transition={{ duration: 0.6 }}
-                            className="h-full rounded-full"
-                            style={{ backgroundColor: bk.accent }}
-                          />
-                        </div>
-                      </div>
-                    )}
+          <div className="divide-y divide-border/60">
+            {DETAIL_ROWS.map((row) => (
+              <div key={row.label} className="px-5 py-3 flex items-center gap-4">
+                <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-foreground">{row.label}</p>
+                  <p className="text-[9px] text-muted-foreground">{row.sub}</p>
+                </div>
+                <div className="w-28 flex-shrink-0">
+                  <div className="flex justify-between text-[9px] text-muted-foreground mb-1">
+                    <span>{((row.value / (totalExpenses + totalSavings)) * 100).toFixed(1)}%</span>
+                    <span className="font-bold tabular-nums text-foreground">{fmtMM(row.value)}</span>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Auto Bill Pay Queue ── */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
-            <Repeat2 className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-bold text-foreground">Auto Bill Pay</p>
-              <p className="text-[10px] text-muted-foreground">GURU manages from Operating Cash</p>
-            </div>
-            <div className="ml-auto text-right">
-              <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Monthly Total</p>
-              <p className="text-base font-black text-foreground">{fmtMM(totalMonthlyBills)}</p>
-            </div>
-          </div>
-          <div className="divide-y divide-border/50">
-            {MM_BILLS.map((bill, i) => {
-              const Icon = bill.icon;
-              const bk = MM_BUCKETS.find(b => b.key === bill.bucket)!;
-              return (
-                <div key={i} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bk.color + "22" }}>
-                    <Icon className="w-3.5 h-3.5" style={{ color: bk.color }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-foreground">{bill.label}</p>
-                    <p className="text-[9px] text-muted-foreground">{bill.institution} · {bill.cadence}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    {bill.amount > 0 ? (
-                      <p className="text-[11px] font-bold tabular-nums text-foreground">{fmtMM(bill.amount)}</p>
-                    ) : (
-                      <p className="text-[10px] text-blue-600 font-semibold italic">As needed</p>
-                    )}
-                    <p className="text-[9px] text-muted-foreground">Next: {bill.next}</p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    {bill.cadence === "As needed" ? (
-                      <span className="w-2 h-2 rounded-full bg-blue-400 block" />
-                    ) : (
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse block" />
-                    )}
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${(row.value / Math.max(...DETAIL_ROWS.map(r => r.value))) * 100}%`, backgroundColor: row.color }}
+                    />
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
-          {/* GURU note */}
-          <div className="px-4 py-3 border-t border-border bg-muted/30">
-            <div className="flex items-start gap-2">
-              <Cpu className="w-3 h-3 text-blue-500 flex-shrink-0 mt-0.5" />
-              <p className="text-[9px] text-muted-foreground leading-relaxed">
-                GURU automatically replenishes Operating Cash from the Reserve MMF whenever the balance drops below 2 months of expenses. All bill payments are sequenced to avoid overdrafts.
-              </p>
-            </div>
+          <div className="px-5 py-3 border-t border-border bg-muted/30 flex items-center justify-between">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Total Deployed</span>
+            <span className="text-sm font-black text-foreground tabular-nums">{fmtMM(totalExpenses + totalSavings)}</span>
           </div>
         </div>
+
+        {/* 12-Month Bucket Balance Chart */}
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">12-Month GURU Bucket Balance Trajectory</p>
+          <ResponsiveContainer width="100%" height={300}>
+            <ComposedChart data={MM_MONTHS.map((m, i) => ({
+              month: m,
+              op: MM_BALANCES.op[i],
+              res: MM_BALANCES.res[i],
+              bld: MM_BALANCES.bld[i],
+              grw: MM_BALANCES.grw[i],
+            }))}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+              <YAxis tickFormatter={(v) => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 9 }} width={50} />
+              <RechartsTooltip
+                formatter={(v: number, n: string) => {
+                  const labels: Record<string,string> = { op: "Operating Cash", res: "Reserve", bld: "Build", grw: "Grow" };
+                  return [fmtMM(v), labels[n] ?? n];
+                }}
+              />
+              <Legend wrapperStyle={{ fontSize: 10 }} formatter={(v) => ({ op:"Operating Cash", res:"Reserve", bld:"Build", grw:"Grow" }[v] ?? v)} />
+              <Area type="monotone" dataKey="grw" fill="#c084fc" stroke="#9333ea" fillOpacity={0.2} strokeWidth={2} name="grw" />
+              <Area type="monotone" dataKey="bld" fill="#4ade80" stroke="#16a34a" fillOpacity={0.3} strokeWidth={2} name="bld" />
+              <Line type="monotone" dataKey="res" stroke="#fbbf24" strokeWidth={2} dot={false} name="res" />
+              <Line type="monotone" dataKey="op" stroke="#60a5fa" strokeWidth={2} dot={{ r: 3 }} name="op" strokeDasharray="4 2" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
+
     </div>
   );
 }
