@@ -985,7 +985,6 @@ function CashManagementPanel({
   assets: Asset[];
   cashFlows: CashFlow[];
 }) {
-  const [active, setActive] = useState<GuroBucket>("reserve");
   const {
     reserve,
     yieldBucket,
@@ -995,11 +994,15 @@ function CashManagementPanel({
     reserveItems,
     yieldItems,
     tacticalItems,
-    growthItems,
-    altItems,
     totalLiquid,
   } = cashBuckets(assets);
 
+  const liquidBuckets: GuroBucket[] = ["reserve", "yield", "tactical"];
+  const tabLabels: Record<string, string> = {
+    reserve: "Operating Cash",
+    yield: "Reserve",
+    tactical: "Build",
+  };
   const bucketValues: Record<GuroBucket, number> = {
     reserve,
     yield: yieldBucket,
@@ -1011,142 +1014,131 @@ function CashManagementPanel({
     reserve: reserveItems,
     yield: yieldItems,
     tactical: tacticalItems,
-    growth: growthItems,
-    alternatives: altItems,
+    growth: [],
+    alternatives: [],
   };
 
   const forecastData = buildForecast(cashFlows);
   const cashTrough = computeTrough(forecastData);
   const isSufficient = totalLiquid >= cashTrough;
-  const totalAll = reserve + yieldBucket + tactical + growth + alts;
 
-  const donutData = GURU_BUCKET_ORDER.map((k) => ({
-    name: GURU_BUCKETS[k].label,
-    value: bucketValues[k],
-    color: GURU_BUCKETS[k].color,
-  })).filter((d) => d.value > 0);
-
-  const activeItems = bucketItems[active] ?? [];
-  const activeTotal = bucketValues[active] ?? 0;
-
-  const liquidBuckets: GuroBucket[] = ["reserve", "yield", "tactical"];
-  const tabLabels: Record<string, string> = {
-    reserve: "Operating Cash",
-    yield: "Reserve",
-    tactical: "Build",
-  };
   const liquidDonutData = liquidBuckets
     .filter((k) => (bucketValues[k] ?? 0) > 0)
     .map((k) => ({ name: tabLabels[k], value: bucketValues[k] ?? 0, color: GURU_BUCKETS[k].color }));
 
+  const [selectedBucket, setSelectedBucket] = useState<GuroBucket>("reserve");
+  const selectedColor = GURU_BUCKETS[selectedBucket].color;
+  const selectedItems = bucketItems[selectedBucket] ?? [];
+  const selectedTotal = bucketValues[selectedBucket] ?? 0;
+
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-border">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Cash Management Monitor</p>
-        <div className={`flex items-center gap-1.5 text-sm font-black mb-3 ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>
+      <div className="px-4 pt-4 pb-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Cash Management Monitor
+        </p>
+        <p className="text-2xl font-bold text-foreground">{fmt(totalLiquid, true)}</p>
+        <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
+          <span>12-Mo Need <span className={`font-semibold ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>{fmt(cashTrough, true)}</span></span>
+          <span>Coverage <span className={`font-semibold ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>{cashTrough > 0 ? ((totalLiquid / cashTrough) * 100).toFixed(0) : "—"}%</span></span>
+        </div>
+        <div className={`flex items-center gap-1 text-xs font-bold mt-1 ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>
           {isSufficient
-            ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            : <AlertTriangle className="w-4 h-4 flex-shrink-0" />}
-          {isSufficient ? "SUFFICIENT FUNDS FOR 12 MONTHS" : "CASH SHORTFALL — ACTION NEEDED"}
-        </div>
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Cash required for next 12 months</span>
-            <span className={`font-bold tabular-nums ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>{fmt(cashTrough, true)}</span>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Funds to cover cash need</span>
-            <span className="font-bold tabular-nums text-emerald-600">{fmt(totalLiquid, true)}</span>
-          </div>
+            ? <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
+            : <AlertTriangle className="w-3 h-3 flex-shrink-0" />}
+          {isSufficient ? "Sufficient for 12 months" : "Cash shortfall — action needed"}
         </div>
       </div>
 
-      {/* Donut | Legend | Table — 3 columns */}
-      <div className="flex gap-2 px-3 pt-3 pb-2 flex-1 items-start">
-        {/* Pie only */}
-        <div style={{ width: 110, height: 110, flexShrink: 0 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={liquidDonutData}
-                cx="50%"
-                cy="50%"
-                innerRadius={28}
-                outerRadius={50}
-                dataKey="value"
-                paddingAngle={3}
-              >
-                {liquidDonutData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-              <RechartsTooltip
-                formatter={(v: number, n: string) => [fmt(v), n]}
-                contentStyle={{ fontSize: 11 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      {/* Donut + legend — same layout as BrokeragePanel */}
+      <div className="px-4 pb-1">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+          Liquid Bucket Allocation
+        </p>
+        <div className="flex items-center gap-3">
+          {/* Single thick ring */}
+          <div style={{ width: 190, height: 190, flexShrink: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={liquidDonutData}
+                  cx="50%" cy="50%"
+                  innerRadius={55} outerRadius={90}
+                  dataKey="value" paddingAngle={3}
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                    if (percent < 0.06) return null;
+                    const RADIAN = Math.PI / 180;
+                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + r * Math.cos(-midAngle * RADIAN);
+                    const y = cy + r * Math.sin(-midAngle * RADIAN);
+                    return (
+                      <text x={x} y={y} fill="white" fontSize={10} fontWeight={800} textAnchor="middle" dominantBaseline="central">
+                        {`${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    );
+                  }}
+                  labelLine={false}
+                >
+                  {liquidDonutData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Pie>
+                <RechartsTooltip formatter={(v: number, n: string) => [fmt(v, true), n]} contentStyle={{ fontSize: 10 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
-        {/* Legend in the middle */}
-        <div className="flex flex-col justify-center gap-1.5 flex-shrink-0 pt-2">
-          {liquidBuckets.map((k) => (
-            <div key={k} className="flex items-center gap-1.5 text-[10px]">
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[k].color }} />
-              <span className="text-muted-foreground whitespace-nowrap">{tabLabels[k]}</span>
+          {/* Legend */}
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+            <div className="flex justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+              <span>Bucket</span>
+              <span>Amount</span>
             </div>
-          ))}
-        </div>
-
-        {/* Right: tab pills + account list */}
-        <div className="flex-1 flex flex-col gap-2 min-w-0">
-          <div className="flex gap-1 flex-wrap">
-            {liquidBuckets.map((k) => (
-              <button
-                key={k}
-                onClick={() => setActive(k)}
-                className="px-2 py-0.5 rounded-full text-[10px] font-bold transition-all"
-                style={{
-                  background: active === k ? GURU_BUCKETS[k].color : "hsl(var(--muted))",
-                  color: active === k ? "white" : "hsl(var(--muted-foreground))",
-                }}
-                data-testid={`bucket-${k}`}
-              >
-                {tabLabels[k]}
-              </button>
-            ))}
-          </div>
-          {/* Account rows — smaller font */}
-          <div className="space-y-0.5">
-            {activeItems.map((item, i) => (
-              <div key={`${item.label}-${i}`} className="flex justify-between items-center text-[10px] gap-1">
-                <span className="text-muted-foreground truncate">{item.label}</span>
-                <span className="font-semibold tabular-nums flex-shrink-0">{fmt(item.value)}</span>
+            {liquidBuckets.map(k => (
+              <div key={k} className="flex items-center gap-1.5 text-[10px]">
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[k].color }} />
+                <span className="text-muted-foreground flex-1 truncate text-[9px]">{tabLabels[k]}</span>
+                <span className="tabular-nums font-bold text-foreground text-right">{fmt(bucketValues[k], true)}</span>
               </div>
             ))}
-            {activeItems.length > 0 && (
-              <div className="flex justify-between items-center text-[10px] font-black border-t border-border pt-1 mt-0.5">
-                <span>Total {tabLabels[active]}</span>
-                <span className="tabular-nums">{fmt(activeTotal)}</span>
-              </div>
-            )}
-            {activeItems.length === 0 && (
-              <p className="text-[10px] text-muted-foreground italic">No assets in this bucket</p>
-            )}
+            <div className="mt-1 pt-1.5 border-t border-border flex justify-between text-[10px]">
+              <span className="text-muted-foreground">Liquid Total</span>
+              <span className="font-bold text-emerald-600">{fmt(totalLiquid, true)}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="grid grid-cols-2 divide-x divide-border border-t border-border text-xs">
-        <div className="px-3 py-2">
-          <p className="text-muted-foreground">Liquid Total</p>
-          <p className="font-bold text-emerald-600">{fmt(totalLiquid, true)}</p>
+      {/* Bucket dropdown + sub-items */}
+      <div className="px-4 pb-4">
+        <div className="relative">
+          <select
+            className="w-full appearance-none rounded-t text-sm font-semibold text-white px-3 py-2 pr-8 cursor-pointer border-0 outline-none"
+            style={{ backgroundColor: selectedColor }}
+            value={selectedBucket}
+            onChange={e => setSelectedBucket(e.target.value as GuroBucket)}
+            data-testid="select-cash-bucket"
+          >
+            {liquidBuckets.map(k => (
+              <option key={k} value={k}>{tabLabels[k]}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
         </div>
-        <div className="px-3 py-2">
-          <p className="text-muted-foreground">12-Mo Required</p>
-          <p className="font-bold text-rose-600">{fmt(cashTrough, true)}</p>
+        <div className="border border-t-0 border-border rounded-b overflow-hidden">
+          {selectedItems.length > 0 ? selectedItems.map((item, i) => (
+            <div key={i} className="flex items-center justify-between px-3 py-2 text-xs border-t border-border first:border-t-0 hover:bg-muted/40 transition-colors">
+              <span className="text-foreground">{item.label}</span>
+              <span className="tabular-nums font-semibold text-foreground">{fmt(item.value, true)}</span>
+            </div>
+          )) : (
+            <div className="px-3 py-3 text-xs text-muted-foreground italic">No accounts in this bucket</div>
+          )}
+          {selectedItems.length > 1 && (
+            <div className="flex items-center justify-between px-3 py-2 text-xs border-t border-border bg-muted/30 font-bold">
+              <span>Total {tabLabels[selectedBucket]}</span>
+              <span className="tabular-nums">{fmt(selectedTotal, true)}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -4979,7 +4971,7 @@ export default function ClientDashboard() {
               liabilities={liabilities}
               cashFlows={cashFlows}
             />
-            <BrokeragePanel assets={assets} />
+            <CashManagementPanel assets={assets} cashFlows={cashFlows} />
           </div>
 
           <div className="grid grid-cols-[3fr_2fr] gap-4 items-start">
@@ -4987,7 +4979,7 @@ export default function ClientDashboard() {
             <CashFlowTicker cashFlows={cashFlows} />
           </div>
 
-          <CashManagementPanel assets={assets} cashFlows={cashFlows} />
+          <BrokeragePanel assets={assets} />
 
         </div>
       )}
