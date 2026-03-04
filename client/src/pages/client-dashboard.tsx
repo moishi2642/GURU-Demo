@@ -337,32 +337,32 @@ const GURU_BUCKETS = {
   reserve: {
     label: "Operating Cash",
     short: "Checking — instantly available transaction accounts",
-    color: "#1d4ed8",
-    tagCls: "bg-blue-100 text-blue-700",
+    color: "#60a5fa",
+    tagCls: "bg-blue-100 text-blue-600",
   },
   yield: {
     label: "Reserve",
     short: "Savings & money market — penalty-free, higher-yielding",
-    color: "#d97706",
-    tagCls: "bg-amber-100 text-amber-700",
+    color: "#fbbf24",
+    tagCls: "bg-amber-100 text-amber-600",
   },
   tactical: {
     label: "Build",
     short: "Treasuries & fixed income — 1–3 year horizon",
-    color: "#0d9488",
-    tagCls: "bg-teal-100 text-teal-700",
+    color: "#4ade80",
+    tagCls: "bg-green-100 text-green-600",
   },
   growth: {
     label: "Grow",
     short: "Long-horizon investments — equities, compounding wealth",
-    color: "#7c3aed",
-    tagCls: "bg-violet-100 text-violet-700",
+    color: "#c084fc",
+    tagCls: "bg-purple-100 text-purple-600",
   },
   alternatives: {
     label: "Alternatives",
     short: "Real estate, private equity, RSUs — strategic illiquid assets",
-    color: "hsl(25,90%,52%)",
-    tagCls: "bg-orange-100 text-orange-700",
+    color: "#94a3b8",
+    tagCls: "bg-slate-100 text-slate-600",
   },
 } as const;
 type GuroBucket = keyof typeof GURU_BUCKETS;
