@@ -985,199 +985,132 @@ function CashManagementPanel({
   assets: Asset[];
   cashFlows: CashFlow[];
 }) {
-  const {
-    reserve,
-    yieldBucket,
-    tactical,
-    growth,
-    alts,
-    reserveItems,
-    yieldItems,
-    tacticalItems,
-    totalLiquid,
-  } = cashBuckets(assets);
-
-  const liquidBuckets: GuroBucket[] = ["reserve", "yield", "tactical"];
-  const tabLabels: Record<string, string> = {
-    reserve: "Operating Cash",
-    yield: "Reserve",
-    tactical: "Build",
-  };
-  const bucketValues: Record<GuroBucket, number> = {
-    reserve,
-    yield: yieldBucket,
-    tactical,
-    growth,
-    alternatives: alts,
-  };
-  const bucketItems: Record<GuroBucket, { label: string; value: number }[]> = {
-    reserve: reserveItems,
-    yield: yieldItems,
-    tactical: tacticalItems,
-    growth: [],
-    alternatives: [],
-  };
+  const { reserve, yieldBucket, tactical, growth, alts, reserveItems, yieldItems, tacticalItems, totalLiquid } = cashBuckets(assets);
 
   const forecastData = buildForecast(cashFlows);
-  const cashTrough = computeTrough(forecastData);
-  const isSufficient = totalLiquid >= cashTrough;
+  const annualOutflows = forecastData.reduce((s, d) => s + d.outflow, 0);
+  const monthlyBurn = annualOutflows / 12;
+  const monthsRunway = monthlyBurn > 0 ? totalLiquid / monthlyBurn : 0;
+  const endCumulative = forecastData[forecastData.length - 1]?.cumulative ?? 0;
+  const trendUp = endCumulative >= 0;
+  const coveragePct = monthlyBurn > 0 ? (totalLiquid / (annualOutflows)) * 100 : 999;
+  const coverageOk = coveragePct >= 100;
 
-  const liquidDonutData = liquidBuckets
-    .filter((k) => (bucketValues[k] ?? 0) > 0)
-    .map((k) => ({ name: tabLabels[k], value: bucketValues[k] ?? 0, color: GURU_BUCKETS[k].color }));
+  const BUCKETS = [
+    { key: "reserve" as GuroBucket,  label: "Operating Cash", value: reserve,      items: reserveItems  },
+    { key: "yield"   as GuroBucket,  label: "Reserve",        value: yieldBucket,  items: yieldItems    },
+    { key: "tactical" as GuroBucket, label: "Build",          value: tactical,     items: tacticalItems },
+  ];
 
-  // GURU recommended target split for liquid buckets
-  const GURU_LIQUID_PCT: Record<string, number> = { reserve: 0.20, yield: 0.30, tactical: 0.50 };
-  const guruDonutData = liquidBuckets.map((k) => ({
-    name: tabLabels[k],
-    value: (GURU_LIQUID_PCT[k] ?? 0) * totalLiquid,
-    color: GURU_BUCKETS[k].color,
-  })).filter((d) => d.value > 0);
-
-  const [selectedBucket, setSelectedBucket] = useState<GuroBucket>("reserve");
-  const selectedColor = GURU_BUCKETS[selectedBucket].color;
-  const selectedItems = bucketItems[selectedBucket] ?? [];
-  const selectedTotal = bucketValues[selectedBucket] ?? 0;
+  const donutData = BUCKETS.filter(b => b.value > 0).map(b => ({
+    name: b.label, value: b.value, color: GURU_BUCKETS[b.key].color,
+  }));
 
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
-      {/* Header */}
-      <div className="px-4 pt-4 pb-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Cash Management Monitor
-        </p>
-        <p className="text-2xl font-bold text-foreground">{fmt(totalLiquid, true)}</p>
-        <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
-          <span>12-Mo Need <span className={`font-semibold ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>{fmt(cashTrough, true)}</span></span>
-          <span>Coverage <span className={`font-semibold ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>{cashTrough > 0 ? ((totalLiquid / cashTrough) * 100).toFixed(0) : "—"}%</span></span>
-        </div>
-        <div className={`flex items-center gap-1 text-xs font-bold mt-1 ${isSufficient ? "text-emerald-600" : "text-rose-600"}`}>
-          {isSufficient
-            ? <CheckCircle2 className="w-3 h-3 flex-shrink-0" />
-            : <AlertTriangle className="w-3 h-3 flex-shrink-0" />}
-          {isSufficient ? "Sufficient for 12 months" : "Cash shortfall — action needed"}
+
+      {/* ── Header ── */}
+      <div className="px-4 pt-4 pb-3 border-b border-border/60">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cash Management</p>
+            <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5">{fmt(totalLiquid, true)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Total liquid position</p>
+          </div>
+          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold flex-shrink-0 mt-1 ${trendUp ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-600 border border-rose-200"}`}>
+            {trendUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            {trendUp ? "Building" : "Depleting"}
+          </div>
         </div>
       </div>
 
-      {/* Concentric donut + legend */}
-      <div className="px-4 pb-1">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-          Current vs. GURU Recommendation
-        </p>
-        <div className="flex items-center gap-3">
-          {/* Outer = Current, Inner = GURU Target */}
-          <div style={{ width: 190, height: 190, flexShrink: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                {/* Outer ring = Current allocation — $ labels inside band */}
-                <Pie
-                  data={liquidDonutData}
-                  cx="50%" cy="50%"
-                  innerRadius={58} outerRadius={90}
-                  dataKey="value" paddingAngle={3}
-                  labelLine={false}
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
-                    const RADIAN = Math.PI / 180;
-                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + r * Math.cos(-midAngle * RADIAN);
-                    const y = cy + r * Math.sin(-midAngle * RADIAN);
-                    return (
-                      <text x={x} y={y} fill="white" fontSize={9} fontWeight={800} textAnchor="middle" dominantBaseline="central">
-                        {fmt(value, true)}
-                      </text>
-                    );
-                  }}
-                >
-                  {liquidDonutData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                </Pie>
-                {/* Inner ring = GURU recommendation (2px gap at r=56) */}
-                <Pie
-                  data={guruDonutData}
-                  cx="50%" cy="50%"
-                  innerRadius={28} outerRadius={56}
-                  dataKey="value" paddingAngle={3}
-                  label={false} labelLine={false}
-                >
-                  {guruDonutData.map((d, i) => <Cell key={i} fill={d.color} opacity={0.55} />)}
-                </Pie>
-                <RechartsTooltip formatter={(v: number, n: string) => [fmt(v, true), n]} contentStyle={{ fontSize: 10 }} />
-              </PieChart>
-            </ResponsiveContainer>
+      {/* ── 3 KPI tiles ── */}
+      <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60">
+        {/* Months Runway */}
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Runway</p>
+          <p className={`text-2xl font-extrabold tabular-nums leading-none ${monthsRunway >= 12 ? "text-emerald-600" : monthsRunway >= 6 ? "text-amber-600" : "text-rose-600"}`}>
+            {monthsRunway.toFixed(1)}
+          </p>
+          <p className="text-[9px] text-muted-foreground">months of expenses</p>
+        </div>
+        {/* Monthly Burn */}
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly Burn</p>
+          <p className="text-2xl font-extrabold tabular-nums leading-none text-foreground">
+            {fmt(monthlyBurn, true)}
+          </p>
+          <p className="text-[9px] text-muted-foreground">avg outflows / mo</p>
+        </div>
+        {/* Annual Coverage */}
+        <div className="px-3 py-3 flex flex-col gap-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Coverage</p>
+          <p className={`text-2xl font-extrabold tabular-nums leading-none ${coverageOk ? "text-emerald-600" : "text-rose-600"}`}>
+            {coveragePct > 999 ? "—" : `${coveragePct.toFixed(0)}%`}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5">
+            {coverageOk
+              ? <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 flex-shrink-0" />
+              : <AlertTriangle className="w-2.5 h-2.5 text-rose-500 flex-shrink-0" />}
+            <p className="text-[9px] text-muted-foreground">{coverageOk ? "fully funded" : "shortfall risk"}</p>
           </div>
+        </div>
+      </div>
 
-          {/* Legend — Bucket / Cur% / GURU% */}
-          <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-            <div className="flex text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
-              <span className="flex-1">Bucket</span>
-              <span className="w-8 text-right">Cur</span>
-              <span className="w-10 text-right">GURU</span>
-            </div>
-            {liquidBuckets.map(k => {
-              const curPct = totalLiquid > 0 ? Math.round((bucketValues[k] / totalLiquid) * 100) : 0;
-              const guruPct = Math.round((GURU_LIQUID_PCT[k] ?? 0) * 100);
-              const diff = curPct - guruPct;
-              return (
-                <div key={k} className="flex items-center gap-1.5 text-[10px]">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[k].color }} />
-                  <span className="text-muted-foreground flex-1 truncate text-[9px]">{tabLabels[k]}</span>
-                  <span className="tabular-nums font-bold text-foreground w-8 text-right">{curPct}%</span>
-                  <span className="tabular-nums text-muted-foreground w-10 text-right">{guruPct}%
-                    {Math.abs(diff) >= 3 && (
-                      <span className={`ml-0.5 text-[8px] font-black ${diff > 0 ? "text-rose-500" : "text-emerald-600"}`}>
-                        {diff > 0 ? "▲" : "▼"}
-                      </span>
-                    )}
-                  </span>
+      {/* ── Pie + bucket breakdown ── */}
+      <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+        <div style={{ width: 120, height: 120, flexShrink: 0 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={donutData}
+                cx="50%" cy="50%"
+                innerRadius={36} outerRadius={58}
+                dataKey="value" paddingAngle={3}
+                label={false} labelLine={false}
+              >
+                {donutData.map((d, i) => <Cell key={i} fill={d.color} />)}
+              </Pie>
+              <RechartsTooltip formatter={(v: number, n: string) => [fmt(v, true), n]} contentStyle={{ fontSize: 10 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex-1 min-w-0 space-y-2">
+          {BUCKETS.map(b => {
+            const pct = totalLiquid > 0 ? (b.value / totalLiquid) * 100 : 0;
+            return (
+              <div key={b.key}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[b.key].color }} />
+                    <span className="text-[10px] font-semibold text-foreground">{b.label}</span>
+                  </div>
+                  <span className="text-[10px] font-bold tabular-nums text-foreground">{fmt(b.value, true)}</span>
                 </div>
-              );
-            })}
-            <div className="mt-1 pt-1.5 border-t border-border space-y-0.5">
-              <div className="flex justify-between text-[10px]">
-                <span className="text-muted-foreground">Liquid Total</span>
-                <span className="font-bold text-emerald-600">{fmt(totalLiquid, true)}</span>
+                <div className="h-1 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: GURU_BUCKETS[b.key].color }} />
+                </div>
               </div>
-              <div className="flex gap-3 text-[9px] text-muted-foreground mt-0.5">
-                <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-foreground/25" />Current</span>
-                <span className="flex items-center gap-1"><span className="inline-block w-3 h-2 rounded-sm bg-foreground/10" />GURU</span>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Bucket dropdown + sub-items */}
-      <div className="px-4 pb-4">
-        <div className="relative">
-          <select
-            className="w-full appearance-none rounded-t text-sm font-semibold text-white px-3 py-2 pr-8 cursor-pointer border-0 outline-none"
-            style={{ backgroundColor: selectedColor }}
-            value={selectedBucket}
-            onChange={e => setSelectedBucket(e.target.value as GuroBucket)}
-            data-testid="select-cash-bucket"
-          >
-            {liquidBuckets.map(k => (
-              <option key={k} value={k}>{tabLabels[k]}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
-        </div>
-        <div className="border border-t-0 border-border rounded-b overflow-hidden">
-          {selectedItems.length > 0 ? selectedItems.map((item, i) => (
-            <div key={i} className="flex items-center justify-between px-3 py-2 text-xs border-t border-border first:border-t-0 hover:bg-muted/40 transition-colors">
-              <span className="text-foreground">{item.label}</span>
-              <span className="tabular-nums font-semibold text-foreground">{fmt(item.value, true)}</span>
-            </div>
-          )) : (
-            <div className="px-3 py-3 text-xs text-muted-foreground italic">No accounts in this bucket</div>
-          )}
-          {selectedItems.length > 1 && (
-            <div className="flex items-center justify-between px-3 py-2 text-xs border-t border-border bg-muted/30 font-bold">
-              <span>Total {tabLabels[selectedBucket]}</span>
-              <span className="tabular-nums">{fmt(selectedTotal, true)}</span>
-            </div>
+      {/* ── Flat account list ── */}
+      <div className="px-4 pb-4 flex-1">
+        <div className="rounded-lg border border-border/60 overflow-hidden">
+          {BUCKETS.flatMap(b =>
+            b.items.map((item, i) => (
+              <div key={`${b.key}-${i}`} className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 last:border-b-0 hover:bg-muted/30 transition-colors">
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[b.key].color }} />
+                <span className="text-[10px] text-muted-foreground flex-1 truncate">{item.label}</span>
+                <span className="text-[10px] font-semibold tabular-nums text-foreground">{fmt(item.value, true)}</span>
+              </div>
+            ))
           )}
         </div>
       </div>
+
     </div>
   );
 }
