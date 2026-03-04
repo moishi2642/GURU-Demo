@@ -947,7 +947,8 @@ function CashManagementPanel({
   assets: Asset[];
   cashFlows: CashFlow[];
 }) {
-  const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
+  const { reserve, yieldBucket, tactical, totalLiquid, reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
+  const [openBucket, setOpenBucket] = useState<string | null>(null);
 
   const forecastData = buildForecast(cashFlows);
   const annualOutflows = forecastData.reduce((s, d) => s + d.outflow, 0);
@@ -1018,44 +1019,101 @@ function CashManagementPanel({
         </div>
       </div>
 
-      {/* ── Pie + bucket breakdown ── */}
-      <div className="px-4 pt-3 pb-2 flex items-center gap-3">
-        <div style={{ width: 120, height: 120, flexShrink: 0 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={donutData}
-                cx="50%" cy="50%"
-                innerRadius={36} outerRadius={58}
-                dataKey="value" paddingAngle={3}
-                label={false} labelLine={false}
-              >
-                {donutData.map((d, i) => <Cell key={i} fill={d.color} />)}
-              </Pie>
-              <RechartsTooltip formatter={(v: number, n: string) => [fmt(v, true), n]} contentStyle={{ fontSize: 10 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex-1 min-w-0 space-y-2">
-          {BUCKETS.map(b => {
-            const pct = totalLiquid > 0 ? (b.value / totalLiquid) * 100 : 0;
-            return (
-              <div key={b.key}>
-                <div className="flex items-center justify-between mb-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[b.key].color }} />
-                    <span className="text-[10px] font-semibold text-foreground">{b.label}</span>
-                  </div>
-                  <span className="text-[10px] font-bold tabular-nums text-foreground">{fmt(b.value, true)}</span>
-                </div>
-                <div className="h-1 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: GURU_BUCKETS[b.key].color }} />
-                </div>
+      {/* ── Pie (centered, large, $ labels) ── */}
+      {(() => {
+        const RADIAN = Math.PI / 180;
+        const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }: any) => {
+          const r = innerRadius + (outerRadius - innerRadius) * 0.55;
+          const x = cx + r * Math.cos(-midAngle * RADIAN);
+          const y = cy + r * Math.sin(-midAngle * RADIAN);
+          const pct = totalLiquid > 0 ? (value / totalLiquid) * 100 : 0;
+          if (pct < 8) return null;
+          return (
+            <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight="700">
+              {fmt(value, true)}
+            </text>
+          );
+        };
+        const bucketSubItems: Record<string, { label: string; value: number }[]> = {
+          "Operating Cash": reserveItems ?? [],
+          "Reserve":        yieldItems  ?? [],
+          "Build":          tacticalItems ?? [],
+        };
+        const BUCKET_DESC: Record<string, string> = {
+          "Operating Cash": "Day-to-day checking & spending accounts",
+          "Reserve":        "High-yield savings & money market funds",
+          "Build":          "Short-duration Treasuries & fixed income",
+        };
+        return (
+          <>
+            <div className="px-4 pt-3 pb-2 flex justify-center">
+              <div style={{ width: 220, height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      cx="50%" cy="50%"
+                      innerRadius={60} outerRadius={105}
+                      dataKey="value" paddingAngle={3}
+                      label={renderLabel}
+                      labelLine={false}
+                    >
+                      {donutData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                    </Pie>
+                    <RechartsTooltip formatter={(v: number, n: string) => [fmt(v as number, true), n]} contentStyle={{ fontSize: 10 }} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            );
-          })}
-        </div>
-      </div>
+            </div>
+
+            {/* ── Expandable bucket table ── */}
+            <div className="border-t border-border/60 divide-y divide-border/60">
+              {BUCKETS.map(b => {
+                const pct = totalLiquid > 0 ? (b.value / totalLiquid) * 100 : 0;
+                const isOpen = openBucket === b.label;
+                const subItems = bucketSubItems[b.label] ?? [];
+                return (
+                  <div key={b.key}>
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+                      onClick={() => setOpenBucket(isOpen ? null : b.label)}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[b.key].color }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold text-foreground">{b.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-muted-foreground tabular-nums">{pct.toFixed(0)}%</span>
+                            <span className="text-[11px] font-bold tabular-nums text-foreground">{fmt(b.value, true)}</span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""}`} />
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">{BUCKET_DESC[b.label]}</p>
+                      </div>
+                    </button>
+                    {isOpen && subItems.length > 0 && (
+                      <div className="bg-muted/20 border-t border-border/40 divide-y divide-border/30">
+                        {subItems.map((item, i) => (
+                          <div key={i} className="flex items-center justify-between px-6 py-2 text-xs">
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[b.key].color }} />
+                              {item.label}
+                            </span>
+                            <span className="tabular-nums font-semibold text-foreground">{fmt(item.value, true)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {isOpen && subItems.length === 0 && (
+                      <div className="bg-muted/20 border-t border-border/40 px-6 py-2 text-xs text-muted-foreground italic">No accounts mapped</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        );
+      })()}
 
     </div>
   );
