@@ -3369,6 +3369,29 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
         const checkingAccts = assets.filter(a =>
           a.type === 'cash' && (a.description ?? '').toLowerCase().includes('checking')
         );
+
+        // ── Treasury ladder (GURU's strategic reserve structure) ────────────────
+        const TBILLS = [
+          { label: "Jul '26", maturesSm: 6,  face: 65000, rate: '4.95', tenor: '3-mo' },
+          { label: "Oct '26", maturesSm: 9,  face: 65000, rate: '4.85', tenor: '6-mo' },
+          { label: "Jan '27", maturesSm: 12, face: 65000, rate: '4.75', tenor: '9-mo' },
+          { label: "Apr '27", maturesSm: 15, face: 65000, rate: '4.65', tenor: '12-mo' },
+        ] as const;
+        // MMF balance per month — 3-month buffer, drains on large draws, refills on T-bill maturities
+        const MMF_DISPLAY = [62777,43151,59277,62777,59651,42525,62777,62777,62777,62777,33198,62777];
+        const mmfBal = MMF_DISPLAY[sm];
+        const maturingBillIdx = sm === 6 ? 0 : sm === 9 ? 1 : -1;
+        const maturingBill = maturingBillIdx >= 0 ? TBILLS[maturingBillIdx as 0 | 1] : null;
+        const getBillState = (i: number): 'upcoming' | 'maturing' | 'matured' => {
+          const b = TBILLS[i];
+          if (b.maturesSm === sm) return 'maturing';
+          if (b.maturesSm < 12 && sm > b.maturesSm) return 'matured';
+          return 'upcoming';
+        };
+        const upcomingLabels = TBILLS
+          .filter((b, i) => getBillState(i) === 'upcoming' && b.maturesSm < 12)
+          .map(b => b.label);
+
         return (
         <div className="bg-slate-900 px-8 py-6 overflow-auto">
 
@@ -3385,143 +3408,243 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
             )}
           </div>
 
-          {/* ── Two-column org-chart layout ── */}
-          <div className="flex gap-0 mx-auto" style={{ width: 650 }}>
+          {/* ── GURU Liquidity Architecture: 3-layer cascade ── */}
+          <div style={{ maxWidth: 900 }} className="mx-auto">
 
-            {/* ── LEFT column: Reserve card + animated connector ── */}
-            <div className="flex-shrink-0" style={{ width: 220, paddingTop: 170 }}>
-              <div className={`flex items-center transition-opacity duration-300 ${rsvDraw > 0 ? 'opacity-100' : 'opacity-35'}`}>
-                {/* Reserve card */}
-                <div className="rounded-2xl border-2 p-4 bg-slate-800 flex-shrink-0" style={{ width: 178, borderColor: rsvDraw > 0 ? '#f59e0b' : '#475569' }}>
-                  <div className="text-[7px] font-black uppercase tracking-widest mb-1" style={{ color: rsvDraw > 0 ? '#fbbf24' : '#94a3b8' }}>Reserve</div>
-                  <div className="text-[10px] font-semibold text-white leading-snug mb-2">JPMorgan Treasury MMF</div>
-                  <div className="text-[11px] text-slate-400 tabular-nums">{fmtBal(rsvStart)}</div>
-                  <div className="border-t border-slate-700 mt-2 pt-2">
-                    <div className="text-[7px] font-black uppercase tracking-widest" style={{ color: rsvDraw > 0 ? '#fbbf24' : '#64748b' }}>
-                      {rsvDraw > 0 ? 'Auto-draw this month' : 'No draw this month'}
+            {/* ══ LAYER 1: Treasury Bill Ladder ══ */}
+            <div className="mb-1">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-px flex-1 bg-slate-700/60" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">GURU Treasury Ladder · Rolling 12-Month Strategy</span>
+                <div className="h-px flex-1 bg-slate-700/60" />
+              </div>
+              <div className="flex gap-3">
+                {TBILLS.map((bill, i) => {
+                  const state = getBillState(i);
+                  const isMaturing = state === 'maturing';
+                  const isMatured  = state === 'matured';
+                  const col = isMaturing ? '#fbbf24' : isMatured ? '#475569' : '#10b981';
+                  const bdr = isMaturing ? '#f59e0b' : isMatured ? '#1e293b' : '#059669';
+                  return (
+                    <div key={i} className="flex-1 rounded-xl border-2 bg-slate-800 px-3.5 py-3 transition-all" style={{ borderColor: bdr }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[7px] font-black uppercase tracking-widest" style={{ color: col }}>
+                          {bill.tenor} T-Bill
+                        </span>
+                        {isMaturing && (
+                          <motion.span
+                            className="text-[7px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded px-1.5 py-0.5 uppercase tracking-wider"
+                            animate={{ opacity: [1, 0.6, 1] }}
+                            transition={{ duration: 1.2, repeat: Infinity }}
+                          >
+                            Maturing ↓
+                          </motion.span>
+                        )}
+                        {isMatured && <span className="text-[7px] text-slate-600 italic">Matured</span>}
+                        {!isMaturing && !isMatured && <span className="text-[7px] text-slate-600">Held</span>}
+                      </div>
+                      <div className="text-[10px] font-semibold mb-1 leading-snug" style={{ color: isMatured ? '#334155' : '#f1f5f9' }}>
+                        Matures {bill.label}
+                      </div>
+                      <div className="text-[20px] font-black tabular-nums leading-tight" style={{ color: col }}>
+                        ${bill.face.toLocaleString()}
+                      </div>
+                      <div className="text-[8px] mt-1" style={{ color: isMatured ? '#1e293b' : '#64748b' }}>
+                        {bill.rate}% APY · US Treasury
+                      </div>
+                      {isMaturing && (
+                        <div className="mt-2 pt-2 border-t border-amber-700/30 text-[8px] text-amber-400">
+                          → sweeping to MMF today
+                        </div>
+                      )}
+                      {isMatured && (
+                        <div className="mt-2 pt-2 border-t border-slate-700/40 text-[8px] text-slate-600">
+                          ✓ swept to MMF · rolled
+                        </div>
+                      )}
                     </div>
-                    <div className="text-[18px] font-black tabular-nums leading-tight" style={{ color: rsvDraw > 0 ? '#fbbf24' : '#64748b' }}>
-                      {rsvDraw > 0 ? fmtBal(rsvDraw) : '—'}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Connector: Ladder → MMF (animated when maturing, dashed otherwise) */}
+            <div className="flex mb-1">
+              {TBILLS.map((bill, i) => {
+                const state = getBillState(i);
+                const isMaturing = state === 'maturing';
+                const isMatured  = state === 'matured';
+                return (
+                  <div key={i} className="flex-1 flex justify-center">
+                    <div className="relative overflow-hidden"
+                      style={{ width: isMaturing ? 3 : 1, height: 32,
+                        background: isMatured ? 'transparent'
+                          : isMaturing ? 'rgba(245,158,11,0.25)'
+                          : 'repeating-linear-gradient(to bottom,rgba(16,185,129,0.2) 0,rgba(16,185,129,0.2) 4px,transparent 4px,transparent 8px)' }}>
+                      {isMaturing && (
+                        <motion.div className="absolute w-full rounded-full"
+                          style={{ height: '30%', backgroundColor: '#f59e0b', boxShadow: '0 0 8px #f59e0b80' }}
+                          animate={{ y: ['-30%', '130%'] }}
+                          transition={{ duration: 0.65, repeat: Infinity, ease: 'linear' }}
+                        />
+                      )}
                     </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* ══ LAYER 2: Money Market Fund + Income (side by side) ══ */}
+            <div className="flex gap-3 mb-1 items-start">
+
+              {/* JPMorgan MMF — buffer card */}
+              <div className="rounded-xl border-2 bg-slate-800 px-4 py-4 flex-shrink-0" style={{ width: 210, borderColor: rsvDraw > 0 ? '#3b82f6' : '#334155' }}>
+                <div className="text-[7px] font-black uppercase tracking-widest mb-1" style={{ color: rsvDraw > 0 ? '#93c5fd' : '#64748b' }}>
+                  Money Market Fund · Liquidity Buffer
                 </div>
-                {/* Animated horizontal connector */}
-                <div className="relative overflow-hidden rounded-full flex-shrink-0" style={{ width: 30, height: 6, backgroundColor: 'rgba(59,130,246,0.15)' }}>
+                <div className="text-[10px] font-semibold text-white leading-snug">JPMorgan 100% Treasury MMF</div>
+                <div className="text-[8px] text-slate-500 mt-0.5 mb-3">≈ 3-month operating buffer · 4.85% gross</div>
+                <div className="text-[24px] font-black text-white tabular-nums leading-none">{fmtBal(mmfBal)}</div>
+                <div className="mt-3 pt-3 border-t border-slate-700 space-y-1.5">
+                  {maturingBillIdx >= 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8px] text-amber-400 font-semibold">↓ T-Bill sweep in</span>
+                      <span className="text-[9px] font-black text-amber-400 tabular-nums">+$65,000</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px]" style={{ color: rsvDraw > 0 ? '#93c5fd' : '#475569' }}>
+                      {rsvDraw > 0 ? '→ Auto-draw to Ops' : '→ No draw needed'}
+                    </span>
+                    <span className="text-[9px] font-black tabular-nums" style={{ color: rsvDraw > 0 ? '#93c5fd' : '#334155' }}>
+                      {rsvDraw > 0 ? `(${fmtBal(rsvDraw)})` : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Animated connector: MMF → Hub */}
+              <div className="flex flex-col items-center pt-14 flex-shrink-0" style={{ width: 44 }}>
+                <div className="text-[6px] font-black uppercase text-center mb-1.5" style={{ color: rsvDraw > 0 ? '#93c5fd' : '#1e293b' }}>
+                  {rsvDraw > 0 ? 'draw' : 'standby'}
+                </div>
+                <div className="relative overflow-hidden rounded-full" style={{ width: 40, height: 5, backgroundColor: rsvDraw > 0 ? 'rgba(59,130,246,0.15)' : 'rgba(30,41,59,0.6)' }}>
                   {rsvDraw > 0 && (
                     <>
                       <motion.div className="absolute top-0 left-0 h-full rounded-full"
                         style={{ width: '45%', backgroundColor: '#3b82f6', boxShadow: '0 0 8px #3b82f680' }}
                         animate={{ x: ['-45%', '280%'] }}
-                        transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
+                        transition={{ duration: 1.0, repeat: Infinity, ease: 'linear' }}
                       />
                       <motion.div className="absolute top-0 left-0 h-full rounded-full"
                         style={{ width: '25%', backgroundColor: '#93c5fd' }}
                         animate={{ x: ['-25%', '500%'] }}
-                        transition={{ duration: 1.1, repeat: Infinity, ease: 'linear', delay: 0.55 }}
+                        transition={{ duration: 1.0, repeat: Infinity, ease: 'linear', delay: 0.5 }}
                       />
                     </>
                   )}
                 </div>
-                {/* Arrowhead */}
-                <div className="flex-shrink-0" style={{ width: 0, height: 0, borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: `8px solid ${rsvDraw > 0 ? '#3b82f6' : 'transparent'}` }} />
+                {rsvDraw > 0 && (
+                  <div className="mt-1 w-0 h-0" style={{ borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderLeft: '6px solid #3b82f6' }} />
+                )}
+              </div>
+
+              {/* Spacer */}
+              <div className="flex-1" />
+
+              {/* Income cards */}
+              <div className="flex gap-3 flex-shrink-0">
+                {[
+                  { name: `${p1First} ${sharedLast}`, salary: p1Salary, role: 'Partner 1' },
+                  { name: `${p2First} ${sharedLast}`, salary: p2Salary, role: 'Partner 2' },
+                ].map((p, i) => (
+                  <div key={i} className="rounded-xl border-2 border-emerald-500/35 bg-slate-800 px-4 py-4" style={{ width: 185 }}>
+                    <div className="text-[7px] font-black uppercase tracking-widest text-emerald-400 mb-1.5">{p.role} · Monthly Salary</div>
+                    <div className="text-[11px] font-semibold text-white leading-tight">{p.name}</div>
+                    <div className="text-[22px] font-black text-emerald-400 tabular-nums mt-2 leading-none">{fmtBal(p.salary)}</div>
+                    <div className="text-[7px] text-slate-500 mt-1">after-tax · per month</div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* ── RIGHT column: Income → Hub → Accounts ── */}
-            <div className="flex flex-col items-center" style={{ width: 430 }}>
-
-              {/* Income cards */}
-              <div className="flex w-full gap-5">
-                {[
-                  { name: `${p1First} ${sharedLast}`, salary: p1Salary },
-                  { name: `${p2First} ${sharedLast}`, salary: p2Salary },
-                ].map((p, i) => (
-                  <div key={i} className="flex-1 rounded-2xl border-2 border-emerald-500/40 bg-slate-800 px-4 py-3.5">
-                    <div className="text-[7px] font-black uppercase tracking-widest text-emerald-400 mb-1.5">Monthly Net Salary</div>
-                    <div className="text-[12px] font-semibold text-white leading-tight">{p.name}</div>
-                    <div className="text-[20px] font-black text-emerald-400 tabular-nums mt-1 leading-none">{fmtBal(p.salary)}</div>
-                    <div className="text-[7px] text-slate-500 mt-0.5">after-tax · per month</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* V-junction: two income lines merge into one */}
-              <div className="flex w-full" style={{ height: 30 }}>
-                <div className="flex-1 border-b-2 border-l-2 border-emerald-500/25 rounded-bl-lg" />
-                <div className="flex-1 border-b-2 border-r-2 border-emerald-500/25 rounded-br-lg" />
-              </div>
-
-              {/* Animated vertical drop to hub */}
-              <div className="relative overflow-hidden w-0.5" style={{ height: 28, backgroundColor: 'rgba(16,185,129,0.2)' }}>
-                <motion.div className="absolute w-full rounded-full"
-                  style={{ height: '35%', backgroundColor: '#10b981', boxShadow: '0 0 6px #10b981' }}
-                  animate={{ y: ['-35%', '135%'] }}
-                  transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
-                />
-              </div>
-
-              {/* Operating Cash Hub */}
-              <div className="w-full rounded-2xl border-2 overflow-hidden shadow-2xl" style={{ borderColor: '#1d4ed8' }}>
-                <div className="px-5 py-3.5 flex items-center justify-between" style={{ backgroundColor: '#1d4ed8' }}>
-                  <div>
-                    <div className="text-[7px] font-black uppercase tracking-widest text-blue-200 mb-0.5">GURU Operating Cash Hub</div>
-                    <div className="text-[14px] font-black text-white">Chase Total Checking</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[7px] text-blue-200 mb-0.5">{MONTHS[sm]} Closing Balance</div>
-                    <div className="text-[26px] font-black text-white tabular-nums leading-none">{fmtBal(opsEnd)}</div>
-                  </div>
+            {/* Converging connectors → Hub */}
+            <div className="flex mb-1">
+              {/* Drop from MMF */}
+              <div style={{ width: 210, flexShrink: 0 }} className="flex justify-center">
+                <div className="relative overflow-hidden" style={{ width: rsvDraw > 0 ? 3 : 1, height: 28, backgroundColor: rsvDraw > 0 ? 'rgba(59,130,246,0.3)' : 'rgba(30,41,59,0.4)' }}>
+                  {rsvDraw > 0 && (
+                    <motion.div className="absolute w-full rounded-full"
+                      style={{ height: '35%', backgroundColor: '#3b82f6' }}
+                      animate={{ y: ['-35%', '135%'] }}
+                      transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                    />
+                  )}
                 </div>
-                <div className="bg-slate-800 px-5 py-3 grid grid-cols-3 gap-2">
-                  <div className="bg-slate-700 rounded-xl p-2.5">
-                    <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1">Salary In</div>
-                    <div className="text-[13px] font-black text-emerald-400 tabular-nums">+{fmtBal(income)}</div>
+              </div>
+              {/* Connector gap + income V-junction */}
+              <div style={{ width: 44, flexShrink: 0 }} />
+              <div className="flex-1" />
+              {/* V-junction for income cards (2 × 185px + 12px gap ≈ 382px) */}
+              <div className="flex flex-shrink-0" style={{ width: 382 }}>
+                <div className="flex-1 border-b-2 border-l-2 border-emerald-500/25 rounded-bl-lg" style={{ height: 28 }} />
+                <div className="flex-1 border-b-2 border-r-2 border-emerald-500/25 rounded-br-lg" style={{ height: 28 }} />
+              </div>
+            </div>
+
+            {/* ══ LAYER 3: Operating Cash Hub ══ */}
+            <div className="rounded-2xl border-2 overflow-hidden shadow-2xl mb-4" style={{ borderColor: '#1d4ed8' }}>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#1d4ed8' }}>
+                <div>
+                  <div className="text-[7px] font-black uppercase tracking-widest text-blue-200 mb-0.5">GURU Operating Cash Hub</div>
+                  <div className="text-[16px] font-black text-white">Chase Total Checking</div>
+                  <div className="text-[8px] text-blue-300/70 mt-0.5">Primary liquid operating account · GURU Autopilot</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[7px] text-blue-200 mb-0.5">{MONTHS[sm]} 2026 Closing Balance</div>
+                  <div className="text-[30px] font-black text-white tabular-nums leading-none">{fmtBal(opsEnd)}</div>
+                  <div className="text-[8px] text-blue-200/60 mt-0.5">target floor: {fmtBal(minOps)}</div>
+                </div>
+              </div>
+              <div className="bg-slate-800 px-6 py-3.5 grid grid-cols-3 gap-3">
+                <div className="bg-slate-700/60 rounded-xl p-3">
+                  <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1.5">Salary Income</div>
+                  <div className="text-[15px] font-black text-emerald-400 tabular-nums">+{fmtBal(income)}</div>
+                  <div className="text-[7px] text-slate-500 mt-0.5">{p1First} + {p2First}</div>
+                </div>
+                <div className={`rounded-xl p-3 transition-all ${rsvDraw > 0 ? 'bg-blue-900/30 border border-blue-700/30' : 'bg-slate-700/30'}`}>
+                  <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1.5">MMF Auto-Draw</div>
+                  <div className={`text-[15px] font-black tabular-nums ${rsvDraw > 0 ? 'text-blue-400' : 'text-slate-600'}`}>
+                    {rsvDraw > 0 ? `+${fmtBal(rsvDraw)}` : '—'}
                   </div>
-                  <div className={`rounded-xl p-2.5 ${rsvDraw > 0 ? 'bg-amber-900/30 border border-amber-700/30' : 'bg-slate-700 opacity-40'}`}>
-                    <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1">Reserve Draw</div>
-                    <div className={`text-[13px] font-black tabular-nums ${rsvDraw > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
-                      {rsvDraw > 0 ? `+${fmtBal(rsvDraw)}` : '—'}
-                    </div>
-                  </div>
-                  <div className="bg-slate-700 rounded-xl p-2.5">
-                    <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1">Expenses Out</div>
-                    <div className="text-[13px] font-black text-red-400 tabular-nums">({fmtBal(totalExp)})</div>
+                  <div className="text-[7px] text-slate-500 mt-0.5">{rsvDraw > 0 ? 'GURU auto-draw' : 'Not needed'}</div>
+                </div>
+                <div className="bg-slate-700/60 rounded-xl p-3">
+                  <div className="text-[7px] text-slate-400 uppercase tracking-wider mb-1.5">Total Expenses</div>
+                  <div className="text-[15px] font-black text-red-400 tabular-nums">({fmtBal(totalExp)})</div>
+                  <div className="text-[7px] text-slate-500 mt-0.5">
+                    {specials.length > 0 ? `incl. ${specials[0].label}` : 'recurring only'}
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Animated drops to account cards */}
-              <div className="flex w-full px-10">
-                {[0, 1].map(i => (
-                  <div key={i} className="flex-1 flex justify-center">
-                    <div className="relative overflow-hidden w-0.5" style={{ height: 28, backgroundColor: 'rgba(29,78,216,0.2)' }}>
-                      <motion.div className="absolute w-full rounded-full"
-                        style={{ height: '35%', backgroundColor: '#1d4ed8' }}
-                        animate={{ y: ['-35%', '135%'] }}
-                        transition={{ duration: 0.85, repeat: Infinity, ease: 'linear', delay: i * 0.3 }}
-                      />
-                    </div>
-                  </div>
-                ))}
+            {/* GURU Intelligence callout */}
+            <div className="rounded-xl border border-slate-700/60 bg-slate-800/50 px-4 py-3.5 flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-[9px] font-black text-white">G</span>
               </div>
-
-              {/* Destination account cards */}
-              <div className="flex w-full gap-4">
-                {(checkingAccts.length > 0 ? checkingAccts.slice(0, 2) : [
-                  { id: 'ops', description: 'Chase Total Checking', value: String(opsEnd) },
-                ]).map((acct, i) => {
-                  const acctName = (acct.description ?? '').split(' (')[0].split(' —')[0].trim();
-                  return (
-                    <div key={acct.id ?? i} className="flex-1 rounded-2xl border border-slate-600 bg-slate-800 px-4 py-3.5">
-                      <div className="text-[7px] font-black uppercase tracking-widest text-blue-400 mb-1.5">Bank Account</div>
-                      <div className="text-[11px] font-semibold text-slate-300 leading-snug mb-2">{acctName}</div>
-                      <div className="text-[20px] font-black text-white tabular-nums">{fmtBal(Number(acct.value))}</div>
-                      <div className="text-[7px] text-slate-500 mt-0.5">current balance</div>
-                    </div>
-                  );
-                })}
+              <div>
+                <div className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-1.5">GURU Autopilot · Liquidity Intelligence</div>
+                <div className="text-[10px] text-slate-300 leading-relaxed">
+                  {maturingBill
+                    ? `A ${maturingBill.tenor} Treasury bill matures this month — GURU automatically sweeps the $65,000 proceeds into the JPMorgan MMF, replenishing the 3-month liquidity buffer.${rsvDraw > 0 ? ` GURU also detects a cash shortfall and auto-draws an additional ${fmtBal(rsvDraw)} from the MMF into Operating Cash — no advisor action required.` : ' Operating Cash is self-sufficient this month, so the full sweep stays in the MMF.'}`
+                    : rsvDraw > 0
+                      ? `GURU detects a ${fmtBal(rsvDraw)} operating shortfall this month and auto-draws from the JPMorgan MMF — keeping the Kesslers' day-to-day accounts fully funded without manual intervention. The Treasury ladder${upcomingLabels.length > 0 ? ` (${upcomingLabels.join(', ')})` : ''} ensures the MMF is replenished at each 3-month interval.`
+                      : `Salary income fully covers this month's expenses — GURU makes no draw from the MMF. The ${TBILLS.filter((_, i) => getBillState(i) !== 'matured').map(b => `${b.label} T-Bill`).slice(0, 2).join(' and ')} continue compounding in the background, ready to sweep into the MMF at maturity.`
+                  }
+                </div>
               </div>
-
             </div>
 
           </div>
