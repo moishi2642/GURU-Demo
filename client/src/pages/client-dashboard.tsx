@@ -349,8 +349,8 @@ const GURU_BUCKETS = {
   tactical: {
     label: "Build",
     short: "Treasuries & fixed income — 1–3 year horizon",
-    color: "#16a34a",
-    tagCls: "bg-green-100 text-green-700",
+    color: "#0d9488",
+    tagCls: "bg-teal-100 text-teal-700",
   },
   growth: {
     label: "Grow",
