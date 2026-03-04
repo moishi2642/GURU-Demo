@@ -986,10 +986,6 @@ function CashManagementPanel({
   const trendUp = endCumulative >= 0;
   const coveragePct = monthlyBurn > 0 ? (totalLiquid / (annualOutflows)) * 100 : 999;
   const coverageOk = coveragePct >= 100;
-  const annualSalaryBonus = cashFlows
-    .filter(cf => cf.type === "inflow" && (cf.category === "salary" || cf.category === "bonus"))
-    .reduce((s, cf) => s + Number(cf.amount), 0);
-
   const BUCKETS = [
     { key: "reserve"  as GuroBucket, label: "Operating Cash", value: reserve     },
     { key: "yield"    as GuroBucket, label: "Reserve",        value: yieldBucket },
@@ -1018,16 +1014,8 @@ function CashManagementPanel({
         </div>
       </div>
 
-      {/* ── 4 KPI tiles ── */}
-      <div className="grid grid-cols-4 divide-x divide-border/60 border-b border-border/60">
-        {/* Annual Salary + Bonus */}
-        <div className="px-3 py-3 flex flex-col gap-0.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Salary + Bonus</p>
-          <p className="text-2xl font-extrabold tabular-nums leading-none text-foreground">
-            {fmt(annualSalaryBonus, true)}
-          </p>
-          <p className="text-[9px] text-muted-foreground">Sarah + Michael</p>
-        </div>
+      {/* ── 3 KPI tiles ── */}
+      <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60">
         {/* Months Runway */}
         <div className="px-3 py-3 flex flex-col gap-0.5">
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Runway</p>
