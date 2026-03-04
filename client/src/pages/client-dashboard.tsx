@@ -3134,38 +3134,37 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
 
   // ── All values sourced from updated Cash Flow Model (2-month Ops Cash target) ─
 
-  // OPERATING CASH (Immediate) — Jan through Dec
+  // OPERATING CASH — Jan through Dec (corrected: no Build→Ops flows)
   // Min target = 2× monthly base expenses = $41,879
   const INCOME_TO_IMM  = [18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,38439];
   const EXPENSES       = [-38439,-20939,-20939,-65939,-24939,-21939,-40439,-35939,-20939,-20939,-24939,-48392];
-  const FROM_ST_TO_IMM = [19626,47126,6126,3126,21626,17126,2126,2126,6126,5242,6,0];
-  const FROM_MT_TO_IMM = [0,0,0,0,0,0,0,0,0,24337,365906,0];
-  const IMM_INT        = [0,0,0,0,0,0,0,0,0,0,0,1];
-  const IMM_BAL        = [41879,86879,90879,46879,62379,76379,56879,41879,45879,73332,433118,423166];
+  const FROM_ST_TO_IMM = [19626,47126,6126,3126,21626,17126,2126,2126,6126,29579,19626,0];
+  const IMM_INT        = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const IMM_BAL        = [41879,86879,90879,46879,62379,76379,56879,41879,45879,73332,86832,76879];
 
-  // RESERVE (Short-Term) — Jan through Dec
-  const INCOME_TO_ST   = [0,0,0,0,0,0,0,0,0,0,0,129385];
-  const FROM_ST_OUT    = [-19626,-47126,-6126,-3126,-21626,-17126,-2126,-2126,-6126,-5242,-6,0];
-  const ST_INT         = [0,279,201,140,129,101,56,34,29,19,6,0];
-  const ST_BAL         = [109759,62912,56987,54002,32506,15481,13411,11319,5223,0,0,129385];
+  // RESERVE — Jan through Dec
+  const INCOME_TO_ST   = [0,0,0,0,0,0,0,0,0,0,0,177777];
+  const FROM_ST_OUT    = [-19626,-47126,-6126,-3126,-21626,-17126,-2126,-2126,-6126,-29579,-19626,0];
+  const ST_INT         = [0,391,314,253,243,215,170,148,143,134,93,36];
+  const ST_BAL         = [158151,111417,105606,102733,81350,64439,62484,60506,54524,25079,5547,183360];
 
-  // BUILD (Medium-Term) — Jan through Dec
-  const INCOME_TO_MT   = [0,0,0,0,0,0,0,0,0,0,0,67630];
-  const FROM_MT_OUT    = [0,0,0,0,0,0,0,0,0,-24337,-365906,0];
-  const MT_INT         = [0,439,440,441,442,443,444,445,446,447,421,-6];
-  const MT_BAL         = [199951,200390,200830,201271,201713,202156,202600,203044,203490,179600,-185885,-118261];
+  // BUILD — Jan through Dec (no longer flows to Ops or Reserve — bug fixed)
+  const INCOME_TO_MT   = [0,0,0,0,0,0,0,0,0,0,0,19238];
+  const FROM_MT_OUT    = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const MT_INT         = [0,425,426,427,427,428,429,430,431,432,433,434];
+  const MT_BAL         = [193398,193823,194248,194675,195102,195531,195960,196390,196822,197254,197687,217359];
 
   // GROW (Long-Term) — balances only
-  const GROW_BAL       = [2660767,2676288,2691900,2707602,2723397,2739283,2755262,2771335,2787501,2803761,2820117,2836567];
+  const GROW_BAL       = [2618683,2633959,2649323,2664778,2680322,2695958,2711684,2727502,2743413,2759416,2775512,2791703];
 
   // TOTAL NET WORTH
-  const NET_WORTH      = [4644189,4658302,4672430,4641588,4651828,4665133,4659986,4659411,4673926,4688527,4699184,4902691];
+  const NET_WORTH      = [4657911,4671890,4640899,4650988,4664141,4658841,4658112,4672471,4686915,4697412,4697412,4901134];
 
   // ── Starting balances (= prior month's ending balance; Jan uses model opening) ──
   const OPS_START  = [41879,  ...IMM_BAL.slice(0, 11)];
-  const RSV_START  = [129385, ...ST_BAL.slice(0, 11)];
-  const BLD_START  = [199951, ...MT_BAL.slice(0, 11)]; // Dec 2024 opening balance
-  const GROW_START = [2645336,...GROW_BAL.slice(0, 11)]; // Dec 2024 opening balance
+  const RSV_START  = [177777, ...ST_BAL.slice(0, 11)];  // Reserve opening = $177,777
+  const BLD_START  = [193398, ...MT_BAL.slice(0, 11)];  // Build opening = $193,398
+  const GROW_START = [2603496,...GROW_BAL.slice(0, 11)]; // Grow opening = $2,603,496
 
   // ── Per-month special/irregular expenses (total = base $20,939 + specials) ────
   type SpecialItem = { label: string; amount: number };
@@ -3271,12 +3270,11 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
 
   return (
     <div className="rounded-xl overflow-hidden shadow-xl border border-slate-200">
-
       {/* ── Title bar: title + view toggle + controls ── */}
       <div className="bg-slate-800 px-6 py-4 flex items-center gap-4 flex-wrap">
         <h2 className="text-white text-[15px] leading-snug flex-1 min-w-0">
           <span className="font-black">Continuous Money Movement:</span>
-          <span className="font-light ml-2">A Glimpse into How GURU Will Move Your Money</span>
+          <span className="font-light ml-2">GURU's Planned Transfers  For the Next Year</span>
         </h2>
 
         {/* View toggle */}
@@ -3327,7 +3325,6 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
           </div>
         )}
       </div>
-
       {/* ══════════════════════════════════════════════════════════
           FLOW SCHEMATIC VIEW
           ══════════════════════════════════════════════════════════ */}
@@ -3650,7 +3647,6 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
           </div>
         </div>
       )}
-
       {/* ══════════════════════════════════════════════════════════
           SPREADSHEET VIEW
           ══════════════════════════════════════════════════════════ */}
@@ -3810,7 +3806,6 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
           </div>
         </>
       )}
-
     </div>
   );
 }
