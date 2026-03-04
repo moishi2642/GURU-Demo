@@ -4797,7 +4797,8 @@ export default function ClientDashboard() {
                     <p className="text-[9px] text-emerald-700 font-semibold mt-1">available to deploy based on GURU estimates. Work with client to quantify. </p>
                   </div>
                 </div>
-                <div className="px-5 py-3 border-t border-border flex items-center justify-end">
+                <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">Open GURU Allocation</span>
                   <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">Review <ArrowUpRight className="w-3 h-3" /></span>
                 </div>
               </div>
