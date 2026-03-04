@@ -3167,6 +3167,9 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
     return `$${abs.toLocaleString()}`;
   };
 
+  const fmtFull = (v: number) =>
+    `$${Math.round(Math.abs(v)).toLocaleString("en-US")}`;
+
   type SubRow = { label: string; values: number[] };
 
   const Section = ({
@@ -3227,11 +3230,11 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
       </div>
 
       {/* ── Table ── */}
-      <div className="overflow-x-auto bg-white">
+      <div className="overflow-auto bg-white" style={{ maxHeight: 580 }}>
         <table className="w-full border-collapse min-w-max">
 
-          {/* Column headers */}
-          <thead>
+          {/* Column headers — sticky */}
+          <thead className="sticky top-0 z-20">
             <tr className="bg-slate-100 border-b-2 border-slate-200">
               <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 w-[220px]" />
               <th className="px-3 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 w-[140px]">Account</th>
@@ -3249,8 +3252,8 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
             <Section
               subbrows={[
                 { label: "Plus: Income Allocation to Operating Cash",        values: INCOME_TO_OPS },
-                { label: "Less: Household Expenses",                         values: EXPENSES },
-                { label: "Plus: Cash Moved from Reserve Buffer to Operating", values: DRAW_FROM_RSV },
+                { label: "Less: Cash Expenses",                               values: EXPENSES },
+                { label: "Plus: Cash Moved from Reserve to Operating",        values: DRAW_FROM_RSV },
                 { label: "Plus: Cash Moved from Build to Operating",          values: DRAW_FROM_BLD },
                 { label: "Plus: After-Tax Interest Income",                   values: OPS_INT },
               ]}
@@ -3266,11 +3269,11 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
             {/* ── SECTION 2: Reserve Buffer ── */}
             <Section
               subbrows={[
-                { label: "Plus: Surplus Transferred to Reserve Buffer",      values: PUSH_TO_RSV },
+                { label: "Plus: Surplus Transferred to Reserve",            values: PUSH_TO_RSV },
                 { label: "Less: Cash Moved from Reserve to Operating Cash",  values: TRANSFER_OUT_RSV },
                 { label: "Plus: After-Tax Interest Income (3.65%)",          values: RSV_INT },
               ]}
-              bucketLabel="Reserve Buffer"
+              bucketLabel="Reserve"
               accountLabel="Citizens Private Bank Money Market"
               balances={RSV_BALANCE}
               color="bg-blue-600"
@@ -3303,7 +3306,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
               </td>
               {GROW_BALANCE.map((v, mi) => (
                 <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
-                  {fmtBal(v)}
+                  {fmtFull(v)}
                 </td>
               ))}
             </tr>
@@ -3319,7 +3322,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
           { color: "bg-emerald-100 text-emerald-700", label: "+Value = inflow / transfer in" },
           { color: "bg-red-50 text-red-600",          label: "(Value) = outflow / transfer out" },
           { color: "bg-emerald-700 text-white",       label: "Operating Cash — daily liquidity target" },
-          { color: "bg-blue-600 text-white",          label: "Reserve Buffer — GURU auto-draw source" },
+          { color: "bg-blue-600 text-white",          label: "Reserve — GURU auto-draw source" },
           { color: "bg-blue-900 text-white",          label: "Build — medium-term fixed income" },
           { color: "bg-violet-700 text-white",        label: "Grow — long-term market appreciation" },
         ].map(({ color, label }) => (
