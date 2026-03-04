@@ -4814,7 +4814,7 @@ export default function ClientDashboard() {
                     </div>
                     <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Investments</span>
                   </div>
-                  <p className="text-sm font-black text-foreground leading-snug">Deploy Liquidity into Investments</p>
+                  <p className="text-sm font-black text-foreground leading-snug">Deploy Liqiudity into Investments</p>
                   <div className="flex flex-col gap-1.5">
                     {["Increase US Large Cap", "Hedge Financial Services Concentration", "Add Bonds & Commodities"].map((f) => (
                       <div key={f} className="flex items-center gap-1.5">
