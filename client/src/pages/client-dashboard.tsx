@@ -4725,7 +4725,7 @@ export default function ClientDashboard() {
                     {["Increase US Large Cap", "Financial Services Risk", "Add Bonds & Commodities"].map((f) => (
                       <div key={f} className="flex items-center gap-1.5">
                         <div className="w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
-                        <span className="text-[9px] text-muted-foreground">{f}</span>
+                        <span className="text-muted-foreground text-[12px]">{f}</span>
                       </div>
                     ))}
                   </div>
