@@ -3180,37 +3180,55 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
 
   // ── All values sourced from updated Cash Flow Model (2-month Ops Cash target) ─
 
-  // OPERATING CASH — Jan through Dec (corrected: no Build→Ops flows)
-  // Min target = 2× monthly base expenses = $41,879
+  // ══════════════════════════════════════════════════════════════════════════════
+  // BASELINE ACCOUNT BALANCES — Prototype_Model_v4.xlsx  (Jan–Dec)
+  // AS-IS state before advisor makes any GURU Allocation changes.
+  // Sub-account arrays feed both the individual rows AND the bucket totals.
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  // ── OPERATING CASH sub-accounts ──────────────────────────────────────────────
+  const CHASE_BAL          = [25050,18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,38439];
+  const CITIZENS_CHECK_BAL = [87374,91485,89360,42234,36109,32983,11357,-5768,-7894,-10020,-16146,11319];
+  const IMM_BAL            = CHASE_BAL.map((v, i) => v + CITIZENS_CHECK_BAL[i]);
+  // Jan→Dec: 112424, 110299, 108173, 61048, 54922, 51797, 30171, 13045, 10920, 8794, 2668, 49759
+
+  // ── Ops Cash flow details (for hover tooltips) ────────────────────────────────
   const INCOME_TO_IMM  = [18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,38439];
   const EXPENSES       = [-38439,-20939,-20939,-65939,-24939,-21939,-40439,-35939,-20939,-20939,-24939,-48392];
-  const FROM_ST_TO_IMM = [19626,47126,6126,3126,21626,17126,2126,2126,6126,29579,19626,0];
+  const FROM_ST_TO_IMM = [0,0,0,0,0,0,0,0,0,0,0,0]; // no auto-draw in baseline
   const IMM_INT        = [0,0,0,0,0,0,0,0,0,0,0,0];
-  const IMM_BAL        = [41879,86879,90879,46879,62379,76379,56879,41879,45879,73332,86832,76879];
 
-  // RESERVE — Jan through Dec
-  const INCOME_TO_ST   = [0,0,0,0,0,0,0,0,0,0,0,177777];
-  const FROM_ST_OUT    = [-19626,-47126,-6126,-3126,-21626,-17126,-2126,-2126,-6126,-29579,-19626,0];
-  const ST_INT         = [0,391,314,253,243,215,170,148,143,134,93,36];
-  const ST_BAL         = [158151,111417,105606,102733,81350,64439,62484,60506,54524,25079,5547,183360];
+  // ── RESERVE sub-accounts ─────────────────────────────────────────────────────
+  const CITIZENS_MM_BAL = [225000,225388,225776,226165,226555,226945,227336,227728,228120,228512,228906,369271];
+  const CAPONE_BAL      = [15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000];
+  const ST_BAL          = CITIZENS_MM_BAL.map((v, i) => v + CAPONE_BAL[i]);
+  // Jan→Dec: 240000, 240388, 240776, 241165, 241555, 241945, 242336, 242728, 243120, 243512, 243906, 384271
 
-  // BUILD — Jan through Dec (no longer flows to Ops or Reserve — bug fixed)
-  const INCOME_TO_MT   = [0,0,0,0,0,0,0,0,0,0,0,19238];
-  const FROM_MT_OUT    = [0,0,0,0,0,0,0,0,0,0,0,0];
-  const MT_INT         = [0,425,426,427,427,428,429,430,431,432,433,434];
-  const MT_BAL         = [193398,193823,194248,194675,195102,195531,195960,196390,196822,197254,197687,217359];
+  // ── Reserve flow details (for hover tooltips) ──────────────────────────────
+  const INCOME_TO_ST = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const FROM_ST_OUT  = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const ST_INT       = [0,388,388,389,390,390,391,392,392,392,394,394];
 
-  // GROW (Long-Term) — balances only
-  const GROW_BAL       = [2618683,2633959,2649323,2664778,2680322,2695958,2711684,2727502,2743413,2759416,2775512,2791703];
+  // ── BUILD sub-accounts ───────────────────────────────────────────────────────
+  const TREASURIES_BAL = [135000,135289,135578,135868,136159,136450,136742,137035,137328,137622,137916,138211];
+  const MT_BAL         = TREASURIES_BAL;
 
-  // TOTAL NET WORTH
-  const NET_WORTH      = [4657911,4671890,4640899,4650988,4664141,4658841,4658112,4672471,4686915,4697412,4697412,4901134];
+  // ── Build flow details (for hover tooltips) ──────────────────────────────
+  const INCOME_TO_MT = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const FROM_MT_OUT  = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const MT_INT       = [0,289,289,290,291,291,292,293,293,294,294,295];
 
-  // ── Starting balances (= prior month's ending balance; Jan uses model opening) ──
-  const OPS_START  = [41879,  ...IMM_BAL.slice(0, 11)];
-  const RSV_START  = [177777, ...ST_BAL.slice(0, 11)];  // Reserve opening = $177,777
-  const BLD_START  = [193398, ...MT_BAL.slice(0, 11)];  // Build opening = $193,398
-  const GROW_START = [2603496,...GROW_BAL.slice(0, 11)]; // Grow opening = $2,603,496
+  // ── GROW (Long-Term) ─────────────────────────────────────────────────────────
+  const GROW_BAL = [2618683,2633959,2649323,2664778,2680322,2695958,2711684,2727502,2743413,2759416,2775512,2791703];
+
+  // ── TOTAL NET WORTH ──────────────────────────────────────────────────────────
+  const NET_WORTH = IMM_BAL.map((v, i) => v + ST_BAL[i] + MT_BAL[i] + GROW_BAL[i]);
+
+  // ── Starting balances (prior month end; first month uses model opening) ──────
+  const OPS_START  = [132050, ...IMM_BAL.slice(0, 11)];   // Chase $25,050 + Citizens $107,000
+  const RSV_START  = [240000, ...ST_BAL.slice(0, 11)];
+  const BLD_START  = [135000, ...MT_BAL.slice(0, 11)];
+  const GROW_START = [2603496,...GROW_BAL.slice(0, 11)];
 
   // ── Per-month special/irregular expenses (total = base $20,939 + specials) ────
   type SpecialItem = { label: string; amount: number };
@@ -3711,37 +3729,51 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
 
               <tbody>
                 {/* ══ OPERATING CASH ══ */}
-                {/* ↳ Primary checking account — derived from assets (same as GURU Allocation) */}
+                {/* ↳ Chase Total Checking */}
                 <tr className="border-b border-[#1d4ed8]/10 hover:bg-blue-50/40 transition-colors"
                   style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
                       <span className="text-blue-400 text-[11px]">↳</span>
-                      <span className="text-[10px] font-semibold text-blue-800">{primaryOpsName}</span>
-                      <span className="text-[8px] text-blue-400 font-mono">Primary Account</span>
+                      <span className="text-[10px] font-semibold text-blue-800">Chase Total Checking</span>
+                      <span className="text-[8px] text-blue-400 font-mono">Primary</span>
                     </div>
-                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Hover any month for inflow / outflow detail</div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Salary deposit · operating expenses paid here</div>
                   </td>
-                  {IMM_BAL.map((v, mi) => {
-                    const hasAutoDraw = FROM_ST_TO_IMM[mi] > 0;
-                    return (
-                      <td key={mi}
-                        className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-blue-700 cursor-help relative group">
-                        {fmtBal(v)}
-                        {hasAutoDraw && (
-                          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-orange-400" />
-                        )}
-                        {cellTip([
-                          `Salary → Ops: +$${INCOME_TO_IMM[mi].toLocaleString()}`,
-                          `Expenses out: −$${Math.abs(EXPENSES[mi]).toLocaleString()}`,
-                          hasAutoDraw ? `GURU Reserve draw: +$${FROM_ST_TO_IMM[mi].toLocaleString()}` : null,
-                          IMM_INT[mi] > 0 ? `After-tax interest: +$${IMM_INT[mi].toLocaleString()}` : null,
-                          `──────────────────`,
-                          `Month-end balance: $${v.toLocaleString()}`,
-                        ])}
-                      </td>
-                    );
-                  })}
+                  {CHASE_BAL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-blue-700 cursor-help relative group">
+                      {fmtBal(v)}
+                      {cellTip([
+                        `Salary deposit: +$${INCOME_TO_IMM[mi].toLocaleString()}`,
+                        `Operating expenses: −$${Math.abs(EXPENSES[mi]).toLocaleString()}`,
+                        `──────────────────`,
+                        `Month-end balance: $${v.toLocaleString()}`,
+                      ])}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ Citizens Private Banking Checking */}
+                <tr className="border-b border-[#1d4ed8]/10 hover:bg-blue-50/40 transition-colors"
+                  style={{ backgroundColor: "rgba(29,78,216,0.03)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-blue-400/70 text-[11px]">↳</span>
+                      <span className="text-[10px] font-semibold text-blue-700">Citizens Private Banking Checking</span>
+                      <span className="text-[8px] text-amber-500 font-mono">Excess</span>
+                    </div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Excess cash · drains Aug–Nov · GURU recommends sweeping to Reserve</div>
+                  </td>
+                  {CITIZENS_CHECK_BAL.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold cursor-help relative group ${v < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                      {v < 0 ? `(${Math.abs(v).toLocaleString()})` : `$${v.toLocaleString()}`}
+                      {cellTip([
+                        v < 0 ? `⚠ Overdrawn this month` : `Balance: $${v.toLocaleString()}`,
+                        `GURU: sweep excess to Citizens MM (Reserve)`,
+                        `──────────────────`,
+                        v < 0 ? `Deficit: ($${Math.abs(v).toLocaleString()})` : `Month-end: $${v.toLocaleString()}`,
+                      ])}
+                    </td>
+                  ))}
                 </tr>
                 {/* ↳ Surplus above floor */}
                 <tr className="border-b border-[#1d4ed8]/08 transition-colors"
@@ -3816,49 +3848,53 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                 )}
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
-                {/* ══ RESERVE ══ — sub-accounts derived from GURU Allocation assets */}
-                {rsvAccts.length > 0 ? rsvAccts.map((acct) => {
-                  const share = Number(acct.value) / rsvTotal;
-                  const rate = _rate(acct.description);
-                  const name = _sn(acct.description);
-                  const isMM = (acct.description ?? "").toLowerCase().includes("money market");
-                  return (
-                    <tr key={acct.id} className="border-b border-amber-100/40 hover:bg-amber-50/30 transition-colors"
-                      style={{ backgroundColor: "rgba(217,119,6,0.04)" }}>
-                      <td className="pl-7 pr-4 py-2 w-[300px]">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-amber-500 text-[11px]">↳</span>
-                          <span className="text-[10px] font-semibold text-amber-800">{name}</span>
-                          {rate && <span className="text-[8px] text-amber-500 font-mono">{rate}%</span>}
-                        </div>
-                        <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">
-                          {share > 0.5 ? "Primary reserve · hover any month for detail" : "Savings buffer · instant liquidity"}
-                        </div>
-                      </td>
-                      {ST_BAL.map((total, mi) => {
-                        const v = Math.round(total * share);
-                        const isLow = mi === 6 || mi === 9;
-                        return (
-                          <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold cursor-help relative group ${isLow ? 'text-amber-500' : 'text-amber-700'}`}>
-                            {fmtBal(v)}
-                            {isMM && cellTip([
-                              `Salary → Reserve: +$${INCOME_TO_ST[mi].toLocaleString()}`,
-                              `Drawn to Ops Cash: −$${Math.abs(FROM_ST_OUT[mi]).toLocaleString()}`,
-                              ST_INT[mi] > 0 ? `After-tax interest: +$${ST_INT[mi].toLocaleString()}` : null,
-                              `──────────────────`,
-                              `This account balance: $${v.toLocaleString()}`,
-                              `Reserve total: $${total.toLocaleString()}`,
-                            ])}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                }) : (
-                  <tr style={{ backgroundColor: "rgba(217,119,6,0.04)" }}>
-                    <td className="pl-7 pr-4 py-2 text-[10px] text-amber-600 italic" colSpan={13}>No reserve accounts found — add non-checking cash accounts in the Balance Sheet</td>
-                  </tr>
-                )}
+                {/* ══ RESERVE ══ */}
+                {/* ↳ Citizens Private Bank Money Market */}
+                <tr className="border-b border-amber-100/40 hover:bg-amber-50/30 transition-colors"
+                  style={{ backgroundColor: "rgba(217,119,6,0.04)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-amber-500 text-[11px]">↳</span>
+                      <span className="text-[10px] font-semibold text-amber-800">Citizens Private Bank Money Market</span>
+                      <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
+                    </div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Primary reserve · high-yield money market · same-day liquidity</div>
+                  </td>
+                  {CITIZENS_MM_BAL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-amber-700 cursor-help relative group">
+                      {fmtBal(v)}
+                      {cellTip([
+                        ST_INT[mi] > 0 ? `Interest earned: +$${ST_INT[mi].toLocaleString()}` : null,
+                        FROM_ST_OUT[mi] !== 0 ? `Drawn to Ops: −$${Math.abs(FROM_ST_OUT[mi]).toLocaleString()}` : null,
+                        `──────────────────`,
+                        `Month-end balance: $${v.toLocaleString()}`,
+                      ])}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ CapitalOne 360 Performance Savings */}
+                <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
+                  style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-amber-400/70 text-[11px]">↳</span>
+                      <span className="text-[10px] text-slate-600">CapitalOne 360 Performance Savings</span>
+                      <span className="text-[8px] text-amber-500 font-mono">3.78%</span>
+                    </div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">FDIC-insured · stable savings buffer</div>
+                  </td>
+                  {CAPONE_BAL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums text-amber-600 cursor-help relative group">
+                      {fmtBal(v)}
+                      {cellTip([
+                        `FDIC-insured · 3.78% APY`,
+                        `Monthly interest: +$${(15000 * 0.0378 / 12).toFixed(0)}`,
+                        `──────────────────`,
+                        `Balance: $${v.toLocaleString()}`,
+                      ])}
+                    </td>
+                  ))}
+                </tr>
                 {/* Reserve TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#d97706" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Reserve</td>
@@ -3868,45 +3904,30 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths, clientName }: { a
                 </tr>
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
-                {/* ══ BUILD ══ — sub-accounts derived from GURU Allocation assets */}
-                {bldAccts.length > 0 ? bldAccts.map((acct) => {
-                  const share = bldAccts.length === 1 ? 1 : Number(acct.value) / bldTotal;
-                  const rate = _rate(acct.description);
-                  const name = _sn(acct.description);
-                  return (
-                    <tr key={acct.id} className="border-b border-green-100/40 hover:bg-green-50/30 transition-colors"
-                      style={{ backgroundColor: "rgba(22,163,74,0.04)" }}>
-                      <td className="pl-7 pr-4 py-2 w-[300px]">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-green-500 text-[11px]">↳</span>
-                          <span className="text-[10px] font-semibold text-green-800">{name}</span>
-                          {rate && <span className="text-[8px] text-green-600 font-mono">{rate}%</span>}
-                        </div>
-                        <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Hover any month for detail</div>
-                      </td>
-                      {MT_BAL.map((total, mi) => {
-                        const v = Math.round(total * share);
-                        return (
-                          <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums text-green-700 cursor-help relative group">
-                            {fmtBal(v)}
-                            {cellTip([
-                              INCOME_TO_MT[mi] > 0 ? `Salary → Build: +$${INCOME_TO_MT[mi].toLocaleString()}` : null,
-                              FROM_MT_OUT[mi] > 0 ? `Moved to Reserve: −$${FROM_MT_OUT[mi].toLocaleString()}` : null,
-                              MT_INT[mi] > 0 ? `After-tax interest: +$${MT_INT[mi].toLocaleString()}` : null,
-                              `──────────────────`,
-                              `This account: $${v.toLocaleString()}`,
-                              `Build total: $${total.toLocaleString()}`,
-                            ])}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                }) : (
-                  <tr style={{ backgroundColor: "rgba(22,163,74,0.04)" }}>
-                    <td className="pl-7 pr-4 py-2 text-[10px] text-green-700 italic" colSpan={13}>No fixed-income treasury accounts found — add US Treasuries / T-Bills in the Balance Sheet</td>
-                  </tr>
-                )}
+                {/* ══ BUILD ══ */}
+                {/* ↳ Treasuries 1 year */}
+                <tr className="border-b border-green-100/40 hover:bg-green-50/30 transition-colors"
+                  style={{ backgroundColor: "rgba(22,163,74,0.04)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-green-500 text-[11px]">↳</span>
+                      <span className="text-[10px] font-semibold text-green-800">Treasuries 1 year</span>
+                      <span className="text-[8px] text-green-600 font-mono">4.50%</span>
+                    </div>
+                    <div className="text-[8px] text-slate-400 pl-3.5 mt-0.5 italic">Rolling 1-year T-Note ladder · backed by US government</div>
+                  </td>
+                  {TREASURIES_BAL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-green-700 cursor-help relative group">
+                      {fmtBal(v)}
+                      {cellTip([
+                        MT_INT[mi] > 0 ? `Interest accrued: +$${MT_INT[mi].toLocaleString()}` : null,
+                        FROM_MT_OUT[mi] > 0 ? `Proceeds to Reserve: −$${FROM_MT_OUT[mi].toLocaleString()}` : null,
+                        `──────────────────`,
+                        `Month-end balance: $${v.toLocaleString()}`,
+                      ])}
+                    </td>
+                  ))}
+                </tr>
                 {/* Build TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#16a34a" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Build</td>
