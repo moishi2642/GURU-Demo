@@ -754,7 +754,7 @@ function NetWorthPanel({
               const tag = liquidityTag(a);
               const label = a.description.split("(")[0].split("—")[0].trim();
               return (
-                <div key={a.id} className="flex justify-between items-center text-xs py-0.5 gap-1">
+                <div key={a.id} className="flex justify-between items-center text-xs py-1 gap-1">
                   <span className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${tag.tagCls}`}>
                     {tag.label}
                   </span>
@@ -767,7 +767,7 @@ function NetWorthPanel({
             Object.entries(liabGroups)
               .sort((a, b) => b[1] - a[1])
               .map(([label, value]) => (
-                <div key={label} className="flex justify-between items-center text-xs py-0.5">
+                <div key={label} className="flex justify-between items-center text-xs py-1">
                   <span className="text-muted-foreground truncate pr-2" style={{ maxWidth: "65%" }}>{label}</span>
                   <span className="font-semibold tabular-nums text-rose-600">-{fmt(value)}</span>
                 </div>
@@ -775,7 +775,7 @@ function NetWorthPanel({
           )}
         </div>
         {/* ── Sticky total — always visible below scroll ── */}
-        <div className="mt-1 pt-1.5 border-t border-border flex justify-between items-center text-xs font-bold">
+        <div className="mt-1 pt-1.5 border-t border-border flex justify-between items-center text-xs font-bold bg-muted/40 rounded-sm px-1.5 py-1">
           {view === "assets" ? (
             <>
               <span>Total Assets</span>
