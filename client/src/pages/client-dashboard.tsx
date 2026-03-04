@@ -3196,7 +3196,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
 
   const minOpsOk = Math.min(...IMM_BAL) >= minOps;
 
-  type SubRow = { label: string; values: number[] };
+  type SubRow = { label: string; values: number[]; linkId?: string };
 
   const Section = ({
     subrows,
@@ -3213,9 +3213,10 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
       {subrows.map((row, i) => {
         const isLess = row.label.startsWith("Less:");
         const isPlus = row.label.startsWith("Plus:");
+        const linkBorder = row.linkId === 'rsv-ops' ? 'border-l-4 border-blue-400' : '';
         return (
           <tr key={i} className={`border-b transition-colors border-slate-100 ${isLess ? 'bg-red-50/50 hover:bg-red-50' : isPlus ? 'bg-emerald-50/40 hover:bg-emerald-50/70' : 'hover:bg-slate-50/60'}`}>
-            <td className={`px-4 py-2 text-[11px] leading-snug w-[300px] ${isLess ? 'text-red-600 font-semibold' : isPlus ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+            <td className={`py-2 text-[11px] leading-snug w-[300px] ${linkBorder ? `pl-2 pr-4 ${linkBorder}` : 'px-4'} ${isLess ? 'text-red-600 font-semibold' : isPlus ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
               {isLess && <span className="mr-1 opacity-60">↓</span>}
               {isPlus && <span className="mr-1 opacity-60">↑</span>}
               {row.label.replace(/^Less: /, '').replace(/^Plus: /, '')}
@@ -3247,7 +3248,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
   const growStart = GROW_START[sm];
   const income    = INCOME_TO_IMM[sm];
   const rsvDraw   = FROM_ST_TO_IMM[sm];
-  const bldDraw   = FROM_MT_TO_IMM[sm];
+  const bldDraw   = 0; // Build no longer draws to Ops directly
   const opsEnd    = IMM_BAL[sm];
   const rsvEnd    = ST_BAL[sm];
   const bldEnd    = MT_BAL[sm];
@@ -3670,10 +3671,9 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
               <tbody>
                 <Section
                   subrows={[
-                    { label: "Plus: Income Allocation to Immediate",            values: INCOME_TO_IMM },
+                    { label: "Plus: Income Allocation to Operating Cash",       values: INCOME_TO_IMM },
                     { label: "Less: Expenses",                                  values: EXPENSES },
-                    { label: "Plus: Cash Moved from Reserve Into Immediate",     values: FROM_ST_TO_IMM },
-                    { label: "Plus: Cash Moved from Build Into Immediate",       values: FROM_MT_TO_IMM },
+                    { label: "Plus: Cash Moved from Reserve",                   values: FROM_ST_TO_IMM, linkId: 'rsv-ops' },
                     { label: "Plus: After-Tax Interest Income",                 values: IMM_INT },
                   ]}
                   bucketLabel="Operating Cash"
@@ -3697,7 +3697,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
 
                 {/* ── Connector: Reserve → Operating Cash ── */}
                 <tr className="h-7 bg-blue-50/60 border-y border-blue-100">
-                  <td className="px-4 py-1 text-[9px] font-black uppercase tracking-wider text-blue-600 whitespace-nowrap">
+                  <td className="pl-2 pr-4 py-1 text-[9px] font-black uppercase tracking-wider text-blue-600 whitespace-nowrap border-l-4 border-blue-400">
                     ↕ Auto-Draw: Reserve → Operating Cash
                   </td>
                   {FROM_ST_TO_IMM.map((v, mi) => (
@@ -3720,7 +3720,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                 <Section
                   subrows={[
                     { label: "Plus: Income Allocation to Reserve",              values: INCOME_TO_ST },
-                    { label: "Less: Cash Moved from Reserve Into Immediate",    values: FROM_ST_OUT },
+                    { label: "Less: Cash Moved to Operating Cash",              values: FROM_ST_OUT, linkId: 'rsv-ops' },
                     { label: "Plus: After-Tax Interest Income",                 values: ST_INT },
                   ]}
                   bucketLabel="Reserve"
@@ -3728,32 +3728,10 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                   color="bg-blue-600"
                 />
 
-                {/* ── Connector: Build → Operating Cash ── */}
-                <tr className="h-7 bg-blue-50/40 border-y border-blue-200/50">
-                  <td className="px-4 py-1 text-[9px] font-black uppercase tracking-wider text-blue-900 whitespace-nowrap">
-                    ↕ Auto-Draw: Build → Operating Cash
-                  </td>
-                  {FROM_MT_TO_IMM.map((v, mi) => (
-                    <td key={mi} className="px-1 py-1 text-center align-middle">
-                      {v > 0 ? (
-                        <div className="relative h-1.5 bg-blue-900/20 rounded-full mx-auto overflow-hidden" style={{ width: '70%' }}>
-                          <motion.div
-                            className="absolute top-0 h-full w-3 bg-blue-900 rounded-full"
-                            animate={{ x: ['-12px', '120%'] }}
-                            transition={{ duration: 1.4, repeat: Infinity, ease: 'linear', delay: mi * 0.08 }}
-                          />
-                        </div>
-                      ) : (
-                        <span className="text-slate-200 text-[9px]">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-
                 <Section
                   subrows={[
                     { label: "Plus: Income Allocation to Build",                values: INCOME_TO_MT },
-                    { label: "Less: Cash Moved from Build to Immediate",        values: FROM_MT_OUT },
+                    { label: "Less: Cash Moved to Reserve",                     values: FROM_MT_OUT },
                     { label: "Plus: After-Tax Interest Income",                 values: MT_INT },
                   ]}
                   bucketLabel="Build"
