@@ -398,13 +398,62 @@ function buildForecast(cashFlows: CashFlow[]) {
   });
 }
 
+function buildNWTimeline(
+  netWorth: number,
+  cashFlows: CashFlow[],
+  assets: Asset[],
+) {
+  const annualSurplus = buildForecast(cashFlows).reduce((s, d) => s + d.net, 0);
+  const growthValue = assets
+    .filter((a) => ["equity", "alternative", "real_estate"].includes(a.type))
+    .reduce((s, a) => s + Number(a.value), 0);
+  const GROWTH_RATE = 0.065;
+
+  // Historical: realistic multipliers going back 5 years.
+  // 2022 was the dip year (S&P -18%, bonds worst year in decades).
+  const histMultipliers = [
+    { label: "2021", m: 0.66 },
+    { label: "2022", m: 0.55 }, // dip — S&P −18%, rates spiked
+    { label: "2023", m: 0.73 }, // recovery begins
+    { label: "2024", m: 0.86 }, // S&P +26%
+    { label: "2025", m: 0.93 },
+  ];
+
+  const histPoints = histMultipliers.map(({ label, m }) => ({
+    label,
+    histValue: Math.round(netWorth * m),
+    projValue: undefined as number | undefined,
+  }));
+
+  // "Now" bridges both series
+  const nowPoint = {
+    label: "Now",
+    histValue: netWorth,
+    projValue: netWorth,
+  };
+
+  // Forward projections (1Y–5Y)
+  const projPoints = Array.from({ length: 5 }, (_, i) => {
+    const yr = i + 1;
+    const assetGrowth = growthValue * (Math.pow(1 + GROWTH_RATE, yr) - 1);
+    const cashAccum = annualSurplus * yr;
+    return {
+      label: `${yr}Y`,
+      histValue: undefined as number | undefined,
+      projValue: Math.round(netWorth + assetGrowth + cashAccum),
+    };
+  });
+
+  return [...histPoints, nowPoint, ...projPoints];
+}
+
+// Keep old name as alias so callers of projYear5 still work
 function buildNWProjection(
   netWorth: number,
   cashFlows: CashFlow[],
   assets: Asset[],
 ) {
   const annualSurplus = buildForecast(cashFlows).reduce((s, d) => s + d.net, 0);
-  // Growth assets (equity + alternatives + real estate) compound at conservative 6.5% annually
   const growthValue = assets
     .filter((a) => ["equity", "alternative", "real_estate"].includes(a.type))
     .reduce((s, a) => s + Number(a.value), 0);
@@ -574,6 +623,7 @@ function NetWorthPanel({
   const netWorth = totalAssets - totalLiab;
   const projData = buildNWProjection(netWorth, cashFlows, assets);
   const projYear5 = projData[projData.length - 1].value;
+  const timelineData = buildNWTimeline(netWorth, cashFlows, assets);
 
   // Assets sorted by liquidity (most liquid first)
   const sortedAssets = [...assets].sort(
@@ -613,15 +663,19 @@ function NetWorthPanel({
           </p>
         </div>
       </div>
-      <div className="h-28 px-1 mt-1">
+      <div className="h-36 px-1 mt-1">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={projData}
-            margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+          <ComposedChart
+            data={timelineData}
+            margin={{ top: 6, right: 4, left: 0, bottom: 0 }}
           >
             <defs>
-              <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={BLUE} stopOpacity={0.2} />
+              <linearGradient id="nwGradHist" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={BLUE} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={BLUE} stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="nwGradProj" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={BLUE} stopOpacity={0.10} />
                 <stop offset="95%" stopColor={BLUE} stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -631,50 +685,43 @@ function NetWorthPanel({
               axisLine={false}
               tickLine={false}
             />
+            {/* Historical line — solid */}
             <Area
               type="monotone"
-              dataKey="value"
+              dataKey="histValue"
               stroke={BLUE}
               strokeWidth={2}
-              fill="url(#nwGrad)"
+              fill="url(#nwGradHist)"
+              connectNulls
               dot={(props: any) => {
-                const { cx, cy, index } = props;
-                if (index === 0)
+                const { cx, cy, payload } = props;
+                if (payload.label === "Now")
                   return (
                     <g key="nw-now">
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={10}
-                        fill={BLUE}
-                        opacity={0.12}
-                        style={{
-                          animation: "live-pulse 2s ease-in-out infinite",
-                          transformOrigin: `${cx}px ${cy}px`,
-                        }}
+                      <circle cx={cx} cy={cy} r={10} fill={BLUE} opacity={0.12}
+                        style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }}
                       />
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={3.5}
-                        fill={BLUE}
-                        stroke="white"
-                        strokeWidth={1.5}
-                      />
+                      <circle cx={cx} cy={cy} r={3.5} fill={BLUE} stroke="white" strokeWidth={1.5} />
                     </g>
                   );
-                if (index === projData.length - 1)
-                  return (
-                    <circle
-                      key="nw-end"
-                      cx={cx}
-                      cy={cy}
-                      r={3.5}
-                      fill={BLUE}
-                      stroke="white"
-                      strokeWidth={1.5}
-                    />
-                  );
+                return <g key={payload.label} />;
+              }}
+              activeDot={{ r: 5, stroke: "white", strokeWidth: 2 }}
+            />
+            {/* Projection line — dashed, lighter */}
+            <Area
+              type="monotone"
+              dataKey="projValue"
+              stroke={BLUE}
+              strokeWidth={1.5}
+              strokeDasharray="5 3"
+              strokeOpacity={0.55}
+              fill="url(#nwGradProj)"
+              connectNulls
+              dot={(props: any) => {
+                const { cx, cy, index } = props;
+                if (index === timelineData.length - 1)
+                  return <circle key="nw-end" cx={cx} cy={cy} r={3} fill={BLUE} stroke="white" strokeWidth={1.5} />;
                 return <g key={index} />;
               }}
               activeDot={{ r: 5, stroke: "white", strokeWidth: 2 }}
@@ -683,13 +730,14 @@ function NetWorthPanel({
               x="Now"
               stroke={BLUE}
               strokeDasharray="3 3"
-              strokeOpacity={0.4}
+              strokeOpacity={0.35}
+              label={{ value: "Today", position: "insideTopRight", fontSize: 8, fill: BLUE, opacity: 0.6 }}
             />
             <RechartsTooltip
-              formatter={(v: number) => [fmt(v), "Net Worth"]}
+              formatter={(v: number, name: string) => [fmt(v), name === "histValue" ? "Net Worth" : "Projected"]}
               contentStyle={{ fontSize: 11 }}
             />
-          </AreaChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
       <div className="px-4 pb-4">
