@@ -3703,13 +3703,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                   {FROM_ST_TO_IMM.map((v, mi) => (
                     <td key={mi} className="px-1 py-1 text-center align-middle">
                       {v > 0 ? (
-                        <div className="relative h-1.5 bg-blue-100 rounded-full mx-auto overflow-hidden" style={{ width: '70%' }}>
-                          <motion.div
-                            className="absolute top-0 h-full w-3 bg-blue-500 rounded-full"
-                            animate={{ x: ['-12px', '120%'] }}
-                            transition={{ duration: 1.1, repeat: Infinity, ease: 'linear', delay: mi * 0.08 }}
-                          />
-                        </div>
+                        <span className="text-[9px] text-blue-400 tabular-nums">{fmtBal(v)}</span>
                       ) : (
                         <span className="text-slate-200 text-[9px]">—</span>
                       )}
