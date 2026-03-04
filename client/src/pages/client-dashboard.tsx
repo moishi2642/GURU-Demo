@@ -1033,14 +1033,14 @@ function CashManagementPanel({
         };
         return (
           <>
-            <div className="px-4 pt-3 pb-2 flex justify-center">
-              <div style={{ width: 220, height: 220 }}>
+            <div className="px-4 pt-3 pb-2 flex items-center gap-4">
+              <div style={{ width: 180, height: 180, flexShrink: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={donutData}
                       cx="50%" cy="50%"
-                      innerRadius={60} outerRadius={105}
+                      innerRadius={50} outerRadius={86}
                       dataKey="value" paddingAngle={3}
                       label={renderLabel}
                       labelLine={false}
@@ -1050,6 +1050,14 @@ function CashManagementPanel({
                     <RechartsTooltip formatter={(v: number, n: string) => [fmt(v as number, true), n]} contentStyle={{ fontSize: 10 }} />
                   </PieChart>
                 </ResponsiveContainer>
+              </div>
+              <div className="flex flex-col gap-2">
+                {donutData.map((d) => (
+                  <div key={d.name} className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className="text-[11px] text-muted-foreground">{d.name}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
