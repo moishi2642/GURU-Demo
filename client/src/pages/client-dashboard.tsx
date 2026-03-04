@@ -757,63 +757,43 @@ function NetWorthPanel({
             Liabilities
           </button>
         </div>
-        <div className="space-y-0.5 max-h-40 overflow-y-auto">
+        <div className="space-y-0.5 max-h-36 overflow-y-auto">
+          {view === "assets" ? (
+            sortedAssets.slice(0, 9).map((a) => {
+              const tag = liquidityTag(a);
+              const label = a.description.split("(")[0].split("—")[0].trim();
+              return (
+                <div key={a.id} className="flex justify-between items-center text-xs py-0.5 gap-1">
+                  <span className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${tag.tagCls}`}>
+                    {tag.label}
+                  </span>
+                  <span className="text-muted-foreground truncate flex-1" title={label}>{label}</span>
+                  <span className="font-semibold tabular-nums flex-shrink-0">{fmt(Number(a.value))}</span>
+                </div>
+              );
+            })
+          ) : (
+            Object.entries(liabGroups)
+              .sort((a, b) => b[1] - a[1])
+              .map(([label, value]) => (
+                <div key={label} className="flex justify-between items-center text-xs py-0.5">
+                  <span className="text-muted-foreground truncate pr-2" style={{ maxWidth: "65%" }}>{label}</span>
+                  <span className="font-semibold tabular-nums text-rose-600">-{fmt(value)}</span>
+                </div>
+              ))
+          )}
+        </div>
+        {/* ── Sticky total — always visible below scroll ── */}
+        <div className="mt-1 pt-1.5 border-t border-border flex justify-between items-center text-xs font-bold">
           {view === "assets" ? (
             <>
-              {sortedAssets.slice(0, 9).map((a) => {
-                const tag = liquidityTag(a);
-                const label = a.description.split("(")[0].split("—")[0].trim();
-                return (
-                  <div
-                    key={a.id}
-                    className="flex justify-between items-center text-xs py-0.5 gap-1"
-                  >
-                    <span
-                      className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${tag.tagCls}`}
-                    >
-                      {tag.label}
-                    </span>
-                    <span
-                      className="text-muted-foreground truncate flex-1"
-                      title={label}
-                    >
-                      {label}
-                    </span>
-                    <span className="font-semibold tabular-nums flex-shrink-0">
-                      {fmt(Number(a.value))}
-                    </span>
-                  </div>
-                );
-              })}
-              <div className="flex justify-between items-center text-xs py-1 border-t border-border mt-1 font-bold">
-                <span>Total Assets</span>
-                <span>{fmt(totalAssets)}</span>
-              </div>
+              <span>Total Assets</span>
+              <span>{fmt(totalAssets)}</span>
             </>
           ) : (
             <>
-              {Object.entries(liabGroups)
-                .sort((a, b) => b[1] - a[1])
-                .map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="flex justify-between items-center text-xs py-0.5"
-                  >
-                    <span
-                      className="text-muted-foreground truncate pr-2"
-                      style={{ maxWidth: "65%" }}
-                    >
-                      {label}
-                    </span>
-                    <span className="font-semibold tabular-nums text-rose-600">
-                      -{fmt(value)}
-                    </span>
-                  </div>
-                ))}
-              <div className="flex justify-between items-center text-xs py-1 border-t border-border mt-1 font-bold">
-                <span>Total Liabilities</span>
-                <span className="text-rose-600">-{fmt(totalLiab)}</span>
-              </div>
+              <span>Total Liabilities</span>
+              <span className="text-rose-600">-{fmt(totalLiab)}</span>
             </>
           )}
         </div>
@@ -1195,26 +1175,27 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
   const totalRet = retirementAssets.reduce((s, a) => s + Number(a.value), 0);
   const total = totalBrok + totalRet;
 
-  const typeMap: Record<string, number> = {};
-  for (const a of [...brokerageAssets, ...retirementAssets]) {
-    const label =
-      a.type === "equity"
-        ? "Equities"
-        : a.type === "fixed_income"
-          ? "Fixed Income"
-          : "Alternatives";
-    typeMap[label] = (typeMap[label] || 0) + Number(a.value);
-  }
-  const pieData = Object.entries(typeMap).map(([name, value]) => ({
-    name,
-    value,
-  }));
-  const PIE_COLORS = [
-    "hsl(221,83%,53%)",
-    "hsl(142,71%,40%)",
-    "hsl(0,84%,60%)",
-    "hsl(43,74%,56%)",
+  // ── Concentric donut: Current vs Target Model Portfolio ──
+  const PORT_CATS = [
+    { name: "Cash",         color: "#f59e0b" },
+    { name: "Equities",     color: "#3b82f6" },
+    { name: "Fixed Income", color: "#8b5cf6" },
+    { name: "Alternatives", color: "#10b981" },
+    { name: "Real Estate",  color: "#f43f5e" },
   ];
+  const currentMap: Record<string, number> = { Cash: 0, Equities: 0, "Fixed Income": 0, Alternatives: 0, "Real Estate": 0 };
+  for (const a of assets) {
+    if (a.type === "cash") currentMap.Cash += Number(a.value);
+    else if (a.type === "equity") currentMap.Equities += Number(a.value);
+    else if (a.type === "fixed_income") currentMap["Fixed Income"] += Number(a.value);
+    else if (a.type === "alternative") currentMap.Alternatives += Number(a.value);
+    else if (a.type === "real_estate") currentMap["Real Estate"] += Number(a.value);
+  }
+  const totalAllAssets = Object.values(currentMap).reduce((s, v) => s + v, 0);
+  // Target model: conservative growth allocation
+  const TARGET_PCT: Record<string, number> = { Cash: 0.05, Equities: 0.52, "Fixed Income": 0.28, Alternatives: 0.08, "Real Estate": 0.07 };
+  const currentDonut = PORT_CATS.filter(c => currentMap[c.name] > 0).map(c => ({ ...c, value: currentMap[c.name] }));
+  const targetDonut  = PORT_CATS.map(c => ({ ...c, value: (TARGET_PCT[c.name] ?? 0) * totalAllAssets })).filter(d => d.value > 0);
 
   const spyUp = (spyQuote?.changePercent ?? 0) >= 0;
 
@@ -1222,97 +1203,100 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
     <div className={PANEL_CLS}>
       <div className="px-4 pt-4 pb-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Taxable Brokerage + Retirement
+          Investment Portfolio
         </p>
-        <p
-          className="text-2xl font-bold text-foreground"
-          data-testid="kpi-brokerage"
-        >
+        <p className="text-2xl font-bold text-foreground" data-testid="kpi-brokerage">
           {fmt(total, true)}
         </p>
         <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
-          <span>
-            Brokerage{" "}
-            <span className="font-semibold text-foreground">
-              {fmt(totalBrok, true)}
-            </span>
-          </span>
-          <span>
-            Retirement{" "}
-            <span className="font-semibold text-foreground">
-              {fmt(totalRet, true)}
-            </span>
-          </span>
+          <span>Brokerage <span className="font-semibold text-foreground">{fmt(totalBrok, true)}</span></span>
+          <span>Retirement <span className="font-semibold text-foreground">{fmt(totalRet, true)}</span></span>
         </div>
         {spyQuote ? (
           <div className="flex items-center gap-3 text-xs mt-1">
-            <span
-              className={`font-semibold flex items-center gap-0.5 ${spyUp ? "text-emerald-600" : "text-rose-600"}`}
-            >
-              {spyUp ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              S&P {spyUp ? "+" : ""}
-              {spyQuote.changePercent?.toFixed(2)}% today
+            <span className={`font-semibold flex items-center gap-0.5 ${spyUp ? "text-emerald-600" : "text-rose-600"}`}>
+              {spyUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              S&P {spyUp ? "+" : ""}{spyQuote.changePercent?.toFixed(2)}% today
             </span>
             <span className="text-muted-foreground/50">·</span>
-            <span className="text-muted-foreground">
-              SPY ${spyQuote.price?.toFixed(2)}
-            </span>
+            <span className="text-muted-foreground">SPY ${spyQuote.price?.toFixed(2)}</span>
           </div>
         ) : (
           <div className="flex gap-4 text-xs mt-1">
             <span className="text-emerald-600 font-semibold flex items-center gap-0.5">
-              <ArrowUpRight className="w-3 h-3" />
-              4.32% YTD
+              <ArrowUpRight className="w-3 h-3" />4.32% YTD
             </span>
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 px-4 pb-3">
-        <div style={{ width: 110, height: 110, flexShrink: 0 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={30}
-                outerRadius={50}
-                dataKey="value"
-                paddingAngle={4}
-              >
-                {pieData.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <RechartsTooltip
-                formatter={(v: number, n: string) => [fmt(v), n]}
-                contentStyle={{ fontSize: 10 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex-1 space-y-1">
-          {pieData.map((d, i) => (
-            <div
-              key={d.name}
-              className="flex justify-between items-center text-xs"
-            >
-              <span className="flex items-center gap-1.5">
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
-                />
-                <span className="text-muted-foreground">{d.name}</span>
-              </span>
-              <span className="font-semibold tabular-nums">
-                {fmt(d.value, true)}
-              </span>
+
+      {/* ── Concentric donut ── */}
+      <div className="px-4 pb-2">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+          Current vs. Target Model Portfolio
+        </p>
+        <div className="flex items-center gap-3">
+          <div style={{ width: 160, height: 160, flexShrink: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                {/* Outer ring = Current */}
+                <Pie data={currentDonut} cx="50%" cy="50%" innerRadius={60} outerRadius={75}
+                  dataKey="value" paddingAngle={2}
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                    if (percent < 0.04) return null;
+                    const RADIAN = Math.PI / 180;
+                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + (r + 14) * Math.cos(-midAngle * RADIAN);
+                    const y = cy + (r + 14) * Math.sin(-midAngle * RADIAN);
+                    return <text x={x} y={y} fill="#374151" fontSize={9} fontWeight={700} textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>;
+                  }}
+                  labelLine={false}
+                >
+                  {currentDonut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Pie>
+                {/* Inner ring = Target */}
+                <Pie data={targetDonut} cx="50%" cy="50%" innerRadius={33} outerRadius={55}
+                  dataKey="value" paddingAngle={2}
+                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                    if (percent < 0.06) return null;
+                    const RADIAN = Math.PI / 180;
+                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                    const x = cx + r * Math.cos(-midAngle * RADIAN);
+                    const y = cy + r * Math.sin(-midAngle * RADIAN);
+                    return <text x={x} y={y} fill="white" fontSize={8} fontWeight={700} textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>;
+                  }}
+                  labelLine={false}
+                >
+                  {targetDonut.map((d, i) => <Cell key={i} fill={d.color} opacity={0.55} />)}
+                </Pie>
+                <RechartsTooltip formatter={(v: number, n: string) => [`${((v / totalAllAssets) * 100).toFixed(1)}%  (${fmt(v)})`, n]} contentStyle={{ fontSize: 10 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          {/* Legend */}
+          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+            <div className="flex gap-3 text-[9px] text-muted-foreground mb-0.5">
+              <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-sm bg-foreground/20 inline-block" />Current</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-1.5 rounded-sm bg-foreground/10 inline-block" />Model</span>
             </div>
-          ))}
+            {PORT_CATS.filter(c => currentMap[c.name] > 0 || (TARGET_PCT[c.name] ?? 0) > 0).map(c => {
+              const curPct = totalAllAssets > 0 ? (currentMap[c.name] / totalAllAssets) * 100 : 0;
+              const tgtPct = (TARGET_PCT[c.name] ?? 0) * 100;
+              const diff = curPct - tgtPct;
+              return (
+                <div key={c.name} className="flex items-center gap-1.5 text-[10px]">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                  <span className="text-muted-foreground flex-1 truncate">{c.name}</span>
+                  <span className="tabular-nums font-semibold text-foreground">{curPct.toFixed(0)}%</span>
+                  {Math.abs(diff) >= 1 && (
+                    <span className={`tabular-nums text-[9px] font-bold ${diff > 0 ? "text-rose-500" : "text-emerald-600"}`}>
+                      {diff > 0 ? "+" : ""}{diff.toFixed(0)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
       <div className="border-t border-border mx-4 mb-3" />
@@ -4905,20 +4889,21 @@ export default function ClientDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-[3fr_2fr] gap-4 items-start">
-            <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => setActiveView("cashflow")} />
-            <CashFlowTicker cashFlows={cashFlows} />
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <NetWorthPanel
               assets={assets}
               liabilities={liabilities}
               cashFlows={cashFlows}
             />
-            <CashManagementPanel assets={assets} cashFlows={cashFlows} />
+            <BrokeragePanel assets={assets} />
           </div>
-          <BrokeragePanel assets={assets} />
+
+          <div className="grid grid-cols-[3fr_2fr] gap-4 items-start">
+            <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => setActiveView("cashflow")} />
+            <CashFlowTicker cashFlows={cashFlows} />
+          </div>
+
+          <CashManagementPanel assets={assets} cashFlows={cashFlows} />
 
         </div>
       )}
