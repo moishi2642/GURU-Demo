@@ -5237,179 +5237,7 @@ function GuruAllocationView({
                         })()}
                       </div>
                     </div>
-                    {/* ── MIDDLE: Figma Animated Analysis Panel ── */}
-                    {(() => {
-                      const avgYieldAT = weightedATYield(r.subAccounts, r.current);
-                      const delta = r.target - r.current;
-                      const needsFunding = delta > 0;
-                      const isBalanced = Math.abs(delta) < 1000;
-                      const maxValue = Math.max(r.current, r.target);
-                      const progressPct = r.target > 0 ? Math.min((r.current / r.target) * 100, 100) : 100;
-                      return (
-                        <div className="w-72 flex-shrink-0 border-l border-r border-slate-600 bg-slate-700 flex flex-col">
-                          <div className="flex-1 p-5 flex flex-col gap-4">
-
-                            {/* Months-of-expenses stepper — Operating Cash only */}
-                            {r.def.name === "Operating Cash" && (
-                              <div className="flex items-center justify-between bg-slate-800 border border-slate-600 rounded px-3 py-2">
-                                <span className="text-[9px] text-slate-400 uppercase tracking-wider leading-tight">Cash Floor<br/><span className="text-[8px] normal-case">months of expenses</span></span>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setOpsCashMonths(Math.max(1, opsCashMonths - 1))}
-                                    className="w-6 h-6 rounded bg-slate-700 border border-slate-500 text-white text-sm font-bold flex items-center justify-center hover:bg-slate-600 transition-colors"
-                                  >−</button>
-                                  <span className="text-base font-black text-white w-4 text-center tabular-nums">{opsCashMonths}</span>
-                                  <button
-                                    onClick={() => setOpsCashMonths(Math.min(12, opsCashMonths + 1))}
-                                    className="w-6 h-6 rounded bg-slate-700 border border-slate-500 text-white text-sm font-bold flex items-center justify-center hover:bg-slate-600 transition-colors"
-                                  >+</button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Current bar */}
-                            <div>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[10px] text-slate-400 uppercase tracking-wider">Current</span>
-                                <span className="text-sm font-mono text-white">${(r.current / 1000).toFixed(0)}K</span>
-                              </div>
-                              <div className="relative h-8 bg-slate-800 rounded border border-slate-600 overflow-hidden">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${maxValue > 0 ? (r.current / maxValue) * 100 : 0}%` }}
-                                  transition={{ duration: 1, delay: 0.2 }}
-                                  className="h-full rounded flex items-center justify-end px-2"
-                                  style={{ backgroundColor: r.def.accent }}
-                                >
-                                  <span className="text-[10px] font-mono font-semibold text-white">
-                                    {totalAssets > 0 ? ((r.current / totalAssets) * 100).toFixed(1) : "0.0"}%
-                                  </span>
-                                </motion.div>
-                              </div>
-                            </div>
-
-                            {/* Delta indicator */}
-                            <div className="flex items-center justify-center my-1">
-                              {isBalanced ? (
-                                <div className="flex items-center gap-2 text-green-400">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                  <span className="text-xs font-medium">BALANCED</span>
-                                </div>
-                              ) : needsFunding ? (
-                                <motion.div
-                                  initial={{ opacity: 0, y: -8 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: 0.8 }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <div className="text-red-400 text-xs font-mono">▼ +${Math.abs(delta / 1000).toFixed(0)}K GAP</div>
-                                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                                </motion.div>
-                              ) : (
-                                <motion.div
-                                  initial={{ opacity: 0, y: -8 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: 0.8 }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <div className="text-blue-400 text-xs font-mono">▲ ${Math.abs(delta / 1000).toFixed(0)}K SURPLUS</div>
-                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                                </motion.div>
-                              )}
-                            </div>
-
-                            {/* GURU Target bar */}
-                            <div>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[10px] text-orange-400 uppercase tracking-wider flex items-center gap-1">
-                                  <Activity className="w-3 h-3" />GURU Target
-                                </span>
-                                <span className="text-sm font-mono text-orange-400">${(r.target / 1000).toFixed(0)}K</span>
-                              </div>
-                              <div className="relative h-8 bg-slate-800 rounded border border-orange-500/30 overflow-hidden">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${maxValue > 0 ? (r.target / maxValue) * 100 : 0}%` }}
-                                  transition={{ duration: 1, delay: 0.5 }}
-                                  className="h-full rounded flex items-center justify-end px-2 bg-gradient-to-r from-orange-600 to-orange-500"
-                                >
-                                  <span className="text-[10px] font-mono font-semibold text-white">
-                                    {totalAssets > 0 ? ((r.target / totalAssets) * 100).toFixed(1) : "0.0"}%
-                                  </span>
-                                </motion.div>
-                              </div>
-                            </div>
-
-                            {/* Progress to Target */}
-                            <div className="pb-4 border-b border-slate-600">
-                              <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                                <span>Progress to Target</span>
-                                <span className="font-mono">{progressPct.toFixed(0)}%</span>
-                              </div>
-                              <div className="h-1 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${progressPct}%` }}
-                                  transition={{ duration: 1, delay: 1 }}
-                                  className={`h-full ${isBalanced ? "bg-green-500" : needsFunding ? "bg-red-500" : "bg-blue-400"}`}
-                                />
-                              </div>
-                            </div>
-
-                            {/* 2×2 metrics grid */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Status</div>
-                                <div className={`text-xs font-medium ${isBalanced ? "text-green-400" : needsFunding ? "text-red-400" : "text-blue-400"}`}>
-                                  {isBalanced ? "BALANCED" : needsFunding ? "UNDERFUNDED" : "SURPLUS"}
-                                </div>
-                                <div className="text-[10px] text-slate-500 mt-0.5">
-                                  {isBalanced ? "No action needed" : needsFunding ? "Requires funding" : "Ready to redeploy"}
-                                </div>
-                              </div>
-                              <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Priority</div>
-                                <div className="text-xs font-mono text-white">
-                                  {Math.abs(delta) > 300000 ? "HIGH" : Math.abs(delta) > 100000 ? "MEDIUM" : "LOW"}
-                                </div>
-                                <div className="text-[10px] text-slate-500 mt-0.5">Execution: T+2</div>
-                              </div>
-                              <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Current Yield</div>
-                                <div className="text-xs font-mono text-white tabular-nums">{avgYieldAT.toFixed(2)}%</div>
-                                <div className="text-[10px] text-slate-500 mt-0.5">After-tax weighted</div>
-                              </div>
-                              <div className="border border-slate-600 bg-slate-800 p-2.5 rounded">
-                                <div className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                  Yield Pickup
-                                  {r.bpPickup > 50 && <AlertCircle className="w-3 h-3 text-orange-500" />}
-                                </div>
-                                <div className={`text-xs font-mono tabular-nums ${r.bpPickup > 50 ? "text-orange-400" : r.bpPickup > 0 ? "text-green-400" : "text-slate-400"}`}>
-                                  {r.bpPickup > 0 ? "+" : ""}{r.bpPickup} bps
-                                </div>
-                                <div className="text-[10px] text-green-500 mt-0.5">
-                                  ${((r.bpPickup / 10000) * r.current).toLocaleString("en-US", { maximumFractionDigits: 0 })}/yr
-                                </div>
-                              </div>
-                            </div>
-
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    {/* ── RIGHT: Products panel ── */}
-                    <BucketProductPanel
-                      bgColor={r.def.bg}
-                      accentColor={r.def.accent}
-                      products={prods}
-                      currentAvgYieldAT={weightedATYield(r.subAccounts, r.current)}
-                      bucketName={r.def.name}
-                      hasPendingTransfer={pendingTransfers.some(t => t.to === r.def.name)}
-                      onSelectionChange={(sels) =>
-                        setBucketProductSelections(prev => ({ ...prev, [r.def.name]: sels }))
-                      }
-                    />
-                    {/* ── FAR RIGHT: Transfer Execution panel ── */}
+                    {/* ── MIDDLE: Transfer Execution panel ── */}
                     <BucketExecutionPanel
                       bucketName={r.def.name}
                       current={r.current}
@@ -5423,6 +5251,23 @@ function GuruAllocationView({
                       totalAssets={totalAssets}
                       onExecute={handleExecute}
                       onUndo={handleUndo}
+                      monthsInputConfig={
+                        r.def.name === "Operating Cash"
+                          ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
+                          : undefined
+                      }
+                    />
+                    {/* ── RIGHT: Products panel ── */}
+                    <BucketProductPanel
+                      bgColor={r.def.bg}
+                      accentColor={r.def.accent}
+                      products={prods}
+                      currentAvgYieldAT={weightedATYield(r.subAccounts, r.current)}
+                      bucketName={r.def.name}
+                      hasPendingTransfer={pendingTransfers.some(t => t.to === r.def.name)}
+                      onSelectionChange={(sels) =>
+                        setBucketProductSelections(prev => ({ ...prev, [r.def.name]: sels }))
+                      }
                     />
                   </div>
                 );
