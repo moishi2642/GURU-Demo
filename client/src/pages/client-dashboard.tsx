@@ -3676,8 +3676,8 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                   subrows={[
                     { label: "Plus: Income Allocation to Immediate",            values: INCOME_TO_IMM },
                     { label: "Less: Expenses",                                  values: EXPENSES },
-                    { label: "Plus: Cash Moved from Short-Term Into Immediate", values: FROM_ST_TO_IMM },
-                    { label: "Plus: Cash Moved from Medium-Term Into Immediate",values: FROM_MT_TO_IMM },
+                    { label: "Plus: Cash Moved from Reserve Into Immediate",     values: FROM_ST_TO_IMM },
+                    { label: "Plus: Cash Moved from Build Into Immediate",       values: FROM_MT_TO_IMM },
                     { label: "Plus: After-Tax Interest Income",                 values: IMM_INT },
                   ]}
                   bucketLabel="Operating Cash"
@@ -3723,8 +3723,8 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
 
                 <Section
                   subrows={[
-                    { label: "Plus: Income Allocation to Short-Term",           values: INCOME_TO_ST },
-                    { label: "Less: Cash Moved from Short-Term Into Immediate", values: FROM_ST_OUT },
+                    { label: "Plus: Income Allocation to Reserve",              values: INCOME_TO_ST },
+                    { label: "Less: Cash Moved from Reserve Into Immediate",    values: FROM_ST_OUT },
                     { label: "Plus: After-Tax Interest Income",                 values: ST_INT },
                   ]}
                   bucketLabel="Reserve"
@@ -3756,8 +3756,8 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
 
                 <Section
                   subrows={[
-                    { label: "Plus: Income Allocation to Medium-Term",          values: INCOME_TO_MT },
-                    { label: "Less: Cash Moved from Medium-Term to Immediate",  values: FROM_MT_OUT },
+                    { label: "Plus: Income Allocation to Build",                values: INCOME_TO_MT },
+                    { label: "Less: Cash Moved from Build to Immediate",        values: FROM_MT_OUT },
                     { label: "Plus: After-Tax Interest Income",                 values: MT_INT },
                   ]}
                   bucketLabel="Build"
