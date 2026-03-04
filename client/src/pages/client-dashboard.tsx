@@ -810,10 +810,6 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
   const yDomainMax = Math.min(Math.ceil(maxVal + pad), 150000);
   const isPositive = annualNet >= 0;
 
-  const sortedNets = [...data.map(d => d.net)].sort((a, b) => a - b);
-  const midIdx = Math.floor(sortedNets.length / 2);
-  const medianMonthlyNet = sortedNets.length % 2 !== 0 ? sortedNets[midIdx] : (sortedNets[midIdx - 1] + sortedNets[midIdx]) / 2;
-
   return (
     <div className={PANEL_CLS}>
       {/* ── Header ── */}
@@ -831,15 +827,8 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           </div>
         </div>
       </div>
-      {/* ── 3 KPI tiles ── */}
-      <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60">
-        <div className="px-3 py-3 flex flex-col gap-0.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Median Monthly CF</p>
-          <p className={`text-2xl font-extrabold tabular-nums leading-none ${medianMonthlyNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-            {medianMonthlyNet >= 0 ? "+" : ""}{fmtK(Math.round(medianMonthlyNet))}
-          </p>
-          <p className="text-[9px] text-muted-foreground">typical month net</p>
-        </div>
+      {/* ── 2 KPI tiles ── */}
+      <div className="grid grid-cols-2 divide-x divide-border/60 border-b border-border/60">
         <div className="px-3 py-3 flex flex-col gap-0.5">
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Trough</p>
           <p className={`text-2xl font-extrabold tabular-nums leading-none ${minVal >= 0 ? "text-foreground" : "text-rose-600"}`}>
