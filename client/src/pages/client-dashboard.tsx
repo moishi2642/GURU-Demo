@@ -1023,62 +1023,71 @@ function CashManagementPanel({
       </div>
 
       {/* Donut + legend */}
-      <div className="flex items-center px-3 py-2 gap-2">
-        <div style={{ width: 88, height: 88, flexShrink: 0 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={donutData}
-                cx="50%"
-                cy="50%"
-                innerRadius={24}
-                outerRadius={40}
-                dataKey="value"
-                paddingAngle={2}
-              >
-                {donutData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-              <RechartsTooltip
-                formatter={(v: number, n: string) => [fmt(v), n]}
-                contentStyle={{ fontSize: 10 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex-1 space-y-0.5 text-xs min-w-0">
-          {GURU_BUCKET_ORDER.map((k) => {
-            const v = bucketValues[k];
-            if (!v) return null;
-            const pct = totalAll > 0 ? Math.round((v / totalAll) * 100) : 0;
-            return (
-              <button
-                key={k}
-                onClick={() => setActive(k)}
-                className={`w-full flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-colors text-left ${active === k ? "bg-secondary" : "hover:bg-secondary/50"}`}
-                data-testid={`bucket-${k}`}
-              >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: GURU_BUCKETS[k].color }}
-                />
-                <span
-                  className={`font-bold flex-shrink-0 ${active === k ? "text-foreground" : "text-muted-foreground"}`}
-                >
-                  {GURU_BUCKETS[k].label}
-                </span>
-                <span className="text-muted-foreground ml-auto tabular-nums flex-shrink-0">
-                  {pct}%
-                </span>
-                <span className="font-semibold tabular-nums flex-shrink-0">
-                  {fmt(v, true)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {(() => {
+        const liquidBuckets: GuroBucket[] = ["reserve", "yield", "tactical"];
+        const liquidDonutData = donutData.filter(d =>
+          liquidBuckets.some(k => GURU_BUCKETS[k].label === d.name)
+        );
+        const liquidTotal = liquidBuckets.reduce((s, k) => s + (bucketValues[k] ?? 0), 0);
+        return (
+          <div className="flex items-center px-3 py-3 gap-3">
+            <div style={{ width: 130, height: 130, flexShrink: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={liquidDonutData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={36}
+                    outerRadius={58}
+                    dataKey="value"
+                    paddingAngle={3}
+                  >
+                    {liquidDonutData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip
+                    formatter={(v: number, n: string) => [fmt(v), n]}
+                    contentStyle={{ fontSize: 11 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-1 text-xs min-w-0">
+              {liquidBuckets.map((k) => {
+                const v = bucketValues[k];
+                if (!v) return null;
+                const pct = liquidTotal > 0 ? Math.round((v / liquidTotal) * 100) : 0;
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setActive(k)}
+                    className={`w-full flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors text-left ${active === k ? "bg-secondary" : "hover:bg-secondary/50"}`}
+                    data-testid={`bucket-${k}`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: GURU_BUCKETS[k].color }}
+                    />
+                    <span
+                      className={`font-bold flex-shrink-0 ${active === k ? "text-foreground" : "text-muted-foreground"}`}
+                    >
+                      {GURU_BUCKETS[k].label}
+                    </span>
+                    <span className="text-muted-foreground ml-auto tabular-nums flex-shrink-0">
+                      {pct}%
+                    </span>
+                    <span className="font-semibold tabular-nums flex-shrink-0">
+                      {fmt(v, true)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Active bucket detail */}
       <div className="px-3 pb-3 flex-1">
