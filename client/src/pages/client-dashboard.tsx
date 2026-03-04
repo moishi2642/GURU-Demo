@@ -3229,7 +3229,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
           </tr>
         );
       })}
-      <tr className={`${color} border-y-2 border-white/20`}>
+      <tr className="border-y-2 border-white/20" style={{ backgroundColor: color }}>
         <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">{bucketLabel}</td>
         {balances.map((v, mi) => (
           <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
@@ -3505,15 +3505,15 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
               </div>
 
               {/* Operating Cash Hub Card */}
-              <div className="rounded-2xl border-2 border-emerald-500 bg-white shadow-lg overflow-hidden flex-1">
+              <div className="rounded-2xl border-2 bg-white shadow-lg overflow-hidden flex-1" style={{ borderColor: "#1d4ed8" }}>
                 {/* Card header */}
-                <div className="bg-emerald-700 px-5 py-3 flex items-center justify-between">
+                <div className="px-5 py-3 flex items-center justify-between" style={{ backgroundColor: "#1d4ed8" }}>
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-widest text-white">Operating Cash</p>
-                    <p className="text-[9px] text-emerald-200">Chase Total Checking — GURU Hub</p>
+                    <p className="text-[9px] text-blue-200">Chase Total Checking — GURU Hub</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-emerald-200">End Balance</p>
+                    <p className="text-[9px] text-blue-200">End Balance</p>
                     <p className="text-[18px] font-black text-white tabular-nums">{fmtBal(opsEnd)}</p>
                   </div>
                 </div>
@@ -3678,7 +3678,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                   ]}
                   bucketLabel="Operating Cash"
                   balances={IMM_BAL}
-                  color="bg-emerald-700"
+                  color="#1d4ed8"
                 />
 
                 {/* ── Min Operating Cash target row ── */}
@@ -3725,7 +3725,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                   ]}
                   bucketLabel="Reserve"
                   balances={ST_BAL}
-                  color="bg-blue-600"
+                  color="#d97706"
                 />
 
                 <Section
@@ -3736,12 +3736,12 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                   ]}
                   bucketLabel="Build"
                   balances={MT_BAL}
-                  color="bg-blue-900"
+                  color="#16a34a"
                 />
 
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
-                <tr className="bg-violet-700 border-y-2 border-white/20">
+                <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#5b21b6" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">
                     Grow
                     <span className="ml-1.5 text-[9px] font-normal text-white/60 normal-case">(Brokerage &amp; Retirement)</span>
@@ -3770,14 +3770,14 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
           <div className="bg-slate-50 border-t border-slate-200 px-5 py-2.5 flex items-center gap-5 flex-wrap">
             <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">GURU Autopilot</span>
             {[
-              { color: "bg-emerald-700 text-white", label: "Operating Cash" },
-              { color: "bg-blue-600 text-white",    label: "Reserve (Short-Term)" },
-              { color: "bg-blue-900 text-white",    label: "Build (Medium-Term)" },
-              { color: "bg-violet-700 text-white",  label: "Grow (Long-Term)" },
-              { color: "bg-slate-700 text-white",   label: "Total Net Worth" },
+              { color: "#1d4ed8", label: "Operating Cash" },
+              { color: "#d97706", label: "Reserve (Short-Term)" },
+              { color: "#16a34a", label: "Build (Medium-Term)" },
+              { color: "#5b21b6", label: "Grow (Long-Term)" },
+              { color: "#374151", label: "Total Net Worth" },
             ].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-1.5">
-                <span className={`inline-block w-2.5 h-2.5 rounded-sm ${color} flex-shrink-0`} />
+                <span className="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
                 <span className="text-[9px] text-slate-500">{label}</span>
               </div>
             ))}
