@@ -3669,9 +3669,64 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
 
                 <Section
                   subrows={[
+                    { label: "Plus: Income Allocation to Medium-Term",          values: INCOME_TO_MT },
+                    { label: "Less: Cash Moved from Medium-Term to Immediate",  values: FROM_MT_OUT },
+                    { label: "Plus: After-Tax Interest Income",                 values: MT_INT },
+                  ]}
+                  bucketLabel="Build"
+                  balances={MT_BAL}
+                  color="bg-blue-900"
+                />
 
+                <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
+                <tr className="bg-violet-700 border-y-2 border-white/20">
+                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">
+                    Grow
+                    <span className="ml-1.5 text-[9px] font-normal text-white/60 normal-case">(Brokerage &amp; Retirement)</span>
+                  </td>
+                  {GROW_BAL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
 
+                <tr className="h-3 bg-slate-100"><td colSpan={13} /></tr>
+
+                <tr className="bg-slate-700">
+                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Total Net Worth</td>
+                  {NET_WORTH.map((v, mi) => (
+                    <td key={mi} className="px-2 py-3 text-[12px] font-black text-center tabular-nums whitespace-nowrap text-white">
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="bg-slate-50 border-t border-slate-200 px-5 py-2.5 flex items-center gap-5 flex-wrap">
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">GURU Autopilot</span>
+            {[
+              { color: "bg-emerald-700 text-white", label: "Operating Cash" },
+              { color: "bg-blue-600 text-white",    label: "Reserve (Short-Term)" },
+              { color: "bg-blue-900 text-white",    label: "Build (Medium-Term)" },
+              { color: "bg-violet-700 text-white",  label: "Grow (Long-Term)" },
+              { color: "bg-slate-700 text-white",   label: "Total Net Worth" },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span className={`inline-block w-2.5 h-2.5 rounded-sm ${color} flex-shrink-0`} />
+                <span className="text-[9px] text-slate-500">{label}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+    </div>
+  );
+}
 
 // ─── GURU Asset Allocation View ───────────────────────────────────────────────
 const GURU_BUCKETS_DEF = [
