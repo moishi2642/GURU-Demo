@@ -188,7 +188,7 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
     .reduce((s, c) => s + Number(c.amount), 0);
   const net = totalIn - totalOut;
   const rowH = 32; // px per row
-  const visRows = 6;
+  const visRows = 8;
   const duration = Math.max(20, items.length * 2.2); // seconds
 
   const fmtAmt = (v: number) =>
