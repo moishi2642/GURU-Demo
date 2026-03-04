@@ -1005,9 +1005,7 @@ function CashManagementPanel({
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
       <div className="px-4 pt-4 pb-2 border-b border-border">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
-          The GURU Method
-        </p>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">LIquidity MOnitor</p>
         <div
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold ${isSufficient ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}
         >
@@ -1021,7 +1019,6 @@ function CashManagementPanel({
             : "CASH SHORTFALL — ACTION NEEDED"}
         </div>
       </div>
-
       {/* Donut + legend */}
       {(() => {
         const liquidBuckets: GuroBucket[] = ["reserve", "yield", "tactical"];
@@ -1088,7 +1085,6 @@ function CashManagementPanel({
           </div>
         );
       })()}
-
       {/* Active bucket detail */}
       <div className="px-3 pb-3 flex-1">
         <div
@@ -1147,7 +1143,6 @@ function CashManagementPanel({
           )}
         </div>
       </div>
-
       {/* Liquidity vs trough footer */}
       <div className="grid grid-cols-2 divide-x divide-border border-t border-border text-xs">
         <div className="px-3 py-2">
