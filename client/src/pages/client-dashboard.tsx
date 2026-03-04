@@ -833,9 +833,9 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
       {/* ── Chart 2: Cumulative area chart ── */}
       <div className="px-3 pb-2">
         <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Cumulative Net Cash Flow</p>
-        <div style={{ height: 120 }}>
+        <div style={{ height: 200 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 16, right: 44, left: 0, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 52, right: 52, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="cfGrad2" x1="0" y1="0" x2="0" y2="1">
                   <stop offset={zeroOffset} stopColor={GREEN} stopOpacity={0.30} />
@@ -845,16 +845,16 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="month"
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
                 tickFormatter={fmtK}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                width={44}
+                width={48}
                 domain={[-150000, 150000]}
               />
               <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
@@ -863,17 +863,17 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
                   x={troughMonth}
                   stroke="hsl(0,72%,65%)"
                   strokeDasharray="5 3"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   label={(props: any) => {
                     const vb = props?.viewBox;
                     if (!vb) return null;
                     const { x, y } = vb;
                     return (
                       <g>
-                        <rect x={x - 30} y={y - 30} width={60} height={24} rx={3} fill="hsl(0,80%,97%)" stroke="hsl(0,80%,80%)" strokeWidth={1} />
-                        <text x={x} y={y - 20} textAnchor="middle" fill="hsl(0,72%,50%)" fontSize={7} fontWeight="700">TROUGH</text>
-                        <text x={x} y={y - 10} textAnchor="middle" fill="hsl(0,72%,45%)" fontSize={8} fontWeight="800">{fmt(minVal, true)}</text>
-                        <polygon points={`${x - 4},${y - 6} ${x + 4},${y - 6} ${x},${y}`} fill="hsl(0,80%,80%)" />
+                        <rect x={x - 46} y={y - 48} width={92} height={40} rx={5} fill="hsl(0,80%,97%)" stroke="hsl(0,72%,65%)" strokeWidth={1.5} />
+                        <text x={x} y={y - 32} textAnchor="middle" fill="hsl(0,72%,45%)" fontSize={11} fontWeight="800" letterSpacing="1">TROUGH</text>
+                        <text x={x} y={y - 16} textAnchor="middle" fill="hsl(0,72%,40%)" fontSize={13} fontWeight="900">{fmt(minVal, true)}</text>
+                        <polygon points={`${x - 6},${y - 8} ${x + 6},${y - 8} ${x},${y}`} fill="hsl(0,72%,65%)" />
                       </g>
                     );
                   }}
@@ -901,7 +901,7 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
                       <g key="cf-live">
                         <circle cx={cx} cy={cy} r={10} fill={liveCol} opacity={0.12} style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
                         <circle cx={cx} cy={cy} r={4} fill={liveCol} stroke="white" strokeWidth={1.5} />
-                        <text x={cx} y={cy - 10} textAnchor="middle" fill={liveCol} fontSize={7} fontWeight="800">NOW</text>
+                        <text x={cx} y={cy - 12} textAnchor="middle" fill={liveCol} fontSize={10} fontWeight="800">NOW</text>
                       </g>
                     );
                   }
@@ -910,7 +910,7 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
                     return (
                       <g key="end-dot">
                         <circle cx={cx} cy={cy} r={4.5} fill={isPositive ? GREEN : RED} stroke="white" strokeWidth={2} />
-                        <text x={cx + 7} y={cy + 4} fill={col} fontSize={8} fontWeight="800">
+                        <text x={cx + 8} y={cy + 4} fill={col} fontSize={11} fontWeight="800">
                           {isPositive ? "▲" : "▼"} {fmtK(finalVal)}
                         </text>
                       </g>
