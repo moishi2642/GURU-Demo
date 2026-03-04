@@ -827,14 +827,6 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
           </div>
         </div>
       </div>
-      {/* ── KPI tile ── */}
-      <div className="px-3 py-3 border-b border-border/60 flex flex-col gap-0.5">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Trough</p>
-        <p className={`text-2xl font-extrabold tabular-nums leading-none ${minVal >= 0 ? "text-foreground" : "text-rose-600"}`}>
-          {fmtK(Math.round(minVal))}
-        </p>
-        <p className="text-[9px] text-muted-foreground">{hasTrough ? `worst point · ${troughMonth}` : "no deficit in 12mo"}</p>
-      </div>
       {/* ── Chart 2: Cumulative area chart ── */}
       <div className="px-3 pb-2">
         <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground mb-1 px-1">Cumulative Net Cash Flow</p>
