@@ -4748,8 +4748,8 @@ export default function ClientDashboard() {
                     <span className="text-[8px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Fixed Income</span>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground leading-snug mb-1">Lock in Treasury yields before the Fed cuts further — significant yield pickup available now.</p>
-                    <p className="text-sm font-black text-foreground leading-snug">Fixed Income Product Recommendation</p>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Fixed Income Product Recommendation</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Lock in Treasury yields before the Fed cuts further — significant yield pickup available now.</p>
                   </div>
                   <div className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-2 flex items-center gap-1.5">
                     <TrendingDown className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
