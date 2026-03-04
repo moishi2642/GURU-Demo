@@ -1005,7 +1005,7 @@ function CashManagementPanel({
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
       <div className="px-4 pt-4 pb-2 border-b border-border">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Liquidity Monitor</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Liquidity Monitor</p>
         <div
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold ${isSufficient ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}
         >
