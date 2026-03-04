@@ -4780,11 +4780,11 @@ export default function ClientDashboard() {
                       { label: "Warren Property Tax", payment: _warrenPayment },
                     ].map(({ label, payment }) => (
                       <div key={label} className="flex items-baseline justify-between gap-2">
-                        <span className="text-[9px] text-muted-foreground truncate flex-1">{label}</span>
+                        <span className="text-[12px] text-muted-foreground truncate flex-1">{label}</span>
                         {payment ? (
-                          <span className="text-[9px] font-bold tabular-nums text-rose-700 flex-shrink-0">{fmt(payment.amount, true)} · {format(payment.date, "MMM d")}</span>
+                          <span className="text-[12px] font-bold tabular-nums text-rose-700 flex-shrink-0">{fmt(payment.amount, true)} · {format(payment.date, "MMM d")}</span>
                         ) : (
-                          <span className="text-[9px] text-muted-foreground flex-shrink-0">None in 6 mo</span>
+                          <span className="text-[12px] text-muted-foreground flex-shrink-0">None in 6 mo</span>
                         )}
                       </div>
                     ))}
