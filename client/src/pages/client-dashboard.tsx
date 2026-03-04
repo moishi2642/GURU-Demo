@@ -3126,74 +3126,66 @@ const MM_GURU_ACTIONS = [
 ];
 
 function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const MONTHS = ["Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb"];
+  const [minOps, setMinOps] = useState(20939);
 
-  // ── Computed monthly flow data (sourced from DB records) ────────────────────
-  const INCOME_TO_OPS   = [20535,20535,20535,20535,20535,20535,20535,20535,20535,237176,20535,20535];
-  const EXPENSES        = [-35556,-18056,-37056,-34056,-45056,-22753,-50556,-18056,-48056,-18056,-22158,-18056];
-  const DRAW_FROM_RSV   = [15021,0,16521,13521,24521,2218,30021,0,27521,0,1623,0];
-  const DRAW_FROM_BLD   = [0,0,0,0,0,0,0,0,0,0,0,0];
-  const OPS_INT         = [0,0,0,0,0,0,0,0,0,0,0,0];
-  const OPS_BALANCE     = [25050,25050,25050,25050,25050,25050,25050,25050,25050,25050,25050,25050];
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-  const PUSH_TO_RSV     = [0,2479,0,0,0,0,0,2479,0,124386,0,2479];
-  const TRANSFER_OUT_RSV= [-15021,0,-16521,-13521,-24521,-2218,-30021,0,-27521,0,-1623,0];
-  const RSV_INT         = [684,639,646,595,555,480,473,382,390,306,683,681];
-  const RSV_BALANCE     = [209979,212458,195937,182416,157895,155677,125656,128135,100614,225000,223377,225856];
+  // ── All values sourced directly from Prototype_Model_v4 spreadsheet ──────────
 
-  const SWEEP_TO_BLD    = [0,0,0,0,0,0,0,0,0,94734,0,0];
-  const TRANSFER_OUT_BLD= [0,0,0,0,0,0,0,0,0,0,0,0];
-  const BLD_INT         = [2487,2487,2487,2487,2487,2487,2487,2487,2487,2776,2906,2908];
-  const BLD_BALANCE     = [757487,759974,762461,764948,767435,769922,772409,774896,777383,875117,878023,880931];
+  // OPERATING CASH (Immediate) — Jan through Dec
+  const INCOME_TO_IMM  = [18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,38439];
+  const EXPENSES       = [-38439,-20939,-20939,-65939,-24939,-21939,-40439,-35939,-20939,-20939,-24939,-48392];
+  const FROM_ST_TO_IMM = [0,812,47126,6126,3126,21626,17126,2126,2126,6126,24738,0];
+  const FROM_MT_TO_IMM = [0,0,0,0,0,0,0,0,0,0,4841,0];
+  const IMM_INT        = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const IMM_BAL        = [22253,20939,65939,24939,21939,40439,35939,20939,20939,24939,48392,38440];
 
-  const GROW_BALANCE    = [2219424,2234122,2248820,2263518,2278216,2292914,2307612,2322310,2337008,2351706,2366404,2381102];
+  // RESERVE (Short-Term) — Jan through Dec
+  const INCOME_TO_ST   = [0,0,0,0,0,0,0,0,0,0,0,129385];
+  const FROM_ST_OUT    = [0,-812,-47126,-6126,-3126,-21626,-17126,-2126,-2126,-6126,-24738,0];
+  const ST_INT         = [0,301,301,246,185,174,146,101,79,74,65,29];
+  const ST_BAL         = [129385,128874,82049,76170,73228,51777,34797,32772,30725,24673,0,129414];
 
-  const fmtN = (v: number) => {
+  // BUILD (Medium-Term) — Jan through Dec
+  const INCOME_TO_MT   = [0,0,0,0,0,0,0,0,0,0,0,67630];
+  const FROM_MT_OUT    = [0,0,0,0,0,0,0,0,0,0,-4841,0];
+  const MT_INT         = [427,428,429,430,431,432,433,434,435,436,431,431];
+  const MT_BAL         = [194468,194895,195323,195752,196182,196612,197044,197477,197911,198345,193940,262001];
+
+  // GROW (Long-Term) — balances only
+  const GROW_BAL       = [2666281,2681835,2697479,2713214,2729041,2744961,2760973,2777079,2793278,2809572,2825961,2842446];
+
+  // TOTAL NET WORTH
+  const NET_WORTH      = [4644221,4658377,4672624,4641909,4652225,4665623,4660587,4660101,4674687,4689364,4700128,4904134];
+
+  const fmtN = (v: number): React.ReactNode => {
     if (v === 0) return <span className="text-slate-300">—</span>;
-    const abs = Math.abs(v);
-    const s = abs >= 1_000_000
-      ? `$${(abs / 1_000_000).toFixed(2)}M`
-      : abs >= 1_000
-        ? `$${(abs / 1_000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}K`
-        : `$${abs.toLocaleString()}`;
-    if (v > 0) return <span className="text-emerald-700 font-medium">+{s}</span>;
-    return <span className="text-red-600 font-medium">({s})</span>;
+    const s = Math.abs(v).toLocaleString("en-US");
+    if (v > 0) return <span className="text-emerald-700 font-medium">+${s}</span>;
+    return <span className="text-red-600 font-medium">{`($${s})`}</span>;
   };
 
-  const fmtBal = (v: number) => {
-    const abs = Math.abs(v);
-    if (abs >= 1_000_000) return `$${(abs / 1_000_000).toFixed(2)}M`;
-    if (abs >= 1_000) return `$${Math.round(abs / 1_000).toLocaleString()}K`;
-    return `$${abs.toLocaleString()}`;
-  };
+  const fmtBal = (v: number) => `$${Math.abs(v).toLocaleString("en-US")}`;
 
-  const fmtFull = (v: number) =>
-    `$${Math.round(Math.abs(v)).toLocaleString("en-US")}`;
+  const minOpsOk = Math.min(...IMM_BAL) >= minOps;
 
   type SubRow = { label: string; values: number[] };
 
   const Section = ({
-    subbrows,
+    subrows,
     bucketLabel,
-    accountLabel,
     balances,
     color,
-    textColor = "text-white",
   }: {
-    subbrows: SubRow[];
+    subrows: SubRow[];
     bucketLabel: string;
-    accountLabel: string;
     balances: number[];
     color: string;
-    textColor?: string;
   }) => (
     <>
-      {subbrows.map((row, i) => (
+      {subrows.map((row, i) => (
         <tr key={i} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
-          <td className="px-4 py-2 text-[11px] text-slate-500 leading-tight max-w-[220px]">
-            {row.label}
-          </td>
-          <td className="px-3 py-2 text-[11px] text-slate-400 italic" />
+          <td className="px-4 py-2 text-[11px] text-slate-500 leading-snug w-[300px]">{row.label}</td>
           {row.values.map((v, mi) => (
             <td key={mi} className="px-2 py-2 text-[11px] text-center tabular-nums whitespace-nowrap">
               {fmtN(v)}
@@ -3201,16 +3193,10 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
           ))}
         </tr>
       ))}
-      {/* Bucket summary row */}
       <tr className={`${color} border-y-2 border-white/20`}>
-        <td className={`px-4 py-3 text-[12px] font-black uppercase tracking-wide ${textColor}`}>
-          {bucketLabel}
-        </td>
-        <td className={`px-3 py-3 text-[9px] font-semibold leading-tight ${textColor} opacity-80 max-w-[140px]`}>
-          {accountLabel}
-        </td>
+        <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">{bucketLabel}</td>
         {balances.map((v, mi) => (
-          <td key={mi} className={`px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap ${textColor}`}>
+          <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
             {fmtBal(v)}
           </td>
         ))}
@@ -3221,25 +3207,43 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
   return (
     <div className="rounded-xl overflow-hidden shadow-xl border border-slate-200">
 
-      {/* ── Title ── */}
-      <div className="bg-slate-800 px-6 py-4">
-        <h2 className="text-white text-[15px] leading-snug">
+      {/* ── Title + Min Operating Cash input ── */}
+      <div className="bg-slate-800 px-6 py-4 flex items-center gap-6 flex-wrap">
+        <h2 className="text-white text-[15px] leading-snug flex-1 min-w-0">
           <span className="font-black">Continuous Money Movement:</span>
           <span className="font-light ml-2">A Glimpse into How GURU Will Move Your Money</span>
         </h2>
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <label className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 whitespace-nowrap">
+            Min Operating Cash
+          </label>
+          <div className="relative">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[11px] pointer-events-none">$</span>
+            <input
+              type="number"
+              value={minOps}
+              onChange={e => setMinOps(Number(e.target.value))}
+              className="pl-6 pr-2 py-1.5 bg-slate-700 border border-slate-600 hover:border-slate-400 focus:border-blue-400 focus:outline-none text-white text-[11px] rounded-md w-[110px] tabular-nums transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-slate-700 border border-slate-600">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: minOpsOk ? "#22c55e" : "#f59e0b" }} />
+            <span className="text-[9px] text-slate-300 whitespace-nowrap">
+              {minOpsOk ? "All months covered" : "Some months below target"}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* ── Table ── */}
       <div className="overflow-auto bg-white" style={{ maxHeight: 580 }}>
         <table className="w-full border-collapse min-w-max">
 
-          {/* Column headers — sticky */}
           <thead className="sticky top-0 z-20">
             <tr className="bg-slate-100 border-b-2 border-slate-200">
-              <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 w-[220px]" />
-              <th className="px-3 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 w-[140px]">Account</th>
+              <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 w-[300px]" />
               {MONTHS.map(m => (
-                <th key={m} className="px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 min-w-[68px]">
+                <th key={m} className="px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 min-w-[76px]">
                   {m}
                 </th>
               ))}
@@ -3250,63 +3254,69 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
 
             {/* ── SECTION 1: Operating Cash ── */}
             <Section
-              subbrows={[
-                { label: "Plus: Income Allocation to Operating Cash",        values: INCOME_TO_OPS },
-                { label: "Less: Cash Expenses",                               values: EXPENSES },
-                { label: "Plus: Cash Moved from Reserve to Operating",        values: DRAW_FROM_RSV },
-                { label: "Plus: Cash Moved from Build to Operating",          values: DRAW_FROM_BLD },
-                { label: "Plus: After-Tax Interest Income",                   values: OPS_INT },
+              subrows={[
+                { label: "Plus: Income Allocation to Immediate",            values: INCOME_TO_IMM },
+                { label: "Less: Expenses",                                  values: EXPENSES },
+                { label: "Plus: Cash Moved from Short-Term Into Immediate", values: FROM_ST_TO_IMM },
+                { label: "Plus: Cash Moved from Medium-Term Into Immediate",values: FROM_MT_TO_IMM },
+                { label: "Plus: After-Tax Interest Income",                 values: IMM_INT },
               ]}
               bucketLabel="Operating Cash"
-              accountLabel="Chase Total Checking"
-              balances={OPS_BALANCE}
+              balances={IMM_BAL}
               color="bg-emerald-700"
             />
 
-            {/* spacer */}
-            <tr className="h-2 bg-slate-50"><td colSpan={15} /></tr>
+            <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
-            {/* ── SECTION 2: Reserve Buffer ── */}
+            {/* ── SECTION 2: Reserve (Short-Term) ── */}
             <Section
-              subbrows={[
-                { label: "Plus: Surplus Transferred to Reserve",            values: PUSH_TO_RSV },
-                { label: "Less: Cash Moved from Reserve to Operating Cash",  values: TRANSFER_OUT_RSV },
-                { label: "Plus: After-Tax Interest Income (3.65%)",          values: RSV_INT },
+              subrows={[
+                { label: "Plus: Income Allocation to Short-Term",           values: INCOME_TO_ST },
+                { label: "Less: Cash Moved from Short-Term Into Immediate", values: FROM_ST_OUT },
+                { label: "Plus: After-Tax Interest Income",                 values: ST_INT },
               ]}
               bucketLabel="Reserve"
-              accountLabel="Citizens Private Bank Money Market"
-              balances={RSV_BALANCE}
+              balances={ST_BAL}
               color="bg-blue-600"
             />
 
-            {/* spacer */}
-            <tr className="h-2 bg-slate-50"><td colSpan={15} /></tr>
+            <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
-            {/* ── SECTION 3: Build ── */}
+            {/* ── SECTION 3: Build (Medium-Term) ── */}
             <Section
-              subbrows={[
-                { label: "Plus: Year-End Bonus Surplus Sweep",               values: SWEEP_TO_BLD },
-                { label: "Less: Cash Moved to Operating Cash",               values: TRANSFER_OUT_BLD },
-                { label: "Plus: After-Tax Interest Income (3.95%)",          values: BLD_INT },
+              subrows={[
+                { label: "Plus: Income Allocation to Immediate",            values: INCOME_TO_MT },
+                { label: "Less: Cash Moved from Medium-Term to Immediate",  values: FROM_MT_OUT },
+                { label: "Plus: After-Tax Interest Income",                 values: MT_INT },
               ]}
               bucketLabel="Build"
-              accountLabel="US Treasuries · 3.95% yield"
-              balances={BLD_BALANCE}
+              balances={MT_BAL}
               color="bg-blue-900"
             />
 
-            {/* spacer */}
-            <tr className="h-2 bg-slate-50"><td colSpan={15} /></tr>
+            <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
-            {/* ── SECTION 4: Grow (no sub-rows) ── */}
+            {/* ── SECTION 4: Grow (Long-Term, balances only) ── */}
             <tr className="bg-violet-700 border-y-2 border-white/20">
-              <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Grow</td>
-              <td className="px-3 py-3 text-[9px] font-semibold text-white/80 leading-tight">
-                Fidelity Brokerage + IRA + Roth IRA
+              <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">
+                Grow
+                <span className="ml-1.5 text-[9px] font-normal text-white/60 normal-case">(Brokerage &amp; Retirement)</span>
               </td>
-              {GROW_BALANCE.map((v, mi) => (
+              {GROW_BAL.map((v, mi) => (
                 <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
-                  {fmtFull(v)}
+                  {fmtBal(v)}
+                </td>
+              ))}
+            </tr>
+
+            <tr className="h-3 bg-slate-100"><td colSpan={13} /></tr>
+
+            {/* ── Total Net Worth ── */}
+            <tr className="bg-slate-700">
+              <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Total Net Worth</td>
+              {NET_WORTH.map((v, mi) => (
+                <td key={mi} className="px-2 py-3 text-[12px] font-black text-center tabular-nums whitespace-nowrap text-white">
+                  {fmtBal(v)}
                 </td>
               ))}
             </tr>
@@ -3316,18 +3326,17 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
       </div>
 
       {/* ── Footer legend ── */}
-      <div className="bg-slate-50 border-t border-slate-200 px-6 py-3 flex items-center gap-6 flex-wrap">
-        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">GURU Autopilot Logic</span>
+      <div className="bg-slate-50 border-t border-slate-200 px-5 py-2.5 flex items-center gap-5 flex-wrap">
+        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">GURU Autopilot</span>
         {[
-          { color: "bg-emerald-100 text-emerald-700", label: "+Value = inflow / transfer in" },
-          { color: "bg-red-50 text-red-600",          label: "(Value) = outflow / transfer out" },
-          { color: "bg-emerald-700 text-white",       label: "Operating Cash — daily liquidity target" },
-          { color: "bg-blue-600 text-white",          label: "Reserve — GURU auto-draw source" },
-          { color: "bg-blue-900 text-white",          label: "Build — medium-term fixed income" },
-          { color: "bg-violet-700 text-white",        label: "Grow — long-term market appreciation" },
+          { color: "bg-emerald-700 text-white", label: "Operating Cash" },
+          { color: "bg-blue-600 text-white",    label: "Reserve (Short-Term)" },
+          { color: "bg-blue-900 text-white",    label: "Build (Medium-Term)" },
+          { color: "bg-violet-700 text-white",  label: "Grow (Long-Term)" },
+          { color: "bg-slate-700 text-white",   label: "Total Net Worth" },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5">
-            <span className={`inline-block w-3 h-3 rounded-sm ${color} flex-shrink-0`} />
+            <span className={`inline-block w-2.5 h-2.5 rounded-sm ${color} flex-shrink-0`} />
             <span className="text-[9px] text-slate-500">{label}</span>
           </div>
         ))}
