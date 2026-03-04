@@ -3213,10 +3213,13 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
     <>
       {subrows.map((row, i) => {
         const isLess = row.label.startsWith("Less:");
+        const isPlus = row.label.startsWith("Plus:");
         return (
-          <tr key={i} className={`border-b transition-colors ${isLess ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-slate-50/60'} border-slate-100`}>
-            <td className={`px-4 py-2 text-[11px] leading-snug w-[300px] ${isLess ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
-              {isLess && <span className="mr-1 opacity-60">↓</span>}{row.label.replace(/^Less: /, '')}
+          <tr key={i} className={`border-b transition-colors border-slate-100 ${isLess ? 'bg-red-50/50 hover:bg-red-50' : isPlus ? 'bg-emerald-50/40 hover:bg-emerald-50/70' : 'hover:bg-slate-50/60'}`}>
+            <td className={`px-4 py-2 text-[11px] leading-snug w-[300px] ${isLess ? 'text-red-600 font-semibold' : isPlus ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
+              {isLess && <span className="mr-1 opacity-60">↓</span>}
+              {isPlus && <span className="mr-1 opacity-60">↑</span>}
+              {row.label.replace(/^Less: /, '').replace(/^Plus: /, '')}
             </td>
             {row.values.map((v, mi) => (
               <td key={mi} className="px-2 py-2 text-[11px] text-center tabular-nums whitespace-nowrap">
