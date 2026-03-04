@@ -4691,17 +4691,17 @@ export default function ClientDashboard() {
                     <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
                       <Wallet className="w-4 h-4 text-emerald-600" />
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Cash Mgmt</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Liquidity</span>
                   </div>
                   <div>
-                    <p className="text-sm font-black text-foreground leading-snug mb-1">Deploy Excess Liquidity</p>
-                    <p className="text-xs text-muted-foreground leading-snug">Idle cash earning below-market yields — deploy into higher-return positions</p>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Identify Excess Liquidity</p>
+                    <p className="text-xs text-muted-foreground leading-snug">GURU estimates significant excess liquidity. Work with client to position cash for better returns.</p>
                   </div>
                   <p className="text-2xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToInvestTop, true)}</p>
-                  <p className="text-[9px] text-emerald-700 font-semibold">available to invest</p>
+                  <p className="text-[9px] text-emerald-700 font-semibold">estimated excess liquidity</p>
                 </div>
                 <div className="px-5 py-3 border-t border-border flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">Click to open GURU Allocation</span>
+                  <span className="text-[10px] text-muted-foreground">Open GURU Allocation</span>
                   <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">Review <ArrowUpRight className="w-3 h-3" /></span>
                 </div>
               </div>
@@ -4716,11 +4716,11 @@ export default function ClientDashboard() {
                     <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
                       <RefreshCw className="w-4 h-4 text-blue-600" />
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Portfolio</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Rebalance</span>
                   </div>
                   <div>
-                    <p className="text-sm font-black text-foreground leading-snug mb-1">Portfolio Rebalancing Needed</p>
-                    <p className="text-xs text-muted-foreground leading-snug">Concentration risk in single stocks and missing asset classes</p>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Deploy Liquidity to Rebalance Portfolio</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Mitigate concentration risks by reallocating excess cash into underweight asset classes.</p>
                   </div>
                   <p className="text-2xl font-black tabular-nums text-blue-600 leading-none">3 flags</p>
                   <div className="flex flex-col gap-1">
@@ -4748,11 +4748,11 @@ export default function ClientDashboard() {
                     <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
                       <SlidersHorizontal className="w-4 h-4 text-amber-600" />
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Yield</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Fixed Income</span>
                   </div>
                   <div>
-                    <p className="text-sm font-black text-foreground leading-snug mb-1">Yield Pickup Available</p>
-                    <p className="text-xs text-muted-foreground leading-snug">Lock in Treasury yields before Fed cuts rates further</p>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Fixed Income Product Recommendation</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Lock in Treasury yields before the Fed cuts further — significant yield pickup available now.</p>
                   </div>
                   <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps</p>
                   <p className="text-[9px] text-amber-700 font-semibold">{_currentLiquidYield}% → {_guruLiquidYield}% AT yield</p>
@@ -4773,11 +4773,11 @@ export default function ClientDashboard() {
                     <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0">
                       <Calendar className="w-4 h-4 text-rose-600" />
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">Payments</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">Planning</span>
                   </div>
                   <div>
-                    <p className="text-sm font-black text-foreground leading-snug mb-1">Pre-fund Upcoming Obligations</p>
-                    <p className="text-xs text-muted-foreground leading-snug">Ensure reserve is funded ahead of these known expenses</p>
+                    <p className="text-sm font-black text-foreground leading-snug mb-1">Plan For Money Movement</p>
+                    <p className="text-xs text-muted-foreground leading-snug">Upcoming obligations require coordinated cash transfers. Ensure reserves are pre-funded.</p>
                   </div>
                   <div className="flex flex-col gap-1.5">
                     {[
