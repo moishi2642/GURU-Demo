@@ -955,11 +955,6 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> Deficit
         </span>
-        {hasTrough && (
-          <span className="flex items-center gap-1 ml-auto text-rose-500 font-semibold">
-            Trough at {troughMonth}
-          </span>
-        )}
       </div>
     </div>
   );
