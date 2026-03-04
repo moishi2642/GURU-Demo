@@ -985,7 +985,7 @@ function CashManagementPanel({
   assets: Asset[];
   cashFlows: CashFlow[];
 }) {
-  const { reserve, yieldBucket, tactical, growth, alts, reserveItems, yieldItems, tacticalItems, totalLiquid } = cashBuckets(assets);
+  const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
 
   const forecastData = buildForecast(cashFlows);
   const annualOutflows = forecastData.reduce((s, d) => s + d.outflow, 0);
@@ -997,9 +997,9 @@ function CashManagementPanel({
   const coverageOk = coveragePct >= 100;
 
   const BUCKETS = [
-    { key: "reserve" as GuroBucket,  label: "Operating Cash", value: reserve,      items: reserveItems  },
-    { key: "yield"   as GuroBucket,  label: "Reserve",        value: yieldBucket,  items: yieldItems    },
-    { key: "tactical" as GuroBucket, label: "Build",          value: tactical,     items: tacticalItems },
+    { key: "reserve"  as GuroBucket, label: "Operating Cash", value: reserve     },
+    { key: "yield"    as GuroBucket, label: "Reserve",        value: yieldBucket },
+    { key: "tactical" as GuroBucket, label: "Build",          value: tactical    },
   ];
 
   const donutData = BUCKETS.filter(b => b.value > 0).map(b => ({
@@ -1093,21 +1093,6 @@ function CashManagementPanel({
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* ── Flat account list ── */}
-      <div className="px-4 pb-4 flex-1">
-        <div className="rounded-lg border border-border/60 overflow-hidden">
-          {BUCKETS.flatMap(b =>
-            b.items.map((item, i) => (
-              <div key={`${b.key}-${i}`} className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 last:border-b-0 hover:bg-muted/30 transition-colors">
-                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[b.key].color }} />
-                <span className="text-[10px] text-muted-foreground flex-1 truncate">{item.label}</span>
-                <span className="text-[10px] font-semibold tabular-nums text-foreground">{fmt(item.value, true)}</span>
-              </div>
-            ))
-          )}
         </div>
       </div>
 
