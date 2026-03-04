@@ -1271,18 +1271,7 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
                   cx="50%" cy="50%"
                   innerRadius={72} outerRadius={92}
                   dataKey="value" paddingAngle={2}
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                    if (percent < 0.05) return null;
-                    const RADIAN = Math.PI / 180;
-                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + r * Math.cos(-midAngle * RADIAN);
-                    const y = cy + r * Math.sin(-midAngle * RADIAN);
-                    return (
-                      <text x={x} y={y} fill="white" fontSize={9} fontWeight={800} textAnchor="middle" dominantBaseline="central" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}>
-                        {`${(percent * 100).toFixed(0)}%`}
-                      </text>
-                    );
-                  }}
+                  label={false}
                   labelLine={false}
                 >
                   {currentDonut.map((d, i) => <Cell key={i} fill={d.color} />)}
@@ -1293,18 +1282,7 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
                   cx="50%" cy="50%"
                   innerRadius={38} outerRadius={70}
                   dataKey="value" paddingAngle={2}
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                    if (percent < 0.07) return null;
-                    const RADIAN = Math.PI / 180;
-                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + r * Math.cos(-midAngle * RADIAN);
-                    const y = cy + r * Math.sin(-midAngle * RADIAN);
-                    return (
-                      <text x={x} y={y} fill="white" fontSize={9} fontWeight={800} textAnchor="middle" dominantBaseline="central">
-                        {`${(percent * 100).toFixed(0)}%`}
-                      </text>
-                    );
-                  }}
+                  label={false}
                   labelLine={false}
                 >
                   {targetDonut.map((d, i) => <Cell key={i} fill={d.color} opacity={0.65} />)}
