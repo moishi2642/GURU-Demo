@@ -3211,16 +3211,21 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
     color: string;
   }) => (
     <>
-      {subrows.map((row, i) => (
-        <tr key={i} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
-          <td className="px-4 py-2 text-[11px] text-slate-500 leading-snug w-[300px]">{row.label}</td>
-          {row.values.map((v, mi) => (
-            <td key={mi} className="px-2 py-2 text-[11px] text-center tabular-nums whitespace-nowrap">
-              {fmtN(v)}
+      {subrows.map((row, i) => {
+        const isLess = row.label.startsWith("Less:");
+        return (
+          <tr key={i} className={`border-b transition-colors ${isLess ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-slate-50/60'} border-slate-100`}>
+            <td className={`px-4 py-2 text-[11px] leading-snug w-[300px] ${isLess ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
+              {isLess && <span className="mr-1 opacity-60">↓</span>}{row.label.replace(/^Less: /, '')}
             </td>
-          ))}
-        </tr>
-      ))}
+            {row.values.map((v, mi) => (
+              <td key={mi} className="px-2 py-2 text-[11px] text-center tabular-nums whitespace-nowrap">
+                {fmtN(v)}
+              </td>
+            ))}
+          </tr>
+        );
+      })}
       <tr className={`${color} border-y-2 border-white/20`}>
         <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">{bucketLabel}</td>
         {balances.map((v, mi) => (
@@ -3281,7 +3286,7 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                 mmView === v ? 'bg-white text-slate-800 shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
-              {v === 'table' ? 'Spreadsheet' : 'Flow Schematic'}
+              {v === 'table' ? 'Planned Movement' : 'Flow Schematic'}
             </button>
           ))}
         </div>
@@ -3451,25 +3456,49 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
             <div className="flex-1 flex flex-col min-w-0">
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">GURU Autopilot Hub</p>
 
-              {/* Inflow arrows */}
-              <div className="flex flex-col gap-1 mb-2">
+              {/* Inflow arrows — animated moving dots */}
+              <div className="flex flex-col gap-2 mb-2">
+                {/* Salary income line */}
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 h-px bg-emerald-400" />
-                  <span className="text-[9px] font-black text-emerald-700 tabular-nums whitespace-nowrap">+{fmtBal(income)} salary</span>
-                  <div className="w-0 h-0 border-t-4 border-b-4 border-l-6 border-transparent border-l-emerald-400" style={{ borderLeftWidth: 8 }} />
+                  <div className="relative flex-1 h-2 rounded-full bg-emerald-100 overflow-hidden">
+                    <motion.div
+                      className="absolute top-0 h-full w-4 rounded-full bg-emerald-400"
+                      style={{ boxShadow: '0 0 6px #10b981' }}
+                      animate={{ x: ['-16px', '100%'] }}
+                      transition={{ duration: 1.0, repeat: Infinity, ease: 'linear' }}
+                    />
+                  </div>
+                  <span className="text-[9px] font-black text-emerald-700 tabular-nums whitespace-nowrap">+{fmtBal(income)}</span>
+                  <div className="w-0 h-0" style={{ borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '8px solid #10b981' }} />
                 </div>
+                {/* Reserve auto-draw line */}
                 {rsvDraw > 0 && (
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-px bg-blue-500 border-dashed" style={{ borderTop: '1px dashed #3b82f6' }} />
-                    <span className="text-[9px] font-black text-blue-600 tabular-nums whitespace-nowrap">+{fmtBal(rsvDraw)} reserve draw</span>
-                    <div className="w-0 h-0" style={{ borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderLeft: '8px solid #3b82f6' }} />
+                    <div className="relative flex-1 h-2 rounded-full bg-blue-100 overflow-hidden">
+                      <motion.div
+                        className="absolute top-0 h-full w-4 rounded-full bg-blue-500"
+                        style={{ boxShadow: '0 0 6px #3b82f6' }}
+                        animate={{ x: ['-16px', '100%'] }}
+                        transition={{ duration: 1.3, repeat: Infinity, ease: 'linear', delay: 0.2 }}
+                      />
+                    </div>
+                    <span className="text-[9px] font-black text-blue-600 tabular-nums whitespace-nowrap">+{fmtBal(rsvDraw)} reserve</span>
+                    <div className="w-0 h-0" style={{ borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '8px solid #3b82f6' }} />
                   </div>
                 )}
+                {/* Build draw line */}
                 {bldDraw > 0 && (
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-px" style={{ borderTop: '1px dashed #1e3a8a' }} />
-                    <span className="text-[9px] font-black text-blue-900 tabular-nums whitespace-nowrap">+{fmtBal(bldDraw)} build draw</span>
-                    <div className="w-0 h-0" style={{ borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderLeft: '8px solid #1e3a8a' }} />
+                    <div className="relative flex-1 h-2 rounded-full bg-blue-900/20 overflow-hidden">
+                      <motion.div
+                        className="absolute top-0 h-full w-4 rounded-full bg-blue-900"
+                        style={{ boxShadow: '0 0 6px #1e3a8a' }}
+                        animate={{ x: ['-16px', '100%'] }}
+                        transition={{ duration: 1.6, repeat: Infinity, ease: 'linear', delay: 0.4 }}
+                      />
+                    </div>
+                    <span className="text-[9px] font-black text-blue-900 tabular-nums whitespace-nowrap">+{fmtBal(bldDraw)} build</span>
+                    <div className="w-0 h-0" style={{ borderTop: '5px solid transparent', borderBottom: '5px solid transparent', borderLeft: '8px solid #1e3a8a' }} />
                   </div>
                 )}
               </div>
@@ -3628,11 +3657,12 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
             <table className="w-full border-collapse min-w-max">
 
               <thead className="sticky top-0 z-20">
-                <tr className="bg-slate-100 border-b-2 border-slate-200">
-                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 w-[300px]" />
-                  {MONTHS.map(mo => (
-                    <th key={mo} className="px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 min-w-[76px]">
+                <tr className="bg-slate-900 border-b-2 border-slate-700">
+                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-400 w-[300px]">Line Item</th>
+                  {MONTHS.map((mo, mi) => (
+                    <th key={mo} className={`px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider min-w-[76px] ${mi === 3 ? 'text-amber-400 bg-slate-800' : 'text-slate-300'}`}>
                       {mo}
+                      {mi === 3 && <div className="text-[7px] font-normal text-amber-400/70 normal-case leading-none mt-0.5">upcoming</div>}
                     </th>
                   ))}
                 </tr>
@@ -3652,7 +3682,41 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                   color="bg-emerald-700"
                 />
 
-                <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
+                {/* ── Min Operating Cash target row ── */}
+                <tr className="bg-emerald-50 border-b border-emerald-100">
+                  <td className="px-4 py-1.5 w-[300px]">
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-semibold italic">
+                      <span className="text-emerald-500">⤷</span> Min target (2-month floor: ${minOps.toLocaleString()})
+                    </div>
+                  </td>
+                  {IMM_BAL.map((bal, mi) => (
+                    <td key={mi} className={`px-2 py-1.5 text-[10px] text-center font-black tabular-nums ${bal >= minOps ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {bal >= minOps ? '✓' : '⚠'}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ── Connector: Reserve → Operating Cash ── */}
+                <tr className="h-7 bg-blue-50/60 border-y border-blue-100">
+                  <td className="px-4 py-1 text-[9px] font-black uppercase tracking-wider text-blue-600 whitespace-nowrap">
+                    ↕ Auto-Draw: Reserve → Operating Cash
+                  </td>
+                  {FROM_ST_TO_IMM.map((v, mi) => (
+                    <td key={mi} className="px-1 py-1 text-center align-middle">
+                      {v > 0 ? (
+                        <div className="relative h-1.5 bg-blue-100 rounded-full mx-auto overflow-hidden" style={{ width: '70%' }}>
+                          <motion.div
+                            className="absolute top-0 h-full w-3 bg-blue-500 rounded-full"
+                            animate={{ x: ['-12px', '120%'] }}
+                            transition={{ duration: 1.1, repeat: Infinity, ease: 'linear', delay: mi * 0.08 }}
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-slate-200 text-[9px]">—</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
 
                 <Section
                   subrows={[
@@ -3665,7 +3729,27 @@ function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: 
                   color="bg-blue-600"
                 />
 
-                <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
+                {/* ── Connector: Build → Operating Cash ── */}
+                <tr className="h-7 bg-blue-50/40 border-y border-blue-200/50">
+                  <td className="px-4 py-1 text-[9px] font-black uppercase tracking-wider text-blue-900 whitespace-nowrap">
+                    ↕ Auto-Draw: Build → Operating Cash
+                  </td>
+                  {FROM_MT_TO_IMM.map((v, mi) => (
+                    <td key={mi} className="px-1 py-1 text-center align-middle">
+                      {v > 0 ? (
+                        <div className="relative h-1.5 bg-blue-900/20 rounded-full mx-auto overflow-hidden" style={{ width: '70%' }}>
+                          <motion.div
+                            className="absolute top-0 h-full w-3 bg-blue-900 rounded-full"
+                            animate={{ x: ['-12px', '120%'] }}
+                            transition={{ duration: 1.4, repeat: Infinity, ease: 'linear', delay: mi * 0.08 }}
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-slate-200 text-[9px]">—</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
 
                 <Section
                   subrows={[
