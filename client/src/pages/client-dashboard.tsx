@@ -1033,52 +1033,51 @@ function CashManagementPanel({
         </div>
       </div>
 
-      {/* Donut + right panel */}
-      <div className="flex gap-3 px-3 pt-3 pb-2 flex-1">
-        {/* Donut + legend below */}
-        <div className="flex flex-col items-start gap-2 flex-shrink-0">
-          <div style={{ width: 120, height: 120 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={liquidDonutData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={30}
-                  outerRadius={54}
-                  dataKey="value"
-                  paddingAngle={3}
-                >
-                  {liquidDonutData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <RechartsTooltip
-                  formatter={(v: number, n: string) => [fmt(v), n]}
-                  contentStyle={{ fontSize: 11 }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-1 w-full">
-            {liquidBuckets.map((k) => (
-              <div key={k} className="flex items-center gap-1.5 text-[10px]">
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[k].color }} />
-                <span className="text-muted-foreground">{tabLabels[k]}</span>
-              </div>
-            ))}
-          </div>
+      {/* Donut | Legend | Table — 3 columns */}
+      <div className="flex gap-2 px-3 pt-3 pb-2 flex-1 items-start">
+        {/* Pie only */}
+        <div style={{ width: 110, height: 110, flexShrink: 0 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={liquidDonutData}
+                cx="50%"
+                cy="50%"
+                innerRadius={28}
+                outerRadius={50}
+                dataKey="value"
+                paddingAngle={3}
+              >
+                {liquidDonutData.map((entry, i) => (
+                  <Cell key={i} fill={entry.color} />
+                ))}
+              </Pie>
+              <RechartsTooltip
+                formatter={(v: number, n: string) => [fmt(v), n]}
+                contentStyle={{ fontSize: 11 }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Legend in the middle */}
+        <div className="flex flex-col justify-center gap-1.5 flex-shrink-0 pt-2">
+          {liquidBuckets.map((k) => (
+            <div key={k} className="flex items-center gap-1.5 text-[10px]">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: GURU_BUCKETS[k].color }} />
+              <span className="text-muted-foreground whitespace-nowrap">{tabLabels[k]}</span>
+            </div>
+          ))}
         </div>
 
         {/* Right: tab pills + account list */}
         <div className="flex-1 flex flex-col gap-2 min-w-0">
-          {/* Tab pills */}
           <div className="flex gap-1 flex-wrap">
             {liquidBuckets.map((k) => (
               <button
                 key={k}
                 onClick={() => setActive(k)}
-                className="px-2.5 py-1 rounded-full text-[10px] font-bold transition-all"
+                className="px-2 py-0.5 rounded-full text-[10px] font-bold transition-all"
                 style={{
                   background: active === k ? GURU_BUCKETS[k].color : "hsl(var(--muted))",
                   color: active === k ? "white" : "hsl(var(--muted-foreground))",
@@ -1089,22 +1088,22 @@ function CashManagementPanel({
               </button>
             ))}
           </div>
-          {/* Account rows */}
-          <div className="space-y-1">
+          {/* Account rows — smaller font */}
+          <div className="space-y-0.5">
             {activeItems.map((item, i) => (
-              <div key={`${item.label}-${i}`} className="flex justify-between items-center text-xs gap-2">
+              <div key={`${item.label}-${i}`} className="flex justify-between items-center text-[10px] gap-1">
                 <span className="text-muted-foreground truncate">{item.label}</span>
                 <span className="font-semibold tabular-nums flex-shrink-0">{fmt(item.value)}</span>
               </div>
             ))}
             {activeItems.length > 0 && (
-              <div className="flex justify-between items-center text-xs font-black border-t border-border pt-1.5 mt-1">
+              <div className="flex justify-between items-center text-[10px] font-black border-t border-border pt-1 mt-0.5">
                 <span>Total {tabLabels[active]}</span>
                 <span className="tabular-nums">{fmt(activeTotal)}</span>
               </div>
             )}
             {activeItems.length === 0 && (
-              <p className="text-xs text-muted-foreground italic">No assets in this bucket</p>
+              <p className="text-[10px] text-muted-foreground italic">No assets in this bucket</p>
             )}
           </div>
         </div>
