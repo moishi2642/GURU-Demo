@@ -977,7 +977,7 @@ function CashManagementPanel({
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Liquidity Position</p>
-            <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5">{fmt(totalLiquid, true)}</p>
+            <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5">{fmt(totalLiquid)}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Total liquid position</p>
           </div>
           <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold flex-shrink-0 mt-1 ${trendUp ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-600 border border-rose-200"}`}>
@@ -1190,10 +1190,10 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Investment Portfolio</p>
-            <p className="text-2xl font-bold text-foreground leading-tight mt-0.5" data-testid="kpi-brokerage">{fmt(total, true)}</p>
+            <p className="text-2xl font-bold text-foreground leading-tight mt-0.5" data-testid="kpi-brokerage">{fmt(total)}</p>
             <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
-              <span>Brokerage <span className="font-semibold text-foreground">{fmt(totalBrok, true)}</span></span>
-              <span>Retirement <span className="font-semibold text-foreground">{fmt(totalRet, true)}</span></span>
+              <span>Brokerage <span className="font-semibold text-foreground">{fmt(totalBrok)}</span></span>
+              <span>Retirement <span className="font-semibold text-foreground">{fmt(totalRet)}</span></span>
             </div>
           </div>
           {spyQuote ? (
@@ -1340,7 +1340,7 @@ function LiabilitiesPanel({ liabilities }: { liabilities: Liability[] }) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Liabilities</p>
-            <p className="text-2xl font-bold text-rose-600 leading-tight mt-0.5">{fmt(totalDebt, true)}</p>
+            <p className="text-2xl font-bold text-rose-600 leading-tight mt-0.5">{fmt(totalDebt)}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Total outstanding debt</p>
           </div>
           <div className="text-right flex-shrink-0">
