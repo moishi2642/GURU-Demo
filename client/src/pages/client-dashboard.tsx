@@ -4845,7 +4845,7 @@ export default function ClientDashboard() {
                   <p className="text-sm font-black text-foreground leading-snug">Better Product For <em>Reserve Cash</em> Accounts</p>
                   <div>
                     <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps</p>
-                    <p className="text-[9px] text-amber-700 font-semibold mt-1">Lock in treasury rates before Fed cuts rates further</p>
+                    <p className="text-[9px] text-amber-700 font-semibold mt-1">Lock in short term T-bills before Fed cuts rates further</p>
                   </div>
                 </div>
                 <div className="px-5 py-3 border-t border-border flex items-center justify-end">
