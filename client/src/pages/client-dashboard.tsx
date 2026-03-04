@@ -4722,7 +4722,7 @@ export default function ClientDashboard() {
                   </div>
                   <p className="font-black tabular-nums text-blue-600 text-[14px]">Rebalance Portfolio</p>
                   <div className="flex flex-col gap-1">
-                    {["Increase US Large Cap", "Financial Services Risk", "Add Bonds & Commodities"].map((f) => (
+                    {["Increase US Large Cap", "Hedge Financial Services Concentration", "Add Bonds & Commodities"].map((f) => (
                       <div key={f} className="flex items-center gap-1.5">
                         <div className="w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
                         <span className="text-muted-foreground text-[12px]">{f}</span>
