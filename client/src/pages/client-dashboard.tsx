@@ -4817,7 +4817,7 @@ export default function ClientDashboard() {
                   </div>
                   <p className="text-sm font-black text-foreground leading-snug">Deploy Liqiudity into Investments</p>
                   <div className="flex flex-col gap-1.5">
-                    {["Increase US Large Cap", "Add to sector rotation fund", "Add Commodities / Inflation Hedge fund"].map((f) => (
+                    {["Add to sector rotation fund", "Add Commodities / Inflation Hedge fund"].map((f) => (
                       <div key={f} className="flex items-center gap-1.5">
                         <div className="w-1 h-1 rounded-full bg-blue-400 flex-shrink-0" />
                         <span className="text-blue-700 font-bold text-[14px]">{f}</span>
