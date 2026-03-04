@@ -37,6 +37,7 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronLeft,
+  ChevronDown,
   Activity,
   CheckCircle2,
   AlertTriangle,
@@ -1196,6 +1197,39 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
   const currentDonut = PORT_CATS.map(c => ({ ...c, value: (CURRENT_PCT[c.name] ?? 0) * totalAllAssets })).filter(d => d.value > 0);
   const targetDonut  = PORT_CATS.map(c => ({ ...c, value: (TARGET_PCT[c.name] ?? 0) * totalAllAssets })).filter(d => d.value > 0);
 
+  // Sub-items per category (hardcoded from prototype model)
+  const CATEGORY_SUBS: Record<string, { name: string; value: number }[]> = {
+    Cash: [
+      { name: "Goldman Sachs Money Market", value: 289500 },
+      { name: "US Treasury Bills (T-Bill)", value: 241200 },
+    ],
+    International: [
+      { name: "VXUS Total Intl ETF", value: 523800 },
+      { name: "VWO Emerging Markets", value: 342100 },
+      { name: "VGK European ETF", value: 254600 },
+    ],
+    US: [
+      { name: "US Total Market", value: 779878 },
+      { name: "US Large Cap", value: 535000 },
+      { name: "US Small Cap", value: 323582 },
+      { name: "US Dividend / Value", value: 94369 },
+    ],
+    Meta: [
+      { name: "Meta Platforms (META)", value: 118000 },
+    ],
+    Crypto: [
+      { name: "Bitcoin (BTC)", value: 421000 },
+      { name: "Ethereum (ETH)", value: 169200 },
+    ],
+    Bonds: [
+      { name: "US Treasury Bonds", value: 521400 },
+      { name: "Municipal Bonds", value: 312840 },
+      { name: "Corporate Bonds (IG)", value: 225600 },
+    ],
+  };
+
+  const [selectedCat, setSelectedCat] = useState(PORT_CATS[2].name); // default: US
+  const selectedCatDef = PORT_CATS.find(c => c.name === selectedCat)!;
   const spyUp = (spyQuote?.changePercent ?? 0) >= 0;
 
   return (
@@ -1229,101 +1263,91 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
         )}
       </div>
 
-      {/* ── Concentric donut ── */}
-      <div className="px-4 pb-2">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+      {/* ── Full-width concentric donut ── */}
+      <div className="px-4 pb-1">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
           Current vs. Target Model Portfolio
         </p>
-        <div className="flex items-center gap-3">
-          <div style={{ width: 160, height: 160, flexShrink: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                {/* Outer ring = Current */}
-                <Pie data={currentDonut} cx="50%" cy="50%" innerRadius={60} outerRadius={75}
-                  dataKey="value" paddingAngle={2}
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                    if (percent < 0.04) return null;
-                    const RADIAN = Math.PI / 180;
-                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + (r + 14) * Math.cos(-midAngle * RADIAN);
-                    const y = cy + (r + 14) * Math.sin(-midAngle * RADIAN);
-                    return <text x={x} y={y} fill="#374151" fontSize={9} fontWeight={700} textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>;
-                  }}
-                  labelLine={false}
-                >
-                  {currentDonut.map((d, i) => <Cell key={i} fill={d.color} />)}
-                </Pie>
-                {/* Inner ring = Target */}
-                <Pie data={targetDonut} cx="50%" cy="50%" innerRadius={33} outerRadius={55}
-                  dataKey="value" paddingAngle={2}
-                  label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                    if (percent < 0.06) return null;
-                    const RADIAN = Math.PI / 180;
-                    const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-                    const x = cx + r * Math.cos(-midAngle * RADIAN);
-                    const y = cy + r * Math.sin(-midAngle * RADIAN);
-                    return <text x={x} y={y} fill="white" fontSize={8} fontWeight={700} textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>;
-                  }}
-                  labelLine={false}
-                >
-                  {targetDonut.map((d, i) => <Cell key={i} fill={d.color} opacity={0.55} />)}
-                </Pie>
-                <RechartsTooltip formatter={(v: number, n: string) => [`${((v / totalAllAssets) * 100).toFixed(1)}%  (${fmt(v)})`, n]} contentStyle={{ fontSize: 10 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          {/* Legend */}
-          <div className="flex flex-col gap-1 flex-1 min-w-0">
-            <div className="flex gap-3 text-[9px] text-muted-foreground mb-1 font-semibold">
-              <span className="flex-1">Category</span>
-              <span className="w-8 text-right">Cur</span>
-              <span className="w-8 text-right">Tgt</span>
-            </div>
-            {PORT_CATS.map(c => {
-              const curPct = Math.round((CURRENT_PCT[c.name] ?? 0) * 100);
-              const tgtPct = Math.round((TARGET_PCT[c.name] ?? 0) * 100);
-              const diff = curPct - tgtPct;
-              return (
-                <div key={c.name} className="flex items-center gap-1.5 text-[10px]">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
-                  <span className="text-muted-foreground flex-1 truncate">{c.name}</span>
-                  <span className="tabular-nums font-bold text-foreground w-8 text-right">{curPct}%</span>
-                  <span className="tabular-nums text-muted-foreground w-8 text-right">{tgtPct}%</span>
-                </div>
-              );
-            })}
-          </div>
+        <div style={{ width: "100%", height: 220 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              {/* Outer ring = Current */}
+              <Pie
+                data={currentDonut}
+                cx="50%" cy="50%"
+                innerRadius={82} outerRadius={104}
+                dataKey="value" paddingAngle={2}
+                label={({ cx, cy, midAngle, outerRadius, percent, name }) => {
+                  if (percent < 0.04) return null;
+                  const RADIAN = Math.PI / 180;
+                  const x = cx + (outerRadius + 14) * Math.cos(-midAngle * RADIAN);
+                  const y = cy + (outerRadius + 14) * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text x={x} y={y} fill="#374151" fontSize={9} fontWeight={700} textAnchor="middle" dominantBaseline="central">
+                      {`${name} ${(percent * 100).toFixed(0)}%`}
+                    </text>
+                  );
+                }}
+                labelLine={false}
+              >
+                {currentDonut.map((d, i) => <Cell key={i} fill={d.color} />)}
+              </Pie>
+              {/* Inner ring = Target (no gap — outerRadius=80 touches inner ring's innerRadius=82) */}
+              <Pie
+                data={targetDonut}
+                cx="50%" cy="50%"
+                innerRadius={46} outerRadius={80}
+                dataKey="value" paddingAngle={2}
+                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                  if (percent < 0.08) return null;
+                  const RADIAN = Math.PI / 180;
+                  const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+                  const x = cx + r * Math.cos(-midAngle * RADIAN);
+                  const y = cy + r * Math.sin(-midAngle * RADIAN);
+                  return <text x={x} y={y} fill="white" fontSize={9} fontWeight={700} textAnchor="middle" dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>;
+                }}
+                labelLine={false}
+              >
+                {targetDonut.map((d, i) => <Cell key={i} fill={d.color} opacity={0.6} />)}
+              </Pie>
+              <RechartsTooltip
+                formatter={(v: number, n: string) => [`${((v / totalAllAssets) * 100).toFixed(1)}%  (${fmt(v)})`, n]}
+                contentStyle={{ fontSize: 10 }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
-      <div className="border-t border-border mx-4 mb-3" />
-      <div className="px-4 pb-4 space-y-1">
-        {[...brokerageAssets, ...retirementAssets].slice(0, 5).map((a) => {
-          const isGS =
-            (a.description ?? "").toLowerCase().includes("goldman") ||
-            (a.description ?? "").toLowerCase().includes("rsu");
-          const livePrice = isGS && gsQuote ? gsQuote : null;
-          const gsUp = (gsQuote?.changePercent ?? 0) >= 0;
-          return (
+
+      {/* ── Category dropdown + sub-items ── */}
+      <div className="px-4 pb-4">
+        {/* Dropdown selector */}
+        <div className="relative">
+          <select
+            className="w-full appearance-none rounded-t text-sm font-semibold text-white px-3 py-2 pr-8 cursor-pointer border-0 outline-none"
+            style={{ backgroundColor: selectedCatDef.color }}
+            value={selectedCat}
+            onChange={e => setSelectedCat(e.target.value)}
+            data-testid="select-portfolio-category"
+          >
+            {PORT_CATS.map(c => (
+              <option key={c.name} value={c.name}>{c.name}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
+        </div>
+        {/* Sub-items */}
+        <div className="border border-t-0 border-border rounded-b overflow-hidden">
+          {(CATEGORY_SUBS[selectedCat] ?? []).map((item, i) => (
             <div
-              key={a.id}
-              className="flex justify-between items-center text-xs gap-1"
+              key={i}
+              className="flex items-center justify-between px-3 py-2 text-xs border-t border-border first:border-t-0 hover:bg-muted/40 transition-colors"
             >
-              <span className="text-muted-foreground truncate pr-1 flex-1">
-                {a.description.split("(")[0].split("—")[0].trim()}
-              </span>
-              {livePrice && (
-                <span
-                  className={`font-semibold flex-shrink-0 ${gsUp ? "text-emerald-600" : "text-rose-600"}`}
-                >
-                  GS ${livePrice.price?.toFixed(2)}
-                </span>
-              )}
-              <span className="font-semibold tabular-nums flex-shrink-0">
-                {fmt(Number(a.value), true)}
-              </span>
+              <span className="text-foreground">{item.name}</span>
+              <span className="tabular-nums font-semibold text-foreground">{fmt(item.value, true)}</span>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );
