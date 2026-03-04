@@ -4158,130 +4158,33 @@ function GuruAllocationView({
                         })()}
                       </div>
                     </div>
-                    {/* ── MIDDLE: Allocation Visualization ── */}
+                    {/* ── MIDDLE: Execution panel ── */}
                     {(() => {
+                      const avgYield = weightedGrossYield(r.subAccounts, r.current);
                       const avgYieldAT = weightedATYield(r.subAccounts, r.current);
-                      const currentPct = totalAssets > 0 ? (r.current / totalAssets) * 100 : 0;
-                      const targetPct  = totalAssets > 0 ? (r.target  / totalAssets) * 100 : 0;
-                      const maxPct     = Math.max(currentPct, targetPct, 0.5);
-                      const currentBarW = (currentPct / maxPct) * 100;
-                      const targetBarW  = (targetPct  / maxPct) * 100;
-                      const deltaAmt = r.target - r.current;
-                      const isOver  = deltaAmt < -5000;
-                      const isUnder = deltaAmt > 5000;
-                      const status  = isOver ? "Overfunded" : isUnder ? "Underfunded" : "Optimal";
-                      const statusColor = isOver ? "text-rose-400" : isUnder ? "text-amber-400" : "text-emerald-400";
-                      const statusBorder = isOver ? "border-rose-700/40 bg-rose-900/20" : isUnder ? "border-amber-600/40 bg-amber-900/20" : "border-emerald-700/40 bg-emerald-900/20";
-                      const priority = Math.abs(deltaAmt) > 200000 ? "High" : Math.abs(deltaAmt) > 50000 ? "Medium" : "Low";
-                      const priorityColor = priority === "High" ? "text-rose-400" : priority === "Medium" ? "text-amber-400" : "text-emerald-400";
-                      const isGrow = r.def.name === "Grow";
                       return (
-                        <div className="w-72 flex-shrink-0 border-l border-r border-border bg-slate-800 flex flex-col">
-                          <div className="flex-1 px-5 py-5 flex flex-col gap-5">
-
-                            {/* ── Current / GURU Target bars ── */}
-                            <div className="flex flex-col gap-3">
-                              <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Current</span>
-                                  <span className="text-xs font-black tabular-nums text-white">{fmt(r.current)}</span>
-                                </div>
-                                <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
-                                  <motion.div
-                                    className="h-full rounded-full"
-                                    style={{ background: r.def.accent }}
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${currentBarW}%` }}
-                                    transition={{ duration: 0.8, ease: "easeOut" }}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Delta badge */}
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 border-t border-dashed border-slate-600" />
-                                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${statusBorder} ${statusColor}`}>
-                                  {deltaAmt >= 0 ? "+" : ""}{fmt(Math.abs(deltaAmt))} {deltaAmt >= 0 ? "needed" : "excess"}
-                                </span>
-                                <div className="flex-1 border-t border-dashed border-slate-600" />
-                              </div>
-
-                              <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">GURU Target</span>
-                                  <span className="text-xs font-black tabular-nums text-amber-400">{fmt(r.target)}</span>
-                                </div>
-                                <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
-                                  <motion.div
-                                    className="h-full rounded-full bg-amber-400"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${targetBarW}%` }}
-                                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* ── Portfolio allocation progress bar ── */}
-                            <div>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Portfolio Share</span>
-                                <span className="text-[9px] tabular-nums text-slate-400">{currentPct.toFixed(1)}% now → {targetPct.toFixed(1)}% target</span>
-                              </div>
-                              <div className="relative h-1.5 rounded-full bg-slate-700 overflow-visible">
-                                <motion.div
-                                  className="h-full rounded-full absolute left-0 top-0"
-                                  style={{ background: r.def.accent, opacity: 0.5 }}
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${Math.min(currentPct * 2, 100)}%` }}
-                                  transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
-                                />
-                                <motion.div
-                                  className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-amber-400 bg-slate-800"
-                                  initial={{ left: "0%" }}
-                                  animate={{ left: `${Math.min(targetPct * 2, 98)}%` }}
-                                  transition={{ duration: 0.9, ease: "easeOut", delay: 0.3 }}
-                                />
-                              </div>
-                            </div>
-
-                            {/* ── 2×2 metrics grid ── */}
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className={`rounded-lg border px-3 py-2.5 ${statusBorder}`}>
-                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-400 mb-0.5">Status</p>
-                                <p className={`text-xs font-black leading-none ${statusColor}`}>{status}</p>
-                              </div>
-                              <div className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2.5">
-                                <p className="text-[8px] uppercase tracking-widest font-bold text-slate-400 mb-0.5">Priority</p>
-                                <p className={`text-xs font-black leading-none ${priorityColor}`}>{priority}</p>
-                              </div>
-                              {!isGrow ? (
-                                <>
-                                  <div className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2.5">
-                                    <p className="text-[8px] uppercase tracking-widest font-bold text-slate-400 mb-0.5">Current Yield</p>
-                                    <p className="text-xs font-black text-white leading-none tabular-nums">{avgYieldAT.toFixed(2)}% AT</p>
-                                  </div>
-                                  <div className="rounded-lg border border-amber-600/40 bg-amber-900/20 px-3 py-2.5">
-                                    <p className="text-[8px] uppercase tracking-widest font-bold text-amber-400 mb-0.5">Yield Pickup</p>
-                                    <p className="text-xs font-black text-amber-400 leading-none tabular-nums">+{r.bpPickup} bps</p>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2.5">
-                                    <p className="text-[8px] uppercase tracking-widest font-bold text-slate-400 mb-0.5">Current Alloc</p>
-                                    <p className="text-xs font-black text-white leading-none tabular-nums">{currentPct.toFixed(1)}%</p>
-                                  </div>
-                                  <div className="rounded-lg border border-amber-600/40 bg-amber-900/20 px-3 py-2.5">
-                                    <p className="text-[8px] uppercase tracking-widest font-bold text-amber-400 mb-0.5">Target Alloc</p>
-                                    <p className="text-xs font-black text-amber-400 leading-none tabular-nums">{targetPct.toFixed(1)}%</p>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-
-                          </div>
-                        </div>
+                        <BucketExecutionPanel
+                          key={r.def.name}
+                          bucketName={r.def.name}
+                          current={r.current}
+                          target={r.target}
+                          delta={r.delta}
+                          accentColor={r.def.accent}
+                          bgColor={r.def.bg}
+                          avgYield={avgYield}
+                          avgYieldAT={avgYieldAT}
+                          bpPickup={r.bpPickup}
+                          totalAssets={totalAssets}
+                          onExecute={handleExecute}
+                          onUndo={handleUndo}
+                          monthsInputConfig={
+                            r.def.name === "Operating Cash"
+                              ? { defaultMonths: 2, monthlyUnit: r.target / 2, label: "mos. of expenses" }
+                              : r.def.name === "Reserve"
+                                ? { defaultMonths: 12, monthlyUnit: r.target / 12, label: "mos. of cumulative cash outflow" }
+                                : undefined
+                          }
+                        />
                       );
                     })()}
                     {/* ── RIGHT: Products panel ── */}
