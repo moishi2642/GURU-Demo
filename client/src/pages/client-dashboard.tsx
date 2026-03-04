@@ -3128,303 +3128,386 @@ const MM_GURU_ACTIONS = [
 function MoneyMovementView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
   const MONTHS = ["Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb"];
 
-  // ── Income line items — sourced from actual Kessler DB records ──────────────
-  const INCOME_LINES: { label: string; sub: string; amounts: number[] }[] = [
+  const INCOME_AMOUNTS = [
+    [18813,18813,18813,18813,18813,18813,18813,18813,18813,18813,18813,18813],
+    [1722,1722,1722,1722,1722,1722,1722,1722,1722,1722,1722,1722],
+    [0,0,0,0,0,0,0,0,0,216641,0,0],
+  ];
+  const EXPENSE_AMOUNTS = [
+    [7793,7793,7793,7793,7793,7793,7793,7793,7793,7793,7793,7793],
+    [1243,1243,1243,1243,1243,1243,1243,1243,1243,1243,1243,1243],
+    [4333,4333,4333,4333,4333,4333,4333,4333,4333,4333,4333,4333],
+    [3500,3500,3500,3500,3500,3500,3500,3500,3500,3500,3500,3500],
+    [1187,1187,1187,1187,1187,1187,1187,1187,1187,1187,1187,1187],
+    [17500,0,0,0,0,0,17500,0,0,0,0,0],
+    [0,0,0,0,0,4697,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,30000,0,0,0],
+    [0,0,15000,15000,15000,0,15000,0,0,0,0,0],
+    [0,0,4000,1000,12000,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,4102,0],
+  ];
+
+  const monthIncome = (i: number) => INCOME_AMOUNTS.reduce((s, l) => s + l[i], 0);
+  const monthExp    = (i: number) => EXPENSE_AMOUNTS.reduce((s, l) => s + l[i], 0);
+  const monthNet    = (i: number) => monthIncome(i) - monthExp(i);
+
+  const fmt = (v: number) =>
+    v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M`
+    : v >= 1_000   ? `$${Math.round(v / 1_000)}K`
+    : `$${v.toLocaleString()}`;
+
+  const BUCKETS = [
     {
-      label: "Net Salary — P1 + P2",
-      sub:   "After-tax W-2  ·  P1 $13,302 / mo  +  P2 $5,511 / mo",
-      amounts: [18813,18813,18813,18813,18813,18813,18813,18813,18813,18813,18813,18813],
+      id: "operating",
+      name: "OPERATING CASH",
+      desc: "Daily liquidity",
+      balance: 558636,
+      displayMax: 700000,
+      targetMin: 50000,
+      targetMax: 150000,
+      targetLabel: "Target  $50K – $150K",
+      status: "OVERFULL",
+      accent: "#3b82f6",
+      accentDark: "#1e3a8a",
+      fillPct: 80,
     },
     {
-      label: "Sarasota Rental Income",
-      sub:   "Investment property — net of 8% mgmt fee",
-      amounts: [1722,1722,1722,1722,1722,1722,1722,1722,1722,1722,1722,1722],
+      id: "reserve",
+      name: "RESERVE BUFFER",
+      desc: "GURU auto-draw",
+      balance: 225000,
+      displayMax: 400000,
+      targetMin: 200000,
+      targetMax: 300000,
+      targetLabel: "Target  $200K – $300K",
+      status: "ON TARGET",
+      accent: "#d97706",
+      accentDark: "#78350f",
+      fillPct: 56,
     },
     {
-      label: "Year-End Bonus",
-      sub:   "P1 $191,556  +  P2 $25,085  (after-tax est.)",
-      amounts: [0,0,0,0,0,0,0,0,0,216641,0,0],
+      id: "build",
+      name: "BUILD",
+      desc: "Mid-term growth",
+      balance: 755000,
+      displayMax: 1200000,
+      targetMin: 500000,
+      targetMax: 1000000,
+      targetLabel: "Target  $500K – $1M",
+      status: "ON TARGET",
+      accent: "#22c55e",
+      accentDark: "#14532d",
+      fillPct: 63,
+    },
+    {
+      id: "grow",
+      name: "GROW",
+      desc: "Long-term wealth",
+      balance: 2204726,
+      displayMax: 3000000,
+      targetMin: 2000000,
+      targetMax: 3000000,
+      targetLabel: "Target  > $2M",
+      status: "ON TARGET",
+      accent: "#a855f7",
+      accentDark: "#3b0764",
+      fillPct: 73,
     },
   ];
 
-  // ── Expense line items — every number matches the database cashFlow records ─
-  const EXPENSE_LINES: { label: string; sub: string; amounts: number[]; cat: string }[] = [
-    {
-      label: "Housing — Tribeca Condo",
-      sub:   "Mortgage (3.15%) + maintenance + insurance + utilities",
-      amounts: [7793,7793,7793,7793,7793,7793,7793,7793,7793,7793,7793,7793],
-      cat: "housing",
-    },
-    {
-      label: "Housing — Sarasota",
-      sub:   "Mgmt fee + HOA + mortgage (2.55%) on investment property",
-      amounts: [1243,1243,1243,1243,1243,1243,1243,1243,1243,1243,1243,1243],
-      cat: "housing",
-    },
-    {
-      label: "Childcare",
-      sub:   "Babysitter / nanny",
-      amounts: [4333,4333,4333,4333,4333,4333,4333,4333,4333,4333,4333,4333],
-      cat: "living",
-    },
-    {
-      label: "Food & Dining",
-      sub:   "Groceries, restaurants, delivery",
-      amounts: [3500,3500,3500,3500,3500,3500,3500,3500,3500,3500,3500,3500],
-      cat: "living",
-    },
-    {
-      label: "Debt Service",
-      sub:   "PE Fund II loan $677 + student loans $510",
-      amounts: [1187,1187,1187,1187,1187,1187,1187,1187,1187,1187,1187,1187],
-      cat: "debt",
-    },
-    {
-      label: "NYC Property Taxes",
-      sub:   "Tribeca condo — semi-annual installments",
-      amounts: [17500,0,0,0,0,0,17500,0,0,0,0,0],
-      cat: "taxes",
-    },
-    {
-      label: "FL Property Tax",
-      sub:   "Sarasota — annual",
-      amounts: [0,0,0,0,0,4697,0,0,0,0,0,0],
-      cat: "taxes",
-    },
-    {
-      label: "Q4 Federal Est. Tax",
-      sub:   "Quarterly estimated income tax payment",
-      amounts: [0,0,0,0,0,0,0,0,30000,0,0,0],
-      cat: "taxes",
-    },
-    {
-      label: "Private School Tuition",
-      sub:   "Greenwood Academy — 4 installments",
-      amounts: [0,0,15000,15000,15000,0,15000,0,0,0,0,0],
-      cat: "education",
-    },
-    {
-      label: "Travel",
-      sub:   "Memorial Day $4K  ·  Weekend $1K  ·  Europe summer $12K",
-      amounts: [0,0,4000,1000,12000,0,0,0,0,0,0,0],
-      cat: "lifestyle",
-    },
-    {
-      label: "Golf Club Dues",
-      sub:   "Annual membership",
-      amounts: [0,0,0,0,0,0,0,0,0,0,4102,0],
-      cat: "lifestyle",
-    },
+  const PIPE_LABELS = [
+    { dir: "⟷", label: "GURU Reserve Line", sub: "auto-draw / replenish" },
+    { dir: "→",  label: "Surplus Sweep",     sub: "when Reserve full" },
+    { dir: "→",  label: "Growth Allocation", sub: "long-term assets" },
   ];
-
-  const totalIncome   = INCOME_LINES.reduce((s, l) => s + l.amounts.reduce((a, b) => a + b, 0), 0);
-  const totalExpenses = EXPENSE_LINES.reduce((s, l) => s + l.amounts.reduce((a, b) => a + b, 0), 0);
-  const netSurplus    = totalIncome - totalExpenses;
-
-  const fmtK = (v: number, sign = false) => {
-    if (v === 0) return "—";
-    const abs = Math.abs(v);
-    const s = abs >= 1000000
-      ? `${(abs / 1000000).toFixed(2)}M`
-      : abs >= 1000
-        ? `${Math.round(abs / 1000)}K`
-        : abs.toLocaleString("en-US");
-    if (sign) return v < 0 ? `(${s})` : `+${s}`;
-    return s;
-  };
-
-  const monthIncomeTot = (i: number) => INCOME_LINES.reduce((s, l) => s + l.amounts[i], 0);
-  const monthExpTot    = (i: number) => EXPENSE_LINES.reduce((s, l) => s + l.amounts[i], 0);
-  const monthNet       = (i: number) => monthIncomeTot(i) - monthExpTot(i);
 
   return (
     <div className="space-y-3 font-mono">
 
-      {/* ── Terminal Header ── */}
-      <div className="bg-[#060d1a] rounded-xl border border-[#1e3a5f] px-5 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#f5a623] animate-pulse flex-shrink-0" />
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#f5a623]">GURU · CASH FLOW MONITOR</span>
-          </div>
-          <span className="text-[9px] text-slate-600 tracking-wider">KESSLER HOUSEHOLD  ·  MAR 2026 – FEB 2027</span>
+      {/* ── Header ── */}
+      <div className="bg-[#060d1a] rounded-xl border border-[#1e3a5f] px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-[#f5a623] animate-pulse flex-shrink-0" />
+          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#f5a623]">GURU · BUCKET FLOW SCHEMATIC</span>
+          <span className="text-[9px] text-slate-600 tracking-wider">KESSLER  ·  MAR 2026 – FEB 2027</span>
         </div>
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-950/60 border border-green-700/40 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+          <span className="text-[8px] font-bold tracking-widest text-green-400 uppercase">Autopilot Active</span>
+        </div>
+      </div>
+
+      {/* ── Schematic ── */}
+      <div className="bg-[#060d1a] rounded-xl border border-[#1a2a3a] p-6 overflow-x-auto">
+
+        {/* Income source + vertical pipe */}
+        <div className="flex mb-0 pl-2">
+          <div className="flex flex-col items-center" style={{ width: 164 }}>
+            <div className="bg-[#001a10] border border-[#00d4aa]/40 rounded-lg px-4 py-2.5 w-full">
+              <p className="text-[7px] uppercase tracking-[0.18em] text-slate-600 mb-0.5">INCOME FEED</p>
+              <p className="text-[17px] font-black text-[#00d4aa] leading-none">+$20.5K</p>
+              <p className="text-[7px] text-slate-600 mt-1">/ mo  ·  +$216.6K Dec bonus</p>
+            </div>
+            {/* pipe down */}
+            <div className="flex flex-col items-center mt-0">
+              <div className="w-px h-7 bg-gradient-to-b from-[#00d4aa] to-[#00d4aa]/20" />
+              <div
+                className="w-0 h-0"
+                style={{
+                  borderLeft: "5px solid transparent",
+                  borderRight: "5px solid transparent",
+                  borderTop: "8px solid #00d4aa",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Tanks row */}
+        <div className="flex items-end min-w-max">
+
+          {BUCKETS.map((b, idx) => {
+            const targetMaxPct = (b.targetMax / b.displayMax) * 100;
+            const targetMinPct = (b.targetMin / b.displayMax) * 100;
+            const pipe = PIPE_LABELS[idx];
+
+            return (
+              <div key={b.id} className="flex items-center">
+
+                {/* ── Tank ── */}
+                <div style={{ width: 164 }}>
+                  {/* Tank body */}
+                  <div
+                    className="relative rounded-xl overflow-hidden border"
+                    style={{
+                      height: 200,
+                      borderColor: b.accent + "50",
+                      backgroundColor: "#080f1e",
+                    }}
+                  >
+                    {/* Liquid fill */}
+                    <div
+                      className="absolute bottom-0 left-0 right-0"
+                      style={{
+                        height: `${b.fillPct}%`,
+                        backgroundColor: b.accentDark,
+                        transition: "height 1.2s ease-out",
+                      }}
+                    >
+                      {/* Wave shimmer on top */}
+                      <div
+                        className="absolute top-0 left-0 right-0 h-[2px]"
+                        style={{ backgroundColor: b.accent }}
+                      />
+                    </div>
+
+                    {/* Target max marker (dashed line) */}
+                    <div
+                      className="absolute left-0 right-0 border-t border-dashed opacity-50 z-10"
+                      style={{
+                        bottom: `${targetMaxPct}%`,
+                        borderColor: b.accent,
+                      }}
+                    >
+                      <span
+                        className="absolute right-1 -top-3 text-[6px] uppercase tracking-wider"
+                        style={{ color: b.accent }}
+                      >
+                        max
+                      </span>
+                    </div>
+
+                    {/* Target min marker */}
+                    <div
+                      className="absolute left-0 right-0 border-t border-dotted opacity-30 z-10"
+                      style={{
+                        bottom: `${targetMinPct}%`,
+                        borderColor: b.accent,
+                      }}
+                    >
+                      <span
+                        className="absolute right-1 -top-3 text-[6px] uppercase tracking-wider"
+                        style={{ color: b.accent, opacity: 0.6 }}
+                      >
+                        min
+                      </span>
+                    </div>
+
+                    {/* Center labels */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                      <p
+                        className="text-[13px] font-black tabular-nums leading-none"
+                        style={{ color: "#fff" }}
+                      >
+                        {fmt(b.balance)}
+                      </p>
+                      <p className="text-[7px] text-white/50 uppercase tracking-widest mt-1">{b.desc}</p>
+                    </div>
+
+                    {/* Status badge */}
+                    <div className="absolute top-2 left-2 z-20">
+                      <span
+                        className="text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
+                        style={{ backgroundColor: b.accent + "30", color: b.accent }}
+                      >
+                        {b.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tank label */}
+                  <div className="mt-2.5 text-center">
+                    <p
+                      className="text-[9px] font-black uppercase tracking-wider"
+                      style={{ color: b.accent }}
+                    >
+                      {b.name}
+                    </p>
+                    <p className="text-[7px] text-slate-700 mt-0.5">{b.targetLabel}</p>
+                  </div>
+                </div>
+
+                {/* ── Pipe connector (except after last) ── */}
+                {idx < BUCKETS.length - 1 && (
+                  <div className="flex flex-col items-center mx-1" style={{ width: 52, marginBottom: 46 }}>
+                    {/* Pipe label above */}
+                    <p className="text-[6px] uppercase tracking-wider text-slate-600 text-center whitespace-nowrap mb-1">
+                      {pipe.label}
+                    </p>
+
+                    {/* Pipe body with GURU valve */}
+                    <div className="relative w-full flex items-center">
+                      {/* Left half of pipe */}
+                      <div
+                        className="h-[3px] flex-1"
+                        style={{ backgroundColor: BUCKETS[idx + 1].accent + "50" }}
+                      />
+
+                      {/* GURU valve diamond */}
+                      <div
+                        className="w-4 h-4 rotate-45 border flex-shrink-0 z-10"
+                        style={{
+                          borderColor: "#f5a623",
+                          backgroundColor: "#060d1a",
+                        }}
+                      />
+
+                      {/* Right half of pipe */}
+                      <div
+                        className="h-[3px] flex-1"
+                        style={{ backgroundColor: BUCKETS[idx + 1].accent + "50" }}
+                      />
+
+                      {/* Arrow */}
+                      <div
+                        className="w-0 h-0 flex-shrink-0"
+                        style={{
+                          borderTop: "4px solid transparent",
+                          borderBottom: "4px solid transparent",
+                          borderLeft: `6px solid ${BUCKETS[idx + 1].accent}70`,
+                        }}
+                      />
+                    </div>
+
+                    {/* Direction + sub label */}
+                    <p className="text-[8px] font-black text-[#f5a623] mt-1">{pipe.dir}</p>
+                    <p className="text-[6px] text-slate-700 text-center whitespace-nowrap">{pipe.sub}</p>
+                  </div>
+                )}
+
+              </div>
+            );
+          })}
+
+        </div>
+
+        {/* Expense drain */}
+        <div className="flex pl-2 mt-0">
+          <div className="flex flex-col items-center" style={{ width: 164 }}>
+            {/* pipe up */}
+            <div className="flex flex-col items-center">
+              <div
+                className="w-0 h-0"
+                style={{
+                  borderLeft: "5px solid transparent",
+                  borderRight: "5px solid transparent",
+                  borderBottom: "8px solid #ff6b6b",
+                }}
+              />
+              <div className="w-px h-7 bg-gradient-to-t from-[#ff6b6b] to-[#ff6b6b]/20" />
+            </div>
+            <div className="bg-[#1a0505] border border-[#ff6b6b]/30 rounded-lg px-4 py-2.5 w-full">
+              <p className="text-[7px] uppercase tracking-[0.18em] text-slate-600 mb-0.5">EXPENSE DRAIN</p>
+              <p className="text-[17px] font-black text-[#ff6b6b] leading-none">–$18K</p>
+              <p className="text-[7px] text-slate-600 mt-1">/ mo  ·  up to –$51K (lumpy)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="mt-6 pt-4 border-t border-[#1a2a3a] flex items-center gap-6 flex-wrap">
           {[
-            { label: "TOTAL INFLOWS",  val: `$${Math.round(totalIncome / 1000)}K`,  col: "#00d4aa" },
-            { label: "TOTAL OUTFLOWS", val: `($${Math.round(totalExpenses / 1000)}K)`, col: "#ff6b6b" },
-            { label: "NET SURPLUS",    val: `+$${Math.round(netSurplus / 1000)}K`,   col: "#00d4aa" },
-            { label: "SAVINGS RATE",   val: `${((netSurplus / totalIncome) * 100).toFixed(1)}%`,   col: "#e2e8f0" },
-          ].map(({ label, val, col }) => (
-            <div key={label} className="text-right">
-              <p className="text-[8px] uppercase tracking-[0.15em] text-slate-600">{label}</p>
-              <p className="text-[13px] font-black" style={{ color: col }}>{val}</p>
+            { symbol: "◆", color: "#f5a623", label: "GURU valve — auto-opens on trigger" },
+            { symbol: "⟷", color: "#3b82f6", label: "Bidirectional: draw deficit / push surplus" },
+            { symbol: "→", color: "#22c55e", label: "One-way: excess sweeps forward" },
+          ].map(({ symbol, color, label }) => (
+            <div key={label} className="flex items-center gap-2">
+              <span className="text-[12px]" style={{ color }}>{symbol}</span>
+              <span className="text-[8px] text-slate-500">{label}</span>
             </div>
           ))}
+          <div className="ml-auto flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-px border-t border-dashed border-blue-400 opacity-60" />
+              <span className="text-[7px] text-slate-600">target max</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-px border-t border-dotted border-blue-400 opacity-30" />
+              <span className="text-[7px] text-slate-600">target min</span>
+            </div>
+          </div>
         </div>
+
       </div>
 
-      {/* ── Main Cash Flow Statement ── */}
+      {/* ── Monthly Flow Calendar ── */}
       <div className="bg-[#060d1a] rounded-xl border border-[#1a2a3a] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[10px] border-collapse">
-            <thead>
-              <tr className="border-b border-[#1e3a5f] bg-[#080f1c]">
-                <th className="sticky left-0 z-10 bg-[#080f1c] text-left px-5 py-3 text-[8px] uppercase tracking-[0.15em] text-slate-600 w-[230px]">LINE ITEM</th>
-                {MONTHS.map((m) => (
-                  <th key={m} className="text-right px-2.5 py-3 text-[8px] uppercase tracking-[0.12em] text-slate-600 min-w-[62px]">{m}</th>
-                ))}
-                <th className="text-right px-4 py-3 text-[8px] uppercase tracking-[0.12em] text-[#f5a623] min-w-[76px] border-l border-[#1e3a5f]">ANNUAL</th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              {/* ── INCOME SECTION ── */}
-              <tr className="bg-[#00150f]">
-                <td colSpan={14} className="sticky left-0 z-10 bg-[#00150f] px-5 py-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-[#00d4aa]">
-                  ▸  INCOME
-                </td>
-              </tr>
-
-              {INCOME_LINES.map((line, idx) => {
-                const annual = line.amounts.reduce((s, v) => s + v, 0);
-                return (
-                  <tr key={idx} className="border-b border-[#0b1622] hover:bg-[#0a1a10]/40 transition-colors">
-                    <td className="sticky left-0 z-10 bg-[#060d1a] px-5 py-2">
-                      <p className="text-slate-300 text-[10px] leading-tight">{line.label}</p>
-                      <p className="text-slate-700 text-[8px] mt-0.5 leading-tight">{line.sub}</p>
-                    </td>
-                    {line.amounts.map((v, i) => (
-                      <td key={i} className={`text-right px-2.5 py-2 tabular-nums ${v === 0 ? "text-slate-800" : "text-[#00d4aa]"}`}>
-                        {v === 0 ? "—" : fmtK(v)}
-                      </td>
-                    ))}
-                    <td className="text-right px-4 py-2 tabular-nums font-bold text-[#00d4aa] border-l border-[#1e3a5f]">
-                      {fmtK(annual)}
-                    </td>
-                  </tr>
-                );
-              })}
-
-              {/* Total Income */}
-              <tr className="border-y border-[#00d4aa]/20 bg-[#001a10]">
-                <td className="sticky left-0 z-10 bg-[#001a10] px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#00d4aa]">
-                  TOTAL INCOME
-                </td>
-                {MONTHS.map((_, i) => (
-                  <td key={i} className="text-right px-2.5 py-2.5 tabular-nums font-black text-[#00d4aa] text-[11px]">
-                    {fmtK(monthIncomeTot(i))}
-                  </td>
-                ))}
-                <td className="text-right px-4 py-2.5 tabular-nums font-black text-[#00d4aa] text-[11px] border-l border-[#1e3a5f]">
-                  {fmtK(totalIncome)}
-                </td>
-              </tr>
-
-              <tr><td colSpan={14} className="py-1" /></tr>
-
-              {/* ── OUTFLOWS SECTION ── */}
-              <tr className="bg-[#150a0a]">
-                <td colSpan={14} className="sticky left-0 z-10 bg-[#150a0a] px-5 py-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-[#ff6b6b]">
-                  ▸  OUTFLOWS
-                </td>
-              </tr>
-
-              {EXPENSE_LINES.map((line, idx) => {
-                const annual = line.amounts.reduce((s, v) => s + v, 0);
-                return (
-                  <tr key={idx} className="border-b border-[#0b1622] hover:bg-[#1a0a0a]/40 transition-colors">
-                    <td className="sticky left-0 z-10 bg-[#060d1a] px-5 py-2">
-                      <p className="text-slate-300 text-[10px] leading-tight">{line.label}</p>
-                      <p className="text-slate-700 text-[8px] mt-0.5 leading-tight">{line.sub}</p>
-                    </td>
-                    {line.amounts.map((v, i) => (
-                      <td key={i} className={`text-right px-2.5 py-2 tabular-nums ${v === 0 ? "text-slate-800" : "text-[#ff6b6b]"}`}>
-                        {v === 0 ? "—" : `(${fmtK(v)})`}
-                      </td>
-                    ))}
-                    <td className="text-right px-4 py-2 tabular-nums font-bold text-[#ff6b6b] border-l border-[#1e3a5f]">
-                      {annual === 0 ? "—" : `(${fmtK(annual)})`}
-                    </td>
-                  </tr>
-                );
-              })}
-
-              {/* Total Outflows */}
-              <tr className="border-y border-[#ff6b6b]/20 bg-[#1a0500]">
-                <td className="sticky left-0 z-10 bg-[#1a0500] px-5 py-2.5 text-[10px] font-black uppercase tracking-wider text-[#ff6b6b]">
-                  TOTAL OUTFLOWS
-                </td>
-                {MONTHS.map((_, i) => (
-                  <td key={i} className="text-right px-2.5 py-2.5 tabular-nums font-black text-[#ff6b6b] text-[11px]">
-                    ({fmtK(monthExpTot(i))})
-                  </td>
-                ))}
-                <td className="text-right px-4 py-2.5 tabular-nums font-black text-[#ff6b6b] text-[11px] border-l border-[#1e3a5f]">
-                  ({fmtK(totalExpenses)})
-                </td>
-              </tr>
-
-              <tr><td colSpan={14} className="py-0.5 border-b border-[#1e3a5f]" /></tr>
-
-              {/* NET CASH FLOW */}
-              <tr className="bg-[#080f1c]">
-                <td className="sticky left-0 z-10 bg-[#080f1c] px-5 py-3.5 text-[11px] font-black uppercase tracking-wider text-white">
-                  NET CASH FLOW
-                </td>
-                {MONTHS.map((_, i) => {
-                  const net = monthNet(i);
-                  return (
-                    <td key={i} className={`text-right px-2.5 py-3.5 tabular-nums font-black text-[12px] ${net >= 0 ? "text-[#00d4aa]" : "text-[#ff6b6b]"}`}>
-                      {fmtK(net, true)}
-                    </td>
-                  );
-                })}
-                <td className="text-right px-4 py-3.5 tabular-nums font-black text-[#00d4aa] text-[12px] border-l border-[#1e3a5f]">
-                  +{fmtK(netSurplus)}
-                </td>
-              </tr>
-
-              {/* GURU RESERVE DRAW */}
-              <tr className="border-t border-[#1e3a5f] bg-[#0a0d18]">
-                <td className="sticky left-0 z-10 bg-[#0a0d18] px-5 py-2.5 text-[9px] uppercase tracking-wider text-[#f5a623] font-bold">
-                  GURU Reserve Draw
-                </td>
-                {MM_GURU_ACTIONS.map((a, i) => (
-                  <td key={i} className={`text-right px-2.5 py-2.5 tabular-nums text-[9px] font-bold ${a.type === "replenish" ? "text-[#00d4aa]" : a.amount === 0 ? "text-slate-700" : "text-[#f5a623]"}`}>
-                    {a.amount === 0 ? "—" : a.type === "replenish" ? `+${fmtK(a.amount)}` : `(${fmtK(a.amount)})`}
-                  </td>
-                ))}
-                <td className="text-right px-4 py-2.5 text-slate-600 text-[9px] border-l border-[#1e3a5f]">auto</td>
-              </tr>
-
-            </tbody>
-          </table>
+        <div className="px-5 py-2.5 border-b border-[#1e3a5f] flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#f5a623] animate-pulse flex-shrink-0" />
+          <span className="text-[8px] font-black uppercase tracking-[0.18em] text-[#f5a623]">MONTHLY CASH FLOW · GURU RESERVE ACTIONS</span>
         </div>
-      </div>
-
-      {/* ── GURU Actions Log ── */}
-      <div className="bg-[#060d1a] rounded-xl border border-[#1a2a3a] overflow-hidden">
-        <div className="px-5 py-2.5 border-b border-[#1e3a5f] flex items-center gap-2.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
-          <span className="text-[8px] font-black uppercase tracking-[0.18em] text-[#f5a623]">GURU AUTOPILOT · MONTHLY ACTIONS</span>
-          <span className="ml-auto text-[8px] text-slate-600">Automatic inter-bucket transfers · Reserve → Operating Cash when deficit detected</span>
-        </div>
-        <div className="grid grid-cols-6 divide-x divide-[#1a2a3a]">
-          {MM_GURU_ACTIONS.map((a, i) => {
+        <div className="grid grid-cols-12 divide-x divide-[#1a2a3a]">
+          {MONTHS.map((m, i) => {
             const net = monthNet(i);
+            const inc = monthIncome(i);
+            const exp = monthExp(i);
+            const isDeficit = net < 0;
             return (
-              <div key={i} className={`px-3.5 py-3 border-b border-[#1a2a3a] ${a.type === "replenish" ? "bg-[#00150f]" : a.amount === 0 ? "" : "bg-[#150500]"}`}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[8px] font-black tracking-widest text-slate-500">{a.month.toUpperCase()}</span>
-                  <span className={`text-[9px] font-black tabular-nums ${net >= 0 ? "text-[#00d4aa]" : "text-[#ff6b6b]"}`}>
-                    {fmtK(net, true)}
-                  </span>
-                </div>
-                <p className={`text-[8px] leading-snug ${a.type === "replenish" ? "text-[#4ade80]" : a.amount === 0 ? "text-slate-600" : "text-[#f5a623]"}`}>
-                  {a.action}
+              <div key={m} className={`px-2 py-3 ${isDeficit ? "bg-[#120500]" : "bg-[#001208]"}`}>
+                <p className="text-[8px] font-black uppercase tracking-widest text-center text-slate-500">{m}</p>
+
+                <p
+                  className={`text-[12px] font-black tabular-nums text-center mt-1.5 leading-none ${isDeficit ? "text-[#ff6b6b]" : "text-[#00d4aa]"}`}
+                >
+                  {net >= 0 ? "+" : ""}{Math.round(net / 1000)}K
                 </p>
+
+                <div className="mt-2 space-y-0.5">
+                  <div className="flex justify-between">
+                    <span className="text-[6px] text-slate-700">IN</span>
+                    <span className="text-[6px] text-[#00d4aa] tabular-nums">{Math.round(inc / 1000)}K</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[6px] text-slate-700">OUT</span>
+                    <span className="text-[6px] text-[#ff6b6b] tabular-nums">({Math.round(exp / 1000)}K)</span>
+                  </div>
+                </div>
+
+                <div className="mt-2 pt-1.5 border-t border-[#1a2a3a]">
+                  <p className={`text-[6px] text-center font-bold uppercase tracking-wider ${isDeficit ? "text-[#d97706]" : "text-[#22c55e]"}`}>
+                    {isDeficit ? "⬆ draw reserve" : "⬇ push reserve"}
+                  </p>
+                </div>
               </div>
             );
           })}
