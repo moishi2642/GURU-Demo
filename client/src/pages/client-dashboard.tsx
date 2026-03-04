@@ -3684,22 +3684,6 @@ function MoneyMovementView({ assets, cashFlows, opsCashMonths }: { assets: Asset
                   ))}
                 </tr>
 
-                {/* ── Connector: Reserve → Operating Cash ── */}
-                <tr className="h-7 bg-blue-50/60 border-y border-blue-100">
-                  <td className="pl-2 pr-4 py-1 text-[9px] font-black uppercase tracking-wider text-blue-600 whitespace-nowrap border-l-4 border-blue-400">
-                    ↕ Auto-Draw: Reserve → Operating Cash
-                  </td>
-                  {FROM_ST_TO_IMM.map((v, mi) => (
-                    <td key={mi} className="px-1 py-1 text-center align-middle">
-                      {v > 0 ? (
-                        <span className="text-[9px] text-blue-400 tabular-nums">{fmtBal(v)}</span>
-                      ) : (
-                        <span className="text-slate-200 text-[9px]">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-
                 <Section
                   subrows={[
                     { label: "Plus: Income Allocation to Reserve",              values: INCOME_TO_ST },
