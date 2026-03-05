@@ -4205,6 +4205,7 @@ function MoneyMovementView({
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-amber-800">JPMorgan 100% Treasuries Money Market Fund</span>
                       <span className="text-[8px] text-amber-500 font-mono">4.72%</span>
+                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
                     </div>
                   </td>
                   {HC_JPM_MMF.map((v, mi) => (
@@ -4220,6 +4221,7 @@ function MoneyMovementView({
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-amber-800">US T-Bill 1 month</span>
                       <span className="text-[8px] text-amber-500 font-mono">5.08%</span>
+                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
                     </div>
                   </td>
                   {HC_TBILL_1MO.map((v, mi) => (
@@ -4235,6 +4237,7 @@ function MoneyMovementView({
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-amber-800">US T-Bill 3 months</span>
                       <span className="text-[8px] text-amber-500 font-mono">5.01%</span>
+                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
                     </div>
                   </td>
                   {HC_TBILL_3MO.map((v, mi) => (
@@ -4250,6 +4253,7 @@ function MoneyMovementView({
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-amber-800">US T-Bill 6 months</span>
                       <span className="text-[8px] text-amber-500 font-mono">4.95%</span>
+                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
                     </div>
                   </td>
                   {HC_TBILL_6MO.map((v, mi) => (
@@ -4265,6 +4269,7 @@ function MoneyMovementView({
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-amber-800">US T-Bill 9 months</span>
                       <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
+                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
                     </div>
                   </td>
                   {HC_TBILL_9MO.map((v, mi) => (
@@ -4304,6 +4309,7 @@ function MoneyMovementView({
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-green-800">The City of New York Muni Bonds Due 02/2028</span>
                       <span className="text-[8px] text-green-600 font-mono">3.85%</span>
+                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
                     </div>
                   </td>
                   {HC_MUNI_BONDS.map((v, mi) => (
@@ -4319,6 +4325,7 @@ function MoneyMovementView({
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-green-800">S&amp;P Low Volatility Index</span>
                       <span className="text-[8px] text-green-600 font-mono">ETF</span>
+                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
                     </div>
                   </td>
                   {HC_SP_LOW_VOL.map((v, mi) => (
