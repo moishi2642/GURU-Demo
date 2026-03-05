@@ -3752,11 +3752,20 @@ function MoneyMovementView({
         const rentalCf = cashFlows.find(c => c.category === 'investments' && parseFloat(c.amount ?? '0') > 0);
         const rentalAmt = rentalCf ? Math.round(parseFloat(rentalCf.amount ?? '0')) : 1722;
 
-        /* ── balances for selected month (use EFF_ arrays so GURU changes show up) ── */
-        const citizensCheckBal = EFF_CITIZENS_CHECK[sm];
-        const chaseBal         = EFF_CHASE[sm];
-        const citizensMM       = EFF_CITIZENS_MM[sm];
-        const capOneBal        = EFF_CAPONE[sm];
+        /* ── GURU-scenario balances for selected month (HC_ arrays = post-restructure) ── */
+        const opsBal   = HC_CIT_MM[sm];   // Citizens Private Bank Ops Money Market
+        const jpmBal   = HC_JPM_MMF[sm];  // JPMorgan Treasury MMF (Reserve buffer)
+
+        /* ── T-bill ladder state for this month ── */
+        const tbillDefs = [
+          { label: '1-Mo T-Bill', balances: HC_TBILL_1MO as number[], rate: '4.95%' },
+          { label: '3-Mo T-Bill', balances: HC_TBILL_3MO as number[], rate: '4.85%' },
+          { label: '6-Mo T-Bill', balances: HC_TBILL_6MO as number[], rate: '4.75%' },
+          { label: '9-Mo T-Bill', balances: HC_TBILL_9MO as number[], rate: '4.65%' },
+        ];
+        const activeTbills   = tbillDefs.filter(t => t.balances[sm] > 0);
+        const maturingTbills = tbillDefs.filter(t => sm > 0 && (t.balances[sm - 1] ?? 0) > 0 && t.balances[sm] === 0);
+        const totalMaturing  = maturingTbills.reduce((s, t) => s + (t.balances[sm - 1] ?? 0), 0);
 
         /* ── labeled connector: solid line with value label + single moving dot ── */
         const Connector = ({
@@ -3886,27 +3895,65 @@ function MoneyMovementView({
 
               <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-2 mb-1">Reserve</div>
 
+              {/* JPMorgan Treasury MMF — receives T-bill proceeds + funds ops draws */}
               <div className="flex items-center">
                 <LedgerCard
-                  title="Citizens Private Bank"
-                  subtitle="Money Market · 4.85%"
-                  balance={fmtBal(citizensMM)}
+                  title="JPMorgan Treasury MMF"
+                  subtitle="Reserve buffer · ~5.00%"
+                  balance={fmtBal(jpmBal)}
                   balanceColor="#d97706"
-                  accent={rsvDraw > 0 ? '#d97706' : undefined}
-                  entries={rsvDraw > 0 ? [{ label: 'Autodraw to Operating', amount: `(${fmtBal(rsvDraw)})`, type: 'less' }] : undefined}
+                  accent={rsvDraw > 0 || totalMaturing > 0 ? '#d97706' : undefined}
+                  entries={[
+                    ...(totalMaturing > 0 ? [{ label: 'T-Bill maturity proceeds', amount: `+${fmtBal(totalMaturing)}`, type: 'plus' as const }] : []),
+                    ...(rsvDraw > 0 ? [{ label: 'Autodraw to Operating', amount: `(${fmtBal(rsvDraw)})`, type: 'less' as const }] : []),
+                  ]}
                 />
                 <Connector label={rsvDraw > 0 ? fmtBal(rsvDraw) : undefined} color="#d97706" active={rsvDraw > 0} />
               </div>
 
-              <div className="flex items-center">
-                <LedgerCard
-                  title="Capital One 360"
-                  subtitle="Performance Savings · 3.78%"
-                  balance={fmtBal(capOneBal)}
-                  balanceColor="#f59e0b"
-                />
-                <Connector color="#94a3b8" active={false} />
-              </div>
+              {/* Maturing T-bills this month — proceeds flow into JPM MMF above */}
+              {maturingTbills.length > 0 && (
+                <div className="text-[9px] font-bold uppercase tracking-widest text-amber-600 mt-1 mb-0">
+                  Maturing This Month ↑
+                </div>
+              )}
+              {maturingTbills.map(t => (
+                <div key={t.label}>
+                  <div
+                    className="rounded-lg overflow-hidden shadow-sm border-2 border-amber-400 bg-amber-50"
+                    style={{ borderTopColor: '#d97706', borderTopWidth: 2 }}
+                  >
+                    <div className="px-3 pt-2.5 pb-2 border-b border-amber-200">
+                      <div className="flex items-start justify-between gap-1">
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-bold text-amber-900 leading-tight">{t.label}</div>
+                          <div className="text-[9px] text-amber-600 mt-0.5">Matured · {t.rate} → to JPM MMF</div>
+                        </div>
+                        <div className="text-[12px] font-black tabular-nums text-emerald-700 flex-shrink-0">
+                          +{fmtBal(t.balances[sm - 1] ?? 0)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Active (non-maturing) T-bills in the ladder */}
+              {activeTbills.length > 0 && (
+                <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1 mb-0">T-Bill Ladder</div>
+              )}
+              {activeTbills.map(t => (
+                <div key={t.label} className="flex items-center">
+                  <LedgerCard
+                    title={t.label}
+                    subtitle={`Held to maturity · ${t.rate}`}
+                    balance={fmtBal(t.balances[sm])}
+                    balanceColor="#1d4ed8"
+                    accent="#1d4ed8"
+                  />
+                  <Connector color="#94a3b8" active={false} />
+                </div>
+              ))}
 
             </div>
 
