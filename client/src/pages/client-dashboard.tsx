@@ -3843,157 +3843,61 @@ function MoneyMovementView({
             )}
           </div>
 
-          {/* ── 3-column layout ── */}
-          <div className="flex items-start" style={{ minWidth: 960, gap: 0 }}>
+          {/* ══ 5-column grid: [LEFT 300px] [GAP-L 88px] [CENTER 400px] [GAP-R 88px] [RIGHT 260px] ══ */}
+          <div style={{ display: 'grid', gridTemplateColumns: '300px 88px 400px 88px 260px', gridAutoRows: 'auto', minWidth: 1136, columnGap: 0, rowGap: 20, alignItems: 'start' }}>
 
-            {/* ══ LEFT: Source accounts ══ */}
-            <div className="flex flex-col gap-3" style={{ width: 300 }}>
-
-              {/* ── INFLOWS banner ── */}
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-1" style={{ backgroundColor: '#dcfce7' }}>
+            {/* ══════════ ROW 1 col 1: INFLOWS ══════════ */}
+            <div className="relative" style={{ gridColumn: '1', gridRow: '1' }}>
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-3" style={{ backgroundColor: '#dcfce7' }}>
                 <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#15803d' }}>Inflows</span>
               </div>
-
-              {/* ── Income sources: org-chart bracket combining all 3 → CIT ── */}
-              <div className="relative mb-2">
-                {/* Vertical bracket spine at right edge of card area */}
-                <div style={{ position: 'absolute', left: 222, top: 10, bottom: 10, width: 2, backgroundColor: 'rgba(22,163,74,0.45)' }} />
-                {/* Animated dot down the bracket (showing parallel flows merging) */}
-                <motion.div
-                  className="absolute w-2 h-2 rounded-full"
-                  style={{ left: 219, backgroundColor: '#16a34a', boxShadow: '0 0 5px #16a34a', zIndex: 10 }}
-                  animate={{ top: ['10%', '90%'] }}
+              {/* Income org-chart: right-side vertical spine + branches */}
+              <div className="relative flex flex-col gap-2">
+                {/* Spine at right edge */}
+                <div style={{ position: 'absolute', right: 0, top: 16, bottom: 16, width: 2, backgroundColor: 'rgba(22,163,74,0.5)' }} />
+                {/* Animated dot down spine */}
+                <motion.div className="absolute w-2 h-2 rounded-full"
+                  style={{ right: -4, backgroundColor: '#16a34a', boxShadow: '0 0 5px #16a34a', zIndex: 10 }}
+                  animate={{ top: ['12%', '88%'] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                 />
-
                 {/* Michael Kessler */}
-                <div className="relative mb-2" style={{ marginRight: 78 }}>
+                <div className="relative" style={{ marginRight: 14 }}>
                   <LedgerCard title="Michael Kessler" subtitle="After-Tax Salary" balance={fmtBal(p1Salary)} balanceColor="#16a34a" accent="#16a34a" />
-                  <div style={{ position: 'absolute', left: 222, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.4)', transform: 'translateY(-50%)' }} />
+                  <div style={{ position: 'absolute', right: -14, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.5)', transform: 'translateY(-50%)' }} />
                 </div>
-
                 {/* Sarah Kessler */}
-                <div className="relative mb-2" style={{ marginRight: 78 }}>
+                <div className="relative" style={{ marginRight: 14 }}>
                   <LedgerCard title="Sarah Kessler" subtitle="After-Tax Salary" balance={fmtBal(p2Salary)} balanceColor="#16a34a" accent="#16a34a" />
-                  <div style={{ position: 'absolute', left: 222, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.4)', transform: 'translateY(-50%)' }} />
+                  <div style={{ position: 'absolute', right: -14, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.5)', transform: 'translateY(-50%)' }} />
                 </div>
-
                 {/* Sarasota Property */}
-                <div className="relative" style={{ marginRight: 78 }}>
+                <div className="relative" style={{ marginRight: 14 }}>
                   <LedgerCard title="Sarasota Property" subtitle="Monthly Rental Income" balance={fmtBal(rentalAmt)} balanceColor="#16a34a" accent="#16a34a" />
-                  <div style={{ position: 'absolute', left: 222, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.4)', transform: 'translateY(-50%)' }} />
+                  <div style={{ position: 'absolute', right: -14, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.5)', transform: 'translateY(-50%)' }} />
                 </div>
+              </div>
+            </div>
 
-                {/* Combined animated connector from bracket midpoint → CIT */}
-                <div className="absolute" style={{ left: 224, right: 0, top: '50%', transform: 'translateY(-50%)', height: 2, backgroundColor: 'rgba(22,163,74,0.25)' }}>
-                  <span className="absolute -top-4 left-0 text-[9px] font-black tabular-nums" style={{ color: '#16a34a' }}>{fmtBal(income + rentalAmt)}</span>
-                  <motion.div
-                    className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+            {/* ══════════ ROW 1 col 2: Income → CIT connector ══════════ */}
+            <div style={{ gridColumn: '2', gridRow: '1', display: 'flex', alignItems: 'center', paddingTop: 32 }}>
+              <div className="relative w-full">
+                <span className="absolute -top-5 left-2 text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: '#16a34a' }}>{fmtBal(income + rentalAmt)}</span>
+                <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: 'rgba(22,163,74,0.2)' }}>
+                  <motion.div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
                     style={{ backgroundColor: '#16a34a', boxShadow: '0 0 6px #16a34a' }}
-                    animate={{ left: ['-10px', '90px'] }}
+                    animate={{ left: ['-10px', '100px'] }}
                     transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
                   />
                 </div>
               </div>
-
-              {/* ── RESERVE banner ── */}
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mt-1 mb-1" style={{ backgroundColor: '#fef3c7' }}>
-                <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve</span>
-              </div>
-
-              {/* ── JPM MMF + Treasury Ladder with right-side org-chart bracket ── */}
-              <div className="relative">
-
-                {/* 1. JPMorgan 100% Treasuries Money Market Fund — top of reserve hierarchy */}
-                <div className="flex items-center">
-                  <LedgerCard
-                    title="JPMorgan 100% Treasuries Money Market Fund"
-                    subtitle="Reserve buffer · ~5.00%"
-                    balance={fmtBal(jpmBal)}
-                    balanceColor="#d97706"
-                    accent="#d97706"
-                    beginningBalance={sm > 0 ? fmtBal(HC_JPM_MMF[sm - 1]) : undefined}
-                    entries={[
-                      ...(totalMaturing > 0 ? [{ label: '+ Inflow from T-Bill Maturity', amount: fmtBal(totalMaturing), type: 'plus' as const }] : []),
-                      { label: `Outflow to CIT Money Market${jpmRsvDraw > 0 ? '' : ' (Standby)'}`, amount: jpmRsvDraw > 0 ? `(${fmtBal(jpmRsvDraw)})` : '$0', type: jpmRsvDraw > 0 ? 'less' as const : 'neutral' as const },
-                    ]}
-                  />
-                  <Connector label={jpmRsvDraw > 0 ? fmtBal(jpmRsvDraw) : '$0 Standby'} color="#d97706" active={true} />
-                </div>
-
-                {/* 2. Treasury Ladder — T-bills connected via right-side org-chart bracket */}
-                {(maturingTbills.length + activeTbills.length) > 0 && (
-                  <div className="relative mt-2">
-
-                    {/* ── Org-chart bracket: right-side vertical spine + horizontal stubs ── */}
-                    {/* Vertical spine running from top to bottom */}
-                    <div style={{ position: 'absolute', right: 54, top: 0, bottom: 8, width: 2, backgroundColor: 'rgba(217,119,6,0.55)' }} />
-                    {/* Short horizontal cap connecting spine to JPM MMF above */}
-                    <div style={{ position: 'absolute', right: 54, top: 0, width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.55)' }} />
-                    {/* Animated dot travelling UP the spine: T-bills → JPM MMF */}
-                    {totalMaturing > 0 && (
-                      <motion.div
-                        className="absolute w-2.5 h-2.5 rounded-full"
-                        style={{ right: 49, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
-                        animate={{ top: ['85%', '0%'] }}
-                        transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                      />
-                    )}
-
-                    {/* Treasury Ladder label */}
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-amber-600 mb-2">
-                      Treasury Ladder
-                    </div>
-
-                    {/* Maturing T-bills — ledger: Beg Balance → Outflow → End $0 */}
-                    {maturingTbills.map(t => (
-                      <div key={t.label} className="relative mb-2">
-                        <div style={{ marginRight: 74 }}>
-                          <LedgerCard
-                            title={`${t.label} — Matured`}
-                            subtitle={`${t.rate} · proceeds to JPMorgan MMF`}
-                            balance="$0"
-                            balanceColor="#94a3b8"
-                            accent="#d97706"
-                            shade="#fffbeb"
-                            beginningBalance={fmtBal(t.balances[sm - 1] ?? 0)}
-                            entries={[
-                              { label: 'Proceeds → JPMorgan 100% Treasuries MMF', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
-                            ]}
-                          />
-                        </div>
-                        {/* Horizontal branch from card right edge → spine */}
-                        <div style={{ position: 'absolute', right: 54, top: '50%', width: 22, height: 2, backgroundColor: 'rgba(217,119,6,0.55)', transform: 'translateY(-50%)' }} />
-                      </div>
-                    ))}
-
-                    {/* Active (held) T-bills — gray coloring since winding down, no connector lines */}
-                    {activeTbills.map(t => (
-                      <div key={t.label} className="mb-2">
-                        <LedgerCard
-                          title={t.label}
-                          subtitle={`Held to maturity · ${t.rate}`}
-                          balance={fmtBal(t.balances[sm])}
-                          balanceColor="#94a3b8"
-                          accent="#94a3b8"
-                        />
-                      </div>
-                    ))}
-
-                  </div>
-                )}
-              </div>
-
             </div>
 
-            {/* ══ CENTER: Operating Cash hub ══ */}
-            <div className="flex flex-col" style={{ width: 420 }}>
-              {/* OPERATING CASH banner */}
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-2" style={{ backgroundColor: '#dbeafe' }}>
+            {/* ══════════ ROW 1+2 col 3: CIT card (spans both rows) ══════════ */}
+            <div style={{ gridColumn: '3', gridRow: '1 / 3' }}>
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-3" style={{ backgroundColor: '#dbeafe' }}>
                 <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#1e40af' }}>Operating Cash</span>
               </div>
-
-              {/* CIT Money Market Bank Account — blue shaded primary hub */}
               <LedgerCard
                 title="CIT Money Market Bank Account"
                 subtitle="Primary operating account · 4.65%"
@@ -4009,47 +3913,49 @@ function MoneyMovementView({
                   ...(jpmRsvDraw > 0 ? [{ label: 'JPMorgan 100% Treasuries MMF — Draw', amount: `+${fmtBal(jpmRsvDraw)}`, type: 'plus' as const }] : []),
                   { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' },
                 ]}
-                width={420}
+                width={400}
               />
             </div>
 
-            {/* ══ RIGHT: Expense destination accounts — bracket from CIT right edge ══ */}
-            <div className="relative flex flex-col" style={{ width: 230 }}>
-
-              {/* OUTFLOWS banner */}
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-2 ml-8" style={{ backgroundColor: '#fee2e2' }}>
-                <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#991b1b' }}>Outflows</span>
+            {/* ══════════ ROW 1+2 col 4: CIT → Expenses connector (spans both rows) ══════════ */}
+            <div style={{ gridColumn: '4', gridRow: '1 / 3', display: 'flex', alignItems: 'center' }}>
+              <div className="relative w-full">
+                <span className="absolute -top-5 left-2 text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: '#dc2626' }}>{fmtBal(totalExp)}</span>
+                <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: 'rgba(220,38,38,0.2)' }}>
+                  <motion.div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: '#dc2626', boxShadow: '0 0 6px #dc2626' }}
+                    animate={{ left: ['-10px', '100px'] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+                  />
+                </div>
               </div>
+            </div>
 
-              {/* ── Org-chart bracket: spine at left:18, horizontal entry from CIT ── */}
-              {/* Horizontal entry line: bridges gap from CIT right edge → bracket spine */}
-              <div style={{ position: 'absolute', left: 0, top: 36, width: 20, height: 2, backgroundColor: 'rgba(220,38,38,0.5)' }} />
-              {/* Vertical bracket spine — clearly inside right column */}
-              <div style={{ position: 'absolute', left: 18, top: 36, bottom: 8, width: 2, backgroundColor: 'rgba(220,38,38,0.45)' }} />
-              {/* Total expense label above spine */}
-              <span className="absolute text-[9px] font-black tabular-nums text-rose-600" style={{ left: 22, top: 18 }}>{fmtBal(totalExp)}</span>
-              {/* Animated dot travelling DOWN the bracket spine */}
-              <motion.div
-                className="absolute w-2.5 h-2.5 rounded-full"
-                style={{ left: 13, backgroundColor: '#dc2626', boxShadow: '0 0 6px #dc2626', zIndex: 10 }}
-                animate={{ top: [36, 360] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+            {/* ══════════ ROW 1+2 col 5: Expense bracket (spans both rows) ══════════ */}
+            <div className="relative" style={{ gridColumn: '5', gridRow: '1 / 3', paddingLeft: 26 }}>
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-3" style={{ backgroundColor: '#fee2e2' }}>
+                <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#991b1b' }}>Outflows</span>
+              </div>
+              {/* Vertical spine at left edge of this column */}
+              <div style={{ position: 'absolute', left: 8, top: 44, bottom: 8, width: 2, backgroundColor: 'rgba(220,38,38,0.5)' }} />
+              {/* Animated dot down spine */}
+              <motion.div className="absolute w-2.5 h-2.5 rounded-full"
+                style={{ left: 4, backgroundColor: '#dc2626', boxShadow: '0 0 6px #dc2626', zIndex: 10 }}
+                animate={{ top: [44, 420] }}
+                transition={{ duration: 4.5, repeat: Infinity, ease: 'linear' }}
               />
-
-              {/* Expense cards with horizontal branches from spine */}
-              <div className="flex flex-col gap-2 ml-7">
+              {/* Expense cards */}
+              <div className="flex flex-col gap-2">
                 {allExpenses.map((exp, idx) => {
                   const isSpecial = idx >= BASE_EXP.length;
                   return (
                     <div key={exp.label} className="relative">
-                      {/* Horizontal branch: spine → card left edge */}
-                      <div style={{ position: 'absolute', left: -28, top: '50%', width: 28, height: 2, backgroundColor: 'rgba(220,38,38,0.3)', transform: 'translateY(-50%)' }} />
-                      {/* Animated dot moving right along each branch */}
-                      <motion.div
-                        className="absolute w-1.5 h-1.5 rounded-full"
+                      {/* Branch: spine (left:8) to card left edge (left:26 → branch width=18) */}
+                      <div style={{ position: 'absolute', left: -18, top: '50%', width: 18, height: 2, backgroundColor: 'rgba(220,38,38,0.35)', transform: 'translateY(-50%)' }} />
+                      <motion.div className="absolute w-1.5 h-1.5 rounded-full"
                         style={{ top: '50%', transform: 'translateY(-50%)', backgroundColor: '#dc2626', zIndex: 5 }}
-                        animate={{ left: ['-28px', '4px'] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: 'linear', delay: idx * 0.35 }}
+                        animate={{ left: ['-18px', '4px'] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: 'linear', delay: idx * 0.3 }}
                       />
                       <LedgerCard
                         title={exp.label}
@@ -4061,6 +3967,95 @@ function MoneyMovementView({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* ══════════ ROW 2 col 1: RESERVE (JPM + T-bills) ══════════ */}
+            <div className="relative" style={{ gridColumn: '1', gridRow: '2' }}>
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-3" style={{ backgroundColor: '#fef3c7' }}>
+                <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve</span>
+              </div>
+              {/* JPMorgan 100% Treasuries Money Market Fund */}
+              <LedgerCard
+                title="JPMorgan 100% Treasuries Money Market Fund"
+                subtitle="Reserve buffer · ~5.00%"
+                balance={fmtBal(jpmBal)}
+                balanceColor="#d97706"
+                accent="#d97706"
+                beginningBalance={sm > 0 ? fmtBal(HC_JPM_MMF[sm - 1]) : undefined}
+                entries={[
+                  ...(totalMaturing > 0 ? [{ label: '+ Inflow from T-Bill Maturity', amount: fmtBal(totalMaturing), type: 'plus' as const }] : []),
+                  { label: `Outflow to CIT Money Market${jpmRsvDraw > 0 ? '' : ' (Standby)'}`, amount: jpmRsvDraw > 0 ? `(${fmtBal(jpmRsvDraw)})` : '$0', type: jpmRsvDraw > 0 ? 'less' as const : 'neutral' as const },
+                ]}
+              />
+
+              {/* Treasury Ladder — T-bills in one relative container with JPM, left-side spine */}
+              {(maturingTbills.length + activeTbills.length) > 0 && (
+                <div className="relative mt-3" style={{ paddingLeft: 26 }}>
+                  {/* Vertical spine — starts at top of this section, reaching up to touch JPM card bottom */}
+                  <div style={{ position: 'absolute', left: 8, top: -14, bottom: 8, width: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
+                  {/* Short horizontal cap at top connecting spine to JPM card (goes right toward card body) */}
+                  <div style={{ position: 'absolute', left: 8, top: -14, width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
+                  {/* Animated dot travelling UP: T-bills → JPM MMF */}
+                  {totalMaturing > 0 && (
+                    <motion.div className="absolute w-2.5 h-2.5 rounded-full"
+                      style={{ left: 4, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
+                      animate={{ top: ['90%', '-14px'] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                    />
+                  )}
+                  {/* Treasury Ladder label */}
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-amber-600 mb-2">
+                    Treasury Ladder
+                  </div>
+                  {/* Maturing T-bills */}
+                  {maturingTbills.map(t => (
+                    <div key={t.label} className="relative mb-2">
+                      {/* Branch from spine (left:8) to card left (paddingLeft:26 → branch=18px wide, at left:-18) */}
+                      <div style={{ position: 'absolute', left: -18, top: '50%', width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.6)', transform: 'translateY(-50%)' }} />
+                      <LedgerCard
+                        title={`${t.label} — Matured`}
+                        subtitle={`${t.rate} · proceeds to JPMorgan MMF`}
+                        balance="$0"
+                        balanceColor="#94a3b8"
+                        accent="#d97706"
+                        shade="#fffbeb"
+                        beginningBalance={fmtBal(t.balances[sm - 1] ?? 0)}
+                        entries={[
+                          { label: 'Proceeds → JPMorgan 100% Treasuries MMF', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
+                        ]}
+                      />
+                    </div>
+                  ))}
+                  {/* Active (held) T-bills — no connector lines */}
+                  {activeTbills.map(t => (
+                    <div key={t.label} className="mb-2">
+                      <LedgerCard
+                        title={t.label}
+                        subtitle={`Held to maturity · ${t.rate}`}
+                        balance={fmtBal(t.balances[sm])}
+                        balanceColor="#94a3b8"
+                        accent="#94a3b8"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ══════════ ROW 2 col 2: JPM → CIT connector ══════════ */}
+            <div style={{ gridColumn: '2', gridRow: '2', display: 'flex', alignItems: 'flex-start', paddingTop: 44 }}>
+              <div className="relative w-full">
+                <span className="absolute -top-5 left-2 text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: '#d97706' }}>
+                  {jpmRsvDraw > 0 ? fmtBal(jpmRsvDraw) : '$0 Standby'}
+                </span>
+                <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: jpmRsvDraw > 0 ? 'rgba(217,119,6,0.25)' : '#e5e7eb' }}>
+                  <motion.div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706' }}
+                    animate={{ left: ['-10px', '100px'] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+                  />
+                </div>
               </div>
             </div>
 
