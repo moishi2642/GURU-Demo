@@ -2670,6 +2670,7 @@ function BucketExecutionPanel({
   onExecute,
   onUndo,
   monthsInputConfig,
+  fixedRoute,
 }: {
   bucketName: string;
   current: number;
@@ -2684,6 +2685,7 @@ function BucketExecutionPanel({
   onExecute?: (from: string, to: string, amount: number) => void;
   onUndo?: (from: string, to: string) => void;
   monthsInputConfig?: { defaultMonths: number; monthlyUnit: number; label: string };
+  fixedRoute?: { from: string; to: string; toLabel: string };
 }) {
   const [months, setMonths] = useState(monthsInputConfig?.defaultMonths ?? 0);
   const effTarget = monthsInputConfig ? monthsInputConfig.monthlyUnit * months : target;
@@ -2692,10 +2694,8 @@ function BucketExecutionPanel({
   const needsFunding = effDelta > 1000 && bucketName !== "Grow";
 
   const BUCKET_NAMES = ["Operating Cash", "Reserve", "Build", "Grow"];
-  const defaultFrom = needsFunding ? "Grow" : bucketName;
-  const defaultTo = needsFunding
-    ? bucketName
-    : (BUCKET_NAMES.find((n) => n !== bucketName) ?? "Reserve");
+  const defaultFrom = fixedRoute ? fixedRoute.from : (needsFunding ? "Grow" : bucketName);
+  const defaultTo   = fixedRoute ? fixedRoute.to   : (needsFunding ? bucketName : (BUCKET_NAMES.find((n) => n !== bucketName) ?? "Reserve"));
 
   const suggested = Math.abs(effDelta);
   const [rawAmt, setRawAmt] = useState(
@@ -2708,8 +2708,8 @@ function BucketExecutionPanel({
       setRawAmt(suggested > 0 ? String(Math.round(suggested)) : "");
     }
   }, [suggested]);
-  const [fromAccount, setFromAccount] = useState(defaultFrom);
-  const [toAccount, setToAccount] = useState(defaultTo);
+  const [fromAccount] = useState(defaultFrom);
+  const [toAccount]   = useState(defaultTo);
 
   const parsedAmt = parseFloat(rawAmt.replace(/[^0-9.]/g, "")) || 0;
   const fmtD = (v: number) => `$${Math.round(v).toLocaleString()}`;
@@ -2798,44 +2798,60 @@ function BucketExecutionPanel({
             {/* Route */}
             <div>
               <p className="text-[9px] uppercase tracking-wider font-bold mb-2 text-muted-foreground">Route</p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">From</p>
-                  <select
-                    value={fromAccount}
-                    onChange={(e) => { setFromAccount(e.target.value); setExecuted(false); }}
-                    className="w-full text-[11px] font-semibold text-foreground rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer bg-background border border-border"
-                    style={{
-                      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 6px center",
-                      paddingRight: "22px",
-                    }}
-                  >
-                    {BUCKET_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
-                  </select>
+              {fixedRoute ? (
+                /* Fixed route — no dropdowns, just a clear destination label */
+                <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[8px] uppercase tracking-wider font-semibold text-muted-foreground mb-0.5">From</p>
+                    <p className="text-[11px] font-semibold text-foreground truncate">{fixedRoute.from}</p>
+                  </div>
+                  <span className="text-muted-foreground text-sm flex-shrink-0">→</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[8px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: AMBER }}>To</p>
+                    <p className="text-[11px] font-bold truncate" style={{ color: AMBER }}>{fixedRoute.toLabel}</p>
+                  </div>
                 </div>
-                <span className="flex-shrink-0 mt-4 text-sm text-muted-foreground">→</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">To</p>
-                  <select
-                    value={toAccount}
-                    onChange={(e) => { setToAccount(e.target.value); setExecuted(false); }}
-                    className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer bg-background border border-border"
-                    style={{
-                      color: AMBER,
-                      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 6px center",
-                      paddingRight: "22px",
-                    }}
-                  >
-                    {BUCKET_NAMES.filter((n) => n !== fromAccount).map((n) => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
+              ) : (
+                /* Generic dropdowns for other buckets */
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">From</p>
+                    <select
+                      value={fromAccount}
+                      className="w-full text-[11px] font-semibold text-foreground rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer bg-background border border-border"
+                      style={{
+                        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 6px center",
+                        paddingRight: "22px",
+                      }}
+                      readOnly
+                    >
+                      {BUCKET_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <span className="flex-shrink-0 mt-4 text-sm text-muted-foreground">→</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">To</p>
+                    <select
+                      value={toAccount}
+                      className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer bg-background border border-border"
+                      style={{
+                        color: AMBER,
+                        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 6px center",
+                        paddingRight: "22px",
+                      }}
+                      readOnly
+                    >
+                      {BUCKET_NAMES.filter((n) => n !== fromAccount).map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </>
         )}
@@ -5255,6 +5271,11 @@ function GuruAllocationView({
                       monthsInputConfig={
                         r.def.name === "Operating Cash"
                           ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
+                          : undefined
+                      }
+                      fixedRoute={
+                        r.def.name === "Operating Cash"
+                          ? { from: "Operating Cash", to: "Reserve", toLabel: "Citizens Private Bank MM" }
                           : undefined
                       }
                     />
