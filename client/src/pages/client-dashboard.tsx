@@ -3974,11 +3974,6 @@ function MoneyMovementView({
                     <div key={exp.label} className="relative">
                       {/* Branch: spine (left:8) to card left edge (left:26 → branch width=18) */}
                       <div style={{ position: 'absolute', left: -18, top: '50%', width: 18, height: 2, backgroundColor: 'rgba(220,38,38,0.35)', transform: 'translateY(-50%)' }} />
-                      <motion.div className="absolute w-1.5 h-1.5 rounded-full"
-                        style={{ top: '50%', transform: 'translateY(-50%)', backgroundColor: '#dc2626', zIndex: 5 }}
-                        animate={{ left: ['-18px', '4px'] }}
-                        transition={{ duration: 2.2, repeat: Infinity, ease: 'linear', delay: idx * 0.3 }}
-                      />
                       <LedgerCard
                         title={exp.label}
                         subtitle={isSpecial ? 'One-time' : undefined}
