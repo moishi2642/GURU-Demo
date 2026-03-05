@@ -2307,7 +2307,6 @@ function CashFlowForecastView({
 }) {
   const { reserve } = cashBuckets(assets);
   const startBalance = reserve;
-  const wfData = buildWaterfallData(cashFlows, startBalance);
 
   function monthVal(descs: string[], year: number, month: number): number {
     return cashFlows
@@ -2351,6 +2350,15 @@ function CashFlowForecastView({
   );
   const annualNet = netByMonth.reduce((s, v) => s + v, 0);
 
+  const cumulativeByMonth = netByMonth.reduce<number[]>((acc, v, i) => {
+    acc.push((acc[i - 1] ?? 0) + v);
+    return acc;
+  }, []);
+  const troughIdx = cumulativeByMonth.reduce(
+    (minI, v, i) => (v < cumulativeByMonth[minI] ? i : minI),
+    0,
+  );
+
   function medianOf(arr: number[]): number {
     const s = [...arr].sort((a, b) => a - b);
     const m = Math.floor(s.length / 2);
@@ -2392,6 +2400,13 @@ function CashFlowForecastView({
     if (v === 0) return "—";
     return v > 0 ? `+${fmt(v)}` : `(${fmt(Math.abs(v))})`;
   }
+
+  const chartData = CF_MONTHS.map((m, i) => ({
+    label: m.label,
+    inflow: monthlyInflows[i],
+    outflow: -monthlyOutflows[i],
+    cumulative: cumulativeByMonth[i],
+  }));
 
   return (
     <div className="space-y-5">
@@ -2444,136 +2459,102 @@ function CashFlowForecastView({
         </div>
       </div>
 
-      {/* Waterfall Chart */}
+      {/* Monthly Inflow / Outflow Chart + Cumulative Line */}
       <div className="border border-border rounded-xl overflow-hidden">
-        <div className="px-5 pt-4 pb-2 border-b border-border">
-          <p className="font-display font-bold text-base text-foreground">
-            12-Month Cashflow Waterfall
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Quarterly view · Starting from checking balance ·{" "}
-            {fmt(startBalance)} beginning
-          </p>
+        <div className="px-5 pt-4 pb-2 border-b border-border flex items-start justify-between">
+          <div>
+            <p className="font-display font-bold text-base text-foreground">
+              Monthly Cash Flows · 2026
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Bars = monthly inflows / outflows · Line = cumulative net · Trough circled in red
+            </p>
+          </div>
+          <div className="flex gap-4 text-xs text-muted-foreground pt-0.5">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm inline-block bg-emerald-600" />
+              Inflow
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm inline-block bg-rose-500" />
+              Outflow
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-6 h-0.5 inline-block bg-blue-600 rounded-full" />
+              Cumulative
+            </span>
+          </div>
         </div>
         <div className="p-4 bg-card">
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={280}>
             <ComposedChart
-              data={wfData}
-              margin={{ top: 30, right: 20, left: 20, bottom: 20 }}
-              barCategoryGap="8%"
+              data={chartData}
+              margin={{ top: 16, right: 64, left: 8, bottom: 4 }}
+              barCategoryGap="28%"
+              barGap={2}
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
-                vertical={false}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis
-                dataKey="name"
+                dataKey="label"
                 tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
-                tickFormatter={(v) =>
-                  v >= 1000 ? `$${Math.round(v / 1000)}K` : `$${v}`
-                }
+                yAxisId="bars"
+                tickFormatter={(v) => `$${Math.round(Math.abs(v) / 1000)}K`}
                 tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                 tickLine={false}
                 axisLine={false}
-                width={60}
+                width={52}
+              />
+              <YAxis
+                yAxisId="cum"
+                orientation="right"
+                tickFormatter={(v) => `$${Math.round(v / 1000)}K`}
+                tick={{ fontSize: 10, fill: "#2563eb" }}
+                tickLine={false}
+                axisLine={false}
+                width={52}
               />
               <RechartsTooltip
                 formatter={(value: number, name: string) => {
-                  if (name === "invisible") return null;
                   const labels: Record<string, string> = {
-                    income: "Income",
-                    coreExp: "Core Expenses",
-                    oneTime: "One-Time",
-                    balance: "Balance",
+                    inflow: "Inflow",
+                    outflow: "Outflow",
+                    cumulative: "Cumulative Net",
                   };
-                  return [fmt(value), labels[name] ?? name];
+                  return [fmt(Math.abs(value)), labels[name] ?? name];
                 }}
-                contentStyle={{
-                  fontSize: 11,
-                  borderRadius: 8,
-                  border: "1px solid hsl(var(--border))",
-                }}
+                contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid hsl(var(--border))" }}
                 itemStyle={{ padding: "2px 0" }}
               />
-              {[3, 7, 11].map((i) => (
-                <ReferenceLine
-                  key={i}
-                  x={wfData[i]?.name}
-                  stroke="hsl(var(--border))"
-                  strokeDasharray="4 2"
-                />
-              ))}
-              <Bar
-                dataKey="invisible"
-                stackId="wf"
-                fill="transparent"
+              <ReferenceLine yAxisId="bars" y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
+              <Bar yAxisId="bars" dataKey="inflow" name="inflow" fill="#16a34a" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+              <Bar yAxisId="bars" dataKey="outflow" name="outflow" fill="#e11d48" radius={[0, 0, 3, 3]} isAnimationActive={false} />
+              <Line
+                yAxisId="cum"
+                dataKey="cumulative"
+                name="cumulative"
+                stroke="#2563eb"
+                strokeWidth={2}
+                dot={(props: any) => {
+                  const { cx, cy, index } = props;
+                  if (index === troughIdx) {
+                    return (
+                      <g key={`trough-${index}`}>
+                        <circle cx={cx} cy={cy} r={8} fill="none" stroke="#dc2626" strokeWidth={2} />
+                        <circle cx={cx} cy={cy} r={3} fill="#dc2626" />
+                      </g>
+                    );
+                  }
+                  return <circle key={`dot-${index}`} cx={cx} cy={cy} r={2.5} fill="#2563eb" />;
+                }}
+                activeDot={{ r: 5, fill: "#2563eb" }}
                 isAnimationActive={false}
               />
-              <Bar
-                dataKey="income"
-                stackId="wf"
-                fill="#1a6b3a"
-                radius={[3, 3, 0, 0]}
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="coreExp"
-                stackId="wf"
-                fill="#c0392b"
-                radius={[3, 3, 0, 0]}
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="oneTime"
-                stackId="wf"
-                fill="#922b21"
-                radius={[3, 3, 0, 0]}
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="balance"
-                fill="hsl(221,39%,38%)"
-                radius={[4, 4, 0, 0]}
-                isAnimationActive={false}
-              >
-                <LabelList
-                  content={(p: any) => <WfLabel {...p} type="balance" />}
-                />
-              </Bar>
             </ComposedChart>
           </ResponsiveContainer>
-          <div className="flex gap-4 justify-center mt-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span
-                className="w-3 h-3 rounded-sm inline-block"
-                style={{ background: "#1a6b3a" }}
-              />
-              Income
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span
-                className="w-3 h-3 rounded-sm inline-block"
-                style={{ background: "#c0392b" }}
-              />
-              Core Expenses
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span
-                className="w-3 h-3 rounded-sm inline-block"
-                style={{ background: "#922b21" }}
-              />
-              One-Time
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm bg-[hsl(221,39%,38%)] inline-block" />
-              Cash Balance
-            </span>
-          </div>
         </div>
       </div>
 
@@ -2692,6 +2673,31 @@ function CashFlowForecastView({
                 ))}
                 <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
                   {fmtCell(annualNet)}
+                </td>
+              </tr>
+              {/* CUMULATIVE NET CASH FLOW — trough circled */}
+              <tr className="border-t border-border bg-blue-50/50">
+                <td className="px-4 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-black text-[11px] uppercase tracking-wider text-blue-800">Cumulative Net</span>
+                    <span className="text-[9px] font-normal text-blue-500 normal-case tracking-normal">rolling YTD</span>
+                  </div>
+                </td>
+                {cumulativeByMonth.map((v, i) => {
+                  const isTrough = i === troughIdx;
+                  return (
+                    <td key={i} className="text-right px-1.5 py-2.5 tabular-nums text-[10px]">
+                      <span className={`relative inline-flex items-center justify-end ${isTrough ? "font-black" : "font-semibold"} ${v >= 0 ? "text-blue-700" : "text-rose-600"}`}>
+                        {isTrough && (
+                          <span className="absolute inset-[-4px] rounded-full border-2 border-rose-500 pointer-events-none" aria-label="trough" />
+                        )}
+                        {fmtCell(v)}
+                      </span>
+                    </td>
+                  );
+                })}
+                <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${cumulativeByMonth[cumulativeByMonth.length - 1] >= 0 ? "text-blue-700" : "text-rose-600"}`}>
+                  {fmtCell(cumulativeByMonth[cumulativeByMonth.length - 1])}
                 </td>
               </tr>
             </tbody>
