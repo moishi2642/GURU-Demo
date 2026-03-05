@@ -3903,15 +3903,21 @@ function MoneyMovementView({
                     className="rounded-lg overflow-hidden shadow-sm border-2 border-amber-400 bg-amber-50"
                     style={{ borderTopColor: '#d97706', borderTopWidth: 3, marginRight: 72 }}
                   >
-                    <div className="px-3 pt-2.5 pb-2.5">
+                    <div className="px-3 pt-2.5 pb-2 border-b border-amber-200">
                       <div className="flex items-start justify-between gap-1">
                         <div className="min-w-0">
                           <div className="text-[11px] font-bold text-amber-900 leading-tight">{t.label} — Matured</div>
-                          <div className="text-[9px] text-amber-600 mt-0.5">{t.rate} · proceeds → JPMorgan MMF</div>
+                          <div className="text-[9px] text-amber-600 mt-0.5">{t.rate} · face value at maturity</div>
                         </div>
                         <div className="text-[12px] font-black tabular-nums text-emerald-700 flex-shrink-0">
-                          +{fmtBal(t.balances[sm - 1] ?? 0)}
+                          {fmtBal(t.balances[sm - 1] ?? 0)}
                         </div>
+                      </div>
+                    </div>
+                    <div className="px-3 py-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-amber-800 leading-none">↓ Move to Money Market Fund at Maturity</span>
+                        <span className="text-[10px] font-bold tabular-nums leading-none text-rose-600">({fmtBal(t.balances[sm - 1] ?? 0)})</span>
                       </div>
                     </div>
                   </div>
@@ -3942,7 +3948,7 @@ function MoneyMovementView({
                   balanceColor="#d97706"
                   accent="#d97706"
                   entries={[
-                    ...(totalMaturing > 0 ? [{ label: 'T-Bill maturity proceeds', amount: `+${fmtBal(totalMaturing)}`, type: 'plus' as const }] : []),
+                    ...(totalMaturing > 0 ? [{ label: 'Inflow from T-Bill Maturity', amount: `+${fmtBal(totalMaturing)}`, type: 'plus' as const }] : []),
                     ...(rsvDraw > 0 ? [{ label: 'Autodraw to Operating', amount: `(${fmtBal(rsvDraw)})`, type: 'less' as const }] : []),
                   ]}
                 />
