@@ -4003,43 +4003,46 @@ function MoneyMovementView({
 
               {/* Treasury Ladder — T-bills in one relative container with JPM, right-side spine */}
               {(maturingTbills.length + activeTbills.length) > 0 && (
-                <div className="relative mt-3" style={{ overflow: 'visible' }}>
-                  {/* Vertical spine — sits in col 2 connector gap, 44px past right edge of col 1 */}
-                  <div style={{ position: 'absolute', right: -44, top: -14, bottom: 8, width: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
-                  {/* Horizontal cap at top connecting spine to JPM card right edge */}
-                  <div style={{ position: 'absolute', right: -44, top: -14, width: 44, height: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
-                  {/* Animated dot travelling UP: T-bills → JPM MMF */}
-                  {totalMaturing > 0 && (
-                    <motion.div className="absolute w-2.5 h-2.5 rounded-full"
-                      style={{ right: -48, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
-                      animate={{ top: ['90%', '-14px'] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                    />
-                  )}
-                  {/* Treasury Ladder label */}
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-amber-600 mb-2">
-                    Treasury Ladder
-                  </div>
-                  {/* Maturing T-bills */}
-                  {maturingTbills.map(t => (
-                    <div key={t.label} className="relative mb-2">
-                      {/* Branch from card right edge to spine in col 2 gap (width:44) */}
-                      <div style={{ position: 'absolute', right: -44, top: '50%', width: 44, height: 2, backgroundColor: 'rgba(217,119,6,0.6)', transform: 'translateY(-50%)' }} />
-                      <LedgerCard
-                        title={`${t.label} — Matured`}
-                        subtitle={`${t.rate} · proceeds to JPMorgan MMF`}
-                        balance="$0"
-                        balanceColor="#94a3b8"
-                        accent="#d97706"
-                        shade="#fffbeb"
-                        beginningBalance={fmtBal(t.balances[sm - 1] ?? 0)}
-                        entries={[
-                          { label: 'Proceeds → JPMorgan 100% Treasuries MMF', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
-                        ]}
+                <div className="mt-3">
+                  {/* Inner wrapper — spine is scoped here, ends at bottom of last maturing T-bill */}
+                  <div className="relative" style={{ overflow: 'visible' }}>
+                    {/* Vertical spine — top: -14 reaches up to JPM, bottom: 0 stops at bottom of this wrapper */}
+                    <div style={{ position: 'absolute', right: -44, top: -14, bottom: 0, width: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
+                    {/* Horizontal cap connecting spine to JPM card right edge */}
+                    <div style={{ position: 'absolute', right: -44, top: -14, width: 44, height: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
+                    {/* Animated dot travelling UP: T-bills → JPM MMF */}
+                    {totalMaturing > 0 && (
+                      <motion.div className="absolute w-2.5 h-2.5 rounded-full"
+                        style={{ right: -48, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
+                        animate={{ top: ['90%', '-14px'] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                       />
+                    )}
+                    {/* Treasury Ladder label */}
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-amber-600 mb-2">
+                      Treasury Ladder
                     </div>
-                  ))}
-                  {/* Active (held) T-bills — no connector lines */}
+                    {/* Maturing T-bills — each has a branch to the spine */}
+                    {maturingTbills.map(t => (
+                      <div key={t.label} className="relative mb-2">
+                        {/* Branch from card right edge to spine */}
+                        <div style={{ position: 'absolute', right: -44, top: '50%', width: 44, height: 2, backgroundColor: 'rgba(217,119,6,0.6)', transform: 'translateY(-50%)' }} />
+                        <LedgerCard
+                          title={`${t.label} — Matured`}
+                          subtitle={`${t.rate} · proceeds to JPMorgan MMF`}
+                          balance="$0"
+                          balanceColor="#94a3b8"
+                          accent="#d97706"
+                          shade="#fffbeb"
+                          beginningBalance={fmtBal(t.balances[sm - 1] ?? 0)}
+                          entries={[
+                            { label: 'Proceeds → JPMorgan 100% Treasuries MMF', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
+                          ]}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Active (held) T-bills — outside spine wrapper, no connector lines */}
                   {activeTbills.map(t => (
                     <div key={t.label} className="mb-2">
                       <LedgerCard
