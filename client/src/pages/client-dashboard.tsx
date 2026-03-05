@@ -4067,7 +4067,7 @@ function MoneyMovementView({
             </div>
 
             {/* ══════════ ROW 2 col 2: JPM → CIT connector ══════════ */}
-            <div style={{ gridColumn: '2', gridRow: '2', display: 'flex', alignItems: 'flex-start', paddingTop: 44 }}>
+            <div style={{ gridColumn: '2', gridRow: '2', display: 'flex', alignItems: 'flex-start', paddingTop: 90 }}>
               <div className="relative w-full">
                 <span className="absolute -top-5 left-2 text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: '#d97706' }}>
                   {jpmRsvDraw > 0 ? fmtBal(jpmRsvDraw) : '$0 Standby'}
