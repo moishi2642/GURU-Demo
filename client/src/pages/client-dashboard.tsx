@@ -1591,10 +1591,7 @@ function buildAssetGroups(assets: Asset[]): BsGroup[] {
   const isBrokerage = (a: Asset) =>
     (a.type === "equity" || a.type === "fixed_income") &&
     !isRetirement(a) &&
-    !isRSU(a) &&
-    ((a.description ?? "").toLowerCase().includes("brokerage") ||
-      (a.description ?? "").toLowerCase().includes("taxable") ||
-      (a.description ?? "").toLowerCase().includes("fidelity"));
+    !isRSU(a);
 
   const checking = assets.filter(
     (a) =>
