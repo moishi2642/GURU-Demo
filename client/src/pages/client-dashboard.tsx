@@ -3850,9 +3850,9 @@ function MoneyMovementView({
                 <span className="text-[14px] font-black uppercase tracking-widest" style={{ color: '#15803d' }}>Inflows</span>
               </div>
               {/* INCOME SOURCES — sub-banner above the three cards */}
-              <div className="flex items-center gap-1.5 px-2 py-1 mb-2 rounded" style={{ backgroundColor: '#eef2ff', border: '1px solid #c7d2fe' }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#4338ca' }} />
-                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#4338ca' }}>Income Sources</span>
+              <div className="flex items-center gap-1.5 px-2 py-1 mb-2 rounded" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#16a34a' }} />
+                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#15803d' }}>Income Sources</span>
               </div>
               {/* Income org-chart: right-side vertical spine + branches */}
               <div className="relative flex flex-col gap-2">
