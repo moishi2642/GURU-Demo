@@ -2675,6 +2675,7 @@ function BucketExecutionPanel({
   onUndo,
   monthsInputConfig,
   fixedRoute,
+  cashflowBridgeInfo,
 }: {
   bucketName: string;
   current: number;
@@ -2690,6 +2691,7 @@ function BucketExecutionPanel({
   onUndo?: (from: string, to: string) => void;
   monthsInputConfig?: { defaultMonths: number; monthlyUnit: number; label: string };
   fixedRoute?: { from: string; to: string; toLabel: string };
+  cashflowBridgeInfo?: { months: number; troughMonthName: string; monthlyNetAvg: number };
 }) {
   const [months, setMonths] = useState(monthsInputConfig?.defaultMonths ?? 0);
   const effTarget = monthsInputConfig ? monthsInputConfig.monthlyUnit * months : target;
@@ -2766,6 +2768,28 @@ function BucketExecutionPanel({
             <p className="text-base font-black tabular-nums leading-none" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
           </div>
         </div>
+
+        {/* ── Cashflow Bridge (Reserve bucket only) ── */}
+        {cashflowBridgeInfo && (
+          <div className="rounded-lg border border-slate-200 bg-muted/40 px-3 py-2.5">
+            <p className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground mb-2">
+              Cashflow Bridge
+            </p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black tabular-nums text-foreground leading-none">
+                {cashflowBridgeInfo.months}
+              </span>
+              <span className="text-[11px] font-semibold text-muted-foreground">months</span>
+            </div>
+            <p className="text-[9px] text-muted-foreground mt-1 leading-snug">
+              Cumulative deficit peaks in <span className="font-semibold text-foreground">{cashflowBridgeInfo.troughMonthName}</span> before year-end bonus replenishes
+            </p>
+            <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
+              <span className="text-[8px] uppercase tracking-wider font-bold text-muted-foreground">Avg monthly surplus</span>
+              <span className="text-[10px] font-black tabular-nums text-foreground">{cashflowBridgeInfo.monthlyNetAvg >= 0 ? "+" : ""}{Math.round(cashflowBridgeInfo.monthlyNetAvg).toLocaleString()}</span>
+            </div>
+          </div>
+        )}
 
         {/* ── Transfer Amount ── */}
         {executed ? (
@@ -5331,25 +5355,48 @@ function GuruAllocationView({
                       </div>
                     </div>
                     {/* ── MIDDLE: Transfer Execution panel ── */}
-                    <BucketExecutionPanel
-                      bucketName={r.def.name}
-                      current={r.current}
-                      target={r.target}
-                      delta={r.target - r.current}
-                      accentColor={r.def.accent}
-                      bgColor={r.def.bg}
-                      avgYield={weightedGrossYield(r.subAccounts, r.current)}
-                      avgYieldAT={weightedATYield(r.subAccounts, r.current)}
-                      bpPickup={r.bpPickup}
-                      totalAssets={totalAssets}
-                      onExecute={handleExecute}
-                      onUndo={handleUndo}
-                      monthsInputConfig={
-                        r.def.name === "Operating Cash"
-                          ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
-                          : undefined
-                      }
-                    />
+                    {(() => {
+                      /* Cashflow bridge info — Reserve bucket only */
+                      const _cfBridge = r.def.name === "Reserve" ? (() => {
+                        const troughIdx = forecastData.reduce(
+                          (mi, d, i) => d.cumulative < forecastData[mi].cumulative ? i : mi,
+                          0,
+                        );
+                        /* Average monthly net excluding the December bonus month (net > $30k) */
+                        const regularMonths = forecastData.filter(d => d.net < 30000);
+                        const monthlyNetAvg = regularMonths.length
+                          ? regularMonths.reduce((s, d) => s + d.net, 0) / regularMonths.length
+                          : 0;
+                        return {
+                          months: troughIdx + 1,
+                          troughMonthName: forecastData[troughIdx]?.month ?? "Nov",
+                          monthlyNetAvg,
+                        };
+                      })() : undefined;
+
+                      return (
+                        <BucketExecutionPanel
+                          bucketName={r.def.name}
+                          current={r.current}
+                          target={r.target}
+                          delta={r.target - r.current}
+                          accentColor={r.def.accent}
+                          bgColor={r.def.bg}
+                          avgYield={weightedGrossYield(r.subAccounts, r.current)}
+                          avgYieldAT={weightedATYield(r.subAccounts, r.current)}
+                          bpPickup={r.bpPickup}
+                          totalAssets={totalAssets}
+                          onExecute={handleExecute}
+                          onUndo={handleUndo}
+                          monthsInputConfig={
+                            r.def.name === "Operating Cash"
+                              ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
+                              : undefined
+                          }
+                          cashflowBridgeInfo={_cfBridge}
+                        />
+                      );
+                    })()}
                     {/* ── RIGHT: Products panel ── */}
                     <BucketProductPanel
                       bgColor={r.def.bg}
