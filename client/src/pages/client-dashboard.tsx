@@ -3612,7 +3612,7 @@ function MoneyMovementView({
   const BASE_EXP = [
     { label: "Housing & Property",  amount: 9036,  dot: "#0284c7" },
     { label: "Childcare",           amount: 4333,  dot: "#7c3aed" },
-    { label: "Food & Dining",       amount: 3500,  dot: "#ea580c" },
+    { label: "Credit Cards",         amount: 3500,  dot: "#ea580c" },
     { label: "Debt Service",        amount: 1187,  dot: "#dc2626" },
     { label: "Other Recurring",     amount: 2883,  dot: "#64748b" },
   ];
@@ -3911,7 +3911,7 @@ function MoneyMovementView({
             </div>
 
             {/* ══ CENTER: Operating Cash hub ══ */}
-            <div className="flex flex-col" style={{ width: 260 }}>
+            <div className="flex flex-col" style={{ width: 340 }}>
               <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Operating Cash</div>
 
               {/* Primary checking */}
@@ -3926,7 +3926,7 @@ function MoneyMovementView({
                   ...(rsvDraw > 0 ? [{ label: 'Autodraw from Reserve', amount: fmtBal(rsvDraw), type: 'plus' as const }] : []),
                   { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' },
                 ]}
-                width={260}
+                width={340}
               />
 
               <div className="my-3 border-t border-slate-100" />
@@ -3937,7 +3937,7 @@ function MoneyMovementView({
                 subtitle="Secondary Account"
                 balance={fmtBal(chaseBal)}
                 balanceColor="#1d4ed8"
-                width={260}
+                width={340}
               />
 
               {/* Outflow label → right column */}
@@ -3948,7 +3948,7 @@ function MoneyMovementView({
             </div>
 
             {/* ══ RIGHT: Expense destination accounts ══ */}
-            <div className="flex flex-col gap-2.5" style={{ minWidth: 300, flex: 1 }}>
+            <div className="flex flex-col gap-2.5" style={{ width: 200 }}>
               <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Outflows</div>
               {allExpenses.map((exp, idx) => {
                 const isSpecial = idx >= BASE_EXP.length;
