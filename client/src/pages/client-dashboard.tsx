@@ -2776,7 +2776,7 @@ function BucketExecutionPanel({
 
         {/* ── Current / Target side by side ── */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-border bg-muted/50 px-3 py-2.5">
+          <div className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-[14px]">
             <p className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
             <p className="text-base font-black tabular-nums text-foreground leading-none">{fmtD(current)}</p>
           </div>
@@ -2824,7 +2824,7 @@ function BucketExecutionPanel({
               <p className="text-[9px] uppercase tracking-wider font-bold mb-2 text-muted-foreground">Route</p>
               {fixedRoute ? (
                 /* Fixed route — no dropdowns, just a clear destination label */
-                <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 flex items-center gap-2">
+                (<div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-[8px] uppercase tracking-wider font-semibold text-muted-foreground mb-0.5">From</p>
                     <p className="text-[11px] font-semibold text-foreground truncate">{fixedRoute.from}</p>
@@ -2834,10 +2834,10 @@ function BucketExecutionPanel({
                     <p className="text-[8px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: AMBER }}>To</p>
                     <p className="text-[11px] font-bold truncate" style={{ color: AMBER }}>{fixedRoute.toLabel}</p>
                   </div>
-                </div>
+                </div>)
               ) : (
                 /* Generic dropdowns for other buckets */
-                <div className="flex items-center gap-2">
+                (<div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">From</p>
                     <select
@@ -2874,7 +2874,7 @@ function BucketExecutionPanel({
                       ))}
                     </select>
                   </div>
-                </div>
+                </div>)
               )}
             </div>
           </>
@@ -3635,7 +3635,6 @@ function MoneyMovementView({
           </div>
         )}
       </div>
-
       {/* ── Pending changes banner ─────────────────────────────────────────────── */}
       {hasChanges && (
         <div className="flex items-center gap-3 px-6 py-2.5 bg-amber-50 border-b border-amber-200">
@@ -3663,7 +3662,6 @@ function MoneyMovementView({
           </div>
         </div>
       )}
-
       {/* ══════════════════════════════════════════════════════════
           FLOW SCHEMATIC VIEW
           ══════════════════════════════════════════════════════════ */}
