@@ -3883,7 +3883,7 @@ function MoneyMovementView({
             </div>
 
             {/* ══════════ ROW 1 col 2: Income → CIT connector ══════════ */}
-            <div style={{ gridColumn: '2', gridRow: '1', display: 'flex', alignItems: 'center', paddingTop: 32 }}>
+            <div style={{ gridColumn: '2', gridRow: '1', display: 'flex', alignItems: 'flex-start', paddingTop: 180 }}>
               <div className="relative w-full">
                 <span className="absolute -top-5 left-2 text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: '#16a34a' }}>{fmtBal(income + rentalAmt)}</span>
                 <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: 'rgba(22,163,74,0.2)' }}>
