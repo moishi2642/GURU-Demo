@@ -5371,7 +5371,7 @@ function GuruAllocationView({
                             ? {
                                 defaultMonths: 12,
                                 forecastCumulatives: forecastData.map(d => d.cumulative),
-                                nextMonthExpenses: 3 * minMonthly,
+                                nextMonthExpenses: 48392,
                                 label: "mos. of cumulative net cashflow",
                               }
                             : undefined
