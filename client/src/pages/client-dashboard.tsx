@@ -3895,82 +3895,100 @@ function MoneyMovementView({
 
               <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-2 mb-1">Reserve</div>
 
-              {/* Maturing T-bills FIRST — they flow DOWN into JPM MMF */}
-              {maturingTbills.map(t => (
-                <div key={t.label} className="flex flex-col">
-                  {/* Maturing T-bill card — no right connector, flows down */}
-                  <div
-                    className="rounded-lg overflow-hidden shadow-sm border-2 border-amber-400 bg-amber-50"
-                    style={{ borderTopColor: '#d97706', borderTopWidth: 3, marginRight: 72 }}
-                  >
-                    <div className="px-3 pt-2.5 pb-2 border-b border-amber-200">
-                      <div className="flex items-start justify-between gap-1">
-                        <div className="min-w-0">
-                          <div className="text-[11px] font-bold text-amber-900 leading-tight">{t.label} — Matured</div>
-                          <div className="text-[9px] text-amber-600 mt-0.5">{t.rate} · face value at maturity</div>
-                        </div>
-                        <div className="text-[12px] font-black tabular-nums text-emerald-700 flex-shrink-0">
-                          {fmtBal(t.balances[sm - 1] ?? 0)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="px-3 py-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-amber-800 leading-none">↓ Move to Money Market Fund at Maturity</span>
-                        <span className="text-[10px] font-bold tabular-nums leading-none text-rose-600">({fmtBal(t.balances[sm - 1] ?? 0)})</span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Vertical animated connector ↓ T-bill → JPM MMF */}
-                  <div className="flex items-center gap-2" style={{ marginRight: 72, paddingLeft: 16, height: 40 }}>
-                    <div className="relative flex-shrink-0" style={{ width: 2, height: 40 }}>
-                      <div className="absolute inset-0 rounded-full" style={{ backgroundColor: 'rgba(217,119,6,0.25)' }} />
+              {/* ── JPM MMF + Treasury Ladder with right-side org-chart bracket ── */}
+              <div className="relative">
+
+                {/* 1. JPMorgan Treasury MMF — top of reserve hierarchy */}
+                <div className="flex items-center">
+                  <LedgerCard
+                    title="JPMorgan Treasury MMF"
+                    subtitle="Reserve buffer · ~5.00%"
+                    balance={fmtBal(jpmBal)}
+                    balanceColor="#d97706"
+                    accent="#d97706"
+                    entries={[
+                      ...(totalMaturing > 0 ? [{ label: 'Inflow from T-Bill Maturity', amount: `+${fmtBal(totalMaturing)}`, type: 'plus' as const }] : []),
+                      ...(rsvDraw > 0 ? [{ label: 'Autodraw to Operating', amount: `(${fmtBal(rsvDraw)})`, type: 'less' as const }] : []),
+                    ]}
+                  />
+                  <Connector label={rsvDraw > 0 ? fmtBal(rsvDraw) : undefined} color="#d97706" active={rsvDraw > 0} />
+                </div>
+
+                {/* 2. Treasury Ladder — T-bills below JPM MMF, connected via right-side bracket */}
+                {(maturingTbills.length + activeTbills.length) > 0 && (
+                  <div className="relative mt-2">
+
+                    {/* ── Org-chart bracket: right-side vertical + horizontal stubs ── */}
+                    {/* Top horizontal stub: connects bracket back left to JPM MMF level */}
+                    <div style={{ position: 'absolute', right: 54, top: -8, width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.55)' }} />
+                    {/* Vertical spine: runs from JPM MMF level down through all T-bill rows */}
+                    <div style={{ position: 'absolute', right: 54, top: -8, bottom: 16, width: 2, backgroundColor: 'rgba(217,119,6,0.55)' }} />
+                    {/* Animated dot travelling up the spine (T-bills → JPM MMF) */}
+                    {totalMaturing > 0 && (
                       <motion.div
                         className="absolute w-2.5 h-2.5 rounded-full"
-                        style={{ left: '50%', transform: 'translateX(-50%)', backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706' }}
-                        animate={{ top: ['-6px', '42px'] }}
-                        transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+                        style={{ right: 54 - 4, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
+                        animate={{ bottom: [16, -8] }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
                       />
+                    )}
+
+                    {/* Treasury Ladder banner */}
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-amber-600 mb-2">
+                      Treasury Ladder
                     </div>
-                    <span className="text-[9px] font-black tabular-nums" style={{ color: '#d97706' }}>
-                      +{fmtBal(t.balances[sm - 1] ?? 0)}
-                    </span>
+
+                    {/* Maturing T-bills */}
+                    {maturingTbills.map(t => (
+                      <div key={t.label} className="relative mb-2">
+                        {/* Card: right margin leaves room for bracket */}
+                        <div
+                          className="rounded-lg overflow-hidden shadow-sm border-2 border-amber-400 bg-amber-50"
+                          style={{ borderTopColor: '#d97706', borderTopWidth: 3, marginRight: 76 }}
+                        >
+                          <div className="px-3 pt-2.5 pb-2 border-b border-amber-200">
+                            <div className="flex items-start justify-between gap-1">
+                              <div className="min-w-0">
+                                <div className="text-[11px] font-bold text-amber-900 leading-tight">{t.label} — Matured</div>
+                                <div className="text-[9px] text-amber-600 mt-0.5">{t.rate} · face value at maturity</div>
+                              </div>
+                              <div className="text-[12px] font-black tabular-nums text-emerald-700 flex-shrink-0">
+                                {fmtBal(t.balances[sm - 1] ?? 0)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="px-3 py-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-amber-800 leading-none">↑ Move to Money Market Fund at Maturity</span>
+                              <span className="text-[10px] font-bold tabular-nums leading-none text-rose-600">({fmtBal(t.balances[sm - 1] ?? 0)})</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Horizontal branch: card right → bracket spine */}
+                        <div style={{ position: 'absolute', right: 56, top: '50%', width: 20, height: 2, backgroundColor: 'rgba(217,119,6,0.55)', transform: 'translateY(-50%)' }} />
+                      </div>
+                    ))}
+
+                    {/* Active (held) T-bills */}
+                    {activeTbills.map(t => (
+                      <div key={t.label} className="relative mb-2">
+                        <div style={{ marginRight: 76 }}>
+                          <LedgerCard
+                            title={t.label}
+                            subtitle={`Held to maturity · ${t.rate}`}
+                            balance={fmtBal(t.balances[sm])}
+                            balanceColor="#1d4ed8"
+                            accent="#1d4ed8"
+                          />
+                        </div>
+                        {/* Horizontal branch: card right → bracket spine */}
+                        <div style={{ position: 'absolute', right: 56, top: '50%', width: 20, height: 2, backgroundColor: 'rgba(217,119,6,0.35)', transform: 'translateY(-50%)' }} />
+                      </div>
+                    ))}
+
                   </div>
-                </div>
-              ))}
-
-              {/* JPMorgan Treasury MMF — receives T-bill proceeds, sends autodraw right to Operating Cash */}
-              <div className="flex items-center">
-                <LedgerCard
-                  title="JPMorgan Treasury MMF"
-                  subtitle="Reserve buffer · ~5.00%"
-                  balance={fmtBal(jpmBal)}
-                  balanceColor="#d97706"
-                  accent="#d97706"
-                  entries={[
-                    ...(totalMaturing > 0 ? [{ label: 'Inflow from T-Bill Maturity', amount: `+${fmtBal(totalMaturing)}`, type: 'plus' as const }] : []),
-                    ...(rsvDraw > 0 ? [{ label: 'Autodraw to Operating', amount: `(${fmtBal(rsvDraw)})`, type: 'less' as const }] : []),
-                  ]}
-                />
-                <Connector label={rsvDraw > 0 ? fmtBal(rsvDraw) : undefined} color="#d97706" active={rsvDraw > 0} />
+                )}
               </div>
-
-              {/* Active (non-maturing) T-bills held in the ladder */}
-              {activeTbills.length > 0 && (
-                <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1 mb-0">T-Bill Ladder</div>
-              )}
-              {activeTbills.map(t => (
-                <div key={t.label} className="flex items-center">
-                  <LedgerCard
-                    title={t.label}
-                    subtitle={`Held to maturity · ${t.rate}`}
-                    balance={fmtBal(t.balances[sm])}
-                    balanceColor="#1d4ed8"
-                    accent="#1d4ed8"
-                  />
-                  <Connector color="#94a3b8" active={false} />
-                </div>
-              ))}
 
             </div>
 
