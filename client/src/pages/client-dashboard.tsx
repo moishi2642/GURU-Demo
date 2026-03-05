@@ -3328,16 +3328,17 @@ function MoneyMovementView({
   })();
 
   // ── Effective Citizens Checking & Chase ───────────────────────────────────────
-  // With simulation: Ops stays near the 2-month target, all held in Citizens Check.
+  // With simulation: checking accounts show $0 — all cash swept to CIT MM.
+  // The operating floor is maintained by monthly CIT MM draws (shown in the Autopilot row).
   // Without simulation: subtract the generic transfer amount (Citizens absorbs first).
   const EFF_CITIZENS_CHECK: number[] = _sim
-    ? _sim.effOps.map(v => Math.max(0, v - 25050)) // Chase keeps its ~$25K baseline buffer
+    ? new Array(12).fill(0)
     : (hasChanges
         ? CITIZENS_CHECK_BAL.map(v => Math.max(0, v - _opsNetOut))
         : CITIZENS_CHECK_BAL);
 
   const EFF_CHASE: number[] = _sim
-    ? _sim.effOps.map(v => Math.min(v, 25050))
+    ? new Array(12).fill(0)
     : (hasChanges
         ? CHASE_BAL.map((v, i) => {
             const citizensAbsorbed = Math.min(CITIZENS_CHECK_BAL[i], _opsNetOut);
@@ -3346,7 +3347,11 @@ function MoneyMovementView({
           })
         : CHASE_BAL);
 
-  const EFF_IMM = EFF_CHASE.map((v, i) => v + EFF_CITIZENS_CHECK[i]);
+  // When simulation is active: use the simulated Ops total directly for the bucket total
+  // and the floor check (not the sum of zero checking accounts).
+  const EFF_IMM: number[] = _sim
+    ? _sim.effOps
+    : EFF_CHASE.map((v, i) => v + EFF_CITIZENS_CHECK[i]);
 
   // ── Effective Citizens MM (Reserve) ──────────────────────────────────────────
   // With simulation: balance reflects monthly draws to cover Ops shortfalls.
@@ -3939,6 +3944,29 @@ function MoneyMovementView({
                     </td>
                   ))}
                 </tr>
+                {/* ← CIT MM Auto-draw row — shows monthly draws when simulation is active */}
+                {_sim && (
+                  <tr className="border-b border-amber-200/60 hover:bg-amber-50/50 transition-colors"
+                    style={{ backgroundColor: "rgba(217,119,6,0.06)" }}>
+                    <td className="pl-7 pr-4 py-2 w-[300px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-amber-500 text-xs leading-none">←</span>
+                        <span className="text-[10px] font-semibold text-amber-700">CIT MM Auto-draw</span>
+                        <span className="text-[8px] text-amber-400 font-mono italic">funds ops floor</span>
+                      </div>
+                    </td>
+                    {_sim.draws.map((draw, mi) => (
+                      <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-amber-600 cursor-help relative group">
+                        {draw > 0 ? `+${fmtBal(draw)}` : <span className="text-slate-300">—</span>}
+                        {cellTip([
+                          draw > 0 ? `Ops shortfall this month: $${draw.toLocaleString()}` : `No draw needed — surplus month`,
+                          `──────────────────`,
+                          draw > 0 ? `Citizens MM funds the gap to maintain the ${opsCashMonths}-month floor` : `Operating income covered expenses`,
+                        ])}
+                      </td>
+                    ))}
+                  </tr>
+                )}
                 {/* GURU Autopilot ticker — only when any month has a Reserve draw */}
                 {EFF_FROM_ST_TO_IMM.some(v => v > 0) && (
                   <tr className="h-5 border-b border-blue-100/60" style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
@@ -3997,7 +4025,7 @@ function MoneyMovementView({
                       {fmtBal(v)}
                       {cellTip([
                         EFF_ST_INT[mi] > 0 ? `Interest earned: +$${EFF_ST_INT[mi].toLocaleString()}` : null,
-                        FROM_ST_OUT[mi] !== 0 ? `Drawn to Ops: −$${Math.abs(FROM_ST_OUT[mi]).toLocaleString()}` : null,
+                        EFF_FROM_ST_TO_IMM[mi] > 0 ? `Auto-draw to cover Ops: −$${EFF_FROM_ST_TO_IMM[mi].toLocaleString()}` : null,
                         `──────────────────`,
                         `Month-end balance: $${v.toLocaleString()}`,
                       ])}
