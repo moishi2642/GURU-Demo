@@ -4207,7 +4207,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: false,
     },
     {
-      name: "CIT Money Market Account",
+      name: "CIT Money Market Bank Account",
       institution: "CIT Bank",
       type: "Money Market",
       grossYield: "4.30%",
