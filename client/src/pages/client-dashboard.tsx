@@ -3994,8 +3994,9 @@ function MoneyMovementView({
 
             {/* ══════════ ROW 2 col 1: RESERVE (JPM + T-bills) ══════════ */}
             <div className="relative" style={{ gridColumn: '1', gridRow: '2' }}>
-              <div className="flex items-center px-3 py-2 rounded-lg mb-3" style={{ backgroundColor: '#fef3c7', border: '1.5px solid #fde68a' }}>
-                <span className="text-[14px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve</span>
+              <div className="flex items-center gap-1.5 px-2 py-1 mb-2 rounded" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#d97706' }} />
+                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve</span>
               </div>
               {/* JPMorgan 100% Treasuries Money Market Fund */}
               <LedgerCard
