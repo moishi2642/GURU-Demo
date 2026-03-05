@@ -3709,27 +3709,51 @@ function MoneyMovementView({
         const capOneBal        = EFF_CAPONE[sm];
 
         /* ── animated flow line: horizontal bar with 3 travelling dots ── */
-        const FlowLine = ({ active = true, color = '#10b981', width = 56 }: { active?: boolean; color?: string; width?: number }) => (
+        const FlowLine = ({ active = true, color = '#10b981', width = 48 }: { active?: boolean; color?: string; width?: number }) => (
           <div className="relative flex-shrink-0 overflow-hidden rounded-full" style={{ width, height: 2, backgroundColor: active ? `${color}35` : '#e2e8f0' }}>
-            {active && ([0, 0.5, 1.0] as number[]).map((d, i) => (
+            {active && ([0, 0.45, 0.9] as number[]).map((d, i) => (
               <motion.div key={i}
                 className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
-                style={{ backgroundColor: color, boxShadow: `0 0 4px ${color}80` }}
+                style={{ backgroundColor: color, boxShadow: `0 0 5px ${color}90` }}
                 animate={{ left: ['-8px', `${width + 8}px`] }}
-                transition={{ duration: 1.4, repeat: Infinity, ease: 'linear', delay: d }}
+                transition={{ duration: 1.3, repeat: Infinity, ease: 'linear', delay: d }}
               />
             ))}
           </div>
         );
 
-        /* ── all expense items (base + specials) for the tree ── */
+        /* ── card component: name + value + optional plus/less rows ── */
+        const FlowCard = ({
+          name, value, color, plusRows, lessRows, highlighted,
+        }: {
+          name: string; value: string; color: string;
+          plusRows?: string[]; lessRows?: string[]; highlighted?: boolean;
+        }) => (
+          <div
+            className={`flex-1 bg-white rounded-xl shadow-sm overflow-hidden border border-border ${highlighted ? 'ring-2' : ''}`}
+            style={{ borderLeftColor: color, borderLeftWidth: 3, ringColor: color }}
+          >
+            <div className="px-3 py-2.5">
+              <div className="text-[12px] font-bold text-slate-800 leading-snug">{name}</div>
+              <div className="text-[12px] font-black tabular-nums leading-snug" style={{ color }}>{value}</div>
+              {plusRows?.map((r, i) => (
+                <div key={i} className="text-[10px] font-semibold text-emerald-600 mt-1 leading-none">Plus: {r}</div>
+              ))}
+              {lessRows?.map((r, i) => (
+                <div key={i} className="text-[10px] font-semibold text-rose-500 mt-0.5 leading-none">Less: {r}</div>
+              ))}
+            </div>
+          </div>
+        );
+
+        /* ── all expense items (base + specials) for the right column ── */
         const allExpenses = [
           ...BASE_EXP,
           ...specials.map(s => ({ label: s.label, amount: s.amount, dot: '#f97316' })),
         ];
 
         return (
-        <div className="bg-slate-50 px-5 py-5 overflow-x-auto" style={{ minHeight: 560 }}>
+        <div className="bg-slate-50 px-5 py-5 overflow-x-auto" style={{ minHeight: 520 }}>
 
           {/* ── Month / status bar ── */}
           <div className="mb-5 flex items-center gap-3">
@@ -3745,185 +3769,117 @@ function MoneyMovementView({
           </div>
 
           {/* ── Main 3-zone layout ── */}
-          <div className="flex items-start gap-0" style={{ minWidth: 1060 }}>
+          <div className="flex items-start gap-0" style={{ minWidth: 1040 }}>
 
-            {/* ══ LEFT: Income + Reserve ══ */}
-            <div className="flex flex-col gap-2" style={{ width: 240 }}>
+            {/* ══ LEFT: Income + Reserve source cards ══ */}
+            <div className="flex flex-col gap-2" style={{ width: 210 }}>
 
-              {/* INCOME GROUP BANNER */}
-              <div className="flex items-center gap-1.5 mb-1">
+              {/* Income banner */}
+              <div className="flex items-center gap-1.5 mb-0.5">
                 <div className="h-px flex-1 bg-emerald-200" />
                 <span className="text-[7px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Income</span>
                 <div className="h-px flex-1 bg-emerald-200" />
               </div>
 
-              {/* Michael Kessler · P1 After-Tax Salary */}
-              <div className="flex items-center gap-1.5">
-                <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-3 py-2.5 shadow-sm">
-                  <div className="text-[7px] font-black uppercase tracking-widest text-emerald-600 mb-0.5">After-Tax Salary · Partner 1</div>
-                  <div className="text-[10px] font-bold text-slate-800">Michael Kessler</div>
-                  <div className="text-[17px] font-black text-emerald-600 tabular-nums leading-tight">{fmtBal(p1Salary)}</div>
-                  <div className="text-[7px] text-slate-400 mt-0.5">per month</div>
-                </div>
+              <div className="flex items-center gap-2">
+                <FlowCard name="Michael Kessler" value={fmtBal(p1Salary)} color="#10b981" />
                 <FlowLine active={true} color="#10b981" />
               </div>
 
-              {/* Sarah Kessler · P2 After-Tax Salary */}
-              <div className="flex items-center gap-1.5">
-                <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-3 py-2.5 shadow-sm">
-                  <div className="text-[7px] font-black uppercase tracking-widest text-emerald-600 mb-0.5">After-Tax Salary · Partner 2</div>
-                  <div className="text-[10px] font-bold text-slate-800">Sarah Kessler</div>
-                  <div className="text-[17px] font-black text-emerald-600 tabular-nums leading-tight">{fmtBal(p2Salary)}</div>
-                  <div className="text-[7px] text-slate-400 mt-0.5">per month</div>
-                </div>
+              <div className="flex items-center gap-2">
+                <FlowCard name="Sarah Kessler" value={fmtBal(p2Salary)} color="#10b981" />
                 <FlowLine active={true} color="#10b981" />
               </div>
 
-              {/* Rental Income */}
-              <div className="flex items-center gap-1.5">
-                <div className="flex-1 bg-white border border-teal-200 rounded-xl px-3 py-2.5 shadow-sm">
-                  <div className="text-[7px] font-black uppercase tracking-widest text-teal-600 mb-0.5">Rental Income</div>
-                  <div className="text-[10px] font-bold text-slate-800">Sarasota Property</div>
-                  <div className="text-[17px] font-black text-teal-600 tabular-nums leading-tight">{fmtBal(rentalAmt)}</div>
-                  <div className="text-[7px] text-slate-400 mt-0.5">net of management fee</div>
-                </div>
+              <div className="flex items-center gap-2">
+                <FlowCard name="Sarasota Property" value={fmtBal(rentalAmt)} color="#0d9488" />
                 <FlowLine active={true} color="#0d9488" />
               </div>
 
-              {/* RESERVE GROUP BANNER */}
-              <div className="flex items-center gap-1.5 mt-3 mb-1">
+              {/* Reserve banner */}
+              <div className="flex items-center gap-1.5 mt-3 mb-0.5">
                 <div className="h-px flex-1 bg-amber-200" />
                 <span className="text-[7px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Reserve</span>
                 <div className="h-px flex-1 bg-amber-200" />
               </div>
 
-              {/* Citizens Private Bank MM */}
-              <div className="flex items-center gap-1.5">
-                <div className={`flex-1 bg-white rounded-xl px-3 py-2.5 shadow-sm transition-all ${rsvDraw > 0 ? 'border-2 border-amber-400' : 'border border-amber-200'}`}>
-                  <div className="text-[7px] font-black uppercase tracking-widest text-amber-600 mb-0.5">Citizens Private Bank MM · 4.85%</div>
-                  <div className="text-[10px] font-bold text-slate-800">Money Market</div>
-                  <div className="text-[17px] font-black text-amber-600 tabular-nums leading-tight">{fmtBal(citizensMM)}</div>
-                  <div className="text-[7px] text-slate-400 mt-0.5">{rsvDraw > 0 ? '→ Auto-draw active this month' : 'Standby · same-day liquidity'}</div>
-                </div>
+              <div className="flex items-center gap-2">
+                <FlowCard
+                  name="Citizens Private Bank MM"
+                  value={fmtBal(citizensMM)}
+                  color="#d97706"
+                  highlighted={rsvDraw > 0}
+                  lessRows={rsvDraw > 0 ? [`Autodraw to Operating (${fmtBal(rsvDraw)})`] : undefined}
+                />
                 {rsvDraw > 0
                   ? <FlowLine active={true} color="#d97706" />
-                  : <div className="flex-shrink-0" style={{ width: 56, height: 2, borderTop: '2px dashed #e2e8f0' }} />}
+                  : <div className="flex-shrink-0" style={{ width: 48, height: 2, borderTop: '2px dashed #e2e8f0' }} />}
               </div>
 
-              {/* CapitalOne 360 */}
-              <div className="flex items-center gap-1.5">
-                <div className="flex-1 bg-white border border-amber-100 rounded-xl px-3 py-2.5 shadow-sm">
-                  <div className="text-[7px] font-black uppercase tracking-widest text-amber-500 mb-0.5">CapitalOne 360 · 3.78%</div>
-                  <div className="text-[10px] font-bold text-slate-800">Performance Savings</div>
-                  <div className="text-[17px] font-black text-amber-500 tabular-nums leading-tight">{fmtBal(capOneBal)}</div>
-                  <div className="text-[7px] text-slate-400 mt-0.5">FDIC-insured · stable buffer</div>
-                </div>
-                <div className="flex-shrink-0" style={{ width: 56, height: 2, borderTop: '2px dashed #e2e8f0' }} />
+              <div className="flex items-center gap-2">
+                <FlowCard name="CapitalOne 360" value={fmtBal(capOneBal)} color="#f59e0b" />
+                <div className="flex-shrink-0" style={{ width: 48, height: 2, borderTop: '2px dashed #e2e8f0' }} />
               </div>
 
             </div>
 
             {/* ══ MIDDLE: Operating Cash Hub ══ */}
-            <div className="flex flex-col" style={{ width: 272 }}>
+            <div className="flex flex-col rounded-2xl overflow-hidden shadow-md border border-blue-100" style={{ width: 256 }}>
 
-              {/* Blue hub header */}
-              <div className="rounded-t-2xl px-4 py-3" style={{ backgroundColor: '#1d4ed8' }}>
-                <div className="text-[7px] font-black uppercase tracking-widest text-blue-200 mb-0.5">Operating Cash Hub</div>
-                <div className="text-[13px] font-black text-white leading-tight">Citizens Private Banking</div>
-                <div className="text-[10px] font-bold text-white">Checking</div>
-                <div className="text-[7px] text-blue-300/70 mt-0.5">Primary · expenses flow from here</div>
-              </div>
-
-              {/* Citizens account (primary — main expense account) */}
-              <div className="bg-white border-x border-blue-100 px-4 py-3 border-b border-dashed">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-[8px] font-black text-blue-700">Citizens Private Banking</div>
-                    <div className="text-[7px] text-slate-400">Primary · all expenses deducted here</div>
-                  </div>
-                  <div className={`text-[14px] font-black tabular-nums ${citizensCheckBal < 0 ? 'text-red-600' : 'text-blue-700'}`}>
-                    {citizensCheckBal < 0 ? `(${Math.abs(citizensCheckBal).toLocaleString()})` : fmtBal(citizensCheckBal)}
-                  </div>
+              {/* Hub header */}
+              <div className="px-4 py-3" style={{ backgroundColor: '#1d4ed8' }}>
+                <div className="text-[12px] font-bold text-white leading-snug">Citizens Private Banking</div>
+                <div className={`text-[12px] font-black tabular-nums leading-snug ${citizensCheckBal < 0 ? 'text-red-300' : 'text-white'}`}>
+                  {citizensCheckBal < 0 ? `(${fmtBal(Math.abs(citizensCheckBal))})` : fmtBal(citizensCheckBal)}
                 </div>
-                {citizensCheckBal < 0 && (
-                  <div className="mt-1 text-[7px] text-red-500 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
-                    ⚠ Overdrawn · GURU recommends sweeping excess to Reserve
-                  </div>
+                <div className="text-[10px] font-semibold text-emerald-300 mt-1.5 leading-none">Plus: {fmtBal(income)} salary + rental</div>
+                {rsvDraw > 0 && (
+                  <div className="text-[10px] font-semibold text-amber-300 mt-0.5 leading-none">Plus: Autodraw from Reserve ({fmtBal(rsvDraw)})</div>
                 )}
+                <div className="text-[10px] font-semibold text-rose-300 mt-0.5 leading-none">Less: ({fmtBal(totalExp)}) expenses</div>
               </div>
 
-              {/* Chase account (secondary) */}
-              <div className="bg-white border-x border-blue-100 px-4 py-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-[8px] font-semibold text-slate-500">Chase Total Checking</div>
-                    <div className="text-[7px] text-slate-400">Secondary account</div>
-                  </div>
-                  <div className="text-[14px] font-black tabular-nums text-blue-600">{fmtBal(chaseBal)}</div>
-                </div>
+              {/* Chase secondary */}
+              <div className="bg-white border-b border-border px-4 py-3">
+                <div className="text-[12px] font-bold text-slate-800 leading-snug">Chase Total Checking</div>
+                <div className="text-[12px] font-black tabular-nums text-blue-600 leading-snug">{fmtBal(chaseBal)}</div>
               </div>
 
-              {/* Total Outflow footer — this is where the right-side line originates */}
-              <div className="rounded-b-2xl border-x border-b border-blue-100 bg-red-50 px-4 py-3 flex items-center justify-between">
+              {/* Outflow footer */}
+              <div className="bg-red-50 px-4 py-3 flex items-center justify-between">
                 <div>
-                  <div className="text-[7px] font-black uppercase tracking-widest text-red-500 mb-0.5">Total Outflow · {MONTHS[sm]}</div>
-                  <div className="text-[20px] font-black text-red-600 tabular-nums leading-none">({fmtBal(totalExp)})</div>
-                  <div className="text-[7px] text-slate-400 mt-1">→ expense breakdown →</div>
+                  <div className="text-[12px] font-bold text-red-700 leading-snug">Total Outflow</div>
+                  <div className="text-[12px] font-black tabular-nums text-red-600 leading-snug">({fmtBal(totalExp)})</div>
                 </div>
-                <FlowLine active={true} color="#dc2626" width={48} />
+                <FlowLine active={true} color="#dc2626" width={40} />
               </div>
 
             </div>
 
-            {/* ══ RIGHT: Expense category org-chart tree ══ */}
-            <div className="flex-1 pl-0" style={{ minWidth: 340 }}>
-              {/* Trunk connector into tree */}
-              <div className="relative" style={{ paddingLeft: 20 }}>
-                {/* Vertical spine */}
-                <div className="absolute left-0 bg-slate-200 rounded-full" style={{ width: 2, top: 20, bottom: 20 }} />
-
-                {/* Expense mini-cards fanning out */}
-                <div className="flex flex-col gap-2">
-                  {allExpenses.map((exp, idx) => {
-                    const isSpecial = idx >= BASE_EXP.length;
-                    return (
-                      <div key={exp.label} className="flex items-center gap-0">
-                        {/* Horizontal branch from spine */}
-                        <div className="relative flex-shrink-0 overflow-hidden" style={{ width: 20, height: 2, backgroundColor: `${exp.dot}40` }}>
-                          <motion.div
-                            className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: exp.dot, boxShadow: `0 0 3px ${exp.dot}80` }}
-                            animate={{ left: ['-6px', '26px'] }}
-                            transition={{ duration: 0.8, repeat: Infinity, ease: 'linear', delay: idx * 0.15 }}
-                          />
-                        </div>
-
-                        {/* Mini expense card */}
-                        <div
-                          className={`flex-1 rounded-xl px-3 py-2 shadow-sm border ${isSpecial ? 'bg-orange-50' : 'bg-white'}`}
-                          style={{ borderColor: `${exp.dot}35` }}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: exp.dot }} />
-                              <span className="text-[9px] font-bold truncate" style={{ color: isSpecial ? '#ea580c' : '#334155' }}>{exp.label}</span>
-                              {isSpecial && <span className="text-[7px] text-orange-400 flex-shrink-0 font-mono">one-time</span>}
-                            </div>
-                            <span className="text-[11px] font-black tabular-nums flex-shrink-0" style={{ color: exp.dot }}>
-                              ({fmtBal(exp.amount)})
-                            </span>
-                          </div>
-                          {!isSpecial && (
-                            <div className="mt-1 h-0.5 rounded-full bg-slate-100 overflow-hidden">
-                              <div className="h-full rounded-full" style={{ width: `${Math.min((exp.amount / totalExp) * 100, 100)}%`, backgroundColor: exp.dot, opacity: 0.5 }} />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+            {/* ══ RIGHT: Expense destination cards ══ */}
+            <div className="flex-1 flex flex-col gap-2" style={{ minWidth: 320 }}>
+              {allExpenses.map((exp, idx) => {
+                const isSpecial = idx >= BASE_EXP.length;
+                return (
+                  <div key={exp.label} className="flex items-center gap-0">
+                    {/* Animated dot connector from center hub */}
+                    <div className="relative flex-shrink-0 overflow-hidden" style={{ width: 24, height: 2, backgroundColor: `${exp.dot}30` }}>
+                      <motion.div
+                        className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: exp.dot, boxShadow: `0 0 4px ${exp.dot}90` }}
+                        animate={{ left: ['-6px', '30px'] }}
+                        transition={{ duration: 0.9, repeat: Infinity, ease: 'linear', delay: idx * 0.12 }}
+                      />
+                    </div>
+                    <FlowCard
+                      name={exp.label}
+                      value={`(${fmtBal(exp.amount)})`}
+                      color={exp.dot}
+                      plusRows={isSpecial ? ['One-time item'] : undefined}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
           </div>
