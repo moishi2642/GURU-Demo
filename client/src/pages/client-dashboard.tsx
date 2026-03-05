@@ -3960,12 +3960,6 @@ function MoneyMovementView({
               </div>
               {/* Vertical spine at left edge of this column */}
               <div style={{ position: 'absolute', left: 8, top: 44, bottom: 8, width: 2, backgroundColor: 'rgba(220,38,38,0.5)' }} />
-              {/* Animated dot down spine */}
-              <motion.div className="absolute w-2.5 h-2.5 rounded-full"
-                style={{ left: 4, backgroundColor: '#dc2626', boxShadow: '0 0 6px #dc2626', zIndex: 10 }}
-                animate={{ top: [44, 420] }}
-                transition={{ duration: 4.5, repeat: Infinity, ease: 'linear' }}
-              />
               {/* Expense cards */}
               <div className="flex flex-col gap-2">
                 {allExpenses.map((exp, idx) => {
