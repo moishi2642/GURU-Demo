@@ -5391,7 +5391,9 @@ function GuruAllocationView({
                           monthsInputConfig={
                             r.def.name === "Operating Cash"
                               ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
-                              : undefined
+                              : r.def.name === "Reserve"
+                                ? { defaultMonths: 6, monthlyUnit: Math.round(cashTrough / 6), label: "mos. of cash buffer" }
+                                : undefined
                           }
                           cashflowBridgeInfo={_cfBridge}
                         />
