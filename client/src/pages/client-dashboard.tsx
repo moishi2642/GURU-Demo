@@ -3853,10 +3853,10 @@ function MoneyMovementView({
           </div>
 
           {/* ── 3-column layout ── */}
-          <div className="flex items-start" style={{ minWidth: 1060, gap: 0 }}>
+          <div className="flex items-start" style={{ minWidth: 1120, gap: 0 }}>
 
             {/* ══ LEFT: Source accounts ══ */}
-            <div className="flex flex-col gap-3" style={{ width: 220 }}>
+            <div className="flex flex-col gap-3" style={{ width: 300 }}>
 
               <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Inflows</div>
 
@@ -3958,7 +3958,7 @@ function MoneyMovementView({
             </div>
 
             {/* ══ CENTER: Operating Cash hub ══ */}
-            <div className="flex flex-col" style={{ width: 340 }}>
+            <div className="flex flex-col" style={{ width: 420 }}>
               <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Operating Cash</div>
 
               {/* CIT Money Market — primary operating account in GURU scenario */}
@@ -3973,7 +3973,7 @@ function MoneyMovementView({
                   ...(rsvDraw > 0 ? [{ label: 'Autodraw from Reserve', amount: fmtBal(rsvDraw), type: 'plus' as const }] : []),
                   { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' },
                 ]}
-                width={340}
+                width={420}
               />
 
               {/* Outflow label → right column */}
