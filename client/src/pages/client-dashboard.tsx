@@ -1593,16 +1593,23 @@ function buildAssetGroups(assets: Asset[]): BsGroup[] {
     !isRetirement(a) &&
     !isRSU(a);
 
+  const isBrokerageCash = (a: Asset) =>
+    a.type === "cash" &&
+    (a.description ?? "").toLowerCase().includes("sweep");
+
   const checking = assets.filter(
     (a) =>
       a.type === "cash" &&
+      !isBrokerageCash(a) &&
       (a.description ?? "").toLowerCase().includes("checking"),
   );
   const savingsMM = assets.filter(
     (a) =>
       a.type === "cash" &&
+      !isBrokerageCash(a) &&
       !(a.description ?? "").toLowerCase().includes("checking"),
   );
+  const brokerageCash = assets.filter((a) => isBrokerageCash(a));
   const brokerage = assets.filter((a) => isBrokerage(a));
   const altAssets = assets.filter(
     (a) => a.type === "alternative" && !isCarry(a),
@@ -1657,12 +1664,13 @@ function buildAssetGroups(assets: Asset[]): BsGroup[] {
       avgRate: wavgRate([...checking, ...savingsMM]),
     });
   }
-  const investments = [...brokerage, ...altAssets];
-  if (brokerage.length > 0) {
+  const allBrokerage = [...brokerage, ...brokerageCash];
+  const investments = [...allBrokerage, ...altAssets];
+  if (allBrokerage.length > 0) {
     groups.push({
       category: "Taxable Brokerage",
-      items: brokerage.map(toItem),
-      subtotal: subtot(brokerage),
+      items: allBrokerage.map(toItem),
+      subtotal: subtot(allBrokerage),
       avgRate: null,
     });
   }
