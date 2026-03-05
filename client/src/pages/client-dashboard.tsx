@@ -4012,17 +4012,17 @@ function MoneyMovementView({
                 ]}
               />
 
-              {/* Treasury Ladder — T-bills in one relative container with JPM, left-side spine */}
+              {/* Treasury Ladder — T-bills in one relative container with JPM, right-side spine */}
               {(maturingTbills.length + activeTbills.length) > 0 && (
-                <div className="relative mt-3" style={{ paddingLeft: 26 }}>
-                  {/* Vertical spine — starts at top of this section, reaching up to touch JPM card bottom */}
-                  <div style={{ position: 'absolute', left: 8, top: -14, bottom: 8, width: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
-                  {/* Short horizontal cap at top connecting spine to JPM card (goes right toward card body) */}
-                  <div style={{ position: 'absolute', left: 8, top: -14, width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
+                <div className="relative mt-3" style={{ paddingRight: 26 }}>
+                  {/* Vertical spine — right edge, reaches up only to JPM card */}
+                  <div style={{ position: 'absolute', right: 8, top: -14, bottom: 8, width: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
+                  {/* Short horizontal cap at top connecting spine to JPM card right edge */}
+                  <div style={{ position: 'absolute', right: 8, top: -14, width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.6)' }} />
                   {/* Animated dot travelling UP: T-bills → JPM MMF */}
                   {totalMaturing > 0 && (
                     <motion.div className="absolute w-2.5 h-2.5 rounded-full"
-                      style={{ left: 4, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
+                      style={{ right: 4, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
                       animate={{ top: ['90%', '-14px'] }}
                       transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                     />
@@ -4034,8 +4034,8 @@ function MoneyMovementView({
                   {/* Maturing T-bills */}
                   {maturingTbills.map(t => (
                     <div key={t.label} className="relative mb-2">
-                      {/* Branch from spine (left:8) to card left (paddingLeft:26 → branch=18px wide, at left:-18) */}
-                      <div style={{ position: 'absolute', left: -18, top: '50%', width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.6)', transform: 'translateY(-50%)' }} />
+                      {/* Branch from card right edge to spine (right:8, width:18) */}
+                      <div style={{ position: 'absolute', right: -18, top: '50%', width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.6)', transform: 'translateY(-50%)' }} />
                       <LedgerCard
                         title={`${t.label} — Matured`}
                         subtitle={`${t.rate} · proceeds to JPMorgan MMF`}
