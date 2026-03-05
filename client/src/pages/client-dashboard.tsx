@@ -2087,7 +2087,7 @@ const CF_PL_ROWS: PLRowDef[] = [
     key: "salary",
     kind: "item",
     label: "Monthly Net Salary — P1 + P2",
-    descs: ["Monthly Net Salary"],
+    descs: ["Monthly Net Salaries"],
   },
   {
     key: "bonus_p1",
@@ -2112,7 +2112,7 @@ const CF_PL_ROWS: PLRowDef[] = [
     key: "trib_exp",
     kind: "item",
     label: "Mortgage + Maintenance + Insurance + Utilities",
-    descs: ["Tribeca Mortgage"],
+    descs: ["Tribeca —"],
   },
   {
     key: "nyc_tax",
@@ -2130,20 +2130,20 @@ const CF_PL_ROWS: PLRowDef[] = [
   {
     key: "sara_in",
     kind: "item",
-    label: "Rental Income (net of mgmt fee)",
-    descs: ["Sarasota Rental Income"],
+    label: "Rental Income",
+    descs: ["Investment Property Rental Income"],
   },
   {
     key: "sara_exp",
     kind: "item",
-    label: "Property Expenses (mgmt + HOA + mortgage)",
-    descs: ["Sarasota Property Expenses"],
+    label: "Property Expenses (mgmt + mortgage + maintenance)",
+    descs: ["Investment Property — Mgmt"],
   },
   {
     key: "fl_tax",
     kind: "item",
-    label: "FL Property Taxes (annual)",
-    descs: ["FL Property Taxes"],
+    label: "Investment Property Taxes (semi-annual)",
+    descs: ["Investment Property Taxes"],
   },
   {
     key: "sub_sara",
@@ -2155,27 +2155,58 @@ const CF_PL_ROWS: PLRowDef[] = [
   {
     key: "childcare",
     kind: "item",
-    label: "Childcare / Babysitter",
+    label: "Childcare / Nanny",
     descs: ["Childcare"],
   },
   {
-    key: "food",
+    key: "phone_util",
     kind: "item",
-    label: "Food, Groceries & Dining",
-    descs: ["Food, Groceries"],
+    label: "Phone, Cable & Utilities",
+    descs: ["Phone, Cable"],
   },
   {
     key: "sub_living",
     kind: "subtotal",
     label: "Total Living Expenses",
-    sumOf: ["childcare", "food"],
+    sumOf: ["childcare", "phone_util"],
+  },
+  { key: "g_lifestyle", kind: "group", label: "LIFESTYLE & CREDIT" },
+  {
+    key: "cc_pay",
+    kind: "item",
+    label: "Credit Card Payments",
+    descs: ["Credit Card Payments"],
+  },
+  {
+    key: "memberships",
+    kind: "item",
+    label: "Annual Memberships & Fees",
+    descs: ["Annual Memberships"],
+  },
+  {
+    key: "golf",
+    kind: "item",
+    label: "Golf Club Annual Dues",
+    descs: ["Golf Club"],
+  },
+  {
+    key: "insurance",
+    kind: "item",
+    label: "Annual Insurance Premiums",
+    descs: ["Annual Insurance"],
+  },
+  {
+    key: "sub_lifestyle",
+    kind: "subtotal",
+    label: "Total Lifestyle",
+    sumOf: ["cc_pay", "memberships", "golf", "insurance"],
   },
   { key: "g_edu", kind: "group", label: "EDUCATION" },
   {
     key: "tuition",
     kind: "item",
-    label: "Buckley School Tuition (quarterly)",
-    descs: ["Buckley Tuition"],
+    label: "Private School Tuition",
+    descs: ["Private School Tuition"],
   },
   { key: "g_debt", kind: "group", label: "DEBT SERVICE" },
   {
@@ -2188,7 +2219,7 @@ const CF_PL_ROWS: PLRowDef[] = [
     key: "student",
     kind: "item",
     label: "Student Loan Payments",
-    descs: ["Student Loan"],
+    descs: ["Student Loan Payments"],
   },
   {
     key: "sub_debt",
@@ -2200,15 +2231,15 @@ const CF_PL_ROWS: PLRowDef[] = [
   {
     key: "fed_tax",
     kind: "item",
-    label: "Q4 Estimated Federal Income Tax",
-    descs: ["Estimated Federal"],
+    label: "Federal Estimated Tax",
+    descs: ["Federal Estimated Tax"],
   },
-  { key: "g_travel", kind: "group", label: "TRAVEL & LIFESTYLE" },
+  { key: "g_travel", kind: "group", label: "TRAVEL" },
   {
     key: "trav_mem",
     kind: "item",
     label: "Memorial Day Travel",
-    descs: ["Memorial Day"],
+    descs: ["Memorial Day Travel"],
   },
   {
     key: "trav_wknd",
@@ -2219,24 +2250,45 @@ const CF_PL_ROWS: PLRowDef[] = [
   {
     key: "trav_sum",
     kind: "item",
-    label: "Summer Vacation (Europe)",
-    descs: ["Summer Vacation"],
+    label: "Summer Travel",
+    descs: ["Summer Travel"],
   },
   {
-    key: "golf",
+    key: "trav_hol",
     kind: "item",
-    label: "Golf Club Annual Dues",
-    descs: ["Golf Club"],
+    label: "Holiday Travel",
+    descs: ["Holiday Travel"],
   },
   {
     key: "sub_travel",
     kind: "subtotal",
-    label: "Total Travel & Lifestyle",
-    sumOf: ["trav_mem", "trav_wknd", "trav_sum", "golf"],
+    label: "Total Travel",
+    sumOf: ["trav_mem", "trav_wknd", "trav_sum", "trav_hol"],
+  },
+  { key: "g_misc", kind: "group", label: "YEAR-END & MISC" },
+  {
+    key: "yr_end_fees",
+    kind: "item",
+    label: "Year-End Fees & Misc",
+    descs: ["Year-End Fees"],
+  },
+  {
+    key: "yr_end_dist",
+    kind: "item",
+    label: "Year-End Investment Distributions",
+    descs: ["Year-End Investment"],
+  },
+  {
+    key: "reserve_int",
+    kind: "item",
+    label: "Reserve MMF & Savings Interest",
+    descs: ["Reserve MMF"],
   },
 ];
 
 const CF_MONTHS = [
+  { label: "Jan", year: 2026, month: 1 },
+  { label: "Feb", year: 2026, month: 2 },
   { label: "Mar", year: 2026, month: 3 },
   { label: "Apr", year: 2026, month: 4 },
   { label: "May", year: 2026, month: 5 },
@@ -2247,8 +2299,6 @@ const CF_MONTHS = [
   { label: "Oct", year: 2026, month: 10 },
   { label: "Nov", year: 2026, month: 11 },
   { label: "Dec", year: 2026, month: 12 },
-  { label: "Jan", year: 2027, month: 1 },
-  { label: "Feb", year: 2027, month: 2 },
 ];
 
 function CashFlowForecastView({
@@ -2540,7 +2590,7 @@ function CashFlowForecastView({
                   className="text-left px-4 py-2.5 font-semibold"
                   style={{ minWidth: 230 }}
                 >
-                  Cash Flow P&L · Mar 2026 – Feb 2027
+                  Cash Flow P&L · Jan 2026 – Dec 2026
                 </th>
                 {CF_MONTHS.map((m) => (
                   <th
@@ -5416,33 +5466,110 @@ function GuruAllocationView({
                         })()}
                       </div>
                     </div>
-                    {/* ── MIDDLE: Transfer Execution panel ── */}
-                    <BucketExecutionPanel
-                      bucketName={r.def.name}
-                      current={r.current}
-                      target={r.target}
-                      delta={r.target - r.current}
-                      accentColor={r.def.accent}
-                      bgColor={r.def.bg}
-                      avgYield={weightedGrossYield(r.subAccounts, r.current)}
-                      avgYieldAT={weightedATYield(r.subAccounts, r.current)}
-                      bpPickup={r.bpPickup}
-                      totalAssets={totalAssets}
-                      onExecute={handleExecute}
-                      onUndo={handleUndo}
-                      monthsInputConfig={
-                        r.def.name === "Operating Cash"
-                          ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
-                          : r.def.name === "Reserve"
-                            ? {
-                                defaultMonths: 12,
-                                forecastCumulatives: forecastData.map(d => d.cumulative),
-                                nextMonthExpenses: 3 * minMonthly,
-                                label: "mos. of cumulative net cashflow",
-                              }
-                            : undefined
-                      }
-                    />
+                    {/* ── MIDDLE: Figma animated bars panel ── */}
+                    {(() => {
+                      const avgYieldMid = weightedGrossYield(r.subAccounts, r.current);
+                      const deltaAmt = r.target - r.current;
+                      const isOverfunded = deltaAmt < -1000;
+                      const isOnTarget = Math.abs(deltaAmt) <= 1000;
+                      const maxVal = Math.max(r.current, r.target) * 1.15 || 1;
+                      const currentBarPct = Math.min(100, (r.current / maxVal) * 100);
+                      const targetBarPct = Math.min(100, (r.target / maxVal) * 100);
+                      const progressPct = r.target > 0 ? Math.min(100, (r.current / r.target) * 100) : 0;
+                      const statusLabel = isOverfunded ? "Overfunded" : isOnTarget ? "On Target" : "Underfunded";
+                      const statusColor = isOverfunded ? "text-amber-400" : isOnTarget ? "text-emerald-400" : "text-blue-400";
+                      const priorityLabel = Math.abs(deltaAmt) > 50000 ? "High" : Math.abs(deltaAmt) > 10000 ? "Medium" : "Low";
+                      const priorityColor = priorityLabel === "High" ? "text-rose-400" : priorityLabel === "Medium" ? "text-amber-400" : "text-slate-400";
+                      const isGrow = r.def.name === "Grow";
+                      return (
+                        <div className="w-64 flex-shrink-0 border-l border-r border-border bg-slate-800 flex flex-col px-4 py-5 gap-4">
+                          {/* Two animated bars */}
+                          <div className="space-y-2.5">
+                            {/* Current bar */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-baseline">
+                                <span className="text-[9px] uppercase tracking-widest font-bold text-slate-400">Current</span>
+                                <span className="text-[11px] font-black tabular-nums text-white">{fmt(r.current)}</span>
+                              </div>
+                              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ background: r.def.accent }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${currentBarPct}%` }}
+                                  transition={{ duration: 0.8, ease: "easeOut" }}
+                                />
+                              </div>
+                            </div>
+                            {/* Delta badge */}
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 border-t border-dashed border-slate-600" />
+                              <span className={`text-[10px] font-black tabular-nums px-2 py-0.5 rounded-full ${
+                                isOverfunded ? "bg-amber-900/40 text-amber-400" :
+                                isOnTarget   ? "bg-emerald-900/40 text-emerald-400" :
+                                               "bg-blue-900/40 text-blue-400"
+                              }`}>
+                                {deltaAmt >= 0 ? "+" : ""}{fmt(Math.round(Math.abs(deltaAmt)))}
+                              </span>
+                              <div className="flex-1 border-t border-dashed border-slate-600" />
+                            </div>
+                            {/* Target bar */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-baseline">
+                                <span className="text-[9px] uppercase tracking-widest font-bold text-slate-400">GURU Target</span>
+                                <span className="text-[11px] font-black tabular-nums text-white">{fmt(r.target)}</span>
+                              </div>
+                              <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full opacity-60"
+                                  style={{ background: r.def.accent }}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${targetBarPct}%` }}
+                                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          {/* Progress bar */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between">
+                              <span className="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Progress to Target</span>
+                              <span className="text-[9px] tabular-nums text-slate-300 font-semibold">{progressPct.toFixed(0)}%</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: `linear-gradient(to right, ${r.def.bg}, ${r.def.accent})` }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progressPct}%` }}
+                                transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                              />
+                            </div>
+                          </div>
+                          {/* 2×2 metrics grid */}
+                          <div className="grid grid-cols-2 gap-px bg-slate-700 rounded-lg overflow-hidden">
+                            <div className="bg-slate-800 px-3 py-2.5">
+                              <p className="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-0.5">Status</p>
+                              <p className={`text-[11px] font-black ${statusColor}`}>{statusLabel}</p>
+                            </div>
+                            <div className="bg-slate-800 px-3 py-2.5">
+                              <p className="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-0.5">Priority</p>
+                              <p className={`text-[11px] font-black ${priorityColor}`}>{priorityLabel}</p>
+                            </div>
+                            <div className="bg-slate-800 px-3 py-2.5 border-t border-slate-700">
+                              <p className="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-0.5">Current Yield</p>
+                              <p className="text-[11px] font-black text-white tabular-nums">{isGrow ? "—" : `${avgYieldMid.toFixed(2)}%`}</p>
+                            </div>
+                            <div className="bg-slate-800 px-3 py-2.5 border-t border-slate-700">
+                              <p className="text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-0.5">Yield Pickup</p>
+                              <p className={`text-[11px] font-black tabular-nums ${r.bpPickup > 0 ? "text-emerald-400" : r.bpPickup < 0 ? "text-rose-400" : "text-slate-400"}`}>
+                                {isGrow ? "—" : `${r.bpPickup >= 0 ? "+" : ""}${r.bpPickup} bps`}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {/* ── RIGHT: Products panel ── */}
                     <BucketProductPanel
                       bgColor={r.def.bg}
