@@ -3682,7 +3682,7 @@ function MoneyMovementView({
                 mmView === v ? 'bg-white text-slate-800 shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
-              {v === 'table' ? 'Planned Movement' : 'Flow Schematic'}
+              {v === 'table' ? 'Account Forecast' : 'Flow Schematic'}
             </button>
           ))}
         </div>
@@ -4148,7 +4148,22 @@ function MoneyMovementView({
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#1d4ed8" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Operating Cash</td>
                   {HC_OPS_TOTAL.map((v, mi) => (
-                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
+                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white relative">
+                      <div className="group relative inline-block cursor-help">
+                        {fmtBal(v)}
+                        {cellTip([
+                          `Operating Cash — ${MONTHS[mi]} 2026`,
+                          "─",
+                          mi > 0 ? `Prior month: ${fmtBal(HC_OPS_TOTAL[mi - 1])}` : null,
+                          `+ After-tax income: ${fmtBal(INCOME_TO_IMM[mi])}`,
+                          `- Monthly expenses: ${fmtBal(Math.abs(EXPENSES[mi]))}`,
+                          FROM_ST_TO_IMM[mi] > 0 ? `+ Draw from Reserve: ${fmtBal(FROM_ST_TO_IMM[mi])}` : null,
+                          IMM_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(IMM_INT[mi])}` : null,
+                          "─",
+                          `= Month-end balance: ${fmtBal(v)}`,
+                        ])}
+                      </div>
+                    </td>
                   ))}
                 </tr>
                 {/* Min ops floor check */}
@@ -4279,7 +4294,21 @@ function MoneyMovementView({
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#d97706" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Reserve</td>
                   {HC_RSV_TOTAL.map((v, mi) => (
-                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
+                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white relative">
+                      <div className="group relative inline-block cursor-help">
+                        {fmtBal(v)}
+                        {cellTip([
+                          `Reserve — ${MONTHS[mi]} 2026`,
+                          "─",
+                          mi > 0 ? `Prior month: ${fmtBal(HC_RSV_TOTAL[mi - 1])}` : null,
+                          INCOME_TO_ST[mi] > 0 ? `+ Inflow: ${fmtBal(INCOME_TO_ST[mi])}` : null,
+                          FROM_ST_OUT[mi] > 0 ? `- Draw to Ops Cash: ${fmtBal(FROM_ST_OUT[mi])}` : null,
+                          ST_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(ST_INT[mi])}` : null,
+                          "─",
+                          `= Month-end balance: ${fmtBal(v)}`,
+                        ])}
+                      </div>
+                    </td>
                   ))}
                 </tr>
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
@@ -4335,7 +4364,21 @@ function MoneyMovementView({
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#16a34a" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Build</td>
                   {HC_BLD_TOTAL.map((v, mi) => (
-                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
+                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white relative">
+                      <div className="group relative inline-block cursor-help">
+                        {fmtBal(v)}
+                        {cellTip([
+                          `Build — ${MONTHS[mi]} 2026`,
+                          "─",
+                          mi > 0 ? `Prior month: ${fmtBal(HC_BLD_TOTAL[mi - 1])}` : null,
+                          INCOME_TO_MT[mi] > 0 ? `+ Inflow: ${fmtBal(INCOME_TO_MT[mi])}` : null,
+                          FROM_MT_OUT[mi] > 0 ? `- Outflow: ${fmtBal(FROM_MT_OUT[mi])}` : null,
+                          MT_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(MT_INT[mi])}` : null,
+                          "─",
+                          `= Month-end balance: ${fmtBal(v)}`,
+                        ])}
+                      </div>
+                    </td>
                   ))}
                 </tr>
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
