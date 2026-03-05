@@ -1811,19 +1811,20 @@ function BsTable({
   const isSubtotalOnly = (g: BsGroup) => g.items.length === 0;
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden text-xs">
+    <div className="border border-border rounded-xl overflow-hidden text-xs">
+      {/* Header */}
       <div
-        className="grid bg-[hsl(221,39%,24%)] text-white font-semibold"
+        className="grid bg-muted/50 border-b border-border"
         style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
       >
-        <div className="px-3 py-2">
+        <div className="px-3 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
           {isLiability ? "Liability Category" : "Asset Category"}
         </div>
-        <div className="px-2 py-2 text-right">Current Balance</div>
-        <div className="px-2 py-2 text-right">
-          {isLiability ? "Cost" : "Return"}
+        <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-muted-foreground">Balance</div>
+        <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+          {isLiability ? "Cost" : "Yield"}
         </div>
-        <div className="px-2 py-2">Comments</div>
+        <div className="px-2 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Notes</div>
       </div>
 
       {groups.map((group, gi) => (
@@ -1832,22 +1833,20 @@ function BsTable({
             group.items.map((item, ii) => (
               <div
                 key={ii}
-                className="grid border-t border-border hover:bg-secondary/20"
+                className="grid border-t border-border/50 hover:bg-secondary/30 transition-colors"
                 style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
               >
-                <div className="px-4 py-1.5 text-muted-foreground pl-5">
+                <div className="px-4 py-1.5 text-muted-foreground pl-6">
                   {item.label}
                 </div>
-                <div className="px-2 py-1.5 text-right tabular-nums font-medium">
+                <div className="px-2 py-1.5 text-right tabular-nums font-medium text-foreground">
                   {item.value > 0 ? fmt(item.value) : "—"}
                 </div>
                 <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
                   {item.rate ? (
                     `${item.rate}%`
                   ) : item.value > 0 ? (
-                    <span className="italic text-muted-foreground/60">
-                      [Ret]
-                    </span>
+                    <span className="italic text-muted-foreground/50">—</span>
                   ) : (
                     "—"
                   )}
@@ -1855,7 +1854,7 @@ function BsTable({
                 <div className="px-2 py-1.5">
                   {item.comment && (
                     <span
-                      className={`font-semibold ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}
+                      className={`font-semibold text-[10px] ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}
                     >
                       {item.comment.text}
                     </span>
@@ -1863,38 +1862,36 @@ function BsTable({
                 </div>
               </div>
             ))}
+          {/* Subtotal / category row */}
           <div
-            className={`grid border-t font-semibold ${isSubtotalOnly(group) ? "bg-[hsl(221,39%,20%)] text-white" : "bg-[hsl(221,15%,88%)] text-[hsl(221,39%,20%)]"}`}
+            className={`grid border-t border-border font-semibold ${isSubtotalOnly(group) ? "bg-slate-100 text-slate-700" : "bg-muted/40 text-foreground/80"}`}
             style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
           >
-            <div className="px-3 py-1.5">{group.category}</div>
-            <div className="px-2 py-1.5 text-right tabular-nums">
+            <div className="px-3 py-1.5 text-[10px] font-bold">{group.category}</div>
+            <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">
               {fmt(group.subtotal)}
             </div>
-            <div className="px-2 py-1.5 text-right tabular-nums">
-              {group.avgRate
-                ? `${group.avgRate}%`
-                : isSubtotalOnly(group)
-                  ? ""
-                  : ""}
+            <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+              {group.avgRate ? `${group.avgRate}%` : ""}
             </div>
             <div className="px-2 py-1.5" />
           </div>
         </div>
       ))}
 
+      {/* Grand total */}
       <div
-        className="grid border-t-2 border-[hsl(221,39%,24%)] bg-[hsl(43,74%,56%)] text-white font-bold"
+        className={`grid border-t-2 border-border font-bold ${isLiability ? "bg-rose-50 text-rose-800" : "bg-blue-50 text-blue-900"}`}
         style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
       >
-        <div className="px-3 py-2">{totalLabel}</div>
-        <div className="px-2 py-2 text-right tabular-nums">
+        <div className="px-3 py-2.5 font-black text-[11px]">{totalLabel}</div>
+        <div className="px-2 py-2.5 text-right tabular-nums font-black text-[11px]">
           {fmt(totalValue)}
         </div>
-        <div className="px-2 py-2 text-right tabular-nums">
+        <div className="px-2 py-2.5 text-right tabular-nums text-[10px]">
           {totalRate ? `${totalRate}%` : ""}
         </div>
-        <div className="px-2 py-2" />
+        <div className="px-2 py-2.5" />
       </div>
     </div>
   );
@@ -2585,9 +2582,9 @@ function CashFlowForecastView({
         <div className="overflow-x-auto">
           <table className="w-full text-xs min-w-[900px]">
             <thead>
-              <tr className="bg-[hsl(221,39%,24%)] text-white">
+              <tr className="bg-muted/50 border-b border-border">
                 <th
-                  className="text-left px-4 py-2.5 font-semibold"
+                  className="text-left px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground"
                   style={{ minWidth: 230 }}
                 >
                   Cash Flow P&L · Jan 2026 – Dec 2026
@@ -2595,14 +2592,14 @@ function CashFlowForecastView({
                 {CF_MONTHS.map((m) => (
                   <th
                     key={m.label}
-                    className="text-right px-1.5 py-2.5 font-semibold whitespace-nowrap opacity-80"
+                    className="text-right px-1.5 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap"
                     style={{ minWidth: 50 }}
                   >
                     {m.label}
                   </th>
                 ))}
                 <th
-                  className="text-right px-4 py-2.5 font-semibold opacity-80"
+                  className="text-right px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground"
                   style={{ minWidth: 70 }}
                 >
                   Annual
@@ -2615,10 +2612,10 @@ function CashFlowForecastView({
                   return (
                     <tr
                       key={row.key}
-                      className="bg-[hsl(221,39%,20%)] text-white border-t border-[hsl(221,39%,30%)]"
+                      className="bg-slate-100 border-t border-border"
                     >
                       <td
-                        className="px-4 py-1.5 font-bold text-[10px] uppercase tracking-widest opacity-90"
+                        className="px-4 py-1.5 font-black text-[9px] uppercase tracking-widest text-slate-600"
                         colSpan={15}
                       >
                         {row.label}
@@ -2629,28 +2626,24 @@ function CashFlowForecastView({
                 const rowVals = vals[row.key] ?? [];
                 const annual = rowVals.reduce((s, v) => s + v, 0);
                 if (row.kind === "item") {
-                  const stripe =
-                    rowIdx % 2 === 0
-                      ? "bg-white dark:bg-card"
-                      : "bg-[hsl(221,39%,98%)] dark:bg-secondary/10";
                   return (
                     <tr
                       key={row.key}
-                      className={`border-t border-border/20 hover:bg-[hsl(221,39%,95%)] dark:hover:bg-secondary/20 transition-colors ${stripe}`}
+                      className="border-t border-border/40 hover:bg-secondary/30 transition-colors bg-card"
                     >
-                      <td className="px-4 py-1.5 pl-7 text-foreground/80">
+                      <td className="px-4 py-1.5 pl-7 text-foreground/75 text-[10px]">
                         {row.label}
                       </td>
                       {rowVals.map((v, i) => (
                         <td
                           key={i}
-                          className={`text-right px-1.5 py-1.5 tabular-nums ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/25"}`}
+                          className={`text-right px-1.5 py-1.5 tabular-nums text-[10px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}
                         >
                           {fmtCell(v)}
                         </td>
                       ))}
                       <td
-                        className={`text-right px-4 py-1.5 tabular-nums font-semibold ${annual > 0 ? "text-emerald-700" : annual < 0 ? "text-rose-600" : "text-muted-foreground"}`}
+                        className={`text-right px-4 py-1.5 tabular-nums font-semibold text-[10px] ${annual > 0 ? "text-emerald-700" : annual < 0 ? "text-rose-600" : "text-muted-foreground"}`}
                       >
                         {fmtCell(annual)}
                       </td>
@@ -2661,21 +2654,21 @@ function CashFlowForecastView({
                   return (
                     <tr
                       key={row.key}
-                      className="border-t border-[hsl(221,39%,70%)] bg-[hsl(221,15%,88%)] dark:bg-[hsl(221,25%,22%)] text-[hsl(221,39%,20%)] dark:text-white/90"
+                      className="border-t border-border bg-muted/50"
                     >
-                      <td className="px-4 py-1.5 pl-7 font-bold">
+                      <td className="px-4 py-1.5 pl-7 font-bold text-[10px] text-foreground/80">
                         {row.label}
                       </td>
                       {rowVals.map((v, i) => (
                         <td
                           key={i}
-                          className={`text-right px-1.5 py-1.5 tabular-nums font-bold ${v > 0 ? "text-emerald-700 dark:text-emerald-400" : v < 0 ? "text-rose-600 dark:text-rose-400" : "opacity-30"}`}
+                          className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[10px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}
                         >
                           {fmtCell(v)}
                         </td>
                       ))}
                       <td
-                        className={`text-right px-4 py-1.5 tabular-nums font-bold ${annual >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                        className={`text-right px-4 py-1.5 tabular-nums font-bold text-[10px] ${annual >= 0 ? "text-emerald-700" : "text-rose-600"}`}
                       >
                         {fmtCell(annual)}
                       </td>
@@ -2685,19 +2678,19 @@ function CashFlowForecastView({
                 return null;
               })}
               {/* NET CASH FLOW */}
-              <tr className="border-t-2 border-[hsl(221,39%,24%)] bg-[hsl(43,74%,56%)] text-white">
-                <td className="px-4 py-2.5 font-display font-black text-sm tracking-tight">
-                  NET CASH FLOW
+              <tr className={`border-t-2 border-border ${annualNet >= 0 ? "bg-emerald-50" : "bg-rose-50"}`}>
+                <td className={`px-4 py-2.5 font-black text-[11px] uppercase tracking-wider ${annualNet >= 0 ? "text-emerald-800" : "text-rose-800"}`}>
+                  Net Cash Flow
                 </td>
                 {netByMonth.map((v, i) => (
                   <td
                     key={i}
-                    className="text-right px-1.5 py-2.5 tabular-nums font-bold"
+                    className={`text-right px-1.5 py-2.5 tabular-nums font-bold text-[10px] ${v >= 0 ? "text-emerald-700" : "text-rose-600"}`}
                   >
                     {fmtCell(v)}
                   </td>
                 ))}
-                <td className="text-right px-4 py-2.5 tabular-nums font-black text-sm">
+                <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
                   {fmtCell(annualNet)}
                 </td>
               </tr>
@@ -5747,17 +5740,17 @@ function DetailsView({
                 totalRate={totalLiabRate}
                 isLiability
               />
-              <div className="border-2 border-[hsl(221,39%,24%)] rounded-lg overflow-hidden">
+              <div className="border border-border rounded-xl overflow-hidden">
                 <div
-                  className="grid bg-[hsl(155,60%,35%)] text-white font-bold"
+                  className="grid bg-emerald-50 border-b-0"
                   style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
                 >
-                  <div className="px-3 py-2.5 text-base">Net Worth</div>
-                  <div className="px-2 py-2.5 text-right tabular-nums text-base">
+                  <div className="px-3 py-3 text-[11px] font-black uppercase tracking-widest text-emerald-800">Net Worth</div>
+                  <div className="px-2 py-3 text-right tabular-nums text-[13px] font-black text-emerald-700">
                     {fmt(netWorth)}
                   </div>
-                  <div className="px-2 py-2.5" />
-                  <div className="px-2 py-2.5" />
+                  <div className="px-2 py-3" />
+                  <div className="px-2 py-3" />
                 </div>
               </div>
             </div>
