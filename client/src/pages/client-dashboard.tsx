@@ -3961,29 +3961,18 @@ function MoneyMovementView({
             <div className="flex flex-col" style={{ width: 340 }}>
               <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Operating Cash</div>
 
-              {/* Primary checking */}
+              {/* CIT Money Market — primary operating account in GURU scenario */}
               <LedgerCard
-                title="Citizens Private Banking"
-                subtitle="Primary Checking"
-                balance={citizensCheckBal < 0 ? `(${fmtBal(Math.abs(citizensCheckBal))})` : fmtBal(citizensCheckBal)}
-                balanceColor={citizensCheckBal < 0 ? '#dc2626' : '#1d4ed8'}
+                title="CIT Money Market Bank Account"
+                subtitle="Primary operating account · 4.65%"
+                balance={opsBal < 0 ? `(${fmtBal(Math.abs(opsBal))})` : fmtBal(opsBal)}
+                balanceColor={opsBal < 0 ? '#dc2626' : '#1d4ed8'}
                 accent="#1d4ed8"
                 entries={[
-                  { label: 'Salary & Rental Income', amount: fmtBal(income), type: 'plus' },
+                  { label: 'Salary & Rental Income', amount: fmtBal(income + rentalAmt), type: 'plus' },
                   ...(rsvDraw > 0 ? [{ label: 'Autodraw from Reserve', amount: fmtBal(rsvDraw), type: 'plus' as const }] : []),
                   { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' },
                 ]}
-                width={340}
-              />
-
-              <div className="my-3 border-t border-slate-100" />
-
-              {/* Chase secondary */}
-              <LedgerCard
-                title="Chase Total Checking"
-                subtitle="Secondary Account"
-                balance={fmtBal(chaseBal)}
-                balanceColor="#1d4ed8"
                 width={340}
               />
 
@@ -4162,7 +4151,7 @@ function MoneyMovementView({
                   style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-slate-600">US T-Bill 1 month</span>
+                      <span className="text-[10px] font-semibold text-amber-800">US T-Bill 1 month</span>
                       <span className="text-[8px] text-amber-500 font-mono">5.08%</span>
                     </div>
                   </td>
@@ -4177,7 +4166,7 @@ function MoneyMovementView({
                   style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-slate-600">US T-Bill 3 months</span>
+                      <span className="text-[10px] font-semibold text-amber-800">US T-Bill 3 months</span>
                       <span className="text-[8px] text-amber-500 font-mono">5.01%</span>
                     </div>
                   </td>
@@ -4192,7 +4181,7 @@ function MoneyMovementView({
                   style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-slate-600">US T-Bill 6 months</span>
+                      <span className="text-[10px] font-semibold text-amber-800">US T-Bill 6 months</span>
                       <span className="text-[8px] text-amber-500 font-mono">4.95%</span>
                     </div>
                   </td>
@@ -4207,7 +4196,7 @@ function MoneyMovementView({
                   style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-slate-600">US T-Bill 9 months</span>
+                      <span className="text-[10px] font-semibold text-amber-800">US T-Bill 9 months</span>
                       <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
                     </div>
                   </td>
