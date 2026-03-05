@@ -3792,15 +3792,15 @@ function MoneyMovementView({
 
         /* ── accounting ledger card ── */
         const LedgerCard = ({
-          title, subtitle, balance, balanceColor = '#1e293b', entries, accent, width, beginningBalance,
+          title, subtitle, balance, balanceColor = '#1e293b', entries, accent, width, beginningBalance, shade,
         }: {
           title: string; subtitle?: string; balance: string; balanceColor?: string;
           entries?: { label: string; amount: string; type: 'plus' | 'less' | 'neutral' }[];
-          accent?: string; width?: number; beginningBalance?: string;
+          accent?: string; width?: number; beginningBalance?: string; shade?: string;
         }) => (
           <div
-            className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm"
-            style={{ width: width ?? '100%', borderTopColor: accent, borderTopWidth: accent ? 2 : 1 }}
+            className="border border-slate-200 rounded-lg overflow-hidden shadow-sm"
+            style={{ width: width ?? '100%', borderTopColor: accent, borderTopWidth: accent ? 2 : 1, backgroundColor: shade ?? 'white' }}
           >
             {/* Header: account name + subtitle */}
             <div className="px-4 pt-3 pb-2 border-b border-slate-100">
@@ -3874,55 +3874,70 @@ function MoneyMovementView({
           </div>
 
           {/* ── 3-column layout ── */}
-          <div className="flex items-start" style={{ minWidth: 1120, gap: 0 }}>
+          <div className="flex items-start" style={{ minWidth: 960, gap: 0 }}>
 
             {/* ══ LEFT: Source accounts ══ */}
             <div className="flex flex-col gap-3" style={{ width: 300 }}>
 
-              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Inflows</div>
-
-              <div className="flex items-center">
-                <LedgerCard
-                  title="Michael Kessler"
-                  subtitle="After-Tax Salary"
-                  balance={fmtBal(p1Salary)}
-                  balanceColor="#16a34a"
-                  accent="#16a34a"
-                />
-                <Connector label={fmtBal(p1Salary)} color="#16a34a" active={true} />
+              {/* ── INFLOWS banner ── */}
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-1" style={{ backgroundColor: '#dcfce7' }}>
+                <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#15803d' }}>Inflows</span>
               </div>
 
-              <div className="flex items-center">
-                <LedgerCard
-                  title="Sarah Kessler"
-                  subtitle="After-Tax Salary"
-                  balance={fmtBal(p2Salary)}
-                  balanceColor="#16a34a"
-                  accent="#16a34a"
+              {/* ── Income sources: org-chart bracket combining all 3 → CIT ── */}
+              <div className="relative mb-2">
+                {/* Vertical bracket spine at right edge of card area */}
+                <div style={{ position: 'absolute', left: 222, top: 10, bottom: 10, width: 2, backgroundColor: 'rgba(22,163,74,0.45)' }} />
+                {/* Animated dot down the bracket (showing parallel flows merging) */}
+                <motion.div
+                  className="absolute w-2 h-2 rounded-full"
+                  style={{ left: 219, backgroundColor: '#16a34a', boxShadow: '0 0 5px #16a34a', zIndex: 10 }}
+                  animate={{ top: ['10%', '90%'] }}
+                  transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
                 />
-                <Connector label={fmtBal(p2Salary)} color="#16a34a" active={true} />
+
+                {/* Michael Kessler */}
+                <div className="relative mb-2" style={{ marginRight: 78 }}>
+                  <LedgerCard title="Michael Kessler" subtitle="After-Tax Salary" balance={fmtBal(p1Salary)} balanceColor="#16a34a" accent="#16a34a" />
+                  <div style={{ position: 'absolute', left: 222, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.4)', transform: 'translateY(-50%)' }} />
+                </div>
+
+                {/* Sarah Kessler */}
+                <div className="relative mb-2" style={{ marginRight: 78 }}>
+                  <LedgerCard title="Sarah Kessler" subtitle="After-Tax Salary" balance={fmtBal(p2Salary)} balanceColor="#16a34a" accent="#16a34a" />
+                  <div style={{ position: 'absolute', left: 222, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.4)', transform: 'translateY(-50%)' }} />
+                </div>
+
+                {/* Sarasota Property */}
+                <div className="relative" style={{ marginRight: 78 }}>
+                  <LedgerCard title="Sarasota Property" subtitle="Monthly Rental Income" balance={fmtBal(rentalAmt)} balanceColor="#16a34a" accent="#16a34a" />
+                  <div style={{ position: 'absolute', left: 222, top: '50%', width: 14, height: 2, backgroundColor: 'rgba(22,163,74,0.4)', transform: 'translateY(-50%)' }} />
+                </div>
+
+                {/* Combined animated connector from bracket midpoint → CIT */}
+                <div className="absolute" style={{ left: 224, right: 0, top: '50%', transform: 'translateY(-50%)', height: 2, backgroundColor: 'rgba(22,163,74,0.25)' }}>
+                  <span className="absolute -top-4 left-0 text-[9px] font-black tabular-nums" style={{ color: '#16a34a' }}>{fmtBal(income + rentalAmt)}</span>
+                  <motion.div
+                    className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: '#16a34a', boxShadow: '0 0 6px #16a34a' }}
+                    animate={{ left: ['-10px', '90px'] }}
+                    transition={{ duration: 1.3, repeat: Infinity, ease: 'linear' }}
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center">
-                <LedgerCard
-                  title="Sarasota Property"
-                  subtitle="Rental Income"
-                  balance={fmtBal(rentalAmt)}
-                  balanceColor="#0d9488"
-                  accent="#0d9488"
-                />
-                <Connector label={fmtBal(rentalAmt)} color="#0d9488" active={true} />
+              {/* ── RESERVE banner ── */}
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mt-1 mb-1" style={{ backgroundColor: '#fef3c7' }}>
+                <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve</span>
               </div>
-
-              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-2 mb-1">Reserve</div>
 
               {/* ── JPM MMF + Treasury Ladder with right-side org-chart bracket ── */}
               <div className="relative">
 
-                {/* 1. JPMorgan Treasury MMF — top of reserve hierarchy */}
+                {/* 1. JPMorgan 100% Treasuries Money Market Fund — top of reserve hierarchy */}
                 <div className="flex items-center">
                   <LedgerCard
-                    title="JPMorgan Treasury MMF"
+                    title="JPMorgan 100% Treasuries Money Market Fund"
                     subtitle="Reserve buffer · ~5.00%"
                     balance={fmtBal(jpmBal)}
                     balanceColor="#d97706"
@@ -3930,10 +3945,10 @@ function MoneyMovementView({
                     beginningBalance={sm > 0 ? fmtBal(HC_JPM_MMF[sm - 1]) : undefined}
                     entries={[
                       ...(totalMaturing > 0 ? [{ label: 'Inflow from T-Bill Maturity', amount: `+${fmtBal(totalMaturing)}`, type: 'plus' as const }] : []),
-                      ...(rsvDraw > 0 ? [{ label: 'Autodraw to Operating', amount: `(${fmtBal(rsvDraw)})`, type: 'less' as const }] : []),
+                      { label: `Outflow to CIT Money Market${rsvDraw > 0 ? ' (Autodraw)' : ' (Standby)'}`, amount: rsvDraw > 0 ? `(${fmtBal(rsvDraw)})` : '$0', type: rsvDraw > 0 ? 'less' as const : 'neutral' as const },
                     ]}
                   />
-                  <Connector label={rsvDraw > 0 ? fmtBal(rsvDraw) : undefined} color="#d97706" active={rsvDraw > 0} />
+                  <Connector label={rsvDraw > 0 ? fmtBal(rsvDraw) : undefined} color="#d97706" active={true} />
                 </div>
 
                 {/* 2. Treasury Ladder — T-bills below JPM MMF, connected via right-side bracket */}
@@ -3960,31 +3975,22 @@ function MoneyMovementView({
                       Treasury Ladder
                     </div>
 
-                    {/* Maturing T-bills */}
+                    {/* Maturing T-bills — ledger format: Beg Balance → Outflow → Ending $0 */}
                     {maturingTbills.map(t => (
                       <div key={t.label} className="relative mb-2">
-                        {/* Card: right margin leaves room for bracket */}
-                        <div
-                          className="rounded-lg overflow-hidden shadow-sm border-2 border-amber-400 bg-amber-50"
-                          style={{ borderTopColor: '#d97706', borderTopWidth: 3, marginRight: 76 }}
-                        >
-                          <div className="px-3 pt-2.5 pb-2 border-b border-amber-200">
-                            <div className="flex items-start justify-between gap-1">
-                              <div className="min-w-0">
-                                <div className="text-[11px] font-bold text-amber-900 leading-tight">{t.label} — Matured</div>
-                                <div className="text-[9px] text-amber-600 mt-0.5">{t.rate} · face value at maturity</div>
-                              </div>
-                              <div className="text-[12px] font-black tabular-nums text-emerald-700 flex-shrink-0">
-                                {fmtBal(t.balances[sm - 1] ?? 0)}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="px-3 py-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-amber-800 leading-none">↑ Move to Money Market Fund at Maturity</span>
-                              <span className="text-[10px] font-bold tabular-nums leading-none text-rose-600">({fmtBal(t.balances[sm - 1] ?? 0)})</span>
-                            </div>
-                          </div>
+                        <div style={{ marginRight: 76 }}>
+                          <LedgerCard
+                            title={`${t.label} — Matured`}
+                            subtitle={`${t.rate} · face value at maturity`}
+                            balance="$0"
+                            balanceColor="#94a3b8"
+                            accent="#d97706"
+                            shade="#fffbeb"
+                            beginningBalance={fmtBal(t.balances[sm - 1] ?? 0)}
+                            entries={[
+                              { label: '↑ Move to JPMorgan 100% Treasuries MMF', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
+                            ]}
+                          />
                         </div>
                         {/* Horizontal branch: card right → bracket spine */}
                         <div style={{ position: 'absolute', right: 56, top: '50%', width: 20, height: 2, backgroundColor: 'rgba(217,119,6,0.55)', transform: 'translateY(-50%)' }} />
@@ -4016,56 +4022,79 @@ function MoneyMovementView({
 
             {/* ══ CENTER: Operating Cash hub ══ */}
             <div className="flex flex-col" style={{ width: 420 }}>
-              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Operating Cash</div>
+              {/* OPERATING CASH banner */}
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-2" style={{ backgroundColor: '#dbeafe' }}>
+                <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#1e40af' }}>Operating Cash</span>
+              </div>
 
-              {/* CIT Money Market — primary operating account in GURU scenario */}
+              {/* CIT Money Market Bank Account — blue shaded primary hub */}
               <LedgerCard
                 title="CIT Money Market Bank Account"
                 subtitle="Primary operating account · 4.65%"
                 balance={opsBal < 0 ? `(${fmtBal(Math.abs(opsBal))})` : fmtBal(opsBal)}
                 balanceColor={opsBal < 0 ? '#dc2626' : '#1d4ed8'}
                 accent="#1d4ed8"
+                shade="#eff6ff"
+                beginningBalance={sm > 0 ? fmtBal(HC_CIT_MM[sm - 1]) : undefined}
                 entries={[
-                  { label: 'Salary & Rental Income', amount: fmtBal(income + rentalAmt), type: 'plus' },
-                  ...(rsvDraw > 0 ? [{ label: 'Autodraw from Reserve', amount: fmtBal(rsvDraw), type: 'plus' as const }] : []),
+                  { label: 'Michael Kessler — Salary', amount: `+${fmtBal(p1Salary)}`, type: 'plus' },
+                  { label: 'Sarah Kessler — Salary', amount: `+${fmtBal(p2Salary)}`, type: 'plus' },
+                  { label: 'Sarasota Property — Rental Income', amount: `+${fmtBal(rentalAmt)}`, type: 'plus' },
+                  ...(rsvDraw > 0 ? [{ label: 'JPMorgan MMF Autodraw', amount: `+${fmtBal(rsvDraw)}`, type: 'plus' as const }] : []),
                   { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' },
                 ]}
                 width={420}
               />
-
-              {/* Outflow label → right column */}
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <span className="text-[10px] font-bold text-rose-600 tabular-nums">Expenses ({fmtBal(totalExp)})</span>
-                <Connector label={undefined} color="#dc2626" active={true} width={56} />
-              </div>
             </div>
 
-            {/* ══ RIGHT: Expense destination accounts ══ */}
-            <div className="flex flex-col gap-2.5" style={{ width: 200 }}>
-              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Outflows</div>
-              {allExpenses.map((exp, idx) => {
-                const isSpecial = idx >= BASE_EXP.length;
-                return (
-                  <div key={exp.label} className="flex items-center">
-                    {/* short animated connector */}
-                    <div className="relative flex-shrink-0 overflow-hidden" style={{ width: 20, height: 1.5, backgroundColor: `${exp.dot}25` }}>
+            {/* ══ RIGHT: Expense destination accounts — org-chart bracket from CIT ══ */}
+            <div className="relative flex flex-col" style={{ width: 220 }}>
+
+              {/* OUTFLOWS banner */}
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-2 ml-6" style={{ backgroundColor: '#fee2e2' }}>
+                <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#991b1b' }}>Outflows</span>
+              </div>
+
+              {/* Left-side org-chart bracket: exits CIT right edge, branches to each expense */}
+              {/* Vertical spine — runs full height of expense section */}
+              <div style={{ position: 'absolute', left: 0, top: 30, bottom: 10, width: 2, backgroundColor: 'rgba(220,38,38,0.45)' }} />
+              {/* Top horizontal stub — reaches LEFT into CIT's right edge */}
+              <div style={{ position: 'absolute', left: -16, top: 30, width: 18, height: 2, backgroundColor: 'rgba(220,38,38,0.45)' }} />
+              {/* Animated dot travelling down the bracket */}
+              <motion.div
+                className="absolute w-2.5 h-2.5 rounded-full"
+                style={{ left: -4, top: 30, backgroundColor: '#dc2626', boxShadow: '0 0 6px #dc2626', zIndex: 10 }}
+                animate={{ top: [30, 340] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'linear' }}
+              />
+              {/* Expense label on bracket */}
+              <span className="absolute text-[9px] font-black tabular-nums text-rose-600" style={{ left: 6, top: 12 }}>{fmtBal(totalExp)}</span>
+
+              {/* Expense cards with horizontal branches from bracket */}
+              <div className="flex flex-col gap-2 ml-5">
+                {allExpenses.map((exp, idx) => {
+                  const isSpecial = idx >= BASE_EXP.length;
+                  return (
+                    <div key={exp.label} className="relative">
+                      {/* Horizontal branch: bracket → card */}
+                      <div style={{ position: 'absolute', left: -20, top: '50%', width: 20, height: 2, backgroundColor: `${exp.dot}55`, transform: 'translateY(-50%)' }} />
                       <motion.div
-                        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
-                        style={{ backgroundColor: exp.dot, boxShadow: `0 0 5px ${exp.dot}` }}
-                        animate={{ left: ['-8px', '28px'] }}
-                        transition={{ duration: 1.0, repeat: Infinity, ease: 'linear', delay: idx * 0.11 }}
+                        className="absolute w-1.5 h-1.5 rounded-full"
+                        style={{ left: -20, top: '50%', transform: 'translateY(-50%)', backgroundColor: exp.dot, zIndex: 5 }}
+                        animate={{ left: ['-20px', '4px'] }}
+                        transition={{ duration: 0.7, repeat: Infinity, ease: 'linear', delay: idx * 0.12 }}
+                      />
+                      <LedgerCard
+                        title={exp.label}
+                        subtitle={isSpecial ? 'One-time' : undefined}
+                        balance={`(${fmtBal(exp.amount)})`}
+                        balanceColor={exp.dot}
+                        accent={isSpecial ? exp.dot : undefined}
                       />
                     </div>
-                    <LedgerCard
-                      title={exp.label}
-                      subtitle={isSpecial ? 'One-time' : undefined}
-                      balance={`(${fmtBal(exp.amount)})`}
-                      balanceColor={exp.dot}
-                      accent={isSpecial ? exp.dot : undefined}
-                    />
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
           </div>
