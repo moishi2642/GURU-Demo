@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   PieChart,
   Pie,
@@ -72,6 +73,12 @@ import {
   Target,
   Lightbulb,
   BadgeCheck,
+  Mail,
+  Send,
+  Copy,
+  Building2,
+  CheckSquare,
+  Lock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ResponsiveSankey } from "@nivo/sankey";
@@ -5953,7 +5960,7 @@ function AdvisorBriefView({
 }) {
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
-  // ── Card 1: Liquidity ──
+  // ── Liquidity calcs ──
   const reserveItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().match(/checking|savings|money market|mm|sweep/),
   );
@@ -5962,7 +5969,6 @@ function AdvisorBriefView({
   );
   const reserveTotal = reserveItems.reduce((s, a) => s + Number(a.value), 0);
   const brokerageCashTotal = brokerageCashItems.reduce((s, a) => s + Number(a.value), 0);
-
   const monthlyExpenses = cashFlows
     .filter((cf) => cf.type === "outflow")
     .reduce((map, cf) => {
@@ -5978,39 +5984,187 @@ function AdvisorBriefView({
   const cashExcess = Math.max(0, reserveTotal - guruReserveTarget);
   const totalToDeploy = Math.round(brokerageCashTotal + cashExcess);
 
-  // ── Card 3: Yield ──
+  // ── Yield calcs ──
   const _currentLiquidYield = 1.4;
   const _guruLiquidYield = 2.7;
   const liquidHero = reserveTotal + brokerageCashTotal;
   const _yieldPickupAnnual = Math.round(liquidHero * ((_guruLiquidYield - _currentLiquidYield) / 100));
   const bpsPickup = Math.round((_guruLiquidYield - _currentLiquidYield) * 100);
 
-  // ── Card 4: Upcoming payments ──
-  const now = DEMO_NOW;
-  const sixMonthsOut = addMonths(now, 6);
-  const upcoming = cashFlows
-    .filter((cf) => {
-      const d = new Date(cf.date);
-      return cf.type === "outflow" && d >= now && d <= sixMonthsOut;
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-  const reserveRunwayMonths = avgMonthlyExpense > 0 ? +(reserveTotal / avgMonthlyExpense).toFixed(1) : 0;
-
-  const catColor = (cat: string) => {
-    if (cat === "taxes") return "text-rose-600 bg-rose-50 border-rose-200";
-    if (cat === "education") return "text-violet-600 bg-violet-50 border-violet-200";
-    if (cat === "travel") return "text-sky-600 bg-sky-50 border-sky-200";
-    if (cat === "housing") return "text-amber-600 bg-amber-50 border-amber-200";
-    return "text-slate-600 bg-slate-50 border-slate-200";
-  };
-  const catLabel = (cat: string) => ({ taxes: "Tax", education: "School", travel: "Travel", housing: "Housing", bonus: "Bonus", salary: "Salary", investments: "Income" }[cat] ?? cat);
-
-  // ── Rebalancing items ──
+  // ── Single-stock risk ──
   const singleStockVal = assets
     .filter((a) => (a.description ?? "").toLowerCase().match(/meta|bank of america|bofA|single/i))
     .reduce((s, a) => s + Number(a.value), 0);
   const singleStockPct = totalAssets > 0 ? ((singleStockVal / totalAssets) * 100).toFixed(1) : "0";
+
+  // ── Workflow state ──
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [showEmail, setShowEmail] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
+  const [obligationStep, setObligationStep] = useState<Record<string, number>>({});
+  const [authorized, setAuthorized] = useState<Set<string>>(new Set());
+
+  const toggle = (key: string) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+
+  // ── Upcoming Obligations (wire-worthy large payments) ──
+  const OBLIGATIONS = [
+    {
+      id: "prop-tax-jan",
+      label: "NYC Property Tax — 1st Installment",
+      amount: 17500,
+      due: new Date(2026, 0, 15),
+      payee: "NYC Dept. of Finance",
+      acct: "Acct #4821",
+      method: "Wire",
+      from: "Citizens Private Banking",
+      category: "tax",
+      routing: "026013673",
+    },
+    {
+      id: "est-tax-q1",
+      label: "Federal Estimated Income Tax — Q1 2026",
+      amount: 30000,
+      due: new Date(2026, 3, 15),
+      payee: "Internal Revenue Service",
+      acct: "EFTPS",
+      method: "ACH",
+      from: "Citizens Private Banking",
+      category: "tax",
+      routing: "061036010",
+    },
+    {
+      id: "tuition-spring",
+      label: "Private School Tuition — Spring Installment",
+      amount: 15000,
+      due: new Date(2026, 3, 1),
+      payee: "Dalton School",
+      acct: "Acct #8840",
+      method: "Wire",
+      from: "Chase Total Checking",
+      category: "education",
+      routing: "021000021",
+    },
+    {
+      id: "prop-tax-jul",
+      label: "NYC Property Tax — 2nd Installment",
+      amount: 17500,
+      due: new Date(2026, 6, 15),
+      payee: "NYC Dept. of Finance",
+      acct: "Acct #4821",
+      method: "Wire",
+      from: "Citizens Private Banking",
+      category: "tax",
+      routing: "026013673",
+    },
+    {
+      id: "est-tax-q3",
+      label: "Federal Estimated Income Tax — Q3 2026",
+      amount: 30000,
+      due: new Date(2026, 8, 15),
+      payee: "Internal Revenue Service",
+      acct: "EFTPS",
+      method: "ACH",
+      from: "Citizens Private Banking",
+      category: "tax",
+      routing: "061036010",
+    },
+  ];
+
+  const oblCatStyle = (cat: string) =>
+    cat === "tax"
+      ? "text-rose-700 bg-rose-50 border-rose-200"
+      : cat === "education"
+      ? "text-violet-700 bg-violet-50 border-violet-200"
+      : "text-slate-700 bg-slate-50 border-slate-200";
+
+  // ── Email composer ──
+  const buildEmail = () => {
+    const paras: string[] = [];
+    if (checked.has("liquidity"))
+      paras.push(
+        `As we approach the new year, your December bonus has created a meaningful liquidity surplus — roughly ${fmt(totalToDeploy)} above your 3-month reserve target. Rather than letting that sit idle, we'd like to put it to work for you across the Build and Grow allocations we've modeled. The opportunity cost of leaving it in cash is real, and we think the timing is right to act.`,
+      );
+    if (checked.has("rebalance"))
+      paras.push(
+        `We've also been monitoring your single-stock concentration. Your E*Trade positions in Meta and Bank of America now represent about ${singleStockPct}% of your total portfolio — above the 5% threshold we'd generally feel comfortable with. We'd like to walk you through a gradual trim strategy that reduces that risk without triggering a large tax event all at once.`,
+      );
+    if (checked.has("yield"))
+      paras.push(
+        `On the fixed-income side, there's an opportunity to improve what your reserve accounts are earning. We've identified products that could add roughly +${bpsPickup} basis points in after-tax yield — that translates to approximately ${fmt(_yieldPickupAnnual)} per year in incremental income at essentially the same risk profile. With the Fed cutting rates, we think this window is time-sensitive.`,
+      );
+    if (paras.length === 0)
+      paras.push("We wanted to check in and share a few items we've been working through on your behalf.");
+    return [
+      "Hi Sarah and Michael,",
+      "",
+      "Hope you're both doing well. I wanted to reach out with a few things on our end that I think are worth a conversation.",
+      "",
+      ...paras.flatMap((p) => [p, ""]),
+      "None of this requires any immediate action on your part — I just want to make sure you have the full picture so we can decide together what makes the most sense. Happy to set up a quick call whenever works for you.",
+      "",
+      "As always, please don't hesitate to reach out with any questions.",
+      "",
+      "Best,",
+      "Your Advisor",
+    ].join("\n");
+  };
+
+  // ── Card checkbox header helper ──
+  const CardCheckHeader = ({
+    cardKey,
+    color,
+    icon: Icon,
+    badge,
+    priority,
+    title,
+  }: {
+    cardKey: string;
+    color: string;
+    icon: React.ElementType;
+    badge: string;
+    priority: string;
+    title: string;
+  }) => {
+    const isChecked = checked.has(cardKey);
+    return (
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => toggle(cardKey)}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+              isChecked ? `border-current bg-current` : "border-slate-300 bg-white"
+            }`}
+            style={{ color: isChecked ? color : undefined }}
+          >
+            {isChecked && <Check className="w-3 h-3 text-white" />}
+          </button>
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: `${color}20` }}
+          >
+            <Icon className="w-4 h-4" style={{ color }} />
+          </div>
+          <div>
+            <span
+              className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border"
+              style={{ color, background: `${color}10`, borderColor: `${color}40` }}
+            >
+              {badge}
+            </span>
+            <p className="text-base font-black text-foreground mt-1.5 leading-snug">{title}</p>
+          </div>
+        </div>
+        <span className="text-[8px] font-black uppercase tracking-wider text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5">
+          {priority}
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-5">
@@ -6026,42 +6180,46 @@ function AdvisorBriefView({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full px-3 py-1">
-            <BadgeCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Meeting Ready</span>
+          <div className="flex items-center gap-1.5 bg-slate-700/60 border border-slate-600 rounded-full px-3 py-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            <span className="text-[10px] text-slate-400">Check items to include in email</span>
           </div>
-          <div className="text-right">
-            <p className="text-[9px] text-slate-500 uppercase tracking-widest">Priorities</p>
-            <p className="text-xl font-black text-white">4</p>
-          </div>
+          <button
+            onClick={() => setShowEmail(true)}
+            disabled={checked.size === 0}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold transition-all ${
+              checked.size > 0
+                ? "bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-900/40"
+                : "bg-slate-700 text-slate-500 cursor-not-allowed"
+            }`}
+          >
+            <Mail className="w-3.5 h-3.5" />
+            Compose Email {checked.size > 0 && `(${checked.size})`}
+          </button>
         </div>
       </div>
 
-      {/* ── Priority grid ── */}
+      {/* ── Priority cards (3 in a 2+1 layout) ── */}
       <div className="grid grid-cols-2 gap-5">
 
         {/* ── Card 1: Deploy Excess Liquidity ── */}
-        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col" style={{ borderTop: "4px solid #10b981" }}>
+        <div
+          className={`rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("liquidity") ? "border-emerald-400 shadow-emerald-100" : "border-border"}`}
+          style={{ borderTop: `4px solid #10b981` }}
+        >
           <div className="px-6 pt-6 pb-5 flex flex-col gap-4 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                  <Wallet className="w-4.5 h-4.5 text-emerald-600" />
-                </div>
-                <div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Liquidity</span>
-                  <p className="text-base font-black text-foreground mt-1.5 leading-snug">Harvest Excess Liquidity From Bonus</p>
-                </div>
-              </div>
-              <span className="text-[8px] font-black uppercase tracking-wider text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full flex-shrink-0">High Priority</span>
-            </div>
-
+            <CardCheckHeader
+              cardKey="liquidity"
+              color="#10b981"
+              icon={Wallet}
+              badge="Liquidity"
+              priority="High Priority"
+              title="Harvest Excess Liquidity From Bonus"
+            />
             <div>
               <p className="text-3xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToDeploy, true)}</p>
               <p className="text-[10px] text-muted-foreground mt-1">available to deploy based on GURU estimates</p>
             </div>
-
-            {/* Cash breakdown table */}
             <div className="space-y-1.5">
               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Where it's sitting</p>
               {[...reserveItems, ...brokerageCashItems].slice(0, 5).map((a) => (
@@ -6069,7 +6227,7 @@ function AdvisorBriefView({
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
                     <span className="text-[11px] text-muted-foreground truncate">
-                      {(a.description ?? a.name ?? "Account").split("—")[0].split("(")[0].trim()}
+                      {(a.description ?? "").split("—")[0].split("(")[0].trim()}
                     </span>
                   </div>
                   <span className="text-[11px] font-bold tabular-nums text-foreground flex-shrink-0">{fmt(Number(a.value))}</span>
@@ -6080,15 +6238,13 @@ function AdvisorBriefView({
                 <span className="text-[11px] font-black tabular-nums text-emerald-700">−{fmt(guruReserveTarget)}</span>
               </div>
             </div>
-
-            {/* Talking point */}
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Lightbulb className="w-3 h-3 text-emerald-600" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-emerald-700">Talking Point</span>
               </div>
               <p className="text-[11px] text-emerald-800 leading-relaxed italic">
-                "The year-end bonus has created a meaningful liquidity surplus above your 3-month reserve target. We recommend deploying the excess into the Build and Grow buckets to put it to work — the GURU Allocation tab shows exactly how."
+                "The year-end bonus has created a meaningful surplus above the 3-month reserve target. Deploying the excess into Build and Grow puts it to work — GURU shows exactly how."
               </p>
             </div>
           </div>
@@ -6102,45 +6258,38 @@ function AdvisorBriefView({
         </div>
 
         {/* ── Card 2: Portfolio Rebalancing ── */}
-        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col" style={{ borderTop: "4px solid #3b82f6" }}>
+        <div
+          className={`rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("rebalance") ? "border-blue-400 shadow-blue-100" : "border-border"}`}
+          style={{ borderTop: `4px solid #3b82f6` }}
+        >
           <div className="px-6 pt-6 pb-5 flex flex-col gap-4 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <RefreshCw className="w-4 h-4 text-blue-600" />
-                </div>
-                <div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Investments</span>
-                  <p className="text-base font-black text-foreground mt-1.5 leading-snug">Rebalance Portfolio with Excess Cash</p>
-                </div>
-              </div>
-              <span className="text-[8px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full flex-shrink-0">Medium Priority</span>
-            </div>
-
-            {/* Single-stock concentration alert */}
+            <CardCheckHeader
+              cardKey="rebalance"
+              color="#3b82f6"
+              icon={RefreshCw}
+              badge="Investments"
+              priority="Medium Priority"
+              title="Rebalance Portfolio with Excess Cash"
+            />
             {singleStockVal > 0 && (
               <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 flex items-start gap-2.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[10px] font-black text-rose-700 uppercase tracking-wide">Concentration Risk</p>
-                  <p className="text-[11px] text-rose-700 mt-0.5">Single-stock positions ({singleStockPct}% of portfolio) exceed recommended 5% threshold.</p>
+                  <p className="text-[11px] text-rose-700 mt-0.5">Single-stock positions ({singleStockPct}% of portfolio) exceed the 5% threshold.</p>
                 </div>
               </div>
             )}
-
-            {/* Action checklist */}
             <div className="space-y-2">
               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Action Items</p>
               {[
-                { done: false, label: "Add Sector Rotation Fund to Grow bucket", detail: "Reduces correlation to broad market" },
-                { done: false, label: "Add Commodities / Inflation Hedge", detail: "Provides protection in rising-rate scenarios" },
-                { done: false, label: "Trim concentrated single-stock positions", detail: `${singleStockPct}% of portfolio — target under 5%` },
-                { done: false, label: "Review international allocation", detail: "Currently under-weight vs target model" },
+                { label: "Add Sector Rotation Fund to Grow bucket", detail: "Reduces correlation to broad market" },
+                { label: "Add Commodities / Inflation Hedge", detail: "Provides protection in rising-rate scenarios" },
+                { label: "Trim concentrated single-stock positions", detail: `${singleStockPct}% of portfolio — target under 5%` },
+                { label: "Review international allocation", detail: "Currently under-weight vs target model" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-2.5 rounded-lg border border-border bg-background px-3 py-2.5">
-                  <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 mt-0.5 border-2 ${item.done ? "bg-blue-500 border-blue-500" : "border-slate-300"}`}>
-                    {item.done && <Check className="w-2.5 h-2.5 text-white" />}
-                  </div>
+                  <div className="w-4 h-4 rounded flex-shrink-0 mt-0.5 border-2 border-slate-200 bg-background" />
                   <div className="min-w-0">
                     <p className="text-[11px] font-semibold text-foreground">{item.label}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{item.detail}</p>
@@ -6148,15 +6297,13 @@ function AdvisorBriefView({
                 </div>
               ))}
             </div>
-
-            {/* Talking point */}
             <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Lightbulb className="w-3 h-3 text-blue-600" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-blue-700">Talking Point</span>
               </div>
               <p className="text-[11px] text-blue-800 leading-relaxed italic">
-                "With excess liquidity now identified, we can selectively deploy into under-represented segments — sector funds and commodities give you diversification while keeping the overall allocation within your moderate risk profile."
+                "With liquidity identified, we can selectively deploy into under-represented segments — sector funds and commodities give diversification within the moderate risk profile."
               </p>
             </div>
           </div>
@@ -6170,49 +6317,45 @@ function AdvisorBriefView({
         </div>
 
         {/* ── Card 3: Yield Pickup ── */}
-        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col" style={{ borderTop: "4px solid #d97706" }}>
+        <div
+          className={`rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col col-span-2 transition-all ${checked.has("yield") ? "border-amber-400 shadow-amber-100" : "border-border"}`}
+          style={{ borderTop: `4px solid #d97706` }}
+        >
           <div className="px-6 pt-6 pb-5 flex flex-col gap-4 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                  <SlidersHorizontal className="w-4 h-4 text-amber-600" />
-                </div>
+            <CardCheckHeader
+              cardKey="yield"
+              color="#d97706"
+              icon={SlidersHorizontal}
+              badge="Fixed Income"
+              priority="Time Sensitive"
+              title="Better Products for Reserve Accounts"
+            />
+            <div className="grid grid-cols-2 gap-8">
+              <div className="flex items-end gap-4">
                 <div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Fixed Income</span>
-                  <p className="text-base font-black text-foreground mt-1.5 leading-snug">Better Products for Reserve Accounts</p>
+                  <p className="text-3xl font-black tabular-nums text-amber-600 leading-none">+{bpsPickup} bps</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">yield pickup available</p>
+                </div>
+                <div className="pb-1">
+                  <p className="text-lg font-black tabular-nums text-amber-700">{fmt(_yieldPickupAnnual)}<span className="text-sm font-semibold">/yr</span></p>
+                  <p className="text-[10px] text-muted-foreground">incremental after-tax income</p>
                 </div>
               </div>
-              <span className="text-[8px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex-shrink-0">Time Sensitive</span>
-            </div>
-
-            <div className="flex items-end gap-4">
-              <div>
-                <p className="text-3xl font-black tabular-nums text-amber-600 leading-none">+{bpsPickup} bps</p>
-                <p className="text-[10px] text-muted-foreground mt-1">yield pickup available</p>
+              <div className="space-y-2">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Current vs GURU Recommended</p>
+                {[
+                  { label: "Idle bank accounts", current: "~0.50%", note: "Move to MMF" },
+                  { label: "Reserve MMF", current: `${_currentLiquidYield.toFixed(1)}% AT`, note: `${_guruLiquidYield.toFixed(1)}% AT · JPMorgan 100% Treas` },
+                  { label: "Build Ladder", current: "2.50% AT", note: "2.74% AT · Short T-Bill ladder" },
+                ].map((row) => (
+                  <div key={row.label} className="grid grid-cols-[1fr_auto_auto] gap-3 items-center rounded-lg border border-border bg-background px-3 py-2">
+                    <span className="text-[10px] text-muted-foreground truncate">{row.label}</span>
+                    <span className="text-[10px] tabular-nums text-foreground">{row.current}</span>
+                    <span className="text-[10px] tabular-nums font-bold text-amber-700 whitespace-nowrap">→ {row.note}</span>
+                  </div>
+                ))}
               </div>
-              <div className="pb-1">
-                <p className="text-lg font-black tabular-nums text-amber-700">{fmt(_yieldPickupAnnual)}<span className="text-sm font-semibold">/yr</span></p>
-                <p className="text-[10px] text-muted-foreground">incremental after-tax income</p>
-              </div>
             </div>
-
-            {/* Current vs GURU comparison */}
-            <div className="space-y-2">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Current vs GURU Recommended</p>
-              {[
-                { label: "Idle bank accounts", current: "~0.50%", guru: "—", note: "Move to MMF" },
-                { label: "Reserve MMF", current: `${_currentLiquidYield.toFixed(1)}% AT`, guru: `${_guruLiquidYield.toFixed(1)}% AT`, note: "JPMorgan 100% Treas" },
-                { label: "Build Ladder", current: "2.50% AT", guru: "2.74% AT", note: "Short T-Bill ladder" },
-              ].map((row) => (
-                <div key={row.label} className="grid grid-cols-[1fr_auto_auto] gap-3 items-center rounded-lg border border-border bg-background px-3 py-2">
-                  <span className="text-[10px] text-muted-foreground truncate">{row.label}</span>
-                  <span className="text-[10px] tabular-nums text-foreground text-right">{row.current}</span>
-                  <span className="text-[10px] tabular-nums font-bold text-amber-700 text-right whitespace-nowrap">{row.guru || row.note}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Talking point */}
             <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Lightbulb className="w-3 h-3 text-amber-600" />
@@ -6232,78 +6375,177 @@ function AdvisorBriefView({
           </div>
         </div>
 
-        {/* ── Card 4: Upcoming Payments ── */}
-        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col" style={{ borderTop: "4px solid #f43f5e" }}>
-          <div className="px-6 pt-6 pb-5 flex flex-col gap-4 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-4 h-4 text-rose-600" />
-                </div>
-                <div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">Planning</span>
-                  <p className="text-base font-black text-foreground mt-1.5 leading-snug">Upcoming Obligations — Next 6 Months</p>
-                </div>
-              </div>
-            </div>
+      </div>
 
-            {/* Reserve runway indicator */}
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-rose-700">Reserve Runway</p>
-                <p className="text-xl font-black tabular-nums text-rose-700">{reserveRunwayMonths} months</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[9px] text-rose-600">Reserve balance</p>
-                <p className="text-sm font-bold tabular-nums text-rose-700">{fmt(reserveTotal)}</p>
-                <p className="text-[9px] text-rose-500">÷ {fmt(avgMonthlyExpense)}/mo avg</p>
-              </div>
+      {/* ── Upcoming Obligations ── */}
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        {/* Section header */}
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #f43f5e" }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
+              <Send className="w-4 h-4 text-rose-600" />
             </div>
-
-            {/* Payment list */}
-            <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{upcoming.length} outflows scheduled</p>
-              <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                {upcoming.length === 0 && (
-                  <p className="text-xs text-muted-foreground italic">No large outflows in next 6 months</p>
-                )}
-                {upcoming.map((cf) => (
-                  <div key={cf.id} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" />
-                      <span className="text-[10px] text-muted-foreground truncate">{cf.description ?? ""}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full border ${catColor(cf.category ?? "")}`}>{catLabel(cf.category ?? "")}</span>
-                      <span className="text-[10px] font-bold tabular-nums text-rose-700">{fmt(Number(cf.amount), true)}</span>
-                      <span className="text-[9px] text-muted-foreground">{format(new Date(cf.date), "MMM d")}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Talking point */}
-            <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Lightbulb className="w-3 h-3 text-rose-600" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-rose-700">Talking Point</span>
-              </div>
-              <p className="text-[11px] text-rose-800 leading-relaxed italic">
-                "Your Reserve currently covers {reserveRunwayMonths} months of average spending. Before deploying excess cash, confirm which upcoming obligations need to be pre-funded from Reserve vs. Operating Cash."
-              </p>
+            <div>
+              <p className="text-base font-black text-foreground leading-none">Upcoming Obligations</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Large wire &amp; ACH payments — GURU can initiate on your behalf</p>
             </div>
           </div>
-          <div
-            className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-rose-50/40 cursor-pointer hover:bg-rose-50 transition-colors"
-            onClick={() => onNavigate("financials")}
-          >
-            <span className="text-[10px] text-muted-foreground">Open Cash Flow Forecast</span>
-            <span className="text-[11px] font-bold text-rose-700 flex items-center gap-1">View now <ArrowUpRight className="w-3.5 h-3.5" /></span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1">
+              <Lock className="w-3 h-3 text-indigo-600" />
+              <span className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider">GURU Payments Active</span>
+            </div>
           </div>
         </div>
 
+        {/* Obligations list */}
+        <div className="divide-y divide-border">
+          {OBLIGATIONS.map((obl) => {
+            const step = obligationStep[obl.id] ?? 0;
+            const isAuth = authorized.has(obl.id);
+            const daysUntil = Math.ceil((obl.due.getTime() - DEMO_NOW.getTime()) / (1000 * 60 * 60 * 24));
+            const isUrgent = daysUntil <= 45;
+
+            return (
+              <div key={obl.id} className="px-6 py-4">
+                <div className="flex items-center gap-4">
+                  {/* Left: info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${oblCatStyle(obl.category)}`}>
+                        {obl.category === "tax" ? "Tax" : "Education"}
+                      </span>
+                      <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${isUrgent ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-slate-50 text-slate-500 border border-slate-200"}`}>
+                        Due {format(obl.due, "MMM d, yyyy")} · {daysUntil}d away
+                      </span>
+                      <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${obl.method === "Wire" ? "bg-violet-50 text-violet-700 border border-violet-200" : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
+                        {obl.method}
+                      </span>
+                    </div>
+                    <p className="text-[13px] font-black text-foreground leading-none">{obl.label}</p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <div className="flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">{obl.payee} · {obl.acct}</span>
+                      </div>
+                      <span className="text-muted-foreground/40">·</span>
+                      <span className="text-[10px] text-muted-foreground">From: {obl.from}</span>
+                      <span className="text-muted-foreground/40">·</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">Routing: {obl.routing}</span>
+                    </div>
+                  </div>
+
+                  {/* Center: amount */}
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xl font-black tabular-nums text-rose-700">{fmt(obl.amount, true)}</p>
+                  </div>
+
+                  {/* Right: action */}
+                  <div className="flex-shrink-0 w-52">
+                    {isAuth ? (
+                      <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                        <CheckSquare className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-black text-emerald-800">GURU Authorized</p>
+                          <p className="text-[9px] text-emerald-600">Will process 2 business days prior</p>
+                        </div>
+                      </div>
+                    ) : step === 0 ? (
+                      <button
+                        onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 1 }))}
+                        className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-[11px] font-bold transition-colors"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        GURU: Initiate {obl.method}
+                      </button>
+                    ) : step === 1 ? (
+                      <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 space-y-2">
+                        <p className="text-[10px] font-black text-amber-800">Authorize GURU to send {fmt(obl.amount, true)} to {obl.payee}?</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 2 }))}
+                            className="flex-1 bg-amber-500 hover:bg-amber-400 text-white rounded-lg py-1.5 text-[10px] font-bold transition-colors"
+                          >
+                            Yes, authorize
+                          </button>
+                          <button
+                            onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 0 }))}
+                            className="flex-1 bg-white border border-slate-200 text-slate-600 rounded-lg py-1.5 text-[10px] font-bold hover:bg-slate-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 space-y-2">
+                        <p className="text-[10px] font-black text-rose-800">Final confirmation — this cannot be undone.</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setAuthorized((s) => new Set([...s, obl.id]));
+                              setObligationStep((s) => ({ ...s, [obl.id]: 0 }));
+                            }}
+                            className="flex-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg py-1.5 text-[10px] font-bold transition-colors"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 0 }))}
+                            className="flex-1 bg-white border border-slate-200 text-slate-600 rounded-lg py-1.5 text-[10px] font-bold hover:bg-slate-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      {/* ── Email Modal ── */}
+      <Dialog open={showEmail} onOpenChange={setShowEmail}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Mail className="w-4 h-4 text-indigo-600" />
+              Client Email — Sarah &amp; Michael Kessler
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground border border-border rounded-lg px-4 py-2.5 bg-muted/30">
+              <div><span className="font-semibold">To:</span> Sarah &amp; Michael Kessler &lt;kessler.family@privatebank.com&gt;</div>
+              <div className="ml-auto"><span className="font-semibold">Subject:</span> A few things worth discussing — your portfolio update</div>
+            </div>
+            <div className="rounded-xl border border-border bg-background px-5 py-4 text-[12px] leading-7 text-foreground whitespace-pre-wrap font-serif min-h-[280px]">
+              {buildEmail()}
+            </div>
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(buildEmail());
+                  setEmailCopied(true);
+                  setTimeout(() => setEmailCopied(false), 2000);
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted text-[11px] font-semibold transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                {emailCopied ? "Copied!" : "Copy to clipboard"}
+              </button>
+              <button
+                onClick={() => setShowEmail(false)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-colors"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Done
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
