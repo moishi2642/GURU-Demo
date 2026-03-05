@@ -3705,33 +3705,6 @@ function MoneyMovementView({
         )}
 
       </div>
-      {/* ── Pending changes banner ─────────────────────────────────────────────── */}
-      {hasChanges && (
-        <div className="flex items-center gap-3 px-6 py-2.5 bg-amber-50 border-b border-amber-200">
-          <div className="flex items-center gap-1.5 flex-1">
-            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-            <span className="text-[11px] font-semibold text-amber-800">
-              Shows Pending Changes Made to Asset Allocation and Product Selection
-            </span>
-          </div>
-          <div className="flex items-center gap-4 flex-shrink-0 text-[10px] text-amber-700">
-            {pendingTransfers.length > 0 && (
-              <span>
-                {pendingTransfers.length} transfer{pendingTransfers.length !== 1 ? "s" : ""} pending:{" "}
-                {pendingTransfers.map(t => `${t.from} → ${t.to} ($${(t.amount / 1000).toFixed(0)}K)`).join(", ")}
-              </span>
-            )}
-            {Object.values(bucketProductSelections).some(s => s.length > 0) && (
-              <span>
-                {Object.entries(bucketProductSelections)
-                  .filter(([, sels]) => sels.length > 0)
-                  .map(([bucket, sels]) => `${bucket}: ${sels.map(s => s.product.name.split("—")[0].trim()).join(", ")}`)
-                  .join(" · ")}
-              </span>
-            )}
-          </div>
-        </div>
-      )}
       {/* ══════════════════════════════════════════════════════════
           FLOW SCHEMATIC VIEW
           ══════════════════════════════════════════════════════════ */}
@@ -3994,20 +3967,16 @@ function MoneyMovementView({
                       </div>
                     ))}
 
-                    {/* Active (held) T-bills — gray coloring since winding down */}
+                    {/* Active (held) T-bills — gray coloring since winding down, no connector lines */}
                     {activeTbills.map(t => (
-                      <div key={t.label} className="relative mb-2">
-                        <div style={{ marginRight: 74 }}>
-                          <LedgerCard
-                            title={t.label}
-                            subtitle={`Held to maturity · ${t.rate}`}
-                            balance={fmtBal(t.balances[sm])}
-                            balanceColor="#94a3b8"
-                            accent="#94a3b8"
-                          />
-                        </div>
-                        {/* Horizontal branch */}
-                        <div style={{ position: 'absolute', right: 54, top: '50%', width: 22, height: 2, backgroundColor: 'rgba(217,119,6,0.3)', transform: 'translateY(-50%)' }} />
+                      <div key={t.label} className="mb-2">
+                        <LedgerCard
+                          title={t.label}
+                          subtitle={`Held to maturity · ${t.rate}`}
+                          balance={fmtBal(t.balances[sm])}
+                          balanceColor="#94a3b8"
+                          accent="#94a3b8"
+                        />
                       </div>
                     ))}
 
