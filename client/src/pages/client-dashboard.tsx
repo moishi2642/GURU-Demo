@@ -4170,7 +4170,7 @@ function MoneyMovementView({
                 <tr style={{ backgroundColor: "rgba(29,78,216,0.08)" }} className="border-b border-[#1d4ed8]/20">
                   <td className="px-4 py-1.5 w-[300px]">
                     <div className="flex items-center gap-1 text-[10px] font-semibold italic" style={{ color: "#1d4ed8" }}>
-                      <span style={{ color: "#1d4ed8" }}>⤷</span> Holds ≥ {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses ({fmtBal(minOps)} floor)
+                      <span style={{ color: "#1d4ed8" }}>⤷</span> Holds ≥ {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses
                     </div>
                   </td>
                   {HC_OPS_TOTAL.map((bal, mi) => (
