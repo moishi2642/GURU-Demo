@@ -173,7 +173,7 @@ function isChunkyEvent(cf: CashFlow): boolean {
 }
 
 function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
-  const now = new Date();
+  const now = DEMO_NOW;
   const horizon = addMonths(now, 12);
 
   const all12 = cashFlows.filter((cf) => {
@@ -317,6 +317,10 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
     </div>
   );
 }
+
+// ─── Demo date: simulate "today = December 2025" so January is the next month ──
+// This aligns the UI to the Excel model which starts in January.
+const DEMO_NOW = new Date(2025, 11, 1); // December 1, 2025
 
 // ─── Formatting Helpers ────────────────────────────────────────────────────────
 const fmt = (v: number, compact = false) => {
@@ -474,7 +478,7 @@ function buildNWProjection(
     .filter((a) => ["equity", "alternative", "real_estate"].includes(a.type))
     .reduce((s, a) => s + Number(a.value), 0);
   const GROWTH_RATE = 0.065;
-  const now = new Date();
+  const now = DEMO_NOW;
   return Array.from({ length: 6 }, (_, i) => {
     const assetGrowth = growthValue * (Math.pow(1 + GROWTH_RATE, i) - 1);
     const cashAccum = annualSurplus * i;
@@ -3204,7 +3208,7 @@ function MoneyMovementView({
     );
   };
   const [mmView, setMmView] = useState<'table'|'flow'>('table');
-  const [selectedMonth, setSelectedMonth] = useState(3); // April = upcoming
+  const [selectedMonth, setSelectedMonth] = useState(0); // January = upcoming (next month after December)
 
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -3893,9 +3897,9 @@ function MoneyMovementView({
                 <tr className="bg-slate-900 border-b-2 border-slate-700">
                   <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-400 w-[300px]">Line Item</th>
                   {MONTHS.map((mo, mi) => (
-                    <th key={mo} className={`px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider min-w-[76px] ${mi === 3 ? 'text-amber-400 bg-slate-800' : 'text-slate-300'}`}>
+                    <th key={mo} className={`px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider min-w-[76px] ${mi === 0 ? 'text-amber-400 bg-slate-800' : 'text-slate-300'}`}>
                       {mo}
-                      {mi === 3 && <div className="text-[7px] font-normal text-amber-400/70 normal-case leading-none mt-0.5">upcoming</div>}
+                      {mi === 0 && <div className="text-[7px] font-normal text-amber-400/70 normal-case leading-none mt-0.5">upcoming</div>}
                     </th>
                   ))}
                 </tr>
@@ -5609,7 +5613,7 @@ function AdvisorBriefView({
   const bpsPickup = Math.round((_guruLiquidYield - _currentLiquidYield) * 100);
 
   // ── Card 4: Upcoming payments ──
-  const now = new Date();
+  const now = DEMO_NOW;
   const sixMonthsOut = addMonths(now, 6);
   const upcoming = cashFlows
     .filter((cf) => {
@@ -5645,7 +5649,7 @@ function AdvisorBriefView({
           </div>
           <div>
             <p className="text-lg font-black text-white tracking-tight">Advisor Brief</p>
-            <p className="text-[11px] text-slate-400 font-medium">Sarah & Michael Kessler · {format(new Date(), "MMMM d, yyyy")}</p>
+            <p className="text-[11px] text-slate-400 font-medium">Sarah & Michael Kessler · {format(DEMO_NOW, "MMMM d, yyyy")}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -6025,7 +6029,7 @@ export default function ClientDashboard() {
   const _cashWhereItSits = [..._checkingItems, ..._savingsItems, ..._brokerageCashItems];
 
   // Next month's net cash flow
-  const _nextMonthDate = addMonths(new Date(), 1);
+  const _nextMonthDate = addMonths(DEMO_NOW, 1);
   const _nextMonthFlows = cashFlows.filter((cf) => {
     const d = new Date(cf.date);
     return (
@@ -6060,7 +6064,7 @@ export default function ClientDashboard() {
   const _yieldPickupAnnual = Math.round(_liquidHero * ((_guruLiquidYield - _currentLiquidYield) / 100));
 
   // Upcoming payments — search next 6 months of outflows for these 3 named items
-  const _now = new Date();
+  const _now = DEMO_NOW;
   const _sixMonthsOut = addMonths(_now, 6);
   const _upcomingAll = cashFlows
     .filter((cf) => {
