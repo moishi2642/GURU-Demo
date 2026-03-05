@@ -3589,6 +3589,33 @@ function MoneyMovementView({
     .filter((b, i) => getBillState(i) === 'upcoming' && b.maturesSm < 12)
     .map(b => b.label);
 
+  // ── HARDCODED DEMO DATA — Prototype_Model_v4.xlsx (Jan–Dec 2026) ─────────────
+  // Month-end balances for each account in the GURU-managed scenario.
+  // Accounts showing $0 represent old/consolidated accounts kept for reference.
+  const HC_CHASE           = new Array(12).fill(0) as number[];
+  const HC_CITIZENS_CHECK  = new Array(12).fill(0) as number[];
+  const HC_CIT_MM          = [41879,86879,90879,46879,62379,76379,56879,41879,45879,73332,86832,76879];
+  const HC_OPS_TOTAL       = HC_CIT_MM;
+
+  const HC_CITIZENS_MM     = new Array(12).fill(0) as number[];
+  const HC_CAPONE          = new Array(12).fill(0) as number[];
+  const HC_JPM_MMF         = [47126,7865,2049,41048,19660,2745,11161,9178,3191,22946,3408,179127];
+  const HC_TBILL_1MO       = [7478,0,0,0,0,0,0,0,0,0,0,0];
+  const HC_TBILL_3MO       = [41877,41877,41877,0,0,0,0,0,0,0,0,0];
+  const HC_TBILL_6MO       = [10377,10377,10377,10377,10377,10377,0,0,0,0,0,0];
+  const HC_TBILL_9MO       = [49204,49204,49204,49204,49204,49204,49204,49204,49204,0,0,0];
+  const HC_RSV_TOTAL       = [156062,109323,103507,100629,79242,62326,60365,58383,52396,22946,3408,179127];
+
+  const HC_TREAS_1YR       = new Array(12).fill(0) as number[];
+  const HC_MUNI_BONDS      = [96767,96979,97192,97405,97619,97834,98049,98264,98480,98696,98913,109793];
+  const HC_SP_LOW_VOL      = [96767,96979,97192,97405,97619,97834,98049,98264,98480,98696,98913,109793];
+  const HC_BLD_TOTAL       = [193534,193958,194384,194810,195238,195668,196098,196528,196960,197392,197826,219586];
+
+  const HC_GROW            = [2618683,2633959,2649323,2664778,2680322,2695958,2711684,2727502,2743413,2759416,2775512,2791703];
+  const HC_NET_WORTH       = [4643945,4657911,4671890,4640899,4650988,4664141,4658841,4658112,4672471,4686915,4697412,4901134];
+
+  const allZero = (arr: number[]) => arr.every(v => v === 0);
+
   return (
     <div className="rounded-xl overflow-hidden shadow-xl border border-slate-200">
       {/* ── Title bar: title + view toggle + controls ── */}
@@ -3925,95 +3952,53 @@ function MoneyMovementView({
 
               <tbody>
                 {/* ══ OPERATING CASH ══ */}
-                {/* ↳ Chase Total Checking */}
+                {/* ↳ Chase Total Checking — $0 (consolidated into CIT MM) */}
+                <tr className={`border-b transition-colors ${allZero(HC_CHASE) ? 'bg-slate-50/80' : 'hover:bg-blue-50/40'} border-[#1d4ed8]/10`}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-semibold ${allZero(HC_CHASE) ? 'text-slate-300' : 'text-blue-800'}`}>Chase Total Checking</span>
+                      <span className={`text-[8px] font-mono ${allZero(HC_CHASE) ? 'text-slate-300' : 'text-blue-400'}`}>Checking</span>
+                    </div>
+                  </td>
+                  {HC_CHASE.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold ${allZero(HC_CHASE) ? 'text-slate-300' : 'text-blue-700'}`}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ Citizens Private Banking Checking — $0 (consolidated) */}
+                <tr className={`border-b transition-colors ${allZero(HC_CITIZENS_CHECK) ? 'bg-slate-50/80' : 'hover:bg-blue-50/40'} border-[#1d4ed8]/10`}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-semibold ${allZero(HC_CITIZENS_CHECK) ? 'text-slate-300' : 'text-blue-700'}`}>Citizens Private Banking Checking</span>
+                      <span className={`text-[8px] font-mono ${allZero(HC_CITIZENS_CHECK) ? 'text-slate-300' : 'text-amber-500'}`}>Checking</span>
+                    </div>
+                  </td>
+                  {HC_CITIZENS_CHECK.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold ${allZero(HC_CITIZENS_CHECK) ? 'text-slate-300' : 'text-blue-600'}`}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ CIT Money Market Bank Account — active operating account */}
                 <tr className="border-b border-[#1d4ed8]/10 hover:bg-blue-50/40 transition-colors"
                   style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-blue-800">Chase Total Checking</span>
-                      <span className="text-[8px] text-blue-400 font-mono">Primary</span>
+                      <span className="text-[10px] font-semibold text-blue-800">CIT Money Market Bank Account</span>
+                      <span className="text-[8px] text-blue-500 font-mono">4.65%</span>
                     </div>
                   </td>
-                  {EFF_CHASE.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-blue-700 cursor-help relative group">
+                  {HC_CIT_MM.map((v, mi) => (
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-blue-700">
                       {fmtBal(v)}
-                      {cellTip([
-                        `Salary deposit: +$${INCOME_TO_IMM[mi].toLocaleString()}`,
-                        `Operating expenses: −$${Math.abs(EXPENSES[mi]).toLocaleString()}`,
-                        `──────────────────`,
-                        `Month-end balance: $${v.toLocaleString()}`,
-                      ])}
                     </td>
                   ))}
                 </tr>
-                {/* ↳ Citizens Private Banking Checking */}
-                <tr className="border-b border-[#1d4ed8]/10 hover:bg-blue-50/40 transition-colors"
-                  style={{ backgroundColor: "rgba(29,78,216,0.03)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-blue-700">Citizens Private Banking Checking</span>
-                      <span className="text-[8px] text-amber-500 font-mono">Excess</span>
-                    </div>
-                  </td>
-                  {EFF_CITIZENS_CHECK.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold cursor-help relative group text-blue-600">
-                      {fmtBal(v)}
-                      {cellTip([
-                        `Balance: $${v.toLocaleString()}`,
-                        `──────────────────`,
-                        v === 0 ? `Shortfall covered by Chase Checking` : `Month-end balance`,
-                      ])}
-                    </td>
-                  ))}
-                </tr>
-                {/* ← CIT MM Auto-draw row — shows monthly draws when simulation is active */}
-                {_sim && (
-                  <tr className="border-b border-amber-200/60 hover:bg-amber-50/50 transition-colors"
-                    style={{ backgroundColor: "rgba(217,119,6,0.06)" }}>
-                    <td className="pl-7 pr-4 py-2 w-[300px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-amber-500 text-xs leading-none">←</span>
-                        <span className="text-[10px] font-semibold text-amber-700">CIT MM Auto-draw</span>
-                        <span className="text-[8px] text-amber-400 font-mono italic">funds ops floor</span>
-                      </div>
-                    </td>
-                    {_sim.draws.map((draw, mi) => (
-                      <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-amber-600 cursor-help relative group">
-                        {draw > 0 ? `+${fmtBal(draw)}` : <span className="text-slate-300">—</span>}
-                        {cellTip([
-                          draw > 0 ? `Ops shortfall this month: $${draw.toLocaleString()}` : `No draw needed — surplus month`,
-                          `──────────────────`,
-                          draw > 0 ? `Citizens MM funds the gap to maintain the ${opsCashMonths}-month floor` : `Operating income covered expenses`,
-                        ])}
-                      </td>
-                    ))}
-                  </tr>
-                )}
-                {/* GURU Autopilot ticker — only when any month has a Reserve draw */}
-                {EFF_FROM_ST_TO_IMM.some(v => v > 0) && (
-                  <tr className="h-5 border-b border-blue-100/60" style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
-                    <td colSpan={13} className="px-4 py-0 overflow-hidden">
-                      <div className="relative h-4 flex items-center gap-2.5">
-                        <span className="text-[7px] font-black uppercase tracking-widest text-blue-400 flex-shrink-0 z-10 whitespace-nowrap">GURU Autopilot</span>
-                        <div className="flex-1 relative h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(29,78,216,0.12)" }}>
-                          <motion.div className="absolute top-0 h-full w-10 rounded-full"
-                            style={{ backgroundColor: "#3b82f6", boxShadow: "0 0 8px #3b82f6, 0 0 16px #3b82f680" }}
-                            animate={{ x: ["-40px", "120%"] }} transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }} />
-                          <motion.div className="absolute top-0 h-full w-6 rounded-full"
-                            style={{ backgroundColor: "#93c5fd", boxShadow: "0 0 6px #93c5fd" }}
-                            animate={{ x: ["-24px", "120%"] }} transition={{ duration: 2.2, repeat: Infinity, ease: "linear", delay: 0.9 }} />
-                          <motion.div className="absolute top-0 h-full w-4 rounded-full" style={{ backgroundColor: "#bfdbfe" }}
-                            animate={{ x: ["-16px", "120%"] }} transition={{ duration: 2.2, repeat: Infinity, ease: "linear", delay: 1.7 }} />
-                        </div>
-                        <span className="text-[7px] font-black uppercase tracking-widest text-blue-400 flex-shrink-0 z-10 whitespace-nowrap">Auto-draw active</span>
-                      </div>
-                    </td>
-                  </tr>
-                )}
                 {/* Operating Cash TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#1d4ed8" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Operating Cash</td>
-                  {EFF_IMM.map((v, mi) => (
+                  {HC_OPS_TOTAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
                   ))}
                 </tr>
@@ -4024,7 +4009,7 @@ function MoneyMovementView({
                       <span style={{ color: "#1d4ed8" }}>⤷</span> Holds ≥ {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses ({fmtBal(minOps)} floor)
                     </div>
                   </td>
-                  {EFF_IMM.map((bal, mi) => (
+                  {HC_OPS_TOTAL.map((bal, mi) => (
                     <td key={mi} className={`px-2 py-1.5 text-[10px] text-center font-black tabular-nums ${bal >= minOps ? 'text-emerald-600' : 'text-red-600'}`}>
                       {bal >= minOps ? '✓' : '⚠'}
                     </td>
@@ -4033,83 +4018,167 @@ function MoneyMovementView({
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
                 {/* ══ RESERVE ══ */}
-                {/* ↳ Citizens Private Bank Money Market */}
+                {/* ↳ Citizens Private Bank Money Market — $0 (consolidated into JPMorgan MMF) */}
+                <tr className={`border-b transition-colors ${allZero(HC_CITIZENS_MM) ? 'bg-slate-50/80' : 'hover:bg-amber-50/30'} border-amber-100/40`}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-semibold ${allZero(HC_CITIZENS_MM) ? 'text-slate-300' : 'text-amber-800'}`}>Citizens Private Bank Money Market</span>
+                      <span className={`text-[8px] font-mono ${allZero(HC_CITIZENS_MM) ? 'text-slate-300' : 'text-amber-500'}`}>4.85%</span>
+                    </div>
+                  </td>
+                  {HC_CITIZENS_MM.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold ${allZero(HC_CITIZENS_MM) ? 'text-slate-300' : 'text-amber-700'}`}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ CapitalOne 360 Performance Savings — $0 (consolidated) */}
+                <tr className={`border-b transition-colors ${allZero(HC_CAPONE) ? 'bg-slate-50/80' : 'hover:bg-amber-50/20'} border-amber-100/30`}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] ${allZero(HC_CAPONE) ? 'text-slate-300' : 'text-slate-600'}`}>CapitalOne 360 Performance Savings</span>
+                      <span className={`text-[8px] font-mono ${allZero(HC_CAPONE) ? 'text-slate-300' : 'text-amber-500'}`}>3.78%</span>
+                    </div>
+                  </td>
+                  {HC_CAPONE.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${allZero(HC_CAPONE) ? 'text-slate-300' : 'text-amber-600'}`}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ JPMorgan 100% Treasuries Money Market Fund — primary reserve vehicle */}
                 <tr className="border-b border-amber-100/40 hover:bg-amber-50/30 transition-colors"
                   style={{ backgroundColor: "rgba(217,119,6,0.04)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-amber-800">Citizens Private Bank Money Market</span>
-                      <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
+                      <span className="text-[10px] font-semibold text-amber-800">JPMorgan 100% Treasuries Money Market Fund</span>
+                      <span className="text-[8px] text-amber-500 font-mono">4.72%</span>
                     </div>
                   </td>
-                  {EFF_CITIZENS_MM.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-amber-700 cursor-help relative group">
+                  {HC_JPM_MMF.map((v, mi) => (
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-amber-700">
                       {fmtBal(v)}
-                      {cellTip([
-                        EFF_ST_INT[mi] > 0 ? `Interest earned: +$${EFF_ST_INT[mi].toLocaleString()}` : null,
-                        EFF_FROM_ST_TO_IMM[mi] > 0 ? `Auto-draw to cover Ops: −$${EFF_FROM_ST_TO_IMM[mi].toLocaleString()}` : null,
-                        `──────────────────`,
-                        `Month-end balance: $${v.toLocaleString()}`,
-                      ])}
                     </td>
                   ))}
                 </tr>
-                {/* ↳ CapitalOne 360 Performance Savings */}
+                {/* ↳ US T-Bill 1 month */}
                 <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
                   style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-slate-600">CapitalOne 360 Performance Savings</span>
-                      <span className="text-[8px] text-amber-500 font-mono">3.78%</span>
+                      <span className="text-[10px] text-slate-600">US T-Bill 1 month</span>
+                      <span className="text-[8px] text-amber-500 font-mono">5.08%</span>
                     </div>
                   </td>
-                  {EFF_CAPONE.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums text-amber-600 cursor-help relative group">
+                  {HC_TBILL_1MO.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${v === 0 ? 'text-slate-300' : 'text-amber-600 font-semibold'}`}>
                       {fmtBal(v)}
-                      {cellTip([
-                        `FDIC-insured · 3.78% APY`,
-                        `Monthly interest: +$${(15000 * 0.0378 / 12).toFixed(0)}`,
-                        `──────────────────`,
-                        `Balance: $${v.toLocaleString()}`,
-                      ])}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ US T-Bill 3 months */}
+                <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
+                  style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-600">US T-Bill 3 months</span>
+                      <span className="text-[8px] text-amber-500 font-mono">5.01%</span>
+                    </div>
+                  </td>
+                  {HC_TBILL_3MO.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${v === 0 ? 'text-slate-300' : 'text-amber-600 font-semibold'}`}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ US T-Bill 6 months */}
+                <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
+                  style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-600">US T-Bill 6 months</span>
+                      <span className="text-[8px] text-amber-500 font-mono">4.95%</span>
+                    </div>
+                  </td>
+                  {HC_TBILL_6MO.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${v === 0 ? 'text-slate-300' : 'text-amber-600 font-semibold'}`}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ US T-Bill 9 months */}
+                <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
+                  style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-600">US T-Bill 9 months</span>
+                      <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
+                    </div>
+                  </td>
+                  {HC_TBILL_9MO.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${v === 0 ? 'text-slate-300' : 'text-amber-600 font-semibold'}`}>
+                      {fmtBal(v)}
                     </td>
                   ))}
                 </tr>
                 {/* Reserve TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#d97706" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Reserve</td>
-                  {EFF_ST.map((v, mi) => (
+                  {HC_RSV_TOTAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
                   ))}
                 </tr>
                 <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
 
                 {/* ══ BUILD ══ */}
-                {/* ↳ Treasuries 1 year */}
+                {/* ↳ Treasuries 1 year — $0 (replaced by Munis + S&P Low Vol) */}
+                <tr className={`border-b transition-colors ${allZero(HC_TREAS_1YR) ? 'bg-slate-50/80' : 'hover:bg-green-50/30'} border-green-100/40`}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-semibold ${allZero(HC_TREAS_1YR) ? 'text-slate-300' : 'text-green-800'}`}>Treasuries 1 year</span>
+                      <span className={`text-[8px] font-mono ${allZero(HC_TREAS_1YR) ? 'text-slate-300' : 'text-green-600'}`}>4.50%</span>
+                    </div>
+                  </td>
+                  {HC_TREAS_1YR.map((v, mi) => (
+                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold ${allZero(HC_TREAS_1YR) ? 'text-slate-300' : 'text-green-700'}`}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ The City of New York Muni Bonds Due 02/2028 */}
                 <tr className="border-b border-green-100/40 hover:bg-green-50/30 transition-colors"
                   style={{ backgroundColor: "rgba(22,163,74,0.04)" }}>
                   <td className="pl-7 pr-4 py-2 w-[300px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-green-800">Treasuries 1 year</span>
-                      <span className="text-[8px] text-green-600 font-mono">4.50%</span>
+                      <span className="text-[10px] font-semibold text-green-800">The City of New York Muni Bonds Due 02/2028</span>
+                      <span className="text-[8px] text-green-600 font-mono">3.85%</span>
                     </div>
                   </td>
-                  {EFF_TREASURIES.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-green-700 cursor-help relative group">
+                  {HC_MUNI_BONDS.map((v, mi) => (
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-green-700">
                       {fmtBal(v)}
-                      {cellTip([
-                        EFF_MT_INT[mi] > 0 ? `Interest accrued: +$${EFF_MT_INT[mi].toLocaleString()}` : null,
-                        FROM_MT_OUT[mi] > 0 ? `Proceeds to Reserve: −$${FROM_MT_OUT[mi].toLocaleString()}` : null,
-                        `──────────────────`,
-                        `Month-end balance: $${v.toLocaleString()}`,
-                      ])}
+                    </td>
+                  ))}
+                </tr>
+                {/* ↳ S&P Low Volatility Index */}
+                <tr className="border-b border-green-100/40 hover:bg-green-50/30 transition-colors"
+                  style={{ backgroundColor: "rgba(22,163,74,0.03)" }}>
+                  <td className="pl-7 pr-4 py-2 w-[300px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-semibold text-green-800">S&amp;P Low Volatility Index</span>
+                      <span className="text-[8px] text-green-600 font-mono">ETF</span>
+                    </div>
+                  </td>
+                  {HC_SP_LOW_VOL.map((v, mi) => (
+                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-green-700">
+                      {fmtBal(v)}
                     </td>
                   ))}
                 </tr>
                 {/* Build TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#16a34a" }}>
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Build</td>
-                  {EFF_MT.map((v, mi) => (
+                  {HC_BLD_TOTAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">{fmtBal(v)}</td>
                   ))}
                 </tr>
@@ -4120,7 +4189,7 @@ function MoneyMovementView({
                     Grow
                     <span className="ml-1.5 text-[9px] font-normal text-white/60 normal-case">(Brokerage &amp; Retirement)</span>
                   </td>
-                  {EFF_GROW.map((v, mi) => (
+                  {HC_GROW.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
                       {fmtBal(v)}
                     </td>
@@ -4131,7 +4200,7 @@ function MoneyMovementView({
 
                 <tr className="bg-slate-700">
                   <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Total Net Worth</td>
-                  {EFF_NET_WORTH.map((v, mi) => (
+                  {HC_NET_WORTH.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[12px] font-black text-center tabular-nums whitespace-nowrap text-white">
                       {fmtBal(v)}
                     </td>
