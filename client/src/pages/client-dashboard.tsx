@@ -2689,12 +2689,28 @@ function BucketExecutionPanel({
   totalAssets: number;
   onExecute?: (from: string, to: string, amount: number) => void;
   onUndo?: (from: string, to: string) => void;
-  monthsInputConfig?: { defaultMonths: number; monthlyUnit: number; label: string };
+  monthsInputConfig?: {
+    defaultMonths: number;
+    label: string;
+    /* Simple multiply mode (Operating Cash) */
+    monthlyUnit?: number;
+    /* Dynamic trough mode (Reserve): target = abs(min cumulative over N months) + nextMonthExpenses */
+    forecastCumulatives?: number[];
+    nextMonthExpenses?: number;
+  };
   fixedRoute?: { from: string; to: string; toLabel: string };
   cashflowBridgeInfo?: { months: number; troughMonthName: string; monthlyNetAvg: number };
 }) {
   const [months, setMonths] = useState(monthsInputConfig?.defaultMonths ?? 0);
-  const effTarget = monthsInputConfig ? monthsInputConfig.monthlyUnit * months : target;
+  const effTarget = (() => {
+    if (!monthsInputConfig) return target;
+    if (monthsInputConfig.forecastCumulatives) {
+      const sliced = monthsInputConfig.forecastCumulatives.slice(0, months);
+      const trough = Math.abs(Math.min(0, ...sliced, 0));
+      return trough + (monthsInputConfig.nextMonthExpenses ?? 0);
+    }
+    return (monthsInputConfig.monthlyUnit ?? 0) * months;
+  })();
   const effDelta = effTarget - current;
 
   const needsFunding = effDelta > 1000 && bucketName !== "Grow";
@@ -5392,7 +5408,12 @@ function GuruAllocationView({
                             r.def.name === "Operating Cash"
                               ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
                               : r.def.name === "Reserve"
-                                ? { defaultMonths: 6, monthlyUnit: Math.round(cashTrough / 6), label: "mos. of cash buffer" }
+                                ? {
+                                    defaultMonths: 12,
+                                    forecastCumulatives: forecastData.map(d => d.cumulative),
+                                    nextMonthExpenses: 3 * minMonthly,
+                                    label: "mos. of cumulative net cashflow",
+                                  }
                                 : undefined
                           }
                           cashflowBridgeInfo={_cfBridge}
