@@ -2836,7 +2836,6 @@ function BucketExecutionPanel({
           </div>
         </div>
 
-
         {/* ── Transfer Amount ── */}
         {executed ? (
           <div className="rounded-lg px-3 py-2.5 flex items-start gap-2 bg-emerald-50 border border-emerald-200">
@@ -2873,8 +2872,7 @@ function BucketExecutionPanel({
             <div>
               <p className="text-[9px] uppercase tracking-wider font-bold mb-2 text-muted-foreground">Route</p>
               {fixedRoute ? (
-                /* Fixed route — no dropdowns, just a clear destination label */
-                (<div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 flex items-center gap-2">
+                <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-[8px] uppercase tracking-wider font-semibold text-muted-foreground mb-0.5">From</p>
                     <p className="text-[11px] font-semibold text-foreground truncate">{fixedRoute.from}</p>
@@ -2884,10 +2882,9 @@ function BucketExecutionPanel({
                     <p className="text-[8px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: AMBER }}>To</p>
                     <p className="text-[11px] font-bold truncate" style={{ color: AMBER }}>{fixedRoute.toLabel}</p>
                   </div>
-                </div>)
+                </div>
               ) : (
-                /* Generic dropdowns for other buckets */
-                (<div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-[8px] uppercase tracking-wider mb-0.5 font-semibold text-muted-foreground">From</p>
                     <select
@@ -2924,7 +2921,7 @@ function BucketExecutionPanel({
                       ))}
                     </select>
                   </div>
-                </div>)
+                </div>
               )}
             </div>
           </>
@@ -4151,6 +4148,7 @@ function MoneyMovementView({
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-semibold text-blue-800">CIT Money Market Bank Account</span>
                       <span className="text-[8px] text-blue-500 font-mono">4.65%</span>
+                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
                     </div>
                   </td>
                   {HC_CIT_MM.map((v, mi) => (
