@@ -3940,7 +3940,7 @@ function MoneyMovementView({
             </div>
 
             {/* ══════════ ROW 1+2 col 4: CIT → Expenses connector (spans both rows) ══════════ */}
-            <div style={{ gridColumn: '4', gridRow: '1 / 3', display: 'flex', alignItems: 'center' }}>
+            <div style={{ gridColumn: '4', gridRow: '1 / 3', display: 'flex', alignItems: 'flex-start', paddingTop: 233 }}>
               <div className="relative w-full">
                 <span className="absolute -top-5 left-2 text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: '#dc2626' }}>{fmtBal(totalExp)}</span>
                 <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: 'rgba(220,38,38,0.2)' }}>
