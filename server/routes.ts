@@ -335,77 +335,82 @@ async function seedDatabase() {
     storage.createLiability({ clientId: c1.id, type: "personal_loan", value: "50000",  interestRate: "0.00",  description: "Remaining Capital Commitment — PE Fund II" }),
   ]);
 
-  // ── Per-month cash flows: March 2026 → February 2027 ──────────────────────
-  // Pattern: salary every month, lumpy big-ticket items in specific months,
-  // year-end bonus in Dec. 11 months are net-negative; Dec is very positive.
-  // Based on: Annual salary $226,000 | Annual bonus $216,641 | Core expenses ~$24,939/mo
+  // ── Per-month cash flows: January 2026 → December 2026 ───────────────────
+  // Source: Prototype_Model_v4.xlsx
+  // Monthly income: salaries $18,814 + rental $2,100 + interest $388 = $21,302
+  // Monthly base expenses: $23,037 → base net ≈ −$1,735/mo
+  // Cumulative trough: −$125,082 in November. Dec bonus flips to +$192,965.
 
   const cfBatch: Array<{ clientId: number; type: "inflow" | "outflow"; category: string; amount: string; date: Date; description: string }> = [];
 
   const months = [
-    { y: 2026, m: 3 }, { y: 2026, m: 4 }, { y: 2026, m: 5 },
-    { y: 2026, m: 6 }, { y: 2026, m: 7 }, { y: 2026, m: 8 },
-    { y: 2026, m: 9 }, { y: 2026, m: 10 }, { y: 2026, m: 11 },
-    { y: 2026, m: 12 },
-    { y: 2027, m: 1 }, { y: 2027, m: 2 },
+    { y: 2026, m: 1 }, { y: 2026, m: 2 }, { y: 2026, m: 3 },
+    { y: 2026, m: 4 }, { y: 2026, m: 5 }, { y: 2026, m: 6 },
+    { y: 2026, m: 7 }, { y: 2026, m: 8 }, { y: 2026, m: 9 },
+    { y: 2026, m: 10 }, { y: 2026, m: 11 }, { y: 2026, m: 12 },
   ];
 
   for (const { y, m } of months) {
     const d = monthDate(y, m);
-    // Monthly salary — both partners (after tax take-home)
-    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary", amount: "18813", date: d, description: "Monthly Net Salary — P1 ($13,302) + P2 ($5,511)" });
-    // Rental income from Sarasota
-    cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "1722", date: d, description: "Sarasota Rental Income (net of mgmt fee)" });
-    // Core monthly expenses: housing, food, childcare, utilities, car, phone, insurance
-    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing", amount: "7793", date: d, description: "Tribeca Mortgage + Maintenance + Insurance + Utilities" });
-    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "4333", date: d, description: "Childcare / Babysitter" });
-    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "3500", date: d, description: "Food, Groceries & Dining" });
-    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "677",  date: d, description: "PE Fund II Professional Loan — Monthly Service" });
-    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "510",  date: d, description: "Student Loan Payments" });
-    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing", amount: "1243", date: d, description: "Sarasota Property Expenses (mgmt + HOA + mortgage)" });
 
-    // Lumpy: May, Jun, Jul — private school tuition ($15K/quarter)
-    if ([5, 6, 7].includes(m)) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "education", amount: "15000", date: d, description: "Private School Tuition — Q2/Q3 Installment" });
+    // ── Recurring monthly income ──────────────────────────────────────────
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary",      amount: "18814", date: d, description: "Monthly Net Salaries — P1 ($13,302) + P2 ($5,511)" });
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "2100",  date: d, description: "Investment Property Rental Income" });
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "388",   date: d, description: "Reserve MMF & Savings Interest" });
+
+    // ── Recurring monthly expenses ($23,037 gross) ────────────────────────
+    // Primary residence: Tribeca mortgage $2,481 + HOA $819 + cable $106 + utilities $287 + insurance $830
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing",         amount: "4523",  date: d, description: "Tribeca — Mortgage, Maintenance, Insurance & Utilities" });
+    // Credit cards cover lifestyle: food, dining, entertainment, gas, shopping
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "11466", date: d, description: "Credit Card Payments (Lifestyle Expenses)" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "4333",  date: d, description: "Childcare / Nanny" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "677",   date: d, description: "PE Fund II Professional Loan — Monthly Service" });
+    // Student loans: $165 undergrad + $594 graduate
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "759",   date: d, description: "Student Loan Payments ($165 undergrad + $594 graduate)" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "346",   date: d, description: "Phone, Cable & Utilities" });
+    // Investment property: management $378 + mortgage $312 + maintenance $243
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing",         amount: "933",   date: d, description: "Investment Property — Management, Mortgage & Maintenance" });
+
+    // ── January: NYC property taxes semi-annual (1st installment) ─────────
+    if (m === 1) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "17500", date: d, description: "Tribeca Condo — NYC Property Taxes (semi-annual, Jan)" });
     }
-    // Lumpy: Sep — private school tuition Q3
-    if (m === 9) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "education", amount: "15000", date: d, description: "Private School Tuition — Q3 Installment" });
+    // ── April: Q1 estimated federal taxes + spring school tuition ─────────
+    if (m === 4) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes",     amount: "30000", date: d, description: "Federal Estimated Income Tax — Q1 Payment" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "education", amount: "15000", date: d, description: "Private School Tuition — Spring Installment" });
     }
-    // Lumpy: March — NYC property taxes (semi-annual)
-    if (m === 3) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "17500", date: d, description: "Tribeca Condo — NYC Property Taxes (semi-annual)" });
-    }
-    // Lumpy: August — Florida property taxes (annual)
-    if (m === 8) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "4697", date: d, description: "Sarasota Property — FL Property Taxes (annual)" });
-    }
-    // Lumpy: September — NYC property taxes (semi-annual, second installment)
-    if (m === 9) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "17500", date: d, description: "Tribeca Condo — NYC Property Taxes (semi-annual)" });
-    }
-    // Lumpy: May travel, June travel, July travel
+    // ── May: Memorial Day travel ──────────────────────────────────────────
     if (m === 5) {
       cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel", amount: "4000", date: d, description: "Memorial Day Travel" });
     }
+    // ── June: Weekend travel ──────────────────────────────────────────────
     if (m === 6) {
       cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel", amount: "1000", date: d, description: "Weekend Travel" });
     }
+    // ── July: NYC property taxes semi-annual (2nd installment) + travel ───
     if (m === 7) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel", amount: "12000", date: d, description: "Summer Vacation (Europe)" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes",  amount: "17500", date: d, description: "Tribeca Condo — NYC Property Taxes (semi-annual, Jul)" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel", amount: "2000",  date: d, description: "Summer Travel" });
     }
-    // Lumpy: November — estimated tax payment (Q4)
+    // ── August: Fall school tuition ───────────────────────────────────────
+    if (m === 8) {
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "education", amount: "15000", date: d, description: "Private School Tuition — Fall Installment" });
+    }
+    // ── November: Annual memberships & fees ───────────────────────────────
     if (m === 11) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes", amount: "30000", date: d, description: "Q4 Estimated Federal Income Tax Payment" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle", amount: "4000", date: d, description: "Annual Memberships & Fees" });
     }
-    // December — year-end bonus (both partners) — transforms the year
+    // ── December: year-end bonuses + annual one-time expenses ────────────
     if (m === 12) {
-      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus", amount: "191556", date: d, description: "Partner 1 Year-End Bonus" });
-      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus", amount: "25085", date: d, description: "Partner 2 Year-End Bonus" });
-    }
-    // January — golf club dues (annual)
-    if (m === 1) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle", amount: "4102", date: d, description: "Golf Club Annual Dues" });
+      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus",       amount: "191556", date: d, description: "Partner 1 Year-End Bonus" });
+      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus",       amount: "25085",  date: d, description: "Partner 2 Year-End Bonus" });
+      cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "3414",   date: d, description: "Year-End Investment Distributions & Interest" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "4102",  date: d, description: "Golf Club Annual Dues" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "2140",  date: d, description: "Annual Insurance Premiums (home + umbrella)" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel",          amount: "2000",  date: d, description: "Holiday Travel" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes",           amount: "11012", date: d, description: "Investment Property Taxes (semi-annual, Dec)" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "6101",  date: d, description: "Year-End Fees, Subscriptions & Misc" });
     }
   }
 
