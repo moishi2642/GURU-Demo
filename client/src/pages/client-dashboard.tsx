@@ -3277,8 +3277,8 @@ function MoneyMovementView({
       </div>
     );
   };
-  const [mmView, setMmView] = useState<'table'|'flow'>('table');
-  const [selectedMonth, setSelectedMonth] = useState(0); // January = upcoming (next month after December)
+  const [mmView, setMmView] = useState<'table'|'flow'>('flow');
+  const [selectedMonth, setSelectedMonth] = useState(1); // February = T-bill maturity month
 
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -3699,7 +3699,7 @@ function MoneyMovementView({
             className="bg-white border border-slate-200 text-slate-700 text-[11px] rounded-md px-3 py-1.5 focus:outline-none focus:border-blue-400 flex-shrink-0 shadow-sm"
           >
             {MONTHS.map((mo, i) => (
-              <option key={mo} value={i}>{mo} 2026{i === 3 ? ' (Upcoming)' : ''}</option>
+              <option key={mo} value={i}>{mo} 2026{i === 0 ? ' — Next Month' : i === 1 ? ' — T-Bill Maturity' : ''}</option>
             ))}
           </select>
         )}
