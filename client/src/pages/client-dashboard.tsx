@@ -3848,8 +3848,14 @@ function MoneyMovementView({
 
             {/* ══════════ ROW 1 col 1: INFLOWS ══════════ */}
             <div className="relative" style={{ gridColumn: '1', gridRow: '1' }}>
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-3" style={{ backgroundColor: '#dcfce7' }}>
-                <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#15803d' }}>Inflows</span>
+              {/* INFLOWS — top-level section banner */}
+              <div className="flex items-center px-3 py-2 rounded-lg mb-2" style={{ backgroundColor: '#dcfce7', border: '1.5px solid #bbf7d0' }}>
+                <span className="text-[14px] font-black uppercase tracking-widest" style={{ color: '#15803d' }}>Inflows</span>
+              </div>
+              {/* INCOME SOURCES — sub-banner above the three cards */}
+              <div className="flex items-center gap-1.5 px-2 py-1 mb-2 rounded" style={{ backgroundColor: '#f0fdf4', border: '1px solid #dcfce7' }}>
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#16a34a' }}>Income Sources</span>
               </div>
               {/* Income org-chart: right-side vertical spine + branches */}
               <div className="relative flex flex-col gap-2">
@@ -3895,26 +3901,51 @@ function MoneyMovementView({
 
             {/* ══════════ ROW 1+2 col 3: CIT card (spans both rows) ══════════ */}
             <div style={{ gridColumn: '3', gridRow: '1 / 3' }}>
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-3" style={{ backgroundColor: '#dbeafe' }}>
-                <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#1e40af' }}>Operating Cash</span>
+              {/* OPERATING CASH — large prominent banner */}
+              <div className="flex items-center px-4 py-3 rounded-lg mb-3" style={{ backgroundColor: '#1d4ed8', border: '2px solid #1e40af' }}>
+                <span className="text-[18px] font-black uppercase tracking-widest text-white">Operating Cash</span>
               </div>
-              <LedgerCard
-                title="CIT Money Market Bank Account"
-                subtitle="Primary operating account · 4.65%"
-                balance={opsBal < 0 ? `(${fmtBal(Math.abs(opsBal))})` : fmtBal(opsBal)}
-                balanceColor={opsBal < 0 ? '#dc2626' : '#1d4ed8'}
-                accent="#1d4ed8"
-                shade="#eff6ff"
-                beginningBalance={sm > 0 ? fmtBal(HC_CIT_MM[sm - 1]) : undefined}
-                entries={[
-                  { label: 'Michael Kessler — Salary', amount: `+${fmtBal(p1Salary)}`, type: 'plus' },
-                  { label: 'Sarah Kessler — Salary', amount: `+${fmtBal(p2Salary)}`, type: 'plus' },
-                  { label: 'Sarasota Property — Rental Income', amount: `+${fmtBal(rentalAmt)}`, type: 'plus' },
-                  ...(jpmRsvDraw > 0 ? [{ label: 'JPMorgan 100% Treasuries MMF — Draw', amount: `+${fmtBal(jpmRsvDraw)}`, type: 'plus' as const }] : []),
-                  { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' },
-                ]}
-                width={400}
-              />
+              {/* CIT card — expanded with more spacing */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm" style={{ backgroundColor: '#eff6ff', borderTopColor: '#1d4ed8', borderTopWidth: 3, minHeight: 280 }}>
+                {/* Header */}
+                <div className="px-5 pt-4 pb-3 border-b border-blue-100">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-[13px] font-bold text-slate-900 leading-tight">CIT Money Market Bank Account</div>
+                      <div className="text-[11px] text-slate-500 mt-1">Primary operating account · 4.65%</div>
+                    </div>
+                  </div>
+                </div>
+                {/* Ledger body */}
+                <div className="px-5 py-4 space-y-3">
+                  {sm > 0 && (
+                    <div className="flex items-center justify-between pb-3 border-b border-dashed border-blue-200">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Beg. Balance</span>
+                      <span className="text-[11px] font-semibold tabular-nums text-slate-500">{fmtBal(HC_CIT_MM[sm - 1])}</span>
+                    </div>
+                  )}
+                  {[
+                    { label: 'Michael Kessler — Salary', amount: `+${fmtBal(p1Salary)}`, type: 'plus' as const },
+                    { label: 'Sarah Kessler — Salary', amount: `+${fmtBal(p2Salary)}`, type: 'plus' as const },
+                    { label: 'Sarasota Property — Rental Income', amount: `+${fmtBal(rentalAmt)}`, type: 'plus' as const },
+                    ...(jpmRsvDraw > 0 ? [{ label: 'JPMorgan 100% Treasuries MMF — Draw', amount: `+${fmtBal(jpmRsvDraw)}`, type: 'plus' as const }] : []),
+                    { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' as const },
+                  ].map((e, i) => (
+                    <div key={i} className="flex items-center justify-between py-0.5">
+                      <span className="text-[11px] text-slate-600 leading-none">
+                        {e.type === 'plus' ? '+ ' : '− '}{e.label}
+                      </span>
+                      <span className={`text-[11px] font-bold tabular-nums leading-none ${e.type === 'plus' ? 'text-emerald-600' : 'text-rose-600'}`}>{e.amount}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-3 border-t-2 border-blue-300 mt-1">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">End. Balance</span>
+                    <span className="text-[18px] font-black tabular-nums" style={{ color: opsBal < 0 ? '#dc2626' : '#1d4ed8' }}>
+                      {opsBal < 0 ? `(${fmtBal(Math.abs(opsBal))})` : fmtBal(opsBal)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* ══════════ ROW 1+2 col 4: CIT → Expenses connector (spans both rows) ══════════ */}
@@ -3933,8 +3964,8 @@ function MoneyMovementView({
 
             {/* ══════════ ROW 1+2 col 5: Expense bracket (spans both rows) ══════════ */}
             <div className="relative" style={{ gridColumn: '5', gridRow: '1 / 3', paddingLeft: 26 }}>
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-3" style={{ backgroundColor: '#fee2e2' }}>
-                <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#991b1b' }}>Outflows</span>
+              <div className="flex items-center px-3 py-2 rounded-lg mb-3" style={{ backgroundColor: '#fee2e2', border: '1.5px solid #fecaca' }}>
+                <span className="text-[14px] font-black uppercase tracking-widest" style={{ color: '#991b1b' }}>Outflows</span>
               </div>
               {/* Vertical spine at left edge of this column */}
               <div style={{ position: 'absolute', left: 8, top: 44, bottom: 8, width: 2, backgroundColor: 'rgba(220,38,38,0.5)' }} />
@@ -3972,8 +4003,8 @@ function MoneyMovementView({
 
             {/* ══════════ ROW 2 col 1: RESERVE (JPM + T-bills) ══════════ */}
             <div className="relative" style={{ gridColumn: '1', gridRow: '2' }}>
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-3" style={{ backgroundColor: '#fef3c7' }}>
-                <span className="text-[12px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve</span>
+              <div className="flex items-center px-3 py-2 rounded-lg mb-3" style={{ backgroundColor: '#fef3c7', border: '1.5px solid #fde68a' }}>
+                <span className="text-[14px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve</span>
               </div>
               {/* JPMorgan 100% Treasuries Money Market Fund */}
               <LedgerCard
