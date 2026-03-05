@@ -4237,7 +4237,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: false,
     },
     {
-      name: "US Treasury Ladder — 1, 3 & 6-Month T-Bills",
+      name: "US Treasury Ladder - 1, 3, 6 and 9 month",
       institution: "US Treasury",
       type: "T-Bill Ladder",
       grossYield: "4.20%",
