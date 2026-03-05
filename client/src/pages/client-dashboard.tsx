@@ -3274,35 +3274,86 @@ function MoneyMovementView({
   const _rsvNetIn   =  _bucketNetIn("Reserve");        // positive = enters Reserve
   const _bldNetIn   =  _bucketNetIn("Build");          // positive = enters Build
 
-  // ── Effective Citizens Checking ───────────────────────────────────────────────
-  // Citizens absorbs Ops outflow first (floored at 0); Chase absorbs the rest.
-  const EFF_CITIZENS_CHECK = hasChanges
-    ? CITIZENS_CHECK_BAL.map(v => Math.max(0, v - _opsNetOut))
-    : CITIZENS_CHECK_BAL;
-
-  // ── Effective Chase ───────────────────────────────────────────────────────────
-  const EFF_CHASE = hasChanges
-    ? CHASE_BAL.map((v, i) => {
-        const citizensAbsorbed = Math.min(CITIZENS_CHECK_BAL[i], _opsNetOut);
-        const chaseNeed = Math.max(0, _opsNetOut - citizensAbsorbed);
-        return Math.max(0, v - chaseNeed);
-      })
-    : CHASE_BAL;
-
-  const EFF_IMM = EFF_CHASE.map((v, i) => v + EFF_CITIZENS_CHECK[i]);
-
-  // ── Effective Citizens MM yield (Reserve) ────────────────────────────────────
-  // Baseline inferred AT yield: $388/month on $225,000 opening → ~2.069% p.a.
-  const _baseRsvMonthly = 388 / 225000;
+  // ── Reserve yield settings ────────────────────────────────────────────────────
+  const _baseRsvMonthly = 388 / 225000; // inferred from baseline: ~2.07% p.a.
   const rsvSels = bucketProductSelections["Reserve"] ?? [];
   const _rsvATYield = rsvSels.length > 0
     ? rsvSels.reduce((s, sel) => s + _parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
     : null;
   const _rsvMonthly = _rsvATYield !== null ? _rsvATYield / 100 / 12 : _baseRsvMonthly;
 
-  // Citizens MM opening after all net transfers into/out of Reserve
+  // ── Build yield settings ──────────────────────────────────────────────────────
+  const _baseBldMonthly = 289 / 135000; // inferred from baseline: ~2.57% p.a.
+  const bldSels = bucketProductSelections["Build"] ?? [];
+  const _bldATYield = bldSels.length > 0
+    ? bldSels.reduce((s, sel) => s + _parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+    : null;
+  const _bldMonthly = _bldATYield !== null ? _bldATYield / 100 / 12 : _baseBldMonthly;
+
+  // ── Cash-flow simulation (when Ops → Reserve transfer is pending) ─────────────
+  // The Kesslers' monthly net cash flow (income - expenses) is always negative,
+  // so Citizens MM draws down each month to keep Operating Cash at the 2-month floor.
+  const _opsToRsv = pendingTransfers
+    .filter(t => t.from === "Operating Cash" && t.to === "Reserve")
+    .reduce((s, t) => s + t.amount, 0);
+
+  type SimResult = { effOps: number[]; effMM: number[]; draws: number[] };
+  const _sim: SimResult | null = (() => {
+    if (_opsToRsv <= 0) return null;
+    const target = minOps; // 2-month floor
+    let ops = 132050 - _opsToRsv;      // Ops balance after initial transfer
+    let mm  = 225000 + _rsvNetIn;      // Citizens MM after receiving transfer
+    const effOps: number[] = [];
+    const effMM:  number[] = [];
+    const draws:  number[] = [];
+    for (let i = 0; i < 12; i++) {
+      // Apply month's net cash flow to Ops
+      const netFlow = INCOME_TO_IMM[i] + EXPENSES[i];
+      ops += netFlow;
+      // If Ops falls below 2-month floor, draw the difference from Citizens MM
+      let draw = 0;
+      if (ops < target) {
+        draw = Math.round(target - ops);
+        mm  -= draw;
+        ops  = target;
+      }
+      // Citizens MM earns interest on remaining balance
+      const interest = Math.round(mm * _rsvMonthly);
+      mm += interest;
+      effOps.push(Math.round(ops));
+      effMM.push(Math.round(mm));
+      draws.push(draw);
+    }
+    return { effOps, effMM, draws };
+  })();
+
+  // ── Effective Citizens Checking & Chase ───────────────────────────────────────
+  // With simulation: Ops stays near the 2-month target, all held in Citizens Check.
+  // Without simulation: subtract the generic transfer amount (Citizens absorbs first).
+  const EFF_CITIZENS_CHECK: number[] = _sim
+    ? _sim.effOps.map(v => Math.max(0, v - 25050)) // Chase keeps its ~$25K baseline buffer
+    : (hasChanges
+        ? CITIZENS_CHECK_BAL.map(v => Math.max(0, v - _opsNetOut))
+        : CITIZENS_CHECK_BAL);
+
+  const EFF_CHASE: number[] = _sim
+    ? _sim.effOps.map(v => Math.min(v, 25050))
+    : (hasChanges
+        ? CHASE_BAL.map((v, i) => {
+            const citizensAbsorbed = Math.min(CITIZENS_CHECK_BAL[i], _opsNetOut);
+            const chaseNeed = Math.max(0, _opsNetOut - citizensAbsorbed);
+            return Math.max(0, v - chaseNeed);
+          })
+        : CHASE_BAL);
+
+  const EFF_IMM = EFF_CHASE.map((v, i) => v + EFF_CITIZENS_CHECK[i]);
+
+  // ── Effective Citizens MM (Reserve) ──────────────────────────────────────────
+  // With simulation: balance reflects monthly draws to cover Ops shortfalls.
+  // Without simulation: simple interest compounding on the post-transfer opening.
   const _rsvOpeningBase = 225000 + _rsvNetIn;
   const EFF_CITIZENS_MM: number[] = (() => {
+    if (_sim) return _sim.effMM;
     if (!hasChanges && _rsvATYield === null) return CITIZENS_MM_BAL;
     const result: number[] = [];
     let bal = _rsvOpeningBase;
@@ -3314,19 +3365,10 @@ function MoneyMovementView({
     return result;
   })();
 
-  const EFF_CAPONE = CAPONE_BAL; // CapOne unchanged (advisor changes Citizens MM)
+  const EFF_CAPONE = CAPONE_BAL;
   const EFF_ST = EFF_CITIZENS_MM.map((v, i) => v + EFF_CAPONE[i]);
 
-  // ── Effective Treasuries yield (Build) ───────────────────────────────────────
-  // Baseline inferred AT yield: $289/month on $135,000 opening → ~2.569% p.a.
-  const _baseBldMonthly = 289 / 135000;
-  const bldSels = bucketProductSelections["Build"] ?? [];
-  const _bldATYield = bldSels.length > 0
-    ? bldSels.reduce((s, sel) => s + _parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
-    : null;
-  const _bldMonthly = _bldATYield !== null ? _bldATYield / 100 / 12 : _baseBldMonthly;
-
-  // Treasuries opening after all net transfers into/out of Build
+  // ── Effective Treasuries (Build) ──────────────────────────────────────────────
   const _bldOpeningBase = 135000 + _bldNetIn;
   const EFF_TREASURIES: number[] = (() => {
     if (!hasChanges && _bldATYield === null) return TREASURIES_BAL;
@@ -3341,16 +3383,18 @@ function MoneyMovementView({
   })();
 
   const EFF_MT    = EFF_TREASURIES;
-  const EFF_GROW  = GROW_BAL; // Grow bucket not affected by liquid transfers
+  const EFF_GROW  = GROW_BAL;
   const EFF_NET_WORTH = EFF_IMM.map((v, i) => v + EFF_ST[i] + EFF_MT[i] + EFF_GROW[i]);
 
-  // ── Effective interest arrays (for hover tooltips) ────────────────────────────
+  // ── Effective interest/draw arrays (for hover tooltips) ───────────────────────
   const EFF_ST_INT: number[] = EFF_CITIZENS_MM.map((v, i) =>
     i === 0 ? 0 : Math.round(_rsvOpeningBase * _rsvMonthly)
   );
   const EFF_MT_INT: number[] = EFF_TREASURIES.map((v, i) =>
     i === 0 ? 0 : Math.round(_bldOpeningBase * _bldMonthly)
   );
+  // Monthly draws from Citizens MM → Operating Cash (shows in flow tooltips)
+  const EFF_FROM_ST_TO_IMM: number[] = _sim ? _sim.draws : FROM_ST_TO_IMM;
 
   // ── Starting balances (prior month end; first month uses model opening) ──────
   const OPS_START  = [132050, ...EFF_IMM.slice(0, 11)];
@@ -3472,7 +3516,7 @@ function MoneyMovementView({
   const bldStart  = BLD_START[sm];
   const growStart = GROW_START[sm];
   const income    = INCOME_TO_IMM[sm];
-  const rsvDraw   = FROM_ST_TO_IMM[sm];
+  const rsvDraw   = EFF_FROM_ST_TO_IMM[sm];
   const bldDraw   = 0; // Build no longer draws to Ops directly
   const opsEnd    = EFF_IMM[sm];
   const rsvEnd    = EFF_ST[sm];
@@ -3896,7 +3940,7 @@ function MoneyMovementView({
                   ))}
                 </tr>
                 {/* GURU Autopilot ticker — only when any month has a Reserve draw */}
-                {FROM_ST_TO_IMM.some(v => v > 0) && (
+                {EFF_FROM_ST_TO_IMM.some(v => v > 0) && (
                   <tr className="h-5 border-b border-blue-100/60" style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
                     <td colSpan={13} className="px-4 py-0 overflow-hidden">
                       <div className="relative h-4 flex items-center gap-2.5">
@@ -5271,11 +5315,6 @@ function GuruAllocationView({
                       monthsInputConfig={
                         r.def.name === "Operating Cash"
                           ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
-                          : undefined
-                      }
-                      fixedRoute={
-                        r.def.name === "Operating Cash"
-                          ? { from: "Operating Cash", to: "Reserve", toLabel: "Citizens Private Bank MM" }
                           : undefined
                       }
                     />
