@@ -3858,12 +3858,6 @@ function MoneyMovementView({
               <div className="relative flex flex-col gap-2">
                 {/* Spine at right edge */}
                 <div style={{ position: 'absolute', right: 0, top: 16, bottom: 16, width: 2, backgroundColor: 'rgba(22,163,74,0.5)' }} />
-                {/* Animated dot down spine */}
-                <motion.div className="absolute w-2 h-2 rounded-full"
-                  style={{ right: -4, backgroundColor: '#16a34a', boxShadow: '0 0 5px #16a34a', zIndex: 10 }}
-                  animate={{ top: ['12%', '88%'] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                />
                 {/* Michael Kessler */}
                 <div className="relative" style={{ marginRight: 14 }}>
                   <LedgerCard title="Michael Kessler" subtitle="After-Tax Salary" balance={fmtBal(p1Salary)} balanceColor="#16a34a" accent="#16a34a" />
