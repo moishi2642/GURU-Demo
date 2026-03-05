@@ -3708,174 +3708,217 @@ function MoneyMovementView({
         const citizensMM       = EFF_CITIZENS_MM[sm];
         const capOneBal        = EFF_CAPONE[sm];
 
-        /* ── animated flow line: horizontal bar with 3 travelling dots ── */
-        const FlowLine = ({ active = true, color = '#10b981', width = 48 }: { active?: boolean; color?: string; width?: number }) => (
-          <div className="relative flex-shrink-0 overflow-hidden rounded-full" style={{ width, height: 2, backgroundColor: active ? `${color}35` : '#e2e8f0' }}>
-            {active && ([0, 0.45, 0.9] as number[]).map((d, i) => (
-              <motion.div key={i}
-                className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
-                style={{ backgroundColor: color, boxShadow: `0 0 5px ${color}90` }}
-                animate={{ left: ['-8px', `${width + 8}px`] }}
-                transition={{ duration: 1.3, repeat: Infinity, ease: 'linear', delay: d }}
-              />
-            ))}
-          </div>
-        );
-
-        /* ── card component: name + value + optional plus/less rows ── */
-        const FlowCard = ({
-          name, value, color, plusRows, lessRows, highlighted,
-        }: {
-          name: string; value: string; color: string;
-          plusRows?: string[]; lessRows?: string[]; highlighted?: boolean;
-        }) => (
-          <div
-            className={`flex-1 bg-white rounded-xl shadow-sm overflow-hidden border border-border ${highlighted ? 'ring-2' : ''}`}
-            style={{ borderLeftColor: color, borderLeftWidth: 3, ringColor: color }}
-          >
-            <div className="px-3 py-2.5">
-              <div className="text-[12px] font-bold text-slate-800 leading-snug">{name}</div>
-              <div className="text-[12px] font-black tabular-nums leading-snug" style={{ color }}>{value}</div>
-              {plusRows?.map((r, i) => (
-                <div key={i} className="text-[10px] font-semibold text-emerald-600 mt-1 leading-none">Plus: {r}</div>
-              ))}
-              {lessRows?.map((r, i) => (
-                <div key={i} className="text-[10px] font-semibold text-rose-500 mt-0.5 leading-none">Less: {r}</div>
-              ))}
+        /* ── labeled connector: solid line with value label + single moving dot ── */
+        const Connector = ({
+          label, color, width = 72, active = true, direction = 'right',
+        }: { label?: string; color: string; width?: number; active?: boolean; direction?: 'right' | 'left' }) => (
+          <div className="flex-shrink-0 flex flex-col items-center justify-center gap-0.5" style={{ width }}>
+            {label && active && (
+              <span className="text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color }}>
+                {label}
+              </span>
+            )}
+            <div className="relative w-full overflow-hidden" style={{ height: 1.5, backgroundColor: active ? `${color}30` : '#d1d5db' }}>
+              {active && (
+                <motion.div
+                  className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}`, marginTop: '-0.5px' }}
+                  animate={{ left: direction === 'right' ? ['-10px', `${width + 10}px`] : [`${width + 10}px`, '-10px'] }}
+                  transition={{ duration: 1.4, repeat: Infinity, ease: 'linear' }}
+                />
+              )}
             </div>
           </div>
         );
 
-        /* ── all expense items (base + specials) for the right column ── */
+        /* ── accounting ledger card ── */
+        const LedgerCard = ({
+          title, subtitle, balance, balanceColor = '#1e293b', entries, accent, width,
+        }: {
+          title: string; subtitle?: string; balance: string; balanceColor?: string;
+          entries?: { label: string; amount: string; type: 'plus' | 'less' | 'neutral' }[];
+          accent?: string; width?: number;
+        }) => (
+          <div
+            className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm"
+            style={{ width: width ?? '100%', borderTopColor: accent, borderTopWidth: accent ? 2 : 1 }}
+          >
+            {/* Header row */}
+            <div className="px-4 pt-3 pb-2 border-b border-slate-100">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-[12px] font-bold text-slate-900 leading-tight">{title}</div>
+                  {subtitle && <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">{subtitle}</div>}
+                </div>
+                <div className="text-[13px] font-black tabular-nums flex-shrink-0" style={{ color: balanceColor }}>{balance}</div>
+              </div>
+            </div>
+            {/* Ledger entry rows */}
+            {entries && entries.length > 0 && (
+              <div className="px-4 py-2 space-y-1">
+                {entries.map((e, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 leading-none">
+                      {e.type === 'plus' ? '+ ' : e.type === 'less' ? '− ' : '  '}{e.label}
+                    </span>
+                    <span className={`text-[10px] font-bold tabular-nums leading-none ${
+                      e.type === 'plus' ? 'text-emerald-600' : e.type === 'less' ? 'text-rose-600' : 'text-slate-600'
+                    }`}>{e.amount}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
+        /* ── all expense items (base + specials) ── */
         const allExpenses = [
           ...BASE_EXP,
-          ...specials.map(s => ({ label: s.label, amount: s.amount, dot: '#f97316' })),
+          ...specials.map(s => ({ label: s.label, amount: s.amount, dot: '#dc2626' })),
         ];
 
         return (
-        <div className="bg-slate-50 px-5 py-5 overflow-x-auto" style={{ minHeight: 520 }}>
+        <div className="bg-white px-6 py-5 overflow-x-auto border-t border-slate-100" style={{ minHeight: 520 }}>
 
-          {/* ── Month / status bar ── */}
-          <div className="mb-5 flex items-center gap-3">
-            <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Money Flow Schematic</span>
-            <span className="text-[11px] font-black text-slate-700 bg-white border border-slate-200 rounded-full px-3 py-1 shadow-sm">
+          {/* ── Header bar ── */}
+          <div className="mb-6 flex items-center gap-4">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Money Flow Schematic</span>
+            <span className="text-[11px] font-bold text-slate-600 border border-slate-200 rounded px-2.5 py-1 bg-slate-50">
               {MONTHS[sm]} 2026
             </span>
             {rsvDraw > 0 && (
-              <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
-                ↔ GURU Auto-draw Active
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1">
+                Auto-draw Active — Reserve funding Operating Cash
               </span>
             )}
           </div>
 
-          {/* ── Main 3-zone layout ── */}
-          <div className="flex items-start gap-0" style={{ minWidth: 1040 }}>
+          {/* ── 3-column layout ── */}
+          <div className="flex items-start" style={{ minWidth: 1060, gap: 0 }}>
 
-            {/* ══ LEFT: Income + Reserve source cards ══ */}
-            <div className="flex flex-col gap-2" style={{ width: 210 }}>
+            {/* ══ LEFT: Source accounts ══ */}
+            <div className="flex flex-col gap-3" style={{ width: 220 }}>
 
-              {/* Income banner */}
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <div className="h-px flex-1 bg-emerald-200" />
-                <span className="text-[7px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Income</span>
-                <div className="h-px flex-1 bg-emerald-200" />
-              </div>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Inflows</div>
 
-              <div className="flex items-center gap-2">
-                <FlowCard name="Michael Kessler" value={fmtBal(p1Salary)} color="#10b981" />
-                <FlowLine active={true} color="#10b981" />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <FlowCard name="Sarah Kessler" value={fmtBal(p2Salary)} color="#10b981" />
-                <FlowLine active={true} color="#10b981" />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <FlowCard name="Sarasota Property" value={fmtBal(rentalAmt)} color="#0d9488" />
-                <FlowLine active={true} color="#0d9488" />
-              </div>
-
-              {/* Reserve banner */}
-              <div className="flex items-center gap-1.5 mt-3 mb-0.5">
-                <div className="h-px flex-1 bg-amber-200" />
-                <span className="text-[7px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">Reserve</span>
-                <div className="h-px flex-1 bg-amber-200" />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <FlowCard
-                  name="Citizens Private Bank MM"
-                  value={fmtBal(citizensMM)}
-                  color="#d97706"
-                  highlighted={rsvDraw > 0}
-                  lessRows={rsvDraw > 0 ? [`Autodraw to Operating (${fmtBal(rsvDraw)})`] : undefined}
+              <div className="flex items-center">
+                <LedgerCard
+                  title="Michael Kessler"
+                  subtitle="After-Tax Salary"
+                  balance={fmtBal(p1Salary)}
+                  balanceColor="#16a34a"
+                  accent="#16a34a"
                 />
-                {rsvDraw > 0
-                  ? <FlowLine active={true} color="#d97706" />
-                  : <div className="flex-shrink-0" style={{ width: 48, height: 2, borderTop: '2px dashed #e2e8f0' }} />}
+                <Connector label={fmtBal(p1Salary)} color="#16a34a" active={true} />
               </div>
 
-              <div className="flex items-center gap-2">
-                <FlowCard name="CapitalOne 360" value={fmtBal(capOneBal)} color="#f59e0b" />
-                <div className="flex-shrink-0" style={{ width: 48, height: 2, borderTop: '2px dashed #e2e8f0' }} />
+              <div className="flex items-center">
+                <LedgerCard
+                  title="Sarah Kessler"
+                  subtitle="After-Tax Salary"
+                  balance={fmtBal(p2Salary)}
+                  balanceColor="#16a34a"
+                  accent="#16a34a"
+                />
+                <Connector label={fmtBal(p2Salary)} color="#16a34a" active={true} />
+              </div>
+
+              <div className="flex items-center">
+                <LedgerCard
+                  title="Sarasota Property"
+                  subtitle="Rental Income"
+                  balance={fmtBal(rentalAmt)}
+                  balanceColor="#0d9488"
+                  accent="#0d9488"
+                />
+                <Connector label={fmtBal(rentalAmt)} color="#0d9488" active={true} />
+              </div>
+
+              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-2 mb-1">Reserve</div>
+
+              <div className="flex items-center">
+                <LedgerCard
+                  title="Citizens Private Bank"
+                  subtitle="Money Market · 4.85%"
+                  balance={fmtBal(citizensMM)}
+                  balanceColor="#d97706"
+                  accent={rsvDraw > 0 ? '#d97706' : undefined}
+                  entries={rsvDraw > 0 ? [{ label: 'Autodraw to Operating', amount: `(${fmtBal(rsvDraw)})`, type: 'less' }] : undefined}
+                />
+                <Connector label={rsvDraw > 0 ? fmtBal(rsvDraw) : undefined} color="#d97706" active={rsvDraw > 0} />
+              </div>
+
+              <div className="flex items-center">
+                <LedgerCard
+                  title="Capital One 360"
+                  subtitle="Performance Savings · 3.78%"
+                  balance={fmtBal(capOneBal)}
+                  balanceColor="#f59e0b"
+                />
+                <Connector color="#94a3b8" active={false} />
               </div>
 
             </div>
 
-            {/* ══ MIDDLE: Operating Cash Hub ══ */}
-            <div className="flex flex-col rounded-2xl overflow-hidden shadow-md border border-blue-100" style={{ width: 256 }}>
+            {/* ══ CENTER: Operating Cash hub ══ */}
+            <div className="flex flex-col" style={{ width: 260 }}>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Operating Cash</div>
 
-              {/* Hub header */}
-              <div className="px-4 py-3" style={{ backgroundColor: '#1d4ed8' }}>
-                <div className="text-[12px] font-bold text-white leading-snug">Citizens Private Banking</div>
-                <div className={`text-[12px] font-black tabular-nums leading-snug ${citizensCheckBal < 0 ? 'text-red-300' : 'text-white'}`}>
-                  {citizensCheckBal < 0 ? `(${fmtBal(Math.abs(citizensCheckBal))})` : fmtBal(citizensCheckBal)}
-                </div>
-                <div className="text-[10px] font-semibold text-emerald-300 mt-1.5 leading-none">Plus: {fmtBal(income)} salary + rental</div>
-                {rsvDraw > 0 && (
-                  <div className="text-[10px] font-semibold text-amber-300 mt-0.5 leading-none">Plus: Autodraw from Reserve ({fmtBal(rsvDraw)})</div>
-                )}
-                <div className="text-[10px] font-semibold text-rose-300 mt-0.5 leading-none">Less: ({fmtBal(totalExp)}) expenses</div>
-              </div>
+              {/* Primary checking */}
+              <LedgerCard
+                title="Citizens Private Banking"
+                subtitle="Primary Checking"
+                balance={citizensCheckBal < 0 ? `(${fmtBal(Math.abs(citizensCheckBal))})` : fmtBal(citizensCheckBal)}
+                balanceColor={citizensCheckBal < 0 ? '#dc2626' : '#1d4ed8'}
+                accent="#1d4ed8"
+                entries={[
+                  { label: 'Salary & Rental Income', amount: fmtBal(income), type: 'plus' },
+                  ...(rsvDraw > 0 ? [{ label: 'Autodraw from Reserve', amount: fmtBal(rsvDraw), type: 'plus' as const }] : []),
+                  { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' },
+                ]}
+                width={260}
+              />
+
+              <div className="my-3 border-t border-slate-100" />
 
               {/* Chase secondary */}
-              <div className="bg-white border-b border-border px-4 py-3">
-                <div className="text-[12px] font-bold text-slate-800 leading-snug">Chase Total Checking</div>
-                <div className="text-[12px] font-black tabular-nums text-blue-600 leading-snug">{fmtBal(chaseBal)}</div>
-              </div>
+              <LedgerCard
+                title="Chase Total Checking"
+                subtitle="Secondary Account"
+                balance={fmtBal(chaseBal)}
+                balanceColor="#1d4ed8"
+                width={260}
+              />
 
-              {/* Outflow footer */}
-              <div className="bg-red-50 px-4 py-3 flex items-center justify-between">
-                <div>
-                  <div className="text-[12px] font-bold text-red-700 leading-snug">Total Outflow</div>
-                  <div className="text-[12px] font-black tabular-nums text-red-600 leading-snug">({fmtBal(totalExp)})</div>
-                </div>
-                <FlowLine active={true} color="#dc2626" width={40} />
+              {/* Outflow label → right column */}
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <span className="text-[10px] font-bold text-rose-600 tabular-nums">Expenses ({fmtBal(totalExp)})</span>
+                <Connector label={undefined} color="#dc2626" active={true} width={56} />
               </div>
-
             </div>
 
-            {/* ══ RIGHT: Expense destination cards ══ */}
-            <div className="flex-1 flex flex-col gap-2" style={{ minWidth: 320 }}>
+            {/* ══ RIGHT: Expense destination accounts ══ */}
+            <div className="flex flex-col gap-2.5" style={{ minWidth: 300, flex: 1 }}>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Outflows</div>
               {allExpenses.map((exp, idx) => {
                 const isSpecial = idx >= BASE_EXP.length;
                 return (
-                  <div key={exp.label} className="flex items-center gap-0">
-                    {/* Animated dot connector from center hub */}
-                    <div className="relative flex-shrink-0 overflow-hidden" style={{ width: 24, height: 2, backgroundColor: `${exp.dot}30` }}>
+                  <div key={exp.label} className="flex items-center">
+                    {/* short animated connector */}
+                    <div className="relative flex-shrink-0 overflow-hidden" style={{ width: 20, height: 1.5, backgroundColor: `${exp.dot}25` }}>
                       <motion.div
-                        className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: exp.dot, boxShadow: `0 0 4px ${exp.dot}90` }}
-                        animate={{ left: ['-6px', '30px'] }}
-                        transition={{ duration: 0.9, repeat: Infinity, ease: 'linear', delay: idx * 0.12 }}
+                        className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
+                        style={{ backgroundColor: exp.dot, boxShadow: `0 0 5px ${exp.dot}` }}
+                        animate={{ left: ['-8px', '28px'] }}
+                        transition={{ duration: 1.0, repeat: Infinity, ease: 'linear', delay: idx * 0.11 }}
                       />
                     </div>
-                    <FlowCard
-                      name={exp.label}
-                      value={`(${fmtBal(exp.amount)})`}
-                      color={exp.dot}
-                      plusRows={isSpecial ? ['One-time item'] : undefined}
+                    <LedgerCard
+                      title={exp.label}
+                      subtitle={isSpecial ? 'One-time' : undefined}
+                      balance={`(${fmtBal(exp.amount)})`}
+                      balanceColor={exp.dot}
+                      accent={isSpecial ? exp.dot : undefined}
                     />
                   </div>
                 );
