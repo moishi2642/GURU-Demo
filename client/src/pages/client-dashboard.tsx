@@ -3245,30 +3245,30 @@ function MoneyMovementView({
   // ══════════════════════════════════════════════════════════════════════════════
   const _parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
 
-  // Transfer amounts (look up by bucket name)
-  const opsToRsv  = pendingTransfers.find(t => t.from === "Operating Cash" && t.to === "Reserve")?.amount ?? 0;
-  const rsvToBld  = pendingTransfers.find(t => t.from === "Reserve"        && t.to === "Build")?.amount ?? 0;
-  const opsToRsvOther = pendingTransfers
-    .filter(t => t.from === "Operating Cash" && t.to !== "Reserve")
-    .reduce((s, t) => s + t.amount, 0);
-
   const hasChanges =
     pendingTransfers.length > 0 ||
     Object.values(bucketProductSelections).some(s => s.length > 0);
 
+  // ── Generic net delta per bucket (positive = net inflow TO that bucket) ───────
+  const _bucketNetIn = (name: string) =>
+    pendingTransfers.filter(t => t.to === name).reduce((s, t) => s + t.amount, 0) -
+    pendingTransfers.filter(t => t.from === name).reduce((s, t) => s + t.amount, 0);
+
+  const _opsNetOut  = -_bucketNetIn("Operating Cash"); // positive = leaves Ops
+  const _rsvNetIn   =  _bucketNetIn("Reserve");        // positive = enters Reserve
+  const _bldNetIn   =  _bucketNetIn("Build");          // positive = enters Build
+
   // ── Effective Citizens Checking ───────────────────────────────────────────────
-  // Total Ops outflow = opsToRsv + other transfers. Citizens absorbs first (floored 0).
-  const _opsDelta = opsToRsv + opsToRsvOther;
+  // Citizens absorbs Ops outflow first (floored at 0); Chase absorbs the rest.
   const EFF_CITIZENS_CHECK = hasChanges
-    ? CITIZENS_CHECK_BAL.map(v => Math.max(0, v - _opsDelta))
+    ? CITIZENS_CHECK_BAL.map(v => Math.max(0, v - _opsNetOut))
     : CITIZENS_CHECK_BAL;
 
   // ── Effective Chase ───────────────────────────────────────────────────────────
-  // Chase absorbs whatever Citizens couldn't cover.
   const EFF_CHASE = hasChanges
     ? CHASE_BAL.map((v, i) => {
-        const citizensAbsorbed = Math.min(CITIZENS_CHECK_BAL[i], _opsDelta);
-        const chaseNeed = Math.max(0, _opsDelta - citizensAbsorbed);
+        const citizensAbsorbed = Math.min(CITIZENS_CHECK_BAL[i], _opsNetOut);
+        const chaseNeed = Math.max(0, _opsNetOut - citizensAbsorbed);
         return Math.max(0, v - chaseNeed);
       })
     : CHASE_BAL;
@@ -3284,8 +3284,8 @@ function MoneyMovementView({
     : null;
   const _rsvMonthly = _rsvATYield !== null ? _rsvATYield / 100 / 12 : _baseRsvMonthly;
 
-  // Citizens MM opening after transfers: original 225K + inflow from Ops - outflow to Build
-  const _rsvOpeningBase = 225000 + opsToRsv - rsvToBld;
+  // Citizens MM opening after all net transfers into/out of Reserve
+  const _rsvOpeningBase = 225000 + _rsvNetIn;
   const EFF_CITIZENS_MM: number[] = (() => {
     if (!hasChanges && _rsvATYield === null) return CITIZENS_MM_BAL;
     const result: number[] = [];
@@ -3310,7 +3310,8 @@ function MoneyMovementView({
     : null;
   const _bldMonthly = _bldATYield !== null ? _bldATYield / 100 / 12 : _baseBldMonthly;
 
-  const _bldOpeningBase = 135000 + rsvToBld;
+  // Treasuries opening after all net transfers into/out of Build
+  const _bldOpeningBase = 135000 + _bldNetIn;
   const EFF_TREASURIES: number[] = (() => {
     if (!hasChanges && _bldATYield === null) return TREASURIES_BAL;
     const result: number[] = [];
@@ -3587,11 +3588,11 @@ function MoneyMovementView({
         const rentalCf = cashFlows.find(c => c.category === 'investments' && parseFloat(c.amount ?? '0') > 0);
         const rentalAmt = rentalCf ? Math.round(parseFloat(rentalCf.amount ?? '0')) : 1722;
 
-        /* ── balances for selected month ── */
-        const citizensCheckBal = CITIZENS_CHECK_BAL[sm];
-        const chaseBal         = CHASE_BAL[sm];
-        const citizensMM       = CITIZENS_MM_BAL[sm];
-        const capOneBal        = CAPONE_BAL[sm];
+        /* ── balances for selected month (use EFF_ arrays so GURU changes show up) ── */
+        const citizensCheckBal = EFF_CITIZENS_CHECK[sm];
+        const chaseBal         = EFF_CHASE[sm];
+        const citizensMM       = EFF_CITIZENS_MM[sm];
+        const capOneBal        = EFF_CAPONE[sm];
 
         /* ── animated flow line: horizontal bar with 3 travelling dots ── */
         const FlowLine = ({ active = true, color = '#10b981', width = 56 }: { active?: boolean; color?: string; width?: number }) => (
