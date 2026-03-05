@@ -3760,6 +3760,10 @@ function MoneyMovementView({
         const maturingTbills = tbillDefs.filter(t => sm > 0 && (t.balances[sm - 1] ?? 0) > 0 && t.balances[sm] === 0);
         const totalMaturing  = maturingTbills.reduce((s, t) => s + (t.balances[sm - 1] ?? 0), 0);
 
+        /* ── Implied JPM → CIT draw: makes the JPM ledger balance by math ── */
+        const jpmBegBal  = sm > 0 ? HC_JPM_MMF[sm - 1] : 0;
+        const jpmRsvDraw = Math.max(0, jpmBegBal + totalMaturing - jpmBal);
+
         /* ── labeled connector: solid line with value label + single moving dot ── */
         const Connector = ({
           label, color, width = 72, active = true, direction = 'right',
@@ -3776,7 +3780,7 @@ function MoneyMovementView({
                   className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}`, marginTop: '-0.5px' }}
                   animate={{ left: direction === 'right' ? ['-10px', `${width + 10}px`] : [`${width + 10}px`, '-10px'] }}
-                  transition={{ duration: 1.4, repeat: Infinity, ease: 'linear' }}
+                  transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
                 />
               )}
             </div>
@@ -3886,7 +3890,7 @@ function MoneyMovementView({
                   className="absolute w-2 h-2 rounded-full"
                   style={{ left: 219, backgroundColor: '#16a34a', boxShadow: '0 0 5px #16a34a', zIndex: 10 }}
                   animate={{ top: ['10%', '90%'] }}
-                  transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                 />
 
                 {/* Michael Kessler */}
@@ -3914,7 +3918,7 @@ function MoneyMovementView({
                     className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
                     style={{ backgroundColor: '#16a34a', boxShadow: '0 0 6px #16a34a' }}
                     animate={{ left: ['-10px', '90px'] }}
-                    transition={{ duration: 1.3, repeat: Infinity, ease: 'linear' }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
                   />
                 </div>
               </div>
@@ -3937,73 +3941,73 @@ function MoneyMovementView({
                     accent="#d97706"
                     beginningBalance={sm > 0 ? fmtBal(HC_JPM_MMF[sm - 1]) : undefined}
                     entries={[
-                      ...(totalMaturing > 0 ? [{ label: 'Inflow from T-Bill Maturity', amount: `+${fmtBal(totalMaturing)}`, type: 'plus' as const }] : []),
-                      { label: `Outflow to CIT Money Market${rsvDraw > 0 ? ' (Autodraw)' : ' (Standby)'}`, amount: rsvDraw > 0 ? `(${fmtBal(rsvDraw)})` : '$0', type: rsvDraw > 0 ? 'less' as const : 'neutral' as const },
+                      ...(totalMaturing > 0 ? [{ label: '+ Inflow from T-Bill Maturity', amount: fmtBal(totalMaturing), type: 'plus' as const }] : []),
+                      { label: `Outflow to CIT Money Market${jpmRsvDraw > 0 ? '' : ' (Standby)'}`, amount: jpmRsvDraw > 0 ? `(${fmtBal(jpmRsvDraw)})` : '$0', type: jpmRsvDraw > 0 ? 'less' as const : 'neutral' as const },
                     ]}
                   />
-                  <Connector label={rsvDraw > 0 ? fmtBal(rsvDraw) : undefined} color="#d97706" active={true} />
+                  <Connector label={jpmRsvDraw > 0 ? fmtBal(jpmRsvDraw) : '$0 Standby'} color="#d97706" active={true} />
                 </div>
 
-                {/* 2. Treasury Ladder — T-bills below JPM MMF, connected via right-side bracket */}
+                {/* 2. Treasury Ladder — T-bills connected via right-side org-chart bracket */}
                 {(maturingTbills.length + activeTbills.length) > 0 && (
                   <div className="relative mt-2">
 
-                    {/* ── Org-chart bracket: right-side vertical + horizontal stubs ── */}
-                    {/* Top horizontal stub: connects bracket back left to JPM MMF level */}
-                    <div style={{ position: 'absolute', right: 54, top: -8, width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.55)' }} />
-                    {/* Vertical spine: runs from JPM MMF level down through all T-bill rows */}
-                    <div style={{ position: 'absolute', right: 54, top: -8, bottom: 16, width: 2, backgroundColor: 'rgba(217,119,6,0.55)' }} />
-                    {/* Animated dot travelling up the spine (T-bills → JPM MMF) */}
+                    {/* ── Org-chart bracket: right-side vertical spine + horizontal stubs ── */}
+                    {/* Vertical spine running from top to bottom */}
+                    <div style={{ position: 'absolute', right: 54, top: 0, bottom: 8, width: 2, backgroundColor: 'rgba(217,119,6,0.55)' }} />
+                    {/* Short horizontal cap connecting spine to JPM MMF above */}
+                    <div style={{ position: 'absolute', right: 54, top: 0, width: 18, height: 2, backgroundColor: 'rgba(217,119,6,0.55)' }} />
+                    {/* Animated dot travelling UP the spine: T-bills → JPM MMF */}
                     {totalMaturing > 0 && (
                       <motion.div
                         className="absolute w-2.5 h-2.5 rounded-full"
-                        style={{ right: 54 - 4, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
-                        animate={{ bottom: [16, -8] }}
-                        transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+                        style={{ right: 49, backgroundColor: '#d97706', boxShadow: '0 0 6px #d97706', zIndex: 10 }}
+                        animate={{ top: ['85%', '0%'] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                       />
                     )}
 
-                    {/* Treasury Ladder banner */}
+                    {/* Treasury Ladder label */}
                     <div className="text-[9px] font-bold uppercase tracking-widest text-amber-600 mb-2">
                       Treasury Ladder
                     </div>
 
-                    {/* Maturing T-bills — ledger format: Beg Balance → Outflow → Ending $0 */}
+                    {/* Maturing T-bills — ledger: Beg Balance → Outflow → End $0 */}
                     {maturingTbills.map(t => (
                       <div key={t.label} className="relative mb-2">
-                        <div style={{ marginRight: 76 }}>
+                        <div style={{ marginRight: 74 }}>
                           <LedgerCard
                             title={`${t.label} — Matured`}
-                            subtitle={`${t.rate} · face value at maturity`}
+                            subtitle={`${t.rate} · proceeds to JPMorgan MMF`}
                             balance="$0"
                             balanceColor="#94a3b8"
                             accent="#d97706"
                             shade="#fffbeb"
                             beginningBalance={fmtBal(t.balances[sm - 1] ?? 0)}
                             entries={[
-                              { label: '↑ Move to JPMorgan 100% Treasuries MMF', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
+                              { label: 'Proceeds → JPMorgan 100% Treasuries MMF', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
                             ]}
                           />
                         </div>
-                        {/* Horizontal branch: card right → bracket spine */}
-                        <div style={{ position: 'absolute', right: 56, top: '50%', width: 20, height: 2, backgroundColor: 'rgba(217,119,6,0.55)', transform: 'translateY(-50%)' }} />
+                        {/* Horizontal branch from card right edge → spine */}
+                        <div style={{ position: 'absolute', right: 54, top: '50%', width: 22, height: 2, backgroundColor: 'rgba(217,119,6,0.55)', transform: 'translateY(-50%)' }} />
                       </div>
                     ))}
 
-                    {/* Active (held) T-bills */}
+                    {/* Active (held) T-bills — gray coloring since winding down */}
                     {activeTbills.map(t => (
                       <div key={t.label} className="relative mb-2">
-                        <div style={{ marginRight: 76 }}>
+                        <div style={{ marginRight: 74 }}>
                           <LedgerCard
                             title={t.label}
                             subtitle={`Held to maturity · ${t.rate}`}
                             balance={fmtBal(t.balances[sm])}
-                            balanceColor="#1d4ed8"
-                            accent="#1d4ed8"
+                            balanceColor="#94a3b8"
+                            accent="#94a3b8"
                           />
                         </div>
-                        {/* Horizontal branch: card right → bracket spine */}
-                        <div style={{ position: 'absolute', right: 56, top: '50%', width: 20, height: 2, backgroundColor: 'rgba(217,119,6,0.35)', transform: 'translateY(-50%)' }} />
+                        {/* Horizontal branch */}
+                        <div style={{ position: 'absolute', right: 54, top: '50%', width: 22, height: 2, backgroundColor: 'rgba(217,119,6,0.3)', transform: 'translateY(-50%)' }} />
                       </div>
                     ))}
 
@@ -4033,56 +4037,57 @@ function MoneyMovementView({
                   { label: 'Michael Kessler — Salary', amount: `+${fmtBal(p1Salary)}`, type: 'plus' },
                   { label: 'Sarah Kessler — Salary', amount: `+${fmtBal(p2Salary)}`, type: 'plus' },
                   { label: 'Sarasota Property — Rental Income', amount: `+${fmtBal(rentalAmt)}`, type: 'plus' },
-                  ...(rsvDraw > 0 ? [{ label: 'JPMorgan MMF Autodraw', amount: `+${fmtBal(rsvDraw)}`, type: 'plus' as const }] : []),
+                  ...(jpmRsvDraw > 0 ? [{ label: 'JPMorgan 100% Treasuries MMF — Draw', amount: `+${fmtBal(jpmRsvDraw)}`, type: 'plus' as const }] : []),
                   { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' },
                 ]}
                 width={420}
               />
             </div>
 
-            {/* ══ RIGHT: Expense destination accounts — org-chart bracket from CIT ══ */}
-            <div className="relative flex flex-col" style={{ width: 220 }}>
+            {/* ══ RIGHT: Expense destination accounts — bracket from CIT right edge ══ */}
+            <div className="relative flex flex-col" style={{ width: 230 }}>
 
               {/* OUTFLOWS banner */}
-              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-2 ml-6" style={{ backgroundColor: '#fee2e2' }}>
+              <div className="inline-flex items-center px-2.5 py-1 rounded-full mb-2 ml-8" style={{ backgroundColor: '#fee2e2' }}>
                 <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#991b1b' }}>Outflows</span>
               </div>
 
-              {/* Left-side org-chart bracket: exits CIT right edge, branches to each expense */}
-              {/* Vertical spine — runs full height of expense section */}
-              <div style={{ position: 'absolute', left: 0, top: 30, bottom: 10, width: 2, backgroundColor: 'rgba(220,38,38,0.45)' }} />
-              {/* Top horizontal stub — reaches LEFT into CIT's right edge */}
-              <div style={{ position: 'absolute', left: -16, top: 30, width: 18, height: 2, backgroundColor: 'rgba(220,38,38,0.45)' }} />
-              {/* Animated dot travelling down the bracket */}
+              {/* ── Org-chart bracket: spine at left:18, horizontal entry from CIT ── */}
+              {/* Horizontal entry line: bridges gap from CIT right edge → bracket spine */}
+              <div style={{ position: 'absolute', left: 0, top: 36, width: 20, height: 2, backgroundColor: 'rgba(220,38,38,0.5)' }} />
+              {/* Vertical bracket spine — clearly inside right column */}
+              <div style={{ position: 'absolute', left: 18, top: 36, bottom: 8, width: 2, backgroundColor: 'rgba(220,38,38,0.45)' }} />
+              {/* Total expense label above spine */}
+              <span className="absolute text-[9px] font-black tabular-nums text-rose-600" style={{ left: 22, top: 18 }}>{fmtBal(totalExp)}</span>
+              {/* Animated dot travelling DOWN the bracket spine */}
               <motion.div
                 className="absolute w-2.5 h-2.5 rounded-full"
-                style={{ left: -4, top: 30, backgroundColor: '#dc2626', boxShadow: '0 0 6px #dc2626', zIndex: 10 }}
-                animate={{ top: [30, 340] }}
-                transition={{ duration: 1.8, repeat: Infinity, ease: 'linear' }}
+                style={{ left: 13, backgroundColor: '#dc2626', boxShadow: '0 0 6px #dc2626', zIndex: 10 }}
+                animate={{ top: [36, 360] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
               />
-              {/* Expense label on bracket */}
-              <span className="absolute text-[9px] font-black tabular-nums text-rose-600" style={{ left: 6, top: 12 }}>{fmtBal(totalExp)}</span>
 
-              {/* Expense cards with horizontal branches from bracket */}
-              <div className="flex flex-col gap-2 ml-5">
+              {/* Expense cards with horizontal branches from spine */}
+              <div className="flex flex-col gap-2 ml-7">
                 {allExpenses.map((exp, idx) => {
                   const isSpecial = idx >= BASE_EXP.length;
                   return (
                     <div key={exp.label} className="relative">
-                      {/* Horizontal branch: bracket → card */}
-                      <div style={{ position: 'absolute', left: -20, top: '50%', width: 20, height: 2, backgroundColor: `${exp.dot}55`, transform: 'translateY(-50%)' }} />
+                      {/* Horizontal branch: spine → card left edge */}
+                      <div style={{ position: 'absolute', left: -28, top: '50%', width: 28, height: 2, backgroundColor: 'rgba(220,38,38,0.3)', transform: 'translateY(-50%)' }} />
+                      {/* Animated dot moving right along each branch */}
                       <motion.div
                         className="absolute w-1.5 h-1.5 rounded-full"
-                        style={{ left: -20, top: '50%', transform: 'translateY(-50%)', backgroundColor: exp.dot, zIndex: 5 }}
-                        animate={{ left: ['-20px', '4px'] }}
-                        transition={{ duration: 0.7, repeat: Infinity, ease: 'linear', delay: idx * 0.12 }}
+                        style={{ top: '50%', transform: 'translateY(-50%)', backgroundColor: '#dc2626', zIndex: 5 }}
+                        animate={{ left: ['-28px', '4px'] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'linear', delay: idx * 0.35 }}
                       />
                       <LedgerCard
                         title={exp.label}
                         subtitle={isSpecial ? 'One-time' : undefined}
                         balance={`(${fmtBal(exp.amount)})`}
-                        balanceColor={exp.dot}
-                        accent={isSpecial ? exp.dot : undefined}
+                        balanceColor="#dc2626"
+                        accent={isSpecial ? '#dc2626' : undefined}
                       />
                     </div>
                   );
