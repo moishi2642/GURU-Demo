@@ -1869,10 +1869,10 @@ function BsTable({
             ))}
           {/* Subtotal / category row */}
           <div
-            className={`grid border-t border-border font-semibold ${isSubtotalOnly(group) ? "bg-slate-100 text-slate-700" : "bg-muted/40 text-foreground/80"}`}
+            className={`grid border-t border-border font-semibold ${isSubtotalOnly(group) ? "bg-slate-200/60 text-slate-800" : "bg-slate-100 text-slate-700"}`}
             style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
           >
-            <div className="px-3 py-1.5 text-[10px] font-bold">{group.category}</div>
+            <div className={`px-3 py-1.5 text-[10px] font-bold ${isSubtotalOnly(group) ? "pl-3" : "pl-3"}`}>{group.category}</div>
             <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">
               {fmt(group.subtotal)}
             </div>
@@ -1886,7 +1886,7 @@ function BsTable({
 
       {/* Grand total */}
       <div
-        className={`grid border-t-2 border-border font-bold ${isLiability ? "bg-rose-50 text-rose-800" : "bg-blue-50 text-blue-900"}`}
+        className={`grid border-t-2 font-bold ${isLiability ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-blue-50 text-blue-900 border-blue-200"}`}
         style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
       >
         <div className="px-3 py-2.5 font-black text-[11px]">{totalLabel}</div>
@@ -2598,10 +2598,10 @@ function CashFlowForecastView({
                   return (
                     <tr
                       key={row.key}
-                      className="bg-slate-100 border-t border-border"
+                      className="bg-slate-200/60 border-t border-slate-300"
                     >
                       <td
-                        className="px-4 py-1.5 font-black text-[9px] uppercase tracking-widest text-slate-600"
+                        className="px-4 py-1.5 font-black text-[9px] uppercase tracking-widest text-slate-700"
                         colSpan={15}
                       >
                         {row.label}
@@ -2640,9 +2640,9 @@ function CashFlowForecastView({
                   return (
                     <tr
                       key={row.key}
-                      className="border-t border-border bg-muted/50"
+                      className="border-t border-slate-200 bg-slate-100"
                     >
-                      <td className="px-4 py-1.5 pl-7 font-bold text-[10px] text-foreground/80">
+                      <td className="px-4 py-1.5 pl-7 font-bold text-[10px] text-slate-700">
                         {row.label}
                       </td>
                       {rowVals.map((v, i) => (
@@ -2828,15 +2828,91 @@ function BucketExecutionPanel({
           );
         })()}
 
-        {/* ── Current / Target side by side ── */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-[14px]">
-            <p className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
-            <p className="text-base font-black tabular-nums text-foreground leading-none">{fmtD(current)}</p>
+        {/* ── Allocation Bars: Current vs GURU Target ── */}
+        <div className="rounded-xl bg-slate-700 px-4 py-3.5 space-y-3">
+          {/* Current bar */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[8px] uppercase tracking-widest font-bold text-slate-400">Current</span>
+              <span className="text-[11px] font-black tabular-nums text-white">{fmtD(current)}</span>
+            </div>
+            <div className="h-2 rounded-full bg-slate-600 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${Math.min(100, totalAssets > 0 ? (current / totalAssets) * 100 : 0)}%`, background: accentColor }}
+              />
+            </div>
+            <span className="text-[8px] text-slate-500 tabular-nums">
+              {totalAssets > 0 ? ((current / totalAssets) * 100).toFixed(1) : "0"}% of portfolio
+            </span>
           </div>
-          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
-            <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
-            <p className="text-base font-black tabular-nums leading-none" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
+          {/* Delta badge */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-px bg-slate-600" />
+            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black tabular-nums ${
+              effDelta > 1000 ? "bg-amber-500/20 text-amber-300" :
+              effDelta < -1000 ? "bg-emerald-500/20 text-emerald-300" :
+              "bg-slate-600/60 text-slate-400"
+            }`}>
+              {effDelta > 0 ? "+" : ""}{fmtD(effDelta)} vs target
+            </span>
+            <div className="flex-1 h-px bg-slate-600" />
+          </div>
+          {/* GURU Target bar */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[8px] uppercase tracking-widest font-bold text-amber-400">GURU Target</span>
+              <span className="text-[11px] font-black tabular-nums text-amber-300">{fmtD(effTarget)}</span>
+            </div>
+            <div className="h-2 rounded-full bg-slate-600 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-amber-400 transition-all duration-700"
+                style={{ width: `${Math.min(100, totalAssets > 0 ? (effTarget / totalAssets) * 100 : 0)}%` }}
+              />
+            </div>
+            {/* Progress: current vs target */}
+            <div className="h-1 rounded-full bg-slate-600 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 opacity-80"
+                style={{
+                  width: `${effTarget > 0 ? Math.min(100, (current / effTarget) * 100) : 0}%`,
+                  background: accentColor,
+                }}
+              />
+            </div>
+            <span className="text-[8px] text-slate-500 tabular-nums">
+              {effTarget > 0 ? `${((current / effTarget) * 100).toFixed(0)}% funded` : "—"}
+            </span>
+          </div>
+          {/* 2×2 metrics grid */}
+          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+            {[
+              {
+                label: "Status",
+                value: effDelta > 5000 ? "Underfunded" : effDelta < -5000 ? "Overfunded" : "On Target",
+                color: effDelta > 5000 ? "#f59e0b" : effDelta < -5000 ? "#10b981" : "#94a3b8",
+              },
+              {
+                label: "Priority",
+                value: Math.abs(effDelta) > 50000 ? "High" : Math.abs(effDelta) > 10000 ? "Medium" : "Low",
+                color: Math.abs(effDelta) > 50000 ? "#ef4444" : Math.abs(effDelta) > 10000 ? "#f59e0b" : "#10b981",
+              },
+              {
+                label: "Current Yield",
+                value: avgYield > 0 ? `${avgYield.toFixed(2)}%` : "—",
+                color: "#e2e8f0",
+              },
+              {
+                label: "Yield Pickup",
+                value: bpPickup > 0 ? `+${bpPickup}bp` : bpPickup < 0 ? `${bpPickup}bp` : "—",
+                color: bpPickup > 0 ? "#10b981" : bpPickup < 0 ? "#ef4444" : "#94a3b8",
+              },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="rounded-lg bg-slate-800 px-2.5 py-2">
+                <p className="text-[7px] uppercase tracking-widest font-bold text-slate-500 mb-0.5">{label}</p>
+                <p className="text-[10px] font-black leading-none" style={{ color }}>{value}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -6220,7 +6296,7 @@ function AdvisorBriefView({
           </div>
           <div
             className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-rose-50/40 cursor-pointer hover:bg-rose-50 transition-colors"
-            onClick={() => onNavigate("cashflow")}
+            onClick={() => onNavigate("financials")}
           >
             <span className="text-[10px] text-muted-foreground">Open Cash Flow Forecast</span>
             <span className="text-[11px] font-bold text-rose-700 flex items-center gap-1">View now <ArrowUpRight className="w-3.5 h-3.5" /></span>
@@ -6236,8 +6312,7 @@ function AdvisorBriefView({
 type ActiveView =
   | "dashboard"
   | "advisorbrief"
-  | "balancesheet"
-  | "cashflow"
+  | "financials"
   | "guru"
   | "moneymovement";
 
@@ -6245,6 +6320,7 @@ export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
   const [activeView, setActiveView] = useState<ActiveView>("dashboard");
+  const [financialsTab, setFinancialsTab] = useState<"balancesheet" | "cashflow">("balancesheet");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
   const [pendingTransfers, setPendingTransfers] = useState<
     { from: string; to: string; amount: number }[]
@@ -6394,8 +6470,7 @@ export default function ClientDashboard() {
   }[] = [
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { key: "advisorbrief", label: "Advisor Brief", icon: ClipboardList },
-    { key: "balancesheet", label: "Balance Sheet", icon: Scale },
-    { key: "cashflow", label: "Cash Flow Forecast", icon: BarChart2 },
+    { key: "financials", label: "Client Financials & Forecast", icon: FileText },
     { key: "guru", label: "GURU Allocation", icon: PieChartIcon },
     { key: "moneymovement", label: "Money Movement", icon: ArrowLeftRight },
   ];
@@ -6528,18 +6603,41 @@ export default function ClientDashboard() {
           onNavigate={(v) => setActiveView(v as ActiveView)}
         />
       )}
-      {/* ── Balance Sheet View ─────────────────────────────────────────────────── */}
-      {activeView === "balancesheet" && (
-        <DetailsView
-          assets={assets}
-          liabilities={liabilities}
-          cashFlows={cashFlows}
-          clientId={clientId}
-        />
-      )}
-      {/* ── Cash Flow Forecast View ────────────────────────────────────────────── */}
-      {activeView === "cashflow" && (
-        <CashFlowForecastView assets={assets} cashFlows={cashFlows} />
+      {/* ── Client Financials & Forecast ───────────────────────────────────────── */}
+      {activeView === "financials" && (
+        <div className="space-y-5">
+          {/* Sub-tab switcher */}
+          <div className="flex items-center gap-1 border-b border-border pb-0">
+            {(["balancesheet", "cashflow"] as const).map((tab) => {
+              const label = tab === "balancesheet" ? "Balance Sheet" : "Cash Flow Forecast";
+              const isActive = financialsTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setFinancialsTab(tab)}
+                  className={`px-5 py-2.5 text-[11px] font-bold tracking-wide border-b-2 -mb-px transition-colors ${
+                    isActive
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {financialsTab === "balancesheet" && (
+            <DetailsView
+              assets={assets}
+              liabilities={liabilities}
+              cashFlows={cashFlows}
+              clientId={clientId}
+            />
+          )}
+          {financialsTab === "cashflow" && (
+            <CashFlowForecastView assets={assets} cashFlows={cashFlows} />
+          )}
+        </div>
       )}
       {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
       {activeView === "guru" && (
