@@ -1684,15 +1684,17 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
   // ── Investments ───────────────────────────────────────────────────────────
   const investGroups: BsGroup[] = [];
   if (brokerage.length) investGroups.push(mkGroup("Taxable Brokerage", brokerage));
-  if (altAssets.length)    investGroups.push(mkGroup("Alternative Assets (PE Funds)", altAssets));
-  if (rsus.length)         investGroups.push(mkGroup("RSUs & Unvested Equity", rsus));
-  if (investGroups.length) sections.push({ label: "Investments", groups: investGroups, total: subtot([...brokerage, ...altAssets, ...rsus]) });
+  if (altAssets.length) investGroups.push(mkGroup("Alternative Assets (PE Funds)", altAssets));
+  if (investGroups.length) sections.push({ label: "Investments", groups: investGroups, total: subtot([...brokerage, ...altAssets]) });
 
   // ── Real Estate ───────────────────────────────────────────────────────────
   if (realEstate.length) sections.push({ label: "Real Estate", groups: [mkGroup("Properties", realEstate)], total: subtot(realEstate) });
 
-  // ── Carry ─────────────────────────────────────────────────────────────────
-  if (carry.length) sections.push({ label: "Carry", groups: [mkGroup("Carried Interest (PE)", carry)], total: subtot(carry) });
+  // ── Carry & RSUs ──────────────────────────────────────────────────────────
+  const carryRsuGroups: BsGroup[] = [];
+  if (carry.length) carryRsuGroups.push(mkGroup("Carried Interest (PE)", carry));
+  if (rsus.length)  carryRsuGroups.push(mkGroup("RSUs & Unvested Equity", rsus));
+  if (carryRsuGroups.length) sections.push({ label: "Carry and RSUs", groups: carryRsuGroups, total: subtot([...carry, ...rsus]) });
 
   // ── Retirement ────────────────────────────────────────────────────────────
   if (retirement.length) sections.push({ label: "Retirement", groups: [mkGroup("Tax-Advantaged Accounts", retirement)], total: subtot(retirement) });
