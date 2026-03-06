@@ -397,7 +397,8 @@ type GuroBucket = keyof typeof GURU_BUCKETS;
 function buildMonthMap(cashFlows: CashFlow[]) {
   const map: Record<string, { inflow: number; outflow: number }> = {};
   for (const cf of cashFlows) {
-    const key = format(new Date(cf.date), "MMM yy");
+    const d = new Date(cf.date);
+    const key = format(new Date(d.getUTCFullYear(), d.getUTCMonth(), 1), "MMM yy");
     if (!map[key]) map[key] = { inflow: 0, outflow: 0 };
     if (cf.type === "inflow") map[key].inflow += Number(cf.amount);
     else map[key].outflow += Number(cf.amount);
@@ -2325,8 +2326,8 @@ function CashFlowForecastView({
       .filter((cf) => {
         const d = new Date(cf.date);
         return (
-          d.getFullYear() === year &&
-          d.getMonth() + 1 === month &&
+          d.getUTCFullYear() === year &&
+          d.getUTCMonth() + 1 === month &&
           descs.some((dm) =>
             cf.description.toLowerCase().includes(dm.toLowerCase()),
           )
@@ -2384,8 +2385,8 @@ function CashFlowForecastView({
       .filter((cf) => {
         const d = new Date(cf.date);
         return (
-          d.getFullYear() === m.year &&
-          d.getMonth() + 1 === m.month &&
+          d.getUTCFullYear() === m.year &&
+          d.getUTCMonth() + 1 === m.month &&
           cf.type === "inflow"
         );
       })
@@ -2396,8 +2397,8 @@ function CashFlowForecastView({
       .filter((cf) => {
         const d = new Date(cf.date);
         return (
-          d.getFullYear() === m.year &&
-          d.getMonth() + 1 === m.month &&
+          d.getUTCFullYear() === m.year &&
+          d.getUTCMonth() + 1 === m.month &&
           cf.type === "outflow"
         );
       })
