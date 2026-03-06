@@ -5061,9 +5061,9 @@ function GuruAllocationView({
                 "Alternative Assets": { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
                 "529 Plans":          { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
               };
-              // Total = sum of every displayed mini-card (so header always reconciles)
-              const heroCardTotal =
-                rows.reduce((s, r) => s + r.current, 0) + reVal + altVal + plan529;
+              // Use the authoritative prototype model total — growCurrent is hardcoded
+              // from the prototype, so a dynamic sum would be inconsistent with it.
+              const heroCardTotal = PROTO_TOTAL_ASSETS;
               return (
                 <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
                   <div className="flex flex-col sm:flex-row gap-6 items-center">
