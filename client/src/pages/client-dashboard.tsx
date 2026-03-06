@@ -1874,7 +1874,7 @@ function BsTable({
         <div key={group.category}>
           {renderItems(group.items, "pl-6")}
           <div className="grid border-t border-border bg-slate-100 text-slate-700" style={{ gridTemplateColumns: COLS }}>
-            <div className="px-3 py-1.5 text-[10px] font-bold">{group.category}</div>
+            <div className="px-3 py-1.5 font-bold text-[11px]">{group.category}</div>
             <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">{fmt(group.subtotal)}</div>
             <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
               {group.avgRate ? `${group.avgRate}%` : ""}
