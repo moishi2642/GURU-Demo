@@ -1791,7 +1791,7 @@ function BsTable({
   totalRate?: string | null;
   isLiability?: boolean;
 }) {
-  const COLS = isLiability ? "1fr 90px 56px 90px" : "1fr 90px 56px 72px 80px";
+  const COLS = isLiability ? "1fr 90px 72px 90px" : "1fr 90px 72px 80px";
   const retCls = (r: string | null) => {
     if (!r) return "text-muted-foreground/40";
     if (r.startsWith("+")) return "text-emerald-700 font-semibold";
@@ -1810,14 +1810,12 @@ function BsTable({
         <div className="px-2 py-1.5 text-right tabular-nums font-medium text-foreground text-[11px]">
           {item.value > 0 ? fmt(item.value) : "—"}
         </div>
-        <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground text-[11px]">
-          {item.rate ? `${item.rate}%` : <span className="text-muted-foreground/40">—</span>}
+        <div className={`px-2 py-1.5 text-right tabular-nums text-[11px] ${retCls(item.ret ?? (item.rate ? `${item.rate}%` : null))}`}>
+          {!isLiability
+            ? (item.ret ?? (item.rate ? `${item.rate}%` : <span className="text-muted-foreground/40">—</span>))
+            : (item.rate ? `${item.rate}%` : <span className="text-muted-foreground/40">—</span>)
+          }
         </div>
-        {!isLiability && (
-          <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground text-[11px]">
-            {item.ret ?? "—"}
-          </div>
-        )}
         <div className="px-2 py-1.5">
           {item.comment && (
             <span className={`text-[9px] ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}>
@@ -1838,7 +1836,6 @@ function BsTable({
           <div className="px-2 py-1.5 text-right tabular-nums text-[10px] text-slate-400">
             {group.avgRate ? `${group.avgRate}%` : ""}
           </div>
-          {!isLiability && <div className="px-2 py-1.5" />}
           <div className="px-2 py-1.5" />
         </div>
       )}
@@ -1853,12 +1850,9 @@ function BsTable({
           {isLiability ? "Liability Category" : "Asset Category"}
         </div>
         <div className="px-2 py-2.5 text-right font-black uppercase tracking-widest text-slate-300 text-[12px]">Balance</div>
-        <div className="px-2 py-2.5 text-right font-black uppercase tracking-widest text-slate-300 text-[12px]">
-          {isLiability ? "Cost" : "Yield"}
+        <div className="px-2 py-2.5 text-right font-black uppercase tracking-widest text-slate-300 text-[9px]">
+          {isLiability ? "Cost" : "Yield / Return"}
         </div>
-        {!isLiability && (
-          <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-slate-300">Return</div>
-        )}
         <div className="px-2 py-2.5 font-black uppercase tracking-widest text-slate-300 text-[12px]">Notes</div>
       </div>
       {/* Sectioned asset rows */}
@@ -1870,7 +1864,6 @@ function BsTable({
           <div className="grid border-t border-blue-200 bg-blue-100 text-blue-900" style={{ gridTemplateColumns: COLS }}>
             <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest">{sec.label}</div>
             <div className="px-2 py-2 text-right tabular-nums text-[10px] font-black">{fmt(sec.total)}</div>
-            <div className="px-2 py-2" />
             <div className="px-2 py-2" />
             <div className="px-2 py-2" />
           </div>
@@ -1902,7 +1895,6 @@ function BsTable({
         <div className="px-2 py-2.5 text-right tabular-nums text-[10px] text-slate-300">
           {totalRate ? `${totalRate}%` : ""}
         </div>
-        {!isLiability && <div className="px-2 py-2.5" />}
         <div className="px-2 py-2.5" />
       </div>
     </div>
