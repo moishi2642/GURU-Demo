@@ -6394,6 +6394,139 @@ function AdvisorBriefView({
           </div>
         </div>
 
+        {/* ── Card 4: 90-Day Money Flow ── */}
+        {(() => {
+          const UPCOMING_FLOWS = [
+            { date: new Date(2026, 3,  1), label: "Spring Tuition",              detail: "Chase Checking → Dalton School",              amount: -15000, type: "obligation" as const, icon: GraduationCap },
+            { date: new Date(2026, 3,  8), label: "Monthly Income Allocation",   detail: "Cresset Capital → Citizens Checking",         amount:  18814, type: "income"     as const, icon: Wallet       },
+            { date: new Date(2026, 3, 15), label: "Q1 Estimated Federal Tax",    detail: "Citizens Checking → IRS (EFTPS)",             amount: -30000, type: "obligation" as const, icon: Building2    },
+            { date: new Date(2026, 3, 15), label: "GURU Reserve Draw",           detail: "Citizens MM → Operating (April shortfall)",   amount:  -6126, type: "transfer"   as const, icon: Repeat2      },
+            { date: new Date(2026, 4,  8), label: "Monthly Income Allocation",   detail: "Cresset Capital → Citizens Checking",         amount:  18814, type: "income"     as const, icon: Wallet       },
+            { date: new Date(2026, 4, 15), label: "GURU Reserve Draw",           detail: "Citizens MM → Operating (May shortfall)",     amount:  -3126, type: "transfer"   as const, icon: Repeat2      },
+            { date: new Date(2026, 5,  8), label: "Monthly Income Allocation",   detail: "Cresset Capital → Citizens Checking",         amount:  18814, type: "income"     as const, icon: Wallet       },
+            { date: new Date(2026, 5, 15), label: "GURU Reserve Draw",           detail: "Citizens MM → Operating (home repair)",       amount: -21626, type: "transfer"   as const, icon: Repeat2      },
+          ];
+          const MONTHS = [
+            { name: "April", idx: 3 },
+            { name: "May",   idx: 4 },
+            { name: "June",  idx: 5 },
+          ];
+          const grouped = MONTHS.map(({ name, idx }) => {
+            const evts = UPCOMING_FLOWS.filter(f => f.date.getMonth() === idx);
+            return {
+              name,
+              evts,
+              inflows:  evts.filter(f => f.amount > 0).reduce((s, f) => s + f.amount, 0),
+              outflows: Math.abs(evts.filter(f => f.amount < 0).reduce((s, f) => s + f.amount, 0)),
+              net:      evts.reduce((s, f) => s + f.amount, 0),
+            };
+          });
+          const totalIn  = UPCOMING_FLOWS.filter(f => f.amount > 0).reduce((s, f) => s + f.amount, 0);
+          const totalOut = Math.abs(UPCOMING_FLOWS.filter(f => f.amount < 0).reduce((s, f) => s + f.amount, 0));
+          const net90    = totalIn - totalOut;
+          return (
+            <div
+              className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden col-span-2"
+              style={{ borderTop: "4px solid #0ea5e9" }}
+              data-testid="advisor-brief-money-flow-card"
+            >
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-sky-100 flex items-center justify-center flex-shrink-0">
+                    <CalendarClock className="w-4 h-4 text-sky-600" />
+                  </div>
+                  <div>
+                    <p className="text-base font-black text-foreground leading-none">90-Day Money Flow</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">April · May · June — GURU-managed movements</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className={`text-sm font-black tabular-nums ${net90 >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {net90 >= 0 ? "+" : "−"}{fmt(Math.abs(net90))}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground">90-day net</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-sky-50 border border-sky-200 rounded-full px-3 py-1">
+                    <BrainCircuit className="w-3 h-3 text-sky-600" />
+                    <span className="text-[9px] font-bold text-sky-700 uppercase tracking-wider">GURU Planned</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Monthly summary tiles */}
+              <div className="grid grid-cols-3 divide-x divide-border border-b border-border bg-slate-50/40">
+                {grouped.map((g) => (
+                  <div key={g.name} className="px-5 py-3 flex flex-col gap-1.5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{g.name}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-emerald-700 font-bold tabular-nums">+{fmt(g.inflows)}</span>
+                        <span className="text-slate-300">·</span>
+                        <span className="text-[11px] text-rose-600 font-bold tabular-nums">−{fmt(g.outflows)}</span>
+                      </div>
+                      <span className={`text-[11px] font-black tabular-nums ${g.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {g.net >= 0 ? "+" : "−"}{fmt(Math.abs(g.net))}
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${g.net >= 0 ? "bg-emerald-400" : "bg-rose-400"}`}
+                        style={{ width: `${Math.min(100, Math.abs(g.net) / 50000 * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Timeline — events grouped by month */}
+              <div className="px-6 py-4 space-y-4">
+                {grouped.map((g) => (
+                  <div key={g.name}>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-2">{g.name} 2026</p>
+                    <div className="space-y-1.5">
+                      {g.evts.map((ev, i) => {
+                        const Icon = ev.icon;
+                        const isIn  = ev.amount > 0;
+                        const isTx  = ev.type === "transfer";
+                        const clr   = isIn ? "#10b981" : isTx ? "#d97706" : "#f43f5e";
+                        const amtCls  = isIn ? "text-emerald-600" : isTx ? "text-amber-600" : "text-rose-600";
+                        const bgCls   = isIn ? "bg-emerald-50 border-emerald-200" : isTx ? "bg-amber-50 border-amber-200" : "bg-rose-50 border-rose-200";
+                        const iconBg  = isIn ? "bg-emerald-100" : isTx ? "bg-amber-100" : "bg-rose-100";
+                        return (
+                          <div key={i} className={`flex items-center gap-3 rounded-xl border ${bgCls} px-4 py-2.5`} data-testid={`flow-event-${g.name.toLowerCase()}-${i}`}>
+                            <span className="text-[10px] font-black text-foreground tabular-nums w-10 flex-shrink-0">{format(ev.date, "MMM d")}</span>
+                            <div className={`w-6 h-6 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0`}>
+                              <Icon className="w-3 h-3" style={{ color: clr }} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-bold text-foreground leading-none truncate">{ev.label}</p>
+                              <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{ev.detail}</p>
+                            </div>
+                            <span className={`text-[12px] font-black tabular-nums flex-shrink-0 ${amtCls}`}>
+                              {isIn ? "+" : "−"}{fmt(Math.abs(ev.amount))}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer CTA */}
+              <div
+                className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-sky-50/40 cursor-pointer hover:bg-sky-50 transition-colors"
+                onClick={() => onNavigate("moneymovement")}
+              >
+                <span className="text-[10px] text-muted-foreground">View full money movement model and GURU allocation</span>
+                <span className="text-[11px] font-bold text-sky-700 flex items-center gap-1">Open Money Movement <ArrowUpRight className="w-3.5 h-3.5" /></span>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── Upcoming Obligations — Bill Pay Table ── */}
         {(() => {
           const upcoming = OBLIGATIONS
@@ -6962,6 +7095,78 @@ export default function ClientDashboard() {
             <BrokeragePanel assets={assets} />
             <LiabilitiesPanel liabilities={liabilities} />
           </div>
+
+          {/* ── Upcoming Cash Movements strip ──────────────────────────────── */}
+          {(() => {
+            const FLOW_EVENTS = [
+              { date: new Date(2026, 3,  1), label: "Spring Tuition",            detail: "Chase → Dalton School",          amount: -15000, type: "obligation" as const, icon: GraduationCap },
+              { date: new Date(2026, 3,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
+              { date: new Date(2026, 3, 15), label: "Q1 Estimated Tax",          detail: "Citizens → IRS (EFTPS)",         amount: -30000, type: "obligation" as const, icon: Building2     },
+              { date: new Date(2026, 3, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -6126, type: "transfer"   as const, icon: Repeat2       },
+              { date: new Date(2026, 4,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
+              { date: new Date(2026, 4, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -3126, type: "transfer"   as const, icon: Repeat2       },
+            ];
+            const next45 = FLOW_EVENTS.filter(f => f.date >= DEMO_NOW && f.date <= new Date(DEMO_NOW.getTime() + 45 * 86400000));
+            const totalNetFlow = next45.reduce((s, f) => s + f.amount, 0);
+            return (
+              <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid="dashboard-money-flow-panel">
+                <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+                      <CalendarClock className="w-3.5 h-3.5 text-sky-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-foreground leading-none">Upcoming Cash Movements</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Next 45 days · GURU managed</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className={`text-xs font-black tabular-nums ${totalNetFlow >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {totalNetFlow >= 0 ? "+" : "−"}{fmt(Math.abs(totalNetFlow))}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground">45-day net</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveView("moneymovement")}
+                      className="text-[10px] font-bold text-sky-600 hover:text-sky-500 flex items-center gap-1 transition-colors"
+                      data-testid="dashboard-money-flow-link"
+                    >
+                      Full view <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border">
+                  {next45.map((ev, i) => {
+                    const Icon = ev.icon;
+                    const isIn  = ev.amount > 0;
+                    const isTx  = ev.type === "transfer";
+                    const clr   = isIn ? "#10b981" : isTx ? "#d97706" : "#f43f5e";
+                    const amtCls = isIn ? "text-emerald-600" : isTx ? "text-amber-600" : "text-rose-600";
+                    const bgCls  = isIn ? "bg-emerald-50/50" : isTx ? "bg-amber-50/50" : "bg-rose-50/50";
+                    const iconBg = isIn ? "bg-emerald-100" : isTx ? "bg-amber-100" : "bg-rose-100";
+                    return (
+                      <div key={i} className={`px-4 py-3.5 flex flex-col gap-2 ${bgCls}`} data-testid={`dash-flow-event-${i}`}>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{format(ev.date, "MMM d")}</span>
+                          <div className={`w-5 h-5 rounded-md ${iconBg} flex items-center justify-center flex-shrink-0`}>
+                            <Icon className="w-2.5 h-2.5" style={{ color: clr }} />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold text-foreground leading-snug">{ev.label}</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">{ev.detail}</p>
+                        </div>
+                        <p className={`text-sm font-black tabular-nums ${amtCls}`}>
+                          {isIn ? "+" : "−"}{fmt(Math.abs(ev.amount))}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
         </div>
       )}
