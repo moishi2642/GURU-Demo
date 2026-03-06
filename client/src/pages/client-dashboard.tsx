@@ -1797,7 +1797,7 @@ function BsTable({
 }) {
   const COLS = isLiability ? "1fr 90px 56px 90px" : "1fr 90px 56px 72px 80px";
   const retCls = (r: string | null) => {
-    if (!r) return "text-muted-foreground/50 italic";
+    if (!r) return "text-muted-foreground/40";
     if (r.startsWith("+")) return "text-emerald-700 font-semibold";
     if (r.toLowerCase().includes("irr") || r.toLowerCase().includes("est")) return "text-amber-700 font-semibold";
     return "text-muted-foreground";
@@ -1810,21 +1810,21 @@ function BsTable({
         className="grid border-t border-border/40 hover:bg-secondary/30 transition-colors"
         style={{ gridTemplateColumns: COLS }}
       >
-        <div className={`px-3 py-1.5 text-muted-foreground ${indent}`}>{item.label}</div>
-        <div className="px-2 py-1.5 text-right tabular-nums font-medium text-foreground">
+        <div className={`px-3 py-1.5 text-[9px] text-muted-foreground ${indent}`}>{item.label}</div>
+        <div className="px-2 py-1.5 text-right tabular-nums text-[9px] font-medium text-foreground">
           {item.value > 0 ? fmt(item.value) : "—"}
         </div>
-        <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-          {item.rate ? `${item.rate}%` : <span className="italic text-muted-foreground/40">—</span>}
+        <div className="px-2 py-1.5 text-right tabular-nums text-[9px] text-muted-foreground">
+          {item.rate ? `${item.rate}%` : <span className="text-muted-foreground/40">—</span>}
         </div>
         {!isLiability && (
-          <div className={`px-2 py-1.5 text-right tabular-nums text-[10px] ${retCls(item.ret)}`}>
+          <div className={`px-2 py-1.5 text-right tabular-nums text-[9px] ${retCls(item.ret)}`}>
             {item.ret ?? "—"}
           </div>
         )}
         <div className="px-2 py-1.5">
           {item.comment && (
-            <span className={`font-semibold text-[10px] ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}>
+            <span className={`text-[9px] ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}>
               {item.comment.text}
             </span>
           )}
@@ -1836,9 +1836,9 @@ function BsTable({
     <div key={group.category}>
       {renderItems(group.items, "pl-10")}
       {showSubtotal && (
-        <div className="grid border-t border-border/60 bg-slate-50 text-slate-600" style={{ gridTemplateColumns: COLS }}>
-          <div className="px-3 py-1.5 pl-6 text-[10px] font-semibold italic">{group.category}</div>
-          <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-semibold">{fmt(group.subtotal)}</div>
+        <div className="grid border-t border-border/60 bg-slate-50 text-slate-700" style={{ gridTemplateColumns: COLS }}>
+          <div className="px-3 py-1.5 pl-6 text-[10px] font-bold">{group.category}</div>
+          <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">{fmt(group.subtotal)}</div>
           <div className="px-2 py-1.5 text-right tabular-nums text-[10px] text-slate-400">
             {group.avgRate ? `${group.avgRate}%` : ""}
           </div>
