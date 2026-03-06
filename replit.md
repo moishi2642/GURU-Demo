@@ -25,7 +25,7 @@ An AI-powered wealth advisor platform that aggregates a unified view of end clie
 
 ### Pages
 - `/` — Client Portfolios list with summary statistics
-- `/client/:id` — Detailed client dashboard
+- `/client/:id` — Detailed client dashboard (5-tab navigation)
 
 ### Database Tables
 - `clients` — Client profiles (name, email, age, riskTolerance)
@@ -34,20 +34,23 @@ An AI-powered wealth advisor platform that aggregates a unified view of end clie
 - `cash_flows` — Income and expense events (type, amount, category, date, description)
 - `strategies` — AI-generated strategy recommendations (name, recommendation, impact)
 
-## Key Features
+## Demo Client
 
-1. **Unified Client Profile** — All financial data aggregated in one view
-2. **KPI Dashboard** — Net Worth, Net Cash Flow, Debt-to-Assets Ratio, Annual Income
-3. **Asset Allocation Chart** — Pie chart breakdown by asset class
-4. **12-Month Cash Flow Forecast** — Area chart projecting cumulative net position
-5. **Liquidity Analysis Panel** — Matches liquid assets to cash flow obligations, shows coverage ratio (months)
-6. **Balance Sheet View** — Traditional double-entry layout showing assets vs. liabilities + net worth
-7. **AI Strategy Generation** — GPT-5.1 analyzes full balance sheet to generate 3 specific recommendations including liquidity matching and cash deployment strategies
-8. **Add Assets / Liabilities / Cash Flows** — Modal forms to build out client profiles
+**Sarah & Michael Kessler** — single seeded demo client, populated from Prototype_Model_v4.xlsx
 
-## Seed Data
-One demo client is seeded on first run (only if the database is empty):
-- **Sarah & Michael Kessler** (44, moderate risk) — HNW dual-income family, $5.99M assets, $1.35M liabilities
+- **DB asset total**: $5,912,862 (live sum of `assets` table)
+- **PROTO_TOTAL_ASSETS**: 5,996,550 (hardcoded — used only for GURU `growTarget` math, NOT for display)
+- **DEMO_NOW**: `new Date(2025, 11, 1)` = December 1, 2025
+
+## Navigation (5 Tabs)
+
+| Tab | ActiveView key | Accent |
+|---|---|---|
+| Advisor Brief | `advisorbrief` | rose |
+| Dashboard | `dashboard` | — |
+| Client Financials & Forecast | `financials` | — |
+| GURU Allocation | `guru` | — |
+| Money Movement | `moneymovement` | — |
 
 ## Live Market Data
 
@@ -56,52 +59,99 @@ One demo client is seeded on first run (only if the database is empty):
 - **Auth flow**: `fc.yahoo.com` → cookies → `query2.finance.yahoo.com/v1/test/getcrumb` → crumb → quote endpoint
 - **Persistence**: Auth cached in `/tmp/guru-yahoo-auth.json` (survives restarts, 1hr TTL)
 - **If 429 rate-limited**: Run `curl -s -c /tmp/yf2.txt "https://fc.yahoo.com/" -L -o /dev/null && curl -s -b /tmp/yf2.txt "https://query2.finance.yahoo.com/v1/test/getcrumb"` to get a fresh crumb, then write it to the cache file
-- **BrokeragePanel**: Shows live SPY % change and live GS stock price inline with holdings
 
-## GURU Method — 5 Strategic Bucket Framework
+## GURU Allocation Tab
 
-All asset categorization uses the `GURU_BUCKETS` constant defined in `client-dashboard.tsx`:
+### Hero Bar
+- **Total Assets**: `assets.reduce((s, a) => s + Number(a.value), 0)` — live DB sum ($5,912,862)
+- **Potential Excess Cash**: computed from `reserveDelta` + `flowDelta` overshoots
+- `PROTO_TOTAL_ASSETS = 5,996,550` is used internally ONLY for `growTarget` allocation math
 
-| Bucket | Key | Color | Description |
-|---|---|---|---|
-| **Reserve** | `reserve` | Blue | Instantly available transaction accounts (checking) |
-| **Yield** | `yield` | Amber | Penalty-free, higher-yielding accounts (savings, MM) |
-| **Tactical** | `tactical` | Emerald | 1–2 days to settle or committed for a term (T-bills) |
-| **Growth** | `growth` | Violet | Long-horizon investments — equities, bonds, retirement |
-| **Alternatives** | `alternatives` | Orange | Real estate, PE, RSUs — strategic illiquid assets |
+### Bucket Framework (4 active + 3 passive)
+| Bucket | Color | Description |
+|---|---|---|
+| Operating Cash | Blue | Day-to-day transaction accounts |
+| Reserve | Amber | Emergency + irregular expense buffer |
+| Build | Green | Medium-term T-bills/savings ladder |
+| Grow | Violet | Long-horizon equity/alternative investments |
+| Real Estate | Gray | Illiquid property — passive display |
+| Alternative Assets | Gray | PE NAV + Carry — passive display |
+| 529 Plans | Gray | Education — passive display |
 
-- **Liquid** = Reserve + Yield + Tactical (used in 12-month sufficiency check)
-- `cashBuckets(assets)` → returns `{ reserve, yieldBucket, tactical, growth, alts, totalLiquid, ...items }`
-- `liquidityTag(a)` → returns `{ label, tagCls }` from GURU_BUCKETS for badge rendering in NetWorthPanel
-- Legacy aliases (`immediate`, `shortTerm`, `mediumTerm`) are preserved in `cashBuckets()` return value for backward compat
+Each active bucket row has:
+- LEFT: account list with current balances
+- MIDDLE: `BucketExecutionPanel` — transfer amount, months stepper, route selector, Execute button
+- RIGHT: `BucketProductPanel` — top 3 recommended products, yield pickup vs current, allocation % inputs
 
-## Dashboard Layout (client-dashboard.tsx)
+### Key Constants (in GURU tab IIFE)
+- `PROTO_TOTAL_ASSETS = 5,996,550` — for growTarget math only
+- `growTarget = PROTO_TOTAL_ASSETS - reserveTarget - flowTarget - buildTarget - otherCurrent`
+- `heroCardTotal = assets.reduce(...)` — live DB sum for display
 
-### Hero Banner (2-column)
-- **Left**: "Cash Allocation" — horizontal progress bars for Reserve / Yield / Tactical showing each bucket's share of `totalLiquid` and exact dollar value
-- **Right**: "Cash Available to Invest" + large `cashExcessTop` (liquid − 12-mo trough) + 3 sub-stats: Total Liquid, 12-Mo Req'd, Next Month net
+## Balance Sheet (Client Financials → Balance Sheet tab)
 
-### 6-Panel Grid (3-column)
-1. `NetWorthPanel` — today's net worth + 5-year forward projection chart (Now/1Y/2Y/3Y/4Y/5Y XAxis), pulsing dot at Now
-2. `CashFlowForecastPanel` — 12-month bar + area cumulative chart with trough marker
-3. `CashManagementPanel` — "The GURU Method" 5-bucket donut with clickable legend, active description card, liquidity footer
-4. `NetWorthPanel` (balance sheet tab) — assets vs liabilities breakdown with GURU badges
-5. `BrokeragePanel` — live GS price, SPY % change, holdings breakdown
-6. `GuruOptimizerPanel` — AI-generated strategies with impact scores
+### Two-Level Section Hierarchy
 
-### Key Helpers
-- `buildNWProjection(netWorth, cashFlows, assets)` → 6-point array `{ label, year, value }` using 6.5% growth on equity/RE/alts + annual surplus
+`buildAssetGroups(assets)` returns `BsSection[]`:
+```typescript
+interface BsSection { label: string; groups: BsGroup[]; total: number }
+interface BsGroup { category: string; label: string; items: BsGroupItem[]; subtotal: number }
+interface BsGroupItem { label: string; value: number; rate: string|null; ret: string|null; comment: AssetComment|null }
+```
+
+**5 sections**: Cash → Investments → Real Estate → Carry → Retirement
+
+### BsTable Component
+- **Assets**: `sections?: BsSection[]` — 5-col grid (`1fr 90px 56px 72px 80px`) incl. Return column
+- **Liabilities**: `groups?: BsGroup[]` — 4-col grid (`1fr 90px 56px 90px`) — flat, no Return column
+- Header row: `bg-slate-800 text-slate-300`
+- Section header rows: `bg-slate-200` with section total
+- Sub-group subtotal rows: italic, `bg-slate-50`
+- Item rows: `pl-10` deep indent
+- Grand total row: `bg-slate-900 text-white`
+
+### ASSET_RETURNS Lookup
+Per-account returns hardcoded in `buildAssetGroups`:
+- Meta +28.3%, Cresset +14.2%, Carlyle VIII 12.4% IRR, Coinbase +47.3%, etc.
+- Green for positive equity/alts, amber for fixed rates, muted for retirement/RE
+
+## Cash Flow P&L Table (Client Financials → Cash Flows tab)
+
+### Row Structure (`CF_PL_ROWS`)
+- `kind: "group"` — collapsible section header (▶ LABEL), `bg-slate-200/70`, indented `pl-7`
+- `kind: "item"` — individual line item, `bg-card`, `pl-8`
+- `kind: "subtotal"` — section subtotal, `bg-slate-100`, `pl-8 font-bold`
+
+### Footer Rows (bottom of table, in order)
+1. **Total Cash Inflow** — `bg-emerald-50`, sum of all positive item values per month
+2. **Total Cash Expenses** — `bg-rose-50`, sum of all negative item values per month
+3. **Net Cash Flow** — `bg-emerald-50` or `bg-rose-50` depending on sign, `border-t-2`
+4. **Cumulative Net** — `bg-blue-100`, `border-t-2 border-blue-300` (prominent), rolling YTD, trough circled in rose
+
+### Key Computed Values
+```typescript
+inflowByMonth  = CF_MONTHS.map(mi => sum of Math.max(0, vals[item][mi]))
+outflowByMonth = CF_MONTHS.map(mi => sum of Math.min(0, vals[item][mi]))
+netByMonth     = inflowByMonth + outflowByMonth (per month)
+cumulativeByMonth = running sum of netByMonth
+troughIdx      = index of minimum cumulativeByMonth value
+```
+
+## Key Helpers (client-dashboard.tsx)
+
+- `buildAssetGroups(assets)` → `BsSection[]` — two-level section hierarchy for balance sheet
+- `buildLiabilityGroups(liabilities)` → `BsGroup[]` — flat groups for liability table
+- `buildNWProjection(netWorth, cashFlows, assets)` → 6-point array `{ label, year, value }`
 - `cashBuckets(assets)` → `{ reserve, yieldBucket, tactical, growth, alts, totalLiquid, ...items }`
 - `buildForecast(cashFlows)` → 12-month forecast with cumulative net
-- `computeTrough(forecastData)` → worst cumulative position = the 12-month cash requirement figure
-- `isChunkyEvent(cf)` → filters CashFlowTicker to taxes, education, bonus, travel, lifestyle, investments ≥ $5K
-- `liquidityTag(a)` → GURU bucket label + CSS class for NetWorthPanel badges
+- `computeTrough(forecastData)` → worst cumulative position
+- `isChunkyEvent(cf)` → filters CashFlowTicker to taxes, education, bonus, travel ≥ $5K
 
 ## Development Notes
 
 - All numeric values stored as `numeric` (Drizzle) which returns strings — always coerce with `Number()`
-- Cash flow forecast is computed client-side from monthly averages (monthly * 12 projected)
-- Asset descriptions may be undefined in edge cases — always use `(a.description ?? "").toLowerCase()`
+- `CF_MONTHS` date filters use `getUTCFullYear()` / `getUTCMonth()` (not local time)
+- `CardCheckHeader` title prop is `React.ReactNode` (supports JSX/italic text)
 - AI strategies are accumulated (not replaced) — each generation appends to existing strategies
-- `cashFlows` prop must be passed to `NetWorthPanel` — it uses it for the 5-year projection
-- Hero banner variables: `reserveTop`, `yieldTop`, `tacticalTop`, `totalLiquidTop`, `cashTroughTop`, `cashExcessTop`, `isPositiveTop`, `nextMonthNet`
+- FIGMA DESIGNS: permanently rejected — never implement from Figma
+- `ActiveView` type: `"dashboard" | "advisorbrief" | "financials" | "guru" | "moneymovement"`
