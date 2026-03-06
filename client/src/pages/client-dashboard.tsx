@@ -1581,6 +1581,7 @@ interface BsGroup {
     label: string;
     value: number;
     rate: string | null;
+    ret: string | null;
     comment: AssetComment | null;
   }[];
   subtotal: number;
@@ -1627,10 +1628,43 @@ function buildAssetGroups(assets: Asset[]): BsGroup[] {
   const realEstate = assets.filter((a) => a.type === "real_estate");
   const retirement = assets.filter((a) => isRetirement(a));
 
+  const ASSET_RETURNS: Array<[string, string]> = [
+    ["cresset",        "+14.2%"],
+    ["roth ira",       "+11.8%"],
+    ["401(k)",         "+10.4%"],
+    ["traditional ira","+10.4%"],
+    ["meta platforms", "+28.3%"],
+    ["schwab",         "+7.9%"],
+    ["goldman sachs",  "+18.2%"],
+    ["bank of america","+8.6%"],
+    ["citizens private bank money market", "3.65%"],
+    ["capitalon",      "3.78%"],
+    ["citizens private banking checking",  "0.01%"],
+    ["chase total",    "0.01%"],
+    ["fidelity — cash sweep",              "2.50%"],
+    ["fidelity",       "+10.4%"],
+    ["us treasuries",  "3.95%"],
+    ["tribeca",        "+4.2%"],
+    ["sarasota",       "+6.1%"],
+    ["carlyle partners viii (pe",          "12.4% IRR"],
+    ["carlyle partners ix (pe",            "14.2% IRR"],
+    ["carlyle partners viii — carry",      "22.6% est."],
+    ["carlyle partners ix — carry",        "26.1% est."],
+    ["coinbase",       "+47.3%"],
+  ];
+  const lookupReturn = (desc: string | null): string | null => {
+    const d = (desc ?? "").toLowerCase();
+    for (const [key, val] of ASSET_RETURNS) {
+      if (d.includes(key)) return val;
+    }
+    return null;
+  };
+
   const toItem = (a: Asset) => ({
     label: a.description.split("(")[0].split("—")[0].split("–")[0].trim(),
     value: Number(a.value),
     rate: extractRate(a.description),
+    ret: lookupReturn(a.description),
     comment: assetComment(a),
   });
 
@@ -1765,6 +1799,7 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
       parseFloat(l.interestRate) > 0
         ? parseFloat(l.interestRate).toFixed(2)
         : null,
+    ret: null,
     comment: liabComment(l),
   });
 
@@ -1822,22 +1857,32 @@ function BsTable({
   isLiability?: boolean;
 }) {
   const isSubtotalOnly = (g: BsGroup) => g.items.length === 0;
+  const COLS = isLiability ? "1fr 90px 56px 90px" : "1fr 90px 56px 72px 80px";
+  const retCls = (r: string | null) => {
+    if (!r) return "text-muted-foreground/50 italic";
+    if (r.startsWith("+")) return "text-emerald-700 font-semibold";
+    if (r.toLowerCase().includes("irr") || r.toLowerCase().includes("est")) return "text-amber-700 font-semibold";
+    return "text-muted-foreground";
+  };
 
   return (
     <div className="border border-border rounded-xl overflow-hidden text-xs">
       {/* Header */}
       <div
-        className="grid bg-muted/50 border-b border-border"
-        style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
+        className="grid bg-slate-800"
+        style={{ gridTemplateColumns: COLS }}
       >
-        <div className="px-3 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+        <div className="px-3 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-300">
           {isLiability ? "Liability Category" : "Asset Category"}
         </div>
-        <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-muted-foreground">Balance</div>
-        <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+        <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-slate-300">Balance</div>
+        <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-slate-300">
           {isLiability ? "Cost" : "Yield"}
         </div>
-        <div className="px-2 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Notes</div>
+        {!isLiability && (
+          <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-slate-300">Return</div>
+        )}
+        <div className="px-2 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-300">Notes</div>
       </div>
 
       {groups.map((group, gi) => (
@@ -1847,7 +1892,7 @@ function BsTable({
               <div
                 key={ii}
                 className="grid border-t border-border/50 hover:bg-secondary/30 transition-colors"
-                style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
+                style={{ gridTemplateColumns: COLS }}
               >
                 <div className="px-4 py-1.5 text-muted-foreground pl-6">
                   {item.label}
@@ -1864,6 +1909,11 @@ function BsTable({
                     "—"
                   )}
                 </div>
+                {!isLiability && (
+                  <div className={`px-2 py-1.5 text-right tabular-nums text-[10px] ${retCls(item.ret)}`}>
+                    {item.ret ?? "—"}
+                  </div>
+                )}
                 <div className="px-2 py-1.5">
                   {item.comment && (
                     <span
@@ -1878,15 +1928,16 @@ function BsTable({
           {/* Subtotal / category row */}
           <div
             className={`grid border-t border-border font-semibold ${isSubtotalOnly(group) ? "bg-slate-200/60 text-slate-800" : "bg-slate-100 text-slate-700"}`}
-            style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
+            style={{ gridTemplateColumns: COLS }}
           >
-            <div className={`px-3 py-1.5 text-[10px] font-bold ${isSubtotalOnly(group) ? "pl-3" : "pl-3"}`}>{group.category}</div>
+            <div className="px-3 py-1.5 text-[10px] font-bold">{group.category}</div>
             <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">
               {fmt(group.subtotal)}
             </div>
             <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
               {group.avgRate ? `${group.avgRate}%` : ""}
             </div>
+            {!isLiability && <div className="px-2 py-1.5" />}
             <div className="px-2 py-1.5" />
           </div>
         </div>
@@ -1894,16 +1945,17 @@ function BsTable({
 
       {/* Grand total */}
       <div
-        className={`grid border-t-2 font-bold ${isLiability ? "bg-rose-50 text-rose-800 border-rose-200" : "bg-blue-50 text-blue-900 border-blue-200"}`}
-        style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
+        className="grid bg-slate-900 text-white border-t-2 border-slate-700 font-bold"
+        style={{ gridTemplateColumns: COLS }}
       >
         <div className="px-3 py-2.5 font-black text-[11px]">{totalLabel}</div>
         <div className="px-2 py-2.5 text-right tabular-nums font-black text-[11px]">
           {fmt(totalValue)}
         </div>
-        <div className="px-2 py-2.5 text-right tabular-nums text-[10px]">
+        <div className="px-2 py-2.5 text-right tabular-nums text-[10px] text-slate-300">
           {totalRate ? `${totalRate}%` : ""}
         </div>
+        {!isLiability && <div className="px-2 py-2.5" />}
         <div className="px-2 py-2.5" />
       </div>
     </div>
