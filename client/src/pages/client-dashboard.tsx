@@ -6134,6 +6134,7 @@ function AdvisorBriefView({
     badge,
     priority,
     title,
+    subtitle,
   }: {
     cardKey: string;
     color: string;
@@ -6141,6 +6142,7 @@ function AdvisorBriefView({
     badge: string;
     priority: string;
     title: React.ReactNode;
+    subtitle?: React.ReactNode;
   }) => {
     const isChecked = checked.has(cardKey);
     return (
@@ -6169,6 +6171,9 @@ function AdvisorBriefView({
               {badge}
             </span>
             <p className="text-base font-black text-foreground mt-1.5 leading-snug">{title}</p>
+            {subtitle && (
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug font-normal">{subtitle}</p>
+            )}
           </div>
         </div>
         <span className="text-[8px] font-black uppercase tracking-wider text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5">
@@ -6340,7 +6345,8 @@ function AdvisorBriefView({
               icon={SlidersHorizontal}
               badge="Fixed Income"
               priority="Time Sensitive"
-              title={<>Getting Ahead of Fed Rate Cuts — Better Products for <em>Reserve Cash Accounts</em></>}
+              title="Repositioning for Fed Rate Cuts"
+              subtitle={<>Lock-in short term rates in the <em>Reserve</em> and <em>Build</em> accounts</>}
             />
             {/* Headline stats */}
             <div className="flex items-center gap-5 py-1">
