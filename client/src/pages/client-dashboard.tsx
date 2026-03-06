@@ -6260,31 +6260,32 @@ function AdvisorBriefView({
               priority="Time Sensitive"
               title={<>Getting Ahead of Fed Rate Cuts — Better Products for <em>Reserve Cash Accounts</em></>}
             />
-            <div className="grid grid-cols-2 gap-8">
-              <div className="flex items-end gap-4">
-                <div>
-                  <p className="text-3xl font-black tabular-nums text-amber-600 leading-none">+{bpsPickup} bps</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">yield pickup available</p>
-                </div>
-                <div className="pb-1">
-                  <p className="text-lg font-black tabular-nums text-amber-700">{fmt(_yieldPickupAnnual)}<span className="text-sm font-semibold">/yr</span></p>
-                  <p className="text-[10px] text-muted-foreground">incremental after-tax income</p>
-                </div>
+            {/* Headline stats */}
+            <div className="flex items-center gap-5 py-1">
+              <div>
+                <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{bpsPickup} bps</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">yield pickup available</p>
               </div>
-              <div className="space-y-2">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Current vs GURU Recommended</p>
-                {[
-                  { label: "Idle bank accounts", current: "~0.50%", note: "Move to MMF" },
-                  { label: "Reserve MMF", current: `${_currentLiquidYield.toFixed(1)}% AT`, note: `${_guruLiquidYield.toFixed(1)}% AT · JPMorgan 100% Treas` },
-                  { label: "Build Ladder", current: "2.50% AT", note: "2.74% AT · Short T-Bill ladder" },
-                ].map((row) => (
-                  <div key={row.label} className="grid grid-cols-[1fr_auto_auto] gap-3 items-center rounded-lg border border-border bg-background px-3 py-2">
-                    <span className="text-[10px] text-muted-foreground truncate">{row.label}</span>
-                    <span className="text-[10px] tabular-nums text-foreground">{row.current}</span>
-                    <span className="text-[10px] tabular-nums font-bold text-amber-700 whitespace-nowrap">→ {row.note}</span>
-                  </div>
-                ))}
+              <div className="w-px h-8 bg-border flex-shrink-0" />
+              <div>
+                <p className="text-xl font-black tabular-nums text-amber-700 leading-none">{fmt(_yieldPickupAnnual)}<span className="text-sm font-semibold">/yr</span></p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">incremental after-tax income</p>
               </div>
+            </div>
+            {/* Comparison table */}
+            <div className="space-y-1.5">
+              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Current vs GURU Recommended</p>
+              {[
+                { label: "Idle bank accounts", current: "~0.50%", note: "→ Move to MMF" },
+                { label: "Reserve MMF", current: `${_currentLiquidYield.toFixed(1)}% AT`, note: `→ ${_guruLiquidYield.toFixed(1)}% AT · JPMorgan` },
+                { label: "Build Ladder", current: "2.50% AT", note: "→ 2.74% AT · T-Bills" },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2">
+                  <span className="text-[10px] text-muted-foreground truncate">{row.label}</span>
+                  <span className="text-[10px] tabular-nums text-foreground flex-shrink-0">{row.current}</span>
+                  <span className="text-[10px] tabular-nums font-bold text-amber-700 flex-shrink-0">{row.note}</span>
+                </div>
+              ))}
             </div>
             <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -6339,99 +6340,87 @@ function AdvisorBriefView({
             const isUrgent = daysUntil <= 45;
 
             return (
-              <div key={obl.id} className="px-6 py-4">
-                <div className="flex items-center gap-4">
-                  {/* Left: info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${oblCatStyle(obl.category)}`}>
-                        {obl.category === "tax" ? "Tax" : "Education"}
-                      </span>
-                      <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${isUrgent ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-slate-50 text-slate-500 border border-slate-200"}`}>
-                        Due {format(obl.due, "MMM d, yyyy")} · {daysUntil}d away
-                      </span>
-                      <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${obl.method === "Wire" ? "bg-violet-50 text-violet-700 border border-violet-200" : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
-                        {obl.method}
-                      </span>
-                    </div>
-                    <p className="text-[13px] font-black text-foreground leading-none">{obl.label}</p>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <div className="flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground">{obl.payee} · {obl.acct}</span>
-                      </div>
-                      <span className="text-muted-foreground/40">·</span>
-                      <span className="text-[10px] text-muted-foreground">From: {obl.from}</span>
-                      <span className="text-muted-foreground/40">·</span>
-                      <span className="text-[10px] text-muted-foreground font-mono">Routing: {obl.routing}</span>
-                    </div>
+              <div key={obl.id} className="px-5 py-4 space-y-3">
+                {/* Top row: tags + amount */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${oblCatStyle(obl.category)}`}>
+                      {obl.category === "tax" ? "Tax" : "Education"}
+                    </span>
+                    <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${isUrgent ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-slate-50 text-slate-500 border border-slate-200"}`}>
+                      {format(obl.due, "MMM d, yyyy")} · {daysUntil}d
+                    </span>
+                    <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${obl.method === "Wire" ? "bg-violet-50 text-violet-700 border border-violet-200" : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
+                      {obl.method}
+                    </span>
                   </div>
-
-                  {/* Center: amount */}
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-xl font-black tabular-nums text-rose-700">{fmt(obl.amount, true)}</p>
-                  </div>
-
-                  {/* Right: action */}
-                  <div className="flex-shrink-0 w-52">
-                    {isAuth ? (
-                      <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
-                        <CheckSquare className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                        <div>
-                          <p className="text-[10px] font-black text-emerald-800">GURU Authorized</p>
-                          <p className="text-[9px] text-emerald-600">Will process 2 business days prior</p>
-                        </div>
-                      </div>
-                    ) : step === 0 ? (
-                      <button
-                        onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 1 }))}
-                        className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-[11px] font-bold transition-colors"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        GURU: Initiate {obl.method}
-                      </button>
-                    ) : step === 1 ? (
-                      <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 space-y-2">
-                        <p className="text-[10px] font-black text-amber-800">Authorize GURU to send {fmt(obl.amount, true)} to {obl.payee}?</p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 2 }))}
-                            className="flex-1 bg-amber-500 hover:bg-amber-400 text-white rounded-lg py-1.5 text-[10px] font-bold transition-colors"
-                          >
-                            Yes, authorize
-                          </button>
-                          <button
-                            onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 0 }))}
-                            className="flex-1 bg-white border border-slate-200 text-slate-600 rounded-lg py-1.5 text-[10px] font-bold hover:bg-slate-50 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 space-y-2">
-                        <p className="text-[10px] font-black text-rose-800">Final confirmation — this cannot be undone.</p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setAuthorized((s) => new Set([...s, obl.id]));
-                              setObligationStep((s) => ({ ...s, [obl.id]: 0 }));
-                            }}
-                            className="flex-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg py-1.5 text-[10px] font-bold transition-colors"
-                          >
-                            Confirm
-                          </button>
-                          <button
-                            onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 0 }))}
-                            className="flex-1 bg-white border border-slate-200 text-slate-600 rounded-lg py-1.5 text-[10px] font-bold hover:bg-slate-50 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                  <p className="text-base font-black tabular-nums text-rose-700 flex-shrink-0">{fmt(obl.amount, true)}</p>
+                </div>
+                {/* Label + payee */}
+                <div>
+                  <p className="text-[12px] font-black text-foreground leading-tight">{obl.label}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Building2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                    <span className="text-[10px] text-muted-foreground truncate">{obl.payee} · From: {obl.from}</span>
                   </div>
                 </div>
+                {/* Action button — full width */}
+                {isAuth ? (
+                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
+                    <CheckSquare className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] font-black text-emerald-800">GURU Authorized</p>
+                      <p className="text-[9px] text-emerald-600">Will process 2 business days prior</p>
+                    </div>
+                  </div>
+                ) : step === 0 ? (
+                  <button
+                    onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 1 }))}
+                    className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-[11px] font-bold transition-colors"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    GURU: Initiate {obl.method}
+                  </button>
+                ) : step === 1 ? (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 space-y-2">
+                    <p className="text-[10px] font-black text-amber-800">Authorize GURU to send {fmt(obl.amount, true)} to {obl.payee}?</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 2 }))}
+                        className="flex-1 bg-amber-500 hover:bg-amber-400 text-white rounded-lg py-1.5 text-[10px] font-bold transition-colors"
+                      >
+                        Yes, authorize
+                      </button>
+                      <button
+                        onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 0 }))}
+                        className="flex-1 bg-white border border-slate-200 text-slate-600 rounded-lg py-1.5 text-[10px] font-bold hover:bg-slate-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 space-y-2">
+                    <p className="text-[10px] font-black text-rose-800">Final confirmation — this cannot be undone.</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setAuthorized((s) => new Set([...s, obl.id]));
+                          setObligationStep((s) => ({ ...s, [obl.id]: 0 }));
+                        }}
+                        className="flex-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg py-1.5 text-[10px] font-bold transition-colors"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 0 }))}
+                        className="flex-1 bg-white border border-slate-200 text-slate-600 rounded-lg py-1.5 text-[10px] font-bold hover:bg-slate-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
