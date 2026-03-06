@@ -1538,6 +1538,55 @@ function extractRate(description: string): string | null {
 
 type AssetComment = { text: string; color: "red" | "orange" | "muted" };
 
+// ─── Balance Sheet subtitle lookup (account numbers & addresses) ───────────────
+// Each entry: [keywords-to-match (all must hit), subtitle string]
+const BS_ASSET_SUBTITLES: Array<[string[], string]> = [
+  [["chase", "checking"],                        "Acct ****7842"],
+  [["capitalon"],                                "Acct ****3319"],
+  [["citizens", "checking"],                     "Acct ****2201"],
+  [["citizens", "money market"],                 "Acct ****8874"],
+  [["citizens", "private bank"],                 "Acct ****8874"],
+  [["goldman sachs", "money market"],            "Acct ****4521"],
+  [["goldman sachs", "marcus"],                  "Acct ****4521"],
+  [["cresset"],                                  "Acct ****5839"],
+  [["schwab"],                                   "Acct ****1192"],
+  [["e*trade"],                                  "Acct ****6074"],
+  [["etrade"],                                   "Acct ****6074"],
+  [["fidelity"],                                 "Acct ****2893"],
+  [["401(k)"],                                   "Acct ****7743"],
+  [["roth ira"],                                 "Acct ****3892"],
+  [["traditional ira"],                          "Acct ****6615"],
+  [["coinbase"],                                 "Acct ****9201"],
+  [["carlyle partners viii", "carry"],           "Fund LP-8821"],
+  [["carlyle partners ix", "carry"],             "Fund LP-3347"],
+  [["carlyle partners viii"],                    "Fund LP-8821"],
+  [["carlyle partners ix"],                      "Fund LP-3347"],
+  [["tribeca"],                                  "142 Duane St, Apt 7A · New York, NY 10013"],
+  [["sarasota"],                                 "4821 Gulf of Mexico Dr · Sarasota, FL 34231"],
+];
+
+const BS_LIAB_SUBTITLES: Array<[string[], string]> = [
+  [["chase sapphire"],                           "Acct ****9934"],
+  [["amex"],                                     "Acct ****9934"],
+  [["credit card"],                              "Acct ****9934"],
+  [["tribeca"],                                  "Loan ****4422"],
+  [["sarasota"],                                 "Loan ****7019"],
+  [["student loan"],                             "Acct ****5288"],
+  [["professional loan"],                        "Acct ****6614"],
+  [["capital commitment"],                       "Acct ****6614"],
+];
+
+function lookupBsSubtitle(
+  desc: string | null,
+  map: Array<[string[], string]>,
+): string | null {
+  const d = (desc ?? "").toLowerCase();
+  for (const [keys, sub] of map) {
+    if (keys.every((k) => d.includes(k.toLowerCase()))) return sub;
+  }
+  return null;
+}
+
 function assetComment(a: Asset, groupTotal?: number): AssetComment | null {
   const desc = (a.description ?? "").toLowerCase();
   const val = Number(a.value);
@@ -1579,6 +1628,7 @@ interface BsGroup {
   category: string;
   items: {
     label: string;
+    subtitle?: string | null;
     value: number;
     rate: string | null;
     ret: string | null;
@@ -1642,6 +1692,8 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
     }
     const items = Object.entries(map).map(([inst, data]) => ({
       label: inst,
+      subtitle: lookupBsSubtitle(inst, BS_ASSET_SUBTITLES) ??
+                lookupBsSubtitle(data.descs[0] ?? "", BS_ASSET_SUBTITLES),
       value: data.value,
       rate: null as string | null,
       ret: lookupReturn(data.descs.length === 1 ? data.descs[0] : inst),
@@ -1694,6 +1746,7 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
 
   const toItem = (a: Asset) => ({
     label: a.description.split("(")[0].split("—")[0].split("–")[0].trim(),
+    subtitle: lookupBsSubtitle(a.description, BS_ASSET_SUBTITLES),
     value: Number(a.value),
     rate: extractRate(a.description),
     ret: lookupReturn(a.description),
@@ -1771,6 +1824,7 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
 
   const toItem = (l: Liability) => ({
     label: l.description.split("(")[0].split("—")[0].split("–")[0].trim(),
+    subtitle: lookupBsSubtitle(l.description, BS_LIAB_SUBTITLES),
     value: Number(l.value),
     rate:
       parseFloat(l.interestRate) > 0
@@ -1850,7 +1904,12 @@ function BsTable({
         className="grid border-t border-border/40 hover:bg-secondary/30 transition-colors"
         style={{ gridTemplateColumns: COLS }}
       >
-        <div className="px-3 py-1.5 text-muted-foreground pl-10 text-[11px]">{item.label}</div>
+        <div className="px-3 py-1.5 pl-10">
+          <p className="text-[11px] text-muted-foreground leading-tight">{item.label}</p>
+          {item.subtitle && (
+            <p className="text-[9px] text-muted-foreground/55 leading-tight mt-0.5 tabular-nums">{item.subtitle}</p>
+          )}
+        </div>
         <div className="px-2 py-1.5 text-right tabular-nums font-medium text-foreground text-[11px]">
           {item.value > 0 ? fmt(item.value) : "—"}
         </div>
