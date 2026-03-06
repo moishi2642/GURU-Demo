@@ -1863,7 +1863,7 @@ function BsTable({
         {!isLiability && (
           <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-slate-300">Return</div>
         )}
-        <div className="px-2 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-300">Notes</div>
+        <div className="px-2 py-2.5 font-black uppercase tracking-widest text-slate-300 text-[12px]">Notes</div>
       </div>
       {/* Sectioned asset rows */}
       {sections && sections.map((sec) => (
