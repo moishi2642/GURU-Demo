@@ -2369,6 +2369,18 @@ function CashFlowForecastView({
     }
   }
 
+  const inflowByMonth = CF_MONTHS.map((_, mi) =>
+    CF_PL_ROWS.filter((r) => r.kind === "item").reduce(
+      (s, r) => s + Math.max(0, vals[r.key]?.[mi] ?? 0),
+      0,
+    ),
+  );
+  const outflowByMonth = CF_MONTHS.map((_, mi) =>
+    CF_PL_ROWS.filter((r) => r.kind === "item").reduce(
+      (s, r) => s + Math.min(0, vals[r.key]?.[mi] ?? 0),
+      0,
+    ),
+  );
   const netByMonth = CF_MONTHS.map((_, mi) =>
     CF_PL_ROWS.filter((r) => r.kind === "item").reduce(
       (s, r) => s + (vals[r.key]?.[mi] ?? 0),
@@ -2634,7 +2646,7 @@ function CashFlowForecastView({
                           className="bg-slate-200/70 border-t border-slate-300 cursor-pointer hover:bg-slate-300/60 transition-colors select-none"
                           onClick={() => toggle(row.key)}
                         >
-                          <td className="px-4 py-1.5 font-black text-[9px] uppercase tracking-widest text-slate-700">
+                          <td className="px-4 pl-7 py-1.5 font-black text-[9px] uppercase tracking-widest text-slate-700">
                             <span className="flex items-center gap-2">
                               <span className={`text-slate-500 transition-transform duration-150 inline-block ${isOpen ? "rotate-90" : ""}`}>▶</span>
                               {row.label}
@@ -2695,6 +2707,34 @@ function CashFlowForecastView({
                     }
                     return null;
                   })}
+                  {/* TOTAL CASH INFLOW */}
+                  <tr className="border-t-2 border-slate-300 bg-emerald-50">
+                    <td className="px-4 py-2 font-black text-[10px] uppercase tracking-wider text-emerald-800">
+                      Total Cash Inflow
+                    </td>
+                    {inflowByMonth.map((v, i) => (
+                      <td key={i} className="text-right px-1.5 py-2 tabular-nums font-bold text-[10px] text-emerald-700">
+                        {fmtCell(v)}
+                      </td>
+                    ))}
+                    <td className="text-right px-4 py-2 tabular-nums font-black text-[10px] text-emerald-700">
+                      {fmtCell(inflowByMonth.reduce((s, v) => s + v, 0))}
+                    </td>
+                  </tr>
+                  {/* TOTAL CASH EXPENSES */}
+                  <tr className="border-t border-rose-200 bg-rose-50">
+                    <td className="px-4 py-2 font-black text-[10px] uppercase tracking-wider text-rose-800">
+                      Total Cash Expenses
+                    </td>
+                    {outflowByMonth.map((v, i) => (
+                      <td key={i} className="text-right px-1.5 py-2 tabular-nums font-bold text-[10px] text-rose-600">
+                        {fmtCell(v)}
+                      </td>
+                    ))}
+                    <td className="text-right px-4 py-2 tabular-nums font-black text-[10px] text-rose-600">
+                      {fmtCell(outflowByMonth.reduce((s, v) => s + v, 0))}
+                    </td>
+                  </tr>
                   {/* NET CASH FLOW */}
                   <tr className={`border-t-2 border-border ${annualNet >= 0 ? "bg-emerald-50" : "bg-rose-50"}`}>
                     <td className={`px-4 py-2.5 font-black text-[11px] uppercase tracking-wider ${annualNet >= 0 ? "text-emerald-800" : "text-rose-800"}`}>
@@ -2710,7 +2750,7 @@ function CashFlowForecastView({
                     </td>
                   </tr>
                   {/* CUMULATIVE NET */}
-                  <tr className="border-t border-border bg-blue-50/50">
+                  <tr className="border-t-2 border-blue-300 bg-blue-100">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-1.5">
                         <span className="font-black text-[11px] uppercase tracking-wider text-blue-800">Cumulative Net</span>
