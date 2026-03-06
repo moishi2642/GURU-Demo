@@ -1873,13 +1873,13 @@ function BsTable({
       {groups && groups.map((group) => (
         <div key={group.category}>
           {renderItems(group.items, "pl-6")}
-          <div className="grid border-t border-border bg-slate-100 text-slate-700" style={{ gridTemplateColumns: COLS }}>
-            <div className="px-3 py-1.5 font-bold text-[11px]">{group.category}</div>
-            <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">{fmt(group.subtotal)}</div>
-            <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+          <div className="grid border-t border-blue-200 bg-blue-100 text-blue-900" style={{ gridTemplateColumns: COLS }}>
+            <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest">{group.category}</div>
+            <div className="px-2 py-2 text-right tabular-nums text-[10px] font-black">{fmt(group.subtotal)}</div>
+            <div className="px-2 py-2 text-right tabular-nums text-[10px] text-blue-700">
               {group.avgRate ? `${group.avgRate}%` : ""}
             </div>
-            <div className="px-2 py-1.5" />
+            <div className="px-2 py-2" />
           </div>
         </div>
       ))}
