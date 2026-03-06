@@ -6243,10 +6243,10 @@ function AdvisorBriefView({
           return (
           <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden col-span-2">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #f43f5e" }}>
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #7c3aed" }}>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
-                  <Send className="w-4 h-4 text-rose-600" />
+                <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+                  <Send className="w-4 h-4 text-violet-600" />
                 </div>
                 <div>
                   <p className="text-base font-black text-foreground leading-none">Upcoming Obligations — Wire &amp; ACH Payments</p>
@@ -6255,7 +6255,7 @@ function AdvisorBriefView({
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <p className="text-xs font-black tabular-nums text-rose-700">{fmt(totalPending)}</p>
+                  <p className="text-xs font-black tabular-nums text-violet-700">{fmt(totalPending)}</p>
                   <p className="text-[9px] text-muted-foreground">total pending</p>
                 </div>
                 <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1">
@@ -6349,7 +6349,7 @@ function AdvisorBriefView({
                                 setWireMemo((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.label }));
                                 setWireModalId(obl.id);
                               }}
-                              className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-white rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors whitespace-nowrap"
+                              className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors whitespace-nowrap"
                             >
                               <Send className="w-3 h-3" />
                               Setup {obl.method}
