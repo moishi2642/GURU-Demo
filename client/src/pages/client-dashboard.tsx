@@ -1629,7 +1629,7 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
     ["capitalon",      "3.78%"],
     ["citizens private banking checking",  "0.01%"],
     ["chase total",    "0.01%"],
-    ["fidelity — cash sweep",              "2.50%"],
+    ["fidelity cash sweep",                "2.50%"],
     ["fidelity",       "+10.4%"],
     ["us treasuries",  "3.95%"],
     ["tribeca",        "+4.2%"],
@@ -1683,11 +1683,10 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
 
   // ── Investments ───────────────────────────────────────────────────────────
   const investGroups: BsGroup[] = [];
-  const allBrokerage = [...brokerage, ...brokerageCash];
-  if (allBrokerage.length) investGroups.push(mkGroup("Taxable Brokerage", allBrokerage));
+  if (brokerage.length) investGroups.push(mkGroup("Taxable Brokerage", brokerage));
   if (altAssets.length)    investGroups.push(mkGroup("Alternative Assets (PE Funds)", altAssets));
   if (rsus.length)         investGroups.push(mkGroup("RSUs & Unvested Equity", rsus));
-  if (investGroups.length) sections.push({ label: "Investments", groups: investGroups, total: subtot([...allBrokerage, ...altAssets, ...rsus]) });
+  if (investGroups.length) sections.push({ label: "Investments", groups: investGroups, total: subtot([...brokerage, ...altAssets, ...rsus]) });
 
   // ── Real Estate ───────────────────────────────────────────────────────────
   if (realEstate.length) sections.push({ label: "Real Estate", groups: [mkGroup("Properties", realEstate)], total: subtot(realEstate) });
