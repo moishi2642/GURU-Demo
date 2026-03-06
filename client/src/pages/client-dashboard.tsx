@@ -1678,7 +1678,7 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
   // ── Cash ──────────────────────────────────────────────────────────────────
   const cashGroups: BsGroup[] = [];
   if (checking.length) cashGroups.push(mkGroup("Checking Bank Accounts", checking));
-  if (savingsMM.length) cashGroups.push(mkGroup("Savings & Money Market", savingsMM));
+  if (savingsMM.length) cashGroups.push(mkGroup("Savings & Money Market Bank Accounts", savingsMM));
   if (cashGroups.length) sections.push({ label: "Cash", groups: cashGroups, total: subtot([...checking, ...savingsMM]) });
 
   // ── Investments ───────────────────────────────────────────────────────────
