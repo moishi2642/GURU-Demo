@@ -2801,8 +2801,10 @@ function BucketExecutionPanel({
 
   const AMBER = "#d97706";
 
+  const SVG_CHEVRON = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")";
+
   return (
-    <div className="w-72 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
+    <div className="w-64 flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
       <div className="flex-1 px-5 py-5 flex flex-col gap-4">
 
         {/* Months stepper — only for Operating Cash / Reserve */}
@@ -2834,94 +2836,6 @@ function BucketExecutionPanel({
             </div>
           );
         })()}
-
-        {/* ── Allocation Bars: Current vs GURU Target ── */}
-        <div className="rounded-xl bg-slate-700 px-4 py-3.5 space-y-3">
-          {/* Current bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[8px] uppercase tracking-widest font-bold text-slate-400">Current</span>
-              <span className="text-[11px] font-black tabular-nums text-white">{fmtD(current)}</span>
-            </div>
-            <div className="h-2 rounded-full bg-slate-600 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${Math.min(100, totalAssets > 0 ? (current / totalAssets) * 100 : 0)}%`, background: accentColor }}
-              />
-            </div>
-            <span className="text-[8px] text-slate-500 tabular-nums">
-              {totalAssets > 0 ? ((current / totalAssets) * 100).toFixed(1) : "0"}% of portfolio
-            </span>
-          </div>
-          {/* Delta badge */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-slate-600" />
-            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black tabular-nums ${
-              effDelta > 1000 ? "bg-amber-500/20 text-amber-300" :
-              effDelta < -1000 ? "bg-emerald-500/20 text-emerald-300" :
-              "bg-slate-600/60 text-slate-400"
-            }`}>
-              {effDelta > 0 ? "+" : ""}{fmtD(effDelta)} vs target
-            </span>
-            <div className="flex-1 h-px bg-slate-600" />
-          </div>
-          {/* GURU Target bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[8px] uppercase tracking-widest font-bold text-amber-400">GURU Target</span>
-              <span className="text-[11px] font-black tabular-nums text-amber-300">{fmtD(effTarget)}</span>
-            </div>
-            <div className="h-2 rounded-full bg-slate-600 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-amber-400 transition-all duration-700"
-                style={{ width: `${Math.min(100, totalAssets > 0 ? (effTarget / totalAssets) * 100 : 0)}%` }}
-              />
-            </div>
-            {/* Progress: current vs target */}
-            <div className="h-1 rounded-full bg-slate-600 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700 opacity-80"
-                style={{
-                  width: `${effTarget > 0 ? Math.min(100, (current / effTarget) * 100) : 0}%`,
-                  background: accentColor,
-                }}
-              />
-            </div>
-            <span className="text-[8px] text-slate-500 tabular-nums">
-              {effTarget > 0 ? `${((current / effTarget) * 100).toFixed(0)}% funded` : "—"}
-            </span>
-          </div>
-          {/* 2×2 metrics grid */}
-          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-            {[
-              {
-                label: "Status",
-                value: effDelta > 5000 ? "Underfunded" : effDelta < -5000 ? "Overfunded" : "On Target",
-                color: effDelta > 5000 ? "#f59e0b" : effDelta < -5000 ? "#10b981" : "#94a3b8",
-              },
-              {
-                label: "Priority",
-                value: Math.abs(effDelta) > 50000 ? "High" : Math.abs(effDelta) > 10000 ? "Medium" : "Low",
-                color: Math.abs(effDelta) > 50000 ? "#ef4444" : Math.abs(effDelta) > 10000 ? "#f59e0b" : "#10b981",
-              },
-              {
-                label: "Current Yield",
-                value: avgYield > 0 ? `${avgYield.toFixed(2)}%` : "—",
-                color: "#e2e8f0",
-              },
-              {
-                label: "Yield Pickup",
-                value: bpPickup > 0 ? `+${bpPickup}bp` : bpPickup < 0 ? `${bpPickup}bp` : "—",
-                color: bpPickup > 0 ? "#10b981" : bpPickup < 0 ? "#ef4444" : "#94a3b8",
-              },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="rounded-lg bg-slate-800 px-2.5 py-2">
-                <p className="text-[7px] uppercase tracking-widest font-bold text-slate-500 mb-0.5">{label}</p>
-                <p className="text-[10px] font-black leading-none" style={{ color }}>{value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* ── Transfer Amount ── */}
         {executed ? (
@@ -2979,7 +2893,7 @@ function BucketExecutionPanel({
                       onChange={e => setFromAccount(e.target.value)}
                       className="w-full text-[11px] font-semibold text-foreground rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer bg-background border border-border"
                       style={{
-                        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                        backgroundImage: SVG_CHEVRON,
                         backgroundRepeat: "no-repeat",
                         backgroundPosition: "right 6px center",
                         paddingRight: "22px",
@@ -2997,7 +2911,7 @@ function BucketExecutionPanel({
                       className="w-full text-[11px] font-semibold rounded-md px-2 py-1.5 focus:outline-none appearance-none cursor-pointer bg-background border border-border"
                       style={{
                         color: AMBER,
-                        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+                        backgroundImage: SVG_CHEVRON,
                         backgroundRepeat: "no-repeat",
                         backgroundPosition: "right 6px center",
                         paddingRight: "22px",
@@ -5703,7 +5617,111 @@ function GuruAllocationView({
                         })()}
                       </div>
                     </div>
-                    {/* ── MIDDLE: Transfer Execution panel ── */}
+                    {/* ── MIDDLE: GURU Allocation Visualization ── */}
+                    {(() => {
+                      const cur = r.current;
+                      const tgt = r.target;
+                      const delta = tgt - cur;
+                      const accent = r.def.accent;
+                      const avgYld = weightedGrossYield(r.subAccounts, r.current);
+                      const bp = r.bpPickup;
+                      const pctOf = (v: number) => totalAssets > 0 ? Math.min(100, (v / totalAssets) * 100) : 0;
+                      const fmtV = (v: number) => `$${Math.round(Math.abs(v)).toLocaleString()}`;
+                      return (
+                        <div className="w-60 flex-shrink-0 bg-slate-800 border-r border-slate-700 flex flex-col px-5 py-5 gap-4">
+                          {/* Current bar */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[8px] uppercase tracking-widest font-bold text-slate-400">Current</span>
+                              <span className="text-[12px] font-black tabular-nums text-white">{fmtV(cur)}</span>
+                            </div>
+                            <div className="h-2.5 rounded-full bg-slate-700 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{ width: `${pctOf(cur)}%`, background: accent }}
+                              />
+                            </div>
+                            <span className="text-[8px] text-slate-500 tabular-nums">
+                              {pctOf(cur).toFixed(1)}% of portfolio
+                            </span>
+                          </div>
+
+                          {/* Delta badge */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-px bg-slate-700" />
+                            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black tabular-nums border ${
+                              delta > 1000
+                                ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                : delta < -1000
+                                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                : "bg-slate-700 text-slate-400 border-slate-600"
+                            }`}>
+                              {delta > 0 ? "+" : ""}{fmtV(delta)} vs target
+                            </span>
+                            <div className="flex-1 h-px bg-slate-700" />
+                          </div>
+
+                          {/* GURU Target bar */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[8px] uppercase tracking-widest font-bold text-amber-400">GURU Target</span>
+                              <span className="text-[12px] font-black tabular-nums text-amber-300">{fmtV(tgt)}</span>
+                            </div>
+                            <div className="h-2.5 rounded-full bg-slate-700 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-amber-400 transition-all duration-700"
+                                style={{ width: `${pctOf(tgt)}%` }}
+                              />
+                            </div>
+                            {/* Funded progress */}
+                            <div className="h-1 rounded-full bg-slate-700 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-700 opacity-70"
+                                style={{
+                                  width: `${tgt > 0 ? Math.min(100, (cur / tgt) * 100) : 0}%`,
+                                  background: accent,
+                                }}
+                              />
+                            </div>
+                            <span className="text-[8px] text-slate-500 tabular-nums">
+                              {tgt > 0 ? `${((cur / tgt) * 100).toFixed(0)}% funded` : "—"}
+                            </span>
+                          </div>
+
+                          {/* 2×2 metrics grid */}
+                          <div className="grid grid-cols-2 gap-1.5 mt-auto">
+                            {[
+                              {
+                                label: "Status",
+                                value: delta > 5000 ? "Underfunded" : delta < -5000 ? "Overfunded" : "On Target",
+                                color: delta > 5000 ? "#f59e0b" : delta < -5000 ? "#10b981" : "#94a3b8",
+                              },
+                              {
+                                label: "Priority",
+                                value: Math.abs(delta) > 50000 ? "High" : Math.abs(delta) > 10000 ? "Medium" : "Low",
+                                color: Math.abs(delta) > 50000 ? "#ef4444" : Math.abs(delta) > 10000 ? "#f59e0b" : "#10b981",
+                              },
+                              {
+                                label: "Current Yield",
+                                value: avgYld > 0 ? `${avgYld.toFixed(2)}%` : "—",
+                                color: "#e2e8f0",
+                              },
+                              {
+                                label: "Yield Pickup",
+                                value: bp > 0 ? `+${bp}bp` : bp < 0 ? `${bp}bp` : "—",
+                                color: bp > 0 ? "#10b981" : bp < 0 ? "#ef4444" : "#94a3b8",
+                              },
+                            ].map(({ label, value, color }) => (
+                              <div key={label} className="rounded-lg bg-slate-900 px-2.5 py-2 border border-slate-700">
+                                <p className="text-[7px] uppercase tracking-widest font-bold text-slate-500 mb-0.5">{label}</p>
+                                <p className="text-[10px] font-black leading-none" style={{ color }}>{value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    {/* ── EXECUTION: Transfer panel ── */}
                     <BucketExecutionPanel
                       bucketName={r.def.name}
                       current={r.current}
