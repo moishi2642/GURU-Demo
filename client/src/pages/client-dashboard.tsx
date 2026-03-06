@@ -6058,7 +6058,7 @@ function AdvisorBriefView({
     icon: React.ElementType;
     badge: string;
     priority: string;
-    title: string;
+    title: React.ReactNode;
   }) => {
     const isChecked = checked.has(cardKey);
     return (
@@ -6248,7 +6248,7 @@ function AdvisorBriefView({
 
         {/* ── Card 3: Yield Pickup ── */}
         <div
-          className={`rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col col-span-2 transition-all ${checked.has("yield") ? "border-amber-400 shadow-amber-100" : "border-border"}`}
+          className={`rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("yield") ? "border-amber-400 shadow-amber-100" : "border-border"}`}
           style={{ borderTop: `4px solid #d97706` }}
         >
           <div className="px-6 pt-6 pb-5 flex flex-col gap-4 flex-1">
@@ -6258,7 +6258,7 @@ function AdvisorBriefView({
               icon={SlidersHorizontal}
               badge="Fixed Income"
               priority="Time Sensitive"
-              title="Better Products for Reserve Accounts"
+              title={<>Getting Ahead of Fed Rate Cuts — Better Products for <em>Reserve Cash Accounts</em></>}
             />
             <div className="grid grid-cols-2 gap-8">
               <div className="flex items-end gap-4">
@@ -6305,10 +6305,8 @@ function AdvisorBriefView({
           </div>
         </div>
 
-      </div>
-
-      {/* ── Upcoming Obligations ── */}
-      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        {/* ── Upcoming Obligations ── */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
         {/* Section header */}
         <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #f43f5e" }}>
           <div className="flex items-center gap-3">
@@ -6438,6 +6436,8 @@ function AdvisorBriefView({
             );
           })}
         </div>
+        </div>
+
       </div>
 
       {/* ── Email Modal ── */}
