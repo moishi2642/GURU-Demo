@@ -1607,9 +1607,53 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
     (a.type === "equity" || a.type === "fixed_income") &&
     !isRetirement(a) &&
     !isRSU(a);
+  // Cash held inside a brokerage account (e.g. Fidelity Cash Sweep) —
+  // belongs in Taxable Brokerage, not the bank savings bucket.
+  const isBrokerageCash = (a: Asset) =>
+    a.type === "cash" &&
+    ((a.description ?? "").toLowerCase().includes("fidelity") ||
+     (a.description ?? "").toLowerCase().includes("sweep") ||
+     (a.description ?? "").toLowerCase().includes("brokerage cash"));
   const checking    = assets.filter((a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"));
-  const savingsMM   = assets.filter((a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"));
-  const brokerage   = assets.filter((a) => isBrokerage(a));
+  const savingsMM   = assets.filter((a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking") && !isBrokerageCash(a));
+  const brokerage   = assets.filter((a) => isBrokerage(a) || isBrokerageCash(a));
+
+  // Extract the broker/institution name from an asset description.
+  // "Cresset Capital Mgmt — Portfolio"  →  "Cresset Capital Mgmt"
+  // "E*Trade - Meta Platforms"          →  "E*Trade"
+  // "Schwab International Index (ETF)"  →  "Schwab"
+  // "Fidelity Cash Sweep"               →  "Fidelity"
+  const extractInstitution = (desc: string): string => {
+    const d = desc.trim();
+    if (d.includes(" — ")) return d.split(" — ")[0].trim();
+    if (d.includes(" - "))  return d.split(" - ")[0].trim();
+    // No delimiter — use first word
+    return d.split(" ")[0].trim();
+  };
+
+  // Build a broker-aggregated group: one line per institution.
+  const mkBrokerageGroup = (arr: Asset[]): BsGroup => {
+    const map: Record<string, { value: number; descs: string[] }> = {};
+    for (const a of arr) {
+      const inst = extractInstitution(a.description ?? "");
+      if (!map[inst]) map[inst] = { value: 0, descs: [] };
+      map[inst].value += Number(a.value);
+      map[inst].descs.push(a.description ?? "");
+    }
+    const items = Object.entries(map).map(([inst, data]) => ({
+      label: inst,
+      value: data.value,
+      rate: null as string | null,
+      ret: lookupReturn(data.descs.length === 1 ? data.descs[0] : inst),
+      comment: null as string | null,
+    }));
+    return {
+      category: "Taxable Brokerage",
+      items,
+      subtotal: arr.reduce((s, a) => s + Number(a.value), 0),
+      avgRate: null,
+    };
+  };
   const altAssets   = assets.filter((a) => a.type === "alternative" && !isCarry(a));
   const carry       = assets.filter((a) => isCarry(a));
   const rsus        = assets.filter((a) => isRSU(a));
@@ -1683,7 +1727,7 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
 
   // ── Investments ───────────────────────────────────────────────────────────
   const investGroups: BsGroup[] = [];
-  if (brokerage.length) investGroups.push(mkGroup("Taxable Brokerage", brokerage));
+  if (brokerage.length) investGroups.push(mkBrokerageGroup(brokerage));
   if (altAssets.length) investGroups.push(mkGroup("Alternative Assets (PE Funds)", altAssets));
   if (investGroups.length) sections.push({ label: "Investments", groups: investGroups, total: subtot([...brokerage, ...altAssets]) });
 
