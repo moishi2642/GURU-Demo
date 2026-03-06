@@ -1853,11 +1853,11 @@ function BsTable({
     <div className="border border-border rounded-xl overflow-hidden text-xs">
       {/* Header */}
       <div className="grid bg-slate-800" style={{ gridTemplateColumns: COLS }}>
-        <div className="px-3 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-300">
+        <div className="px-3 py-2.5 font-black uppercase tracking-widest text-slate-300 text-[12px]">
           {isLiability ? "Liability Category" : "Asset Category"}
         </div>
-        <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-slate-300">Balance</div>
-        <div className="px-2 py-2.5 text-right text-[9px] font-black uppercase tracking-widest text-slate-300">
+        <div className="px-2 py-2.5 text-right font-black uppercase tracking-widest text-slate-300 text-[12px]">Balance</div>
+        <div className="px-2 py-2.5 text-right font-black uppercase tracking-widest text-slate-300 text-[12px]">
           {isLiability ? "Cost" : "Yield"}
         </div>
         {!isLiability && (
@@ -1865,7 +1865,6 @@ function BsTable({
         )}
         <div className="px-2 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-300">Notes</div>
       </div>
-
       {/* Sectioned asset rows */}
       {sections && sections.map((sec) => (
         <div key={sec.label}>
@@ -1881,7 +1880,6 @@ function BsTable({
           </div>
         </div>
       ))}
-
       {/* Flat liability rows (no sections) */}
       {groups && groups.map((group) => (
         <div key={group.category}>
@@ -1896,7 +1894,6 @@ function BsTable({
           </div>
         </div>
       ))}
-
       {/* Grand total */}
       <div
         className="grid bg-slate-900 text-white border-t-2 border-slate-700 font-bold"
