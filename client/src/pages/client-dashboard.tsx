@@ -2321,6 +2321,14 @@ function CashFlowForecastView({
   const { reserve } = cashBuckets(assets);
   const startBalance = reserve;
 
+  const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    for (const row of CF_PL_ROWS) {
+      if (row.kind === "group") init[row.key] = true;
+    }
+    return init;
+  });
+
   function monthVal(descs: string[], year: number, month: number): number {
     return cashFlows
       .filter((cf) => {
@@ -2472,251 +2480,258 @@ function CashFlowForecastView({
         </div>
       </div>
 
-      {/* Monthly Inflow / Outflow Chart + Cumulative Line */}
-      <div className="border border-border rounded-xl overflow-hidden">
-        <div className="px-5 pt-4 pb-2 border-b border-border flex items-start justify-between">
-          <div>
-            <p className="font-display font-bold text-base text-foreground">
-              Monthly Cash Flows · 2026
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Bars = monthly inflows / outflows · Line = cumulative net · Trough circled in red
-            </p>
+      {/* Cumulative Cash Flow Area Chart */}
+      {(() => {
+        const aData = buildForecast(cashFlows);
+        const aMin = Math.min(...aData.map((d) => d.cumulative));
+        const aMax = Math.max(...aData.map((d) => d.cumulative));
+        const aTroughIdx = aData.findIndex((d) => d.cumulative === aMin);
+        const aTroughMonth = aData[aTroughIdx]?.month ?? "";
+        const aHasTrough = aMin < 0;
+        const aRange = aMax - aMin || 1;
+        const aZeroOffset = `${Math.max(0, Math.min(100, (aMax / aRange) * 100)).toFixed(1)}%`;
+        const aFinal = aData[aData.length - 1]?.cumulative ?? 0;
+        const aIsPos = annualNet >= 0;
+        return (
+          <div className="border border-border rounded-xl overflow-hidden">
+            <div className="px-5 pt-4 pb-2 border-b border-border flex items-start justify-between">
+              <div>
+                <p className="font-display font-bold text-base text-foreground">Cumulative Cash Flow · 2026</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Rolling 12-month net · Trough marked in red</p>
+              </div>
+              <div className={`text-2xl font-black tabular-nums pt-0.5 ${aIsPos ? "text-emerald-600" : "text-rose-600"}`}>
+                {aIsPos ? "+" : ""}{fmt(annualNet, true)}
+              </div>
+            </div>
+            <div className="px-3 pb-2 bg-card">
+              <div style={{ height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={aData} margin={{ top: 48, right: 52, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="cfTabGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset={aZeroOffset} stopColor={GREEN} stopOpacity={0.28} />
+                        <stop offset={aZeroOffset} stopColor={RED} stopOpacity={0.20} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={fmtK} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} width={48} domain={[-150000, 150000]} />
+                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
+                    {aHasTrough && (
+                      <ReferenceLine
+                        x={aTroughMonth}
+                        stroke="hsl(0,72%,65%)"
+                        strokeDasharray="5 3"
+                        strokeWidth={2}
+                        label={(props: any) => {
+                          const vb = props?.viewBox;
+                          if (!vb) return null;
+                          const { x, y } = vb;
+                          return (
+                            <g>
+                              <rect x={x - 46} y={y - 48} width={92} height={40} rx={5} fill="hsl(0,80%,97%)" stroke="hsl(0,72%,65%)" strokeWidth={1.5} />
+                              <text x={x} y={y - 32} textAnchor="middle" fill="hsl(0,72%,45%)" fontSize={11} fontWeight="800" letterSpacing="1">TROUGH</text>
+                              <text x={x} y={y - 16} textAnchor="middle" fill="hsl(0,72%,40%)" fontSize={13} fontWeight="900">{fmt(aMin, true)}</text>
+                              <polygon points={`${x - 6},${y - 8} ${x + 6},${y - 8} ${x},${y}`} fill="hsl(0,72%,65%)" />
+                            </g>
+                          );
+                        }}
+                      />
+                    )}
+                    <RechartsTooltip formatter={(v: number) => [fmt(v), "Cumulative Net"]} contentStyle={{ fontSize: 11 }} />
+                    <Area
+                      type="monotone"
+                      dataKey="cumulative"
+                      stroke={aIsPos ? GREEN : RED}
+                      strokeWidth={2.5}
+                      fill="url(#cfTabGrad)"
+                      activeDot={{ r: 4, stroke: "white", strokeWidth: 2 }}
+                      isAnimationActive={true}
+                      animationDuration={900}
+                      animationEasing="ease-out"
+                      dot={(props: any) => {
+                        const { cx, cy, index } = props;
+                        if (index === 0) {
+                          const liveCol = aIsPos ? GREEN : RED;
+                          return (
+                            <g key="cf-tab-live">
+                              <circle cx={cx} cy={cy} r={10} fill={liveCol} opacity={0.12} style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
+                              <circle cx={cx} cy={cy} r={4} fill={liveCol} stroke="white" strokeWidth={1.5} />
+                              <text x={cx} y={cy - 12} textAnchor="middle" fill={liveCol} fontSize={10} fontWeight="800">NOW</text>
+                            </g>
+                          );
+                        }
+                        if (index === aData.length - 1) {
+                          const col = aIsPos ? "hsl(142,71%,35%)" : "hsl(0,72%,50%)";
+                          return (
+                            <g key="cf-tab-end">
+                              <circle cx={cx} cy={cy} r={4.5} fill={aIsPos ? GREEN : RED} stroke="white" strokeWidth={2} />
+                              <text x={cx + 8} y={cy + 4} fill={col} fontSize={11} fontWeight="800">
+                                {aIsPos ? "▲" : "▼"} {fmtK(aFinal)}
+                              </text>
+                            </g>
+                          );
+                        }
+                        return <g key={index} />;
+                      }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-4 text-xs text-muted-foreground pt-0.5">
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm inline-block bg-emerald-600" />
-              Inflow
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm inline-block bg-rose-500" />
-              Outflow
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-6 h-0.5 inline-block bg-blue-600 rounded-full" />
-              Cumulative
-            </span>
-          </div>
-        </div>
-        <div className="p-4 bg-card">
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart
-              data={chartData}
-              margin={{ top: 16, right: 64, left: 8, bottom: 4 }}
-              barCategoryGap="28%"
-              barGap={2}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                yAxisId="bars"
-                tickFormatter={(v) => `$${Math.round(Math.abs(v) / 1000)}K`}
-                tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
-                tickLine={false}
-                axisLine={false}
-                width={52}
-              />
-              <YAxis
-                yAxisId="cum"
-                orientation="right"
-                tickFormatter={(v) => `$${Math.round(v / 1000)}K`}
-                tick={{ fontSize: 10, fill: "#2563eb" }}
-                tickLine={false}
-                axisLine={false}
-                width={52}
-              />
-              <RechartsTooltip
-                formatter={(value: number, name: string) => {
-                  const labels: Record<string, string> = {
-                    inflow: "Inflow",
-                    outflow: "Outflow",
-                    cumulative: "Cumulative Net",
-                  };
-                  return [fmt(Math.abs(value)), labels[name] ?? name];
-                }}
-                contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid hsl(var(--border))" }}
-                itemStyle={{ padding: "2px 0" }}
-              />
-              <ReferenceLine yAxisId="bars" y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
-              <Bar yAxisId="bars" dataKey="inflow" name="inflow" fill="#16a34a" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-              <Bar yAxisId="bars" dataKey="outflow" name="outflow" fill="#e11d48" radius={[0, 0, 3, 3]} isAnimationActive={false} />
-              <Line
-                yAxisId="cum"
-                dataKey="cumulative"
-                name="cumulative"
-                stroke="#2563eb"
-                strokeWidth={2}
-                dot={(props: any) => {
-                  const { cx, cy, index } = props;
-                  if (index === troughIdx) {
-                    return (
-                      <g key={`trough-${index}`}>
-                        <circle cx={cx} cy={cy} r={8} fill="none" stroke="#dc2626" strokeWidth={2} />
-                        <circle cx={cx} cy={cy} r={3} fill="#dc2626" />
-                      </g>
-                    );
-                  }
-                  return <circle key={`dot-${index}`} cx={cx} cy={cy} r={2.5} fill="#2563eb" />;
-                }}
-                activeDot={{ r: 5, fill: "#2563eb" }}
-                isAnimationActive={false}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+        );
+      })()}
 
-      {/* P&L Detail Table */}
-      <div className="border border-border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-[900px]">
-            <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                <th
-                  className="text-left px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground"
-                  style={{ minWidth: 230 }}
-                >
-                  Cash Flow P&L · Jan 2026 – Dec 2026
-                </th>
-                {CF_MONTHS.map((m) => (
-                  <th
-                    key={m.label}
-                    className="text-right px-1.5 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap"
-                    style={{ minWidth: 50 }}
-                  >
-                    {m.label}
-                  </th>
-                ))}
-                <th
-                  className="text-right px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground"
-                  style={{ minWidth: 70 }}
-                >
-                  Annual
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {CF_PL_ROWS.map((row, rowIdx) => {
-                if (row.kind === "group") {
-                  return (
-                    <tr
-                      key={row.key}
-                      className="bg-slate-200/60 border-t border-slate-300"
+      {/* P&L Detail Table — collapsible groups, sticky header */}
+      {(() => {
+        const groupOf: Record<string, string> = {};
+        const groupSubtotalKey: Record<string, string | null> = {};
+        let curGrp = "";
+        for (const row of CF_PL_ROWS) {
+          if (row.kind === "group") { curGrp = row.key; groupSubtotalKey[curGrp] = null; }
+          else { groupOf[row.key] = curGrp; if (row.kind === "subtotal") groupSubtotalKey[curGrp] = row.key; }
+        }
+
+        const toggle = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
+
+        const thCls = "text-right px-1.5 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap bg-muted/80 border-b border-border";
+
+        return (
+          <div className="border border-border rounded-xl overflow-hidden">
+            <div className="overflow-x-auto" style={{ maxHeight: 480, overflowY: "auto" }}>
+              <table className="w-full text-xs min-w-[900px]">
+                <thead className="sticky top-0 z-10">
+                  <tr>
+                    <th
+                      className="text-left px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground bg-muted/80 border-b border-border"
+                      style={{ minWidth: 230 }}
                     >
-                      <td
-                        className="px-4 py-1.5 font-black text-[9px] uppercase tracking-widest text-slate-700"
-                        colSpan={15}
-                      >
-                        {row.label}
-                      </td>
-                    </tr>
-                  );
-                }
-                const rowVals = vals[row.key] ?? [];
-                const annual = rowVals.reduce((s, v) => s + v, 0);
-                if (row.kind === "item") {
-                  return (
-                    <tr
-                      key={row.key}
-                      className="border-t border-border/40 hover:bg-secondary/30 transition-colors bg-card"
-                    >
-                      <td className="px-4 py-1.5 pl-7 text-foreground/75 text-[10px]">
-                        {row.label}
-                      </td>
-                      {rowVals.map((v, i) => (
-                        <td
-                          key={i}
-                          className={`text-right px-1.5 py-1.5 tabular-nums text-[10px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}
+                      Cash Flow P&L · Jan – Dec 2026
+                    </th>
+                    {CF_MONTHS.map((m) => (
+                      <th key={m.label} className={thCls} style={{ minWidth: 50 }}>{m.label}</th>
+                    ))}
+                    <th className={`${thCls} px-4`} style={{ minWidth: 70 }}>Annual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CF_PL_ROWS.map((row) => {
+                    if (row.kind === "group") {
+                      const isOpen = !collapsed[row.key];
+                      const subKey = groupSubtotalKey[row.key];
+                      const subVals = subKey ? (vals[subKey] ?? []) : [];
+                      const subAnnual = subVals.reduce((s, v) => s + v, 0);
+                      return (
+                        <tr
+                          key={row.key}
+                          className="bg-slate-200/70 border-t border-slate-300 cursor-pointer hover:bg-slate-300/60 transition-colors select-none"
+                          onClick={() => toggle(row.key)}
                         >
-                          {fmtCell(v)}
-                        </td>
-                      ))}
-                      <td
-                        className={`text-right px-4 py-1.5 tabular-nums font-semibold text-[10px] ${annual > 0 ? "text-emerald-700" : annual < 0 ? "text-rose-600" : "text-muted-foreground"}`}
-                      >
-                        {fmtCell(annual)}
-                      </td>
-                    </tr>
-                  );
-                }
-                if (row.kind === "subtotal") {
-                  return (
-                    <tr
-                      key={row.key}
-                      className="border-t border-slate-200 bg-slate-100"
-                    >
-                      <td className="px-4 py-1.5 pl-7 font-bold text-[10px] text-slate-700">
-                        {row.label}
-                      </td>
-                      {rowVals.map((v, i) => (
-                        <td
-                          key={i}
-                          className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[10px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}
-                        >
-                          {fmtCell(v)}
-                        </td>
-                      ))}
-                      <td
-                        className={`text-right px-4 py-1.5 tabular-nums font-bold text-[10px] ${annual >= 0 ? "text-emerald-700" : "text-rose-600"}`}
-                      >
-                        {fmtCell(annual)}
-                      </td>
-                    </tr>
-                  );
-                }
-                return null;
-              })}
-              {/* NET CASH FLOW */}
-              <tr className={`border-t-2 border-border ${annualNet >= 0 ? "bg-emerald-50" : "bg-rose-50"}`}>
-                <td className={`px-4 py-2.5 font-black text-[11px] uppercase tracking-wider ${annualNet >= 0 ? "text-emerald-800" : "text-rose-800"}`}>
-                  Net Cash Flow
-                </td>
-                {netByMonth.map((v, i) => (
-                  <td
-                    key={i}
-                    className={`text-right px-1.5 py-2.5 tabular-nums font-bold text-[10px] ${v >= 0 ? "text-emerald-700" : "text-rose-600"}`}
-                  >
-                    {fmtCell(v)}
-                  </td>
-                ))}
-                <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
-                  {fmtCell(annualNet)}
-                </td>
-              </tr>
-              {/* CUMULATIVE NET CASH FLOW — trough circled */}
-              <tr className="border-t border-border bg-blue-50/50">
-                <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-black text-[11px] uppercase tracking-wider text-blue-800">Cumulative Net</span>
-                    <span className="text-[9px] font-normal text-blue-500 normal-case tracking-normal">rolling YTD</span>
-                  </div>
-                </td>
-                {cumulativeByMonth.map((v, i) => {
-                  const isTrough = i === troughIdx;
-                  return (
-                    <td key={i} className="text-right px-1.5 py-2.5 tabular-nums text-[10px]">
-                      <span className={`relative inline-flex items-center justify-end ${isTrough ? "font-black" : "font-semibold"} ${v >= 0 ? "text-blue-700" : "text-rose-600"}`}>
-                        {isTrough && (
-                          <span className="absolute inset-[-4px] rounded-full border-2 border-rose-500 pointer-events-none" aria-label="trough" />
-                        )}
-                        {fmtCell(v)}
-                      </span>
+                          <td className="px-4 py-1.5 font-black text-[9px] uppercase tracking-widest text-slate-700">
+                            <span className="flex items-center gap-2">
+                              <span className={`text-slate-500 transition-transform duration-150 inline-block ${isOpen ? "rotate-90" : ""}`}>▶</span>
+                              {row.label}
+                            </span>
+                          </td>
+                          {!isOpen && subKey
+                            ? subVals.map((v, i) => (
+                                <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[9px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}>
+                                  {fmtCell(v)}
+                                </td>
+                              ))
+                            : CF_MONTHS.map((_, i) => <td key={i} />)
+                          }
+                          {!isOpen && subKey
+                            ? <td className={`text-right px-4 py-1.5 tabular-nums font-bold text-[9px] ${subAnnual >= 0 ? "text-emerald-700" : "text-rose-600"}`}>{fmtCell(subAnnual)}</td>
+                            : <td />
+                          }
+                        </tr>
+                      );
+                    }
+
+                    const grp = groupOf[row.key];
+                    if (collapsed[grp]) return null;
+
+                    const rowVals = vals[row.key] ?? [];
+                    const annual = rowVals.reduce((s, v) => s + v, 0);
+
+                    if (row.kind === "item") {
+                      return (
+                        <tr key={row.key} className="border-t border-border/40 hover:bg-secondary/30 transition-colors bg-card">
+                          <td className="px-4 py-1.5 pl-8 text-foreground/75 text-[10px]">{row.label}</td>
+                          {rowVals.map((v, i) => (
+                            <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums text-[10px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}>
+                              {fmtCell(v)}
+                            </td>
+                          ))}
+                          <td className={`text-right px-4 py-1.5 tabular-nums font-semibold text-[10px] ${annual > 0 ? "text-emerald-700" : annual < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
+                            {fmtCell(annual)}
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    if (row.kind === "subtotal") {
+                      return (
+                        <tr key={row.key} className="border-t border-slate-200 bg-slate-100">
+                          <td className="px-4 py-1.5 pl-8 font-bold text-[10px] text-slate-700">{row.label}</td>
+                          {rowVals.map((v, i) => (
+                            <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[10px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}>
+                              {fmtCell(v)}
+                            </td>
+                          ))}
+                          <td className={`text-right px-4 py-1.5 tabular-nums font-bold text-[10px] ${annual >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                            {fmtCell(annual)}
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return null;
+                  })}
+                  {/* NET CASH FLOW */}
+                  <tr className={`border-t-2 border-border ${annualNet >= 0 ? "bg-emerald-50" : "bg-rose-50"}`}>
+                    <td className={`px-4 py-2.5 font-black text-[11px] uppercase tracking-wider ${annualNet >= 0 ? "text-emerald-800" : "text-rose-800"}`}>
+                      Net Cash Flow
                     </td>
-                  );
-                })}
-                <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${cumulativeByMonth[cumulativeByMonth.length - 1] >= 0 ? "text-blue-700" : "text-rose-600"}`}>
-                  {fmtCell(cumulativeByMonth[cumulativeByMonth.length - 1])}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    {netByMonth.map((v, i) => (
+                      <td key={i} className={`text-right px-1.5 py-2.5 tabular-nums font-bold text-[10px] ${v >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                        {fmtCell(v)}
+                      </td>
+                    ))}
+                    <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                      {fmtCell(annualNet)}
+                    </td>
+                  </tr>
+                  {/* CUMULATIVE NET */}
+                  <tr className="border-t border-border bg-blue-50/50">
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-black text-[11px] uppercase tracking-wider text-blue-800">Cumulative Net</span>
+                        <span className="text-[9px] font-normal text-blue-500 normal-case tracking-normal">rolling YTD</span>
+                      </div>
+                    </td>
+                    {cumulativeByMonth.map((v, i) => {
+                      const isTrough = i === troughIdx;
+                      return (
+                        <td key={i} className="text-right px-1.5 py-2.5 tabular-nums text-[10px]">
+                          <span className={`relative inline-flex items-center justify-end ${isTrough ? "font-black" : "font-semibold"} ${v >= 0 ? "text-blue-700" : "text-rose-600"}`}>
+                            {isTrough && <span className="absolute inset-[-4px] rounded-full border-2 border-rose-500 pointer-events-none" />}
+                            {fmtCell(v)}
+                          </span>
+                        </td>
+                      );
+                    })}
+                    <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${cumulativeByMonth[cumulativeByMonth.length - 1] >= 0 ? "text-blue-700" : "text-rose-600"}`}>
+                      {fmtCell(cumulativeByMonth[cumulativeByMonth.length - 1])}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
