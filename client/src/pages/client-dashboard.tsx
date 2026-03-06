@@ -1818,7 +1818,7 @@ function BsTable({
           {item.rate ? `${item.rate}%` : <span className="text-muted-foreground/40">—</span>}
         </div>
         {!isLiability && (
-          <div className={`px-2 py-1.5 text-right tabular-nums text-[9px] ${retCls(item.ret)}`}>
+          <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground text-[11px]">
             {item.ret ?? "—"}
           </div>
         )}
