@@ -1885,11 +1885,11 @@ function BsTable({
       ))}
       {/* Grand total */}
       <div
-        className="grid bg-slate-900 text-white border-t-2 border-slate-700 font-bold"
+        className="grid bg-slate-800 text-slate-300 border-t-2 border-slate-700"
         style={{ gridTemplateColumns: COLS }}
       >
-        <div className="px-3 py-2.5 font-black text-[12px]">{totalLabel}</div>
-        <div className="px-2 py-2.5 text-right tabular-nums font-black text-[12px]">
+        <div className="px-3 py-2.5 font-black uppercase tracking-widest text-slate-300 text-[12px]">{totalLabel}</div>
+        <div className="px-2 py-2.5 text-right tabular-nums font-black text-[12px] text-slate-300">
           {fmt(totalValue)}
         </div>
         <div className="px-2 py-2.5 text-right tabular-nums text-[10px] text-slate-300">
