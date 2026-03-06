@@ -1607,13 +1607,8 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
     (a.type === "equity" || a.type === "fixed_income") &&
     !isRetirement(a) &&
     !isRSU(a);
-  const isBrokerageCash = (a: Asset) =>
-    a.type === "cash" &&
-    (a.description ?? "").toLowerCase().includes("sweep");
-
-  const checking    = assets.filter((a) => a.type === "cash" && !isBrokerageCash(a) && (a.description ?? "").toLowerCase().includes("checking"));
-  const savingsMM   = assets.filter((a) => a.type === "cash" && !isBrokerageCash(a) && !(a.description ?? "").toLowerCase().includes("checking"));
-  const brokerageCash = assets.filter((a) => isBrokerageCash(a));
+  const checking    = assets.filter((a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"));
+  const savingsMM   = assets.filter((a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"));
   const brokerage   = assets.filter((a) => isBrokerage(a));
   const altAssets   = assets.filter((a) => a.type === "alternative" && !isCarry(a));
   const carry       = assets.filter((a) => isCarry(a));
@@ -1899,8 +1894,8 @@ function BsTable({
         className="grid bg-slate-900 text-white border-t-2 border-slate-700 font-bold"
         style={{ gridTemplateColumns: COLS }}
       >
-        <div className="px-3 py-2.5 font-black text-[11px]">{totalLabel}</div>
-        <div className="px-2 py-2.5 text-right tabular-nums font-black text-[11px]">
+        <div className="px-3 py-2.5 font-black text-[12px]">{totalLabel}</div>
+        <div className="px-2 py-2.5 text-right tabular-nums font-black text-[12px]">
           {fmt(totalValue)}
         </div>
         <div className="px-2 py-2.5 text-right tabular-nums text-[10px] text-slate-300">
