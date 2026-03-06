@@ -5960,8 +5960,11 @@ function AdvisorBriefView({
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [showEmail, setShowEmail] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
-  const [obligationStep, setObligationStep] = useState<Record<string, number>>({});
-  const [authorized, setAuthorized] = useState<Set<string>>(new Set());
+  const [wireModalId, setWireModalId] = useState<string | null>(null);
+  const [wireFromAccount, setWireFromAccount] = useState<Record<string, string>>({});
+  const [wireScheduleDate, setWireScheduleDate] = useState<Record<string, string>>({});
+  const [wireMemo, setWireMemo] = useState<Record<string, string>>({});
+  const [scheduled, setScheduled] = useState<Set<string>>(new Set());
 
   const toggle = (key: string) =>
     setChecked((prev) => {
@@ -6335,126 +6338,242 @@ function AdvisorBriefView({
           </div>
         </div>
 
-        {/* ── Upcoming Obligations ── */}
-        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        {/* Section header */}
-        <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #f43f5e" }}>
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
-              <Send className="w-4 h-4 text-rose-600" />
-            </div>
-            <div>
-              <p className="text-base font-black text-foreground leading-none">Move Money For Upcoming Obligations</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Large wire &amp; ACH payments — GURU can initiate on your behalf</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1">
-              <Lock className="w-3 h-3 text-indigo-600" />
-              <span className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider">GURU Payments Active</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Obligations list — next 2 upcoming from DEMO_NOW */}
-        <div className="divide-y divide-border">
-          {OBLIGATIONS
+        {/* ── Upcoming Obligations — Bill Pay Table ── */}
+        {(() => {
+          const upcoming = OBLIGATIONS
             .filter((o) => o.due >= DEMO_NOW)
-            .sort((a, b) => a.due.getTime() - b.due.getTime())
-            .slice(0, 2)
-            .map((obl) => {
-            const step = obligationStep[obl.id] ?? 0;
-            const isAuth = authorized.has(obl.id);
-            const daysUntil = Math.ceil((obl.due.getTime() - DEMO_NOW.getTime()) / (1000 * 60 * 60 * 24));
-            const isUrgent = daysUntil <= 45;
+            .sort((a, b) => a.due.getTime() - b.due.getTime());
+          const totalPending = upcoming.filter((o) => !scheduled.has(o.id)).reduce((s, o) => s + o.amount, 0);
+          const urgentCount = upcoming.filter((o) => Math.ceil((o.due.getTime() - DEMO_NOW.getTime()) / 86400000) <= 45).length;
+          const scheduledCount = upcoming.filter((o) => scheduled.has(o.id)).length;
+          const activeObl = OBLIGATIONS.find((o) => o.id === wireModalId);
 
-            return (
-              <div key={obl.id} className="px-5 py-4 space-y-3">
-                {/* Top row: tags + amount */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${oblCatStyle(obl.category)}`}>
-                      {obl.category === "tax" ? "Tax" : "Education"}
-                    </span>
-                    <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${isUrgent ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-slate-50 text-slate-500 border border-slate-200"}`}>
-                      {format(obl.due, "MMM d, yyyy")} · {daysUntil}d
-                    </span>
-                    <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${obl.method === "Wire" ? "bg-violet-50 text-violet-700 border border-violet-200" : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
-                      {obl.method}
-                    </span>
-                  </div>
-                  <p className="text-base font-black tabular-nums text-rose-700 flex-shrink-0">{fmt(obl.amount, true)}</p>
+          return (
+          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden col-span-2">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #f43f5e" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
+                  <Send className="w-4 h-4 text-rose-600" />
                 </div>
-                {/* Label + payee */}
                 <div>
-                  <p className="text-[12px] font-black text-foreground leading-tight">{obl.label}</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Building2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                    <span className="text-[10px] text-muted-foreground truncate">{obl.payee} · From: {obl.from}</span>
-                  </div>
+                  <p className="text-base font-black text-foreground leading-none">Upcoming Obligations — Wire &amp; ACH Payments</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Schedule payments directly from your connected accounts</p>
                 </div>
-                {/* Action button — full width */}
-                {isAuth ? (
-                  <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5">
-                    <CheckSquare className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-[10px] font-black text-emerald-800">GURU Authorized</p>
-                      <p className="text-[9px] text-emerald-600">Will process 2 business days prior</p>
-                    </div>
-                  </div>
-                ) : step === 0 ? (
-                  <button
-                    onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 1 }))}
-                    className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-2.5 text-[11px] font-bold transition-colors"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    GURU: Initiate {obl.method}
-                  </button>
-                ) : step === 1 ? (
-                  <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 space-y-2">
-                    <p className="text-[10px] font-black text-amber-800">Authorize GURU to send {fmt(obl.amount, true)} to {obl.payee}?</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 2 }))}
-                        className="flex-1 bg-amber-500 hover:bg-amber-400 text-white rounded-lg py-1.5 text-[10px] font-bold transition-colors"
-                      >
-                        Yes, authorize
-                      </button>
-                      <button
-                        onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 0 }))}
-                        className="flex-1 bg-white border border-slate-200 text-slate-600 rounded-lg py-1.5 text-[10px] font-bold hover:bg-slate-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 space-y-2">
-                    <p className="text-[10px] font-black text-rose-800">Final confirmation — this cannot be undone.</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setAuthorized((s) => new Set([...s, obl.id]));
-                          setObligationStep((s) => ({ ...s, [obl.id]: 0 }));
-                        }}
-                        className="flex-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg py-1.5 text-[10px] font-bold transition-colors"
-                      >
-                        Confirm
-                      </button>
-                      <button
-                        onClick={() => setObligationStep((s) => ({ ...s, [obl.id]: 0 }))}
-                        className="flex-1 bg-white border border-slate-200 text-slate-600 rounded-lg py-1.5 text-[10px] font-bold hover:bg-slate-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-            );
-          })}
-        </div>
-        </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-xs font-black tabular-nums text-rose-700">{fmt(totalPending)}</p>
+                  <p className="text-[9px] text-muted-foreground">total pending</p>
+                </div>
+                <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1">
+                  <Lock className="w-3 h-3 text-indigo-600" />
+                  <span className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider">GURU Payments Active</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Summary stat pills */}
+            <div className="px-6 py-3 border-b border-border bg-slate-50/60 flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-slate-400" />
+                <span className="text-[11px] text-muted-foreground font-medium">{upcoming.length} total upcoming</span>
+              </div>
+              {urgentCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-rose-500" />
+                  <span className="text-[11px] text-rose-700 font-semibold">{urgentCount} due within 45 days</span>
+                </div>
+              )}
+              {scheduledCount > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-[11px] text-emerald-700 font-semibold">{scheduledCount} scheduled</span>
+                </div>
+              )}
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="bg-slate-800 text-slate-300">
+                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Due Date</th>
+                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Category</th>
+                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Description</th>
+                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Payee</th>
+                    <th className="px-4 py-2.5 text-right font-black uppercase tracking-widest text-[9px]">Amount</th>
+                    <th className="px-4 py-2.5 text-center font-black uppercase tracking-widest text-[9px]">Method</th>
+                    <th className="px-4 py-2.5 text-center font-black uppercase tracking-widest text-[9px]">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {upcoming.map((obl) => {
+                    const daysUntil = Math.ceil((obl.due.getTime() - DEMO_NOW.getTime()) / 86400000);
+                    const isUrgent = daysUntil <= 45;
+                    const isScheduled = scheduled.has(obl.id);
+                    return (
+                      <tr key={obl.id} className={`hover:bg-secondary/30 transition-colors ${isScheduled ? "opacity-60" : ""}`}>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-semibold text-foreground">{format(obl.due, "MMM d, yyyy")}</span>
+                            <span className={`text-[10px] font-bold ${isUrgent ? "text-rose-600" : "text-muted-foreground"}`}>
+                              {isUrgent ? `${daysUntil}d — urgent` : `in ${daysUntil}d`}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${oblCatStyle(obl.category)}`}>
+                            {obl.category === "tax" ? "Tax" : "Education"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-foreground leading-tight">{obl.label}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">From: {obl.from}</p>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{obl.payee}</td>
+                        <td className="px-4 py-3 text-right tabular-nums font-black text-rose-700 whitespace-nowrap">{fmt(obl.amount)}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${obl.method === "Wire" ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-sky-50 text-sky-700 border-sky-200"}`}>
+                            {obl.method}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {isScheduled ? (
+                            <div className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                              <CheckSquare className="w-3 h-3 text-emerald-600" />
+                              <span className="text-[9px] font-black text-emerald-700">Scheduled</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setWireFromAccount((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.from }));
+                                const processDate = new Date(obl.due);
+                                processDate.setDate(processDate.getDate() - 2);
+                                setWireScheduleDate((s) => ({
+                                  ...s,
+                                  [obl.id]: s[obl.id] ?? processDate.toISOString().slice(0, 10),
+                                }));
+                                setWireMemo((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.label }));
+                                setWireModalId(obl.id);
+                              }}
+                              className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-white rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors whitespace-nowrap"
+                            >
+                              <Send className="w-3 h-3" />
+                              Setup {obl.method}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Wire Setup Modal */}
+            <Dialog open={wireModalId !== null} onOpenChange={(open) => { if (!open) setWireModalId(null); }}>
+              <DialogContent className="max-w-md">
+                {activeObl && (
+                  <>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-base">
+                        <Send className="w-4 h-4 text-rose-600" />
+                        Setup {activeObl.method} Payment
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-1">
+                      {/* Payment summary */}
+                      <div className="rounded-xl border border-border bg-slate-50 px-4 py-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] font-black text-foreground leading-tight">{activeObl.label}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{activeObl.payee} · Due {format(activeObl.due, "MMM d, yyyy")}</p>
+                        </div>
+                        <p className="text-lg font-black tabular-nums text-rose-700">{fmt(activeObl.amount)}</p>
+                      </div>
+
+                      {/* From account */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">From Account</label>
+                        <select
+                          value={wireFromAccount[activeObl.id] ?? activeObl.from}
+                          onChange={(e) => setWireFromAccount((s) => ({ ...s, [activeObl.id]: e.target.value }))}
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        >
+                          <option>Citizens Private Banking Checking</option>
+                          <option>Chase Total Checking</option>
+                          <option>Citizens Private Bank Money Market</option>
+                          <option>CapitalOne 360 Savings</option>
+                        </select>
+                      </div>
+
+                      {/* Schedule date */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Process Date</label>
+                        <input
+                          type="date"
+                          value={wireScheduleDate[activeObl.id] ?? ""}
+                          onChange={(e) => setWireScheduleDate((s) => ({ ...s, [activeObl.id]: e.target.value }))}
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                        <p className="text-[10px] text-muted-foreground">GURU defaults to 2 business days before due date</p>
+                      </div>
+
+                      {/* Memo */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Memo / Reference</label>
+                        <input
+                          type="text"
+                          value={wireMemo[activeObl.id] ?? activeObl.label}
+                          onChange={(e) => setWireMemo((s) => ({ ...s, [activeObl.id]: e.target.value }))}
+                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+
+                      {/* Routing info (read-only) */}
+                      <div className="rounded-lg border border-border bg-slate-50 px-4 py-3 space-y-1.5">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Payment Details</p>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-muted-foreground">Routing Number</span>
+                          <span className="font-mono font-semibold text-foreground">{activeObl.routing}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-muted-foreground">Account / Ref</span>
+                          <span className="font-mono font-semibold text-foreground">{activeObl.acct}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-muted-foreground">Payment Method</span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${activeObl.method === "Wire" ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-sky-50 text-sky-700 border-sky-200"}`}>{activeObl.method}</span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => setWireModalId(null)}
+                          className="flex-1 rounded-lg border border-border bg-background hover:bg-secondary text-foreground px-4 py-2.5 text-[11px] font-semibold transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            setScheduled((s) => new Set([...s, activeObl.id]));
+                            setWireModalId(null);
+                          }}
+                          className="flex-1 rounded-lg bg-slate-900 hover:bg-slate-700 text-white px-4 py-2.5 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <CheckSquare className="w-3.5 h-3.5" />
+                          Schedule Payment
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
+          );
+        })()}
 
       </div>
 
