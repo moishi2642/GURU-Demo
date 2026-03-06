@@ -2311,7 +2311,7 @@ function CashFlowForecastView({
   cashFlows: CashFlow[];
   clientId: number;
 }) {
-  const { reserve } = cashBuckets(assets);
+  const { reserve, totalLiquid } = cashBuckets(assets);
   const startBalance = reserve;
 
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>(() => {
@@ -2422,6 +2422,14 @@ function CashFlowForecastView({
   const totalIn = monthlyInflows.reduce((s, v) => s + v, 0);
   const totalOut = monthlyOutflows.reduce((s, v) => s + v, 0);
 
+  const heroMonthlyBurn = totalOut / 12;
+  const heroRunway = heroMonthlyBurn > 0 ? totalLiquid / heroMonthlyBurn : 0;
+  const heroCoveragePct = totalOut > 0 ? (totalIn / totalOut) * 100 : 999;
+  const heroCoverageOk = heroCoveragePct >= 100;
+  const heroTroughValue = Math.min(...cumulativeByMonth);
+  const heroTroughLabel = CF_MONTHS[troughIdx]?.label ?? "";
+  const heroNetPos = annualNet >= 0;
+
   function fmtCell(v: number): string {
     if (v === 0) return "—";
     return v > 0 ? `+${fmt(v)}` : `(${fmt(Math.abs(v))})`;
@@ -2436,56 +2444,99 @@ function CashFlowForecastView({
 
   return (
     <div className="space-y-5">
-      {/* Log Cash Flow button */}
-      <div className="flex justify-end">
-        <AddCashFlowModal clientId={clientId} />
-      </div>
-      {/* Median Monthly Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <div
-          className="p-4 border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl"
-          data-testid="stat-avg-inflow"
-        >
-          <p className="text-xs font-medium text-muted-foreground mb-1">
-            Median Monthly Inflows
-          </p>
-          <p className="text-2xl font-display font-black tabular-nums text-emerald-700">
-            +{fmt(medianIn, true)}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {fmt(totalIn, true)} annually
-          </p>
+
+      {/* ── CFO Hero Bar ─────────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
+        {/* Header row */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/30">
+          <div className="flex items-center gap-2.5">
+            <Activity className="w-4 h-4 text-muted-foreground" />
+            <p className="font-display font-bold text-sm text-foreground">Cash Flow Forecast · 2026</p>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground bg-muted px-2 py-0.5 rounded-md">YTD Projection</span>
+          </div>
+          <AddCashFlowModal clientId={clientId} />
         </div>
-        <div
-          className="p-4 border border-rose-200 bg-rose-50 dark:bg-rose-950/20 rounded-xl"
-          data-testid="stat-avg-outflow"
-        >
-          <p className="text-xs font-medium text-muted-foreground mb-1">
-            Median Monthly Outflows
-          </p>
-          <p className="text-2xl font-display font-black tabular-nums text-rose-700">
-            ({fmt(medianOut, true)})
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {fmt(totalOut, true)} annually
-          </p>
+
+        {/* Hero primary KPI */}
+        <div className="px-5 pt-4 pb-3 border-b border-border/60">
+          <div className="flex items-end gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">12-Month Net Cash Flow</p>
+              <p
+                className={`text-4xl font-extrabold tabular-nums leading-tight mt-0.5 ${heroNetPos ? "text-emerald-600" : "text-rose-600"}`}
+                data-testid="hero-annual-net"
+              >
+                {heroNetPos ? "+" : ""}{fmt(Math.abs(annualNet), true)}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Projected surplus / deficit · Jan–Dec 2026</p>
+            </div>
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold flex-shrink-0 mb-1 ${heroNetPos ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800" : "bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-800"}`}>
+              {heroNetPos ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+              {heroNetPos ? "Cash Positive" : "Cash Negative"}
+            </div>
+          </div>
         </div>
-        <div
-          className={`p-4 border rounded-xl ${annualNet >= 0 ? "border-blue-200 bg-blue-50 dark:bg-blue-950/20" : "border-rose-200 bg-rose-50"}`}
-          data-testid="stat-net"
-        >
-          <p className="text-xs font-medium text-muted-foreground mb-1">
-            12-Month Net
-          </p>
-          <p
-            className={`text-2xl font-display font-black tabular-nums ${annualNet >= 0 ? "text-blue-700" : "text-rose-700"}`}
-          >
-            {annualNet >= 0 ? "+" : ""}
-            {fmt(Math.abs(annualNet), true)}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Incl. year-end bonuses
-          </p>
+
+        {/* KPI tiles row */}
+        <div className="grid grid-cols-6 divide-x divide-border/60">
+          {/* Annual Inflows */}
+          <div className="px-4 py-3 flex flex-col gap-0.5" data-testid="stat-avg-inflow">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Inflows</p>
+            <p className="text-xl font-extrabold tabular-nums leading-none text-emerald-600">
+              +{fmt(totalIn, true)}
+            </p>
+            <p className="text-[9px] text-muted-foreground">med. {fmt(medianIn, true)}/mo</p>
+          </div>
+
+          {/* Annual Outflows */}
+          <div className="px-4 py-3 flex flex-col gap-0.5" data-testid="stat-avg-outflow">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Outflows</p>
+            <p className="text-xl font-extrabold tabular-nums leading-none text-rose-600">
+              ({fmt(totalOut, true)})
+            </p>
+            <p className="text-[9px] text-muted-foreground">med. {fmt(medianOut, true)}/mo</p>
+          </div>
+
+          {/* Monthly Burn */}
+          <div className="px-4 py-3 flex flex-col gap-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly Burn</p>
+            <p className="text-xl font-extrabold tabular-nums leading-none text-foreground">
+              {fmt(heroMonthlyBurn, true)}
+            </p>
+            <p className="text-[9px] text-muted-foreground">avg outflows / mo</p>
+          </div>
+
+          {/* Cash Runway */}
+          <div className="px-4 py-3 flex flex-col gap-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Runway</p>
+            <p className={`text-xl font-extrabold tabular-nums leading-none ${heroRunway >= 12 ? "text-emerald-600" : heroRunway >= 6 ? "text-amber-600" : "text-rose-600"}`}>
+              {heroRunway.toFixed(1)}
+            </p>
+            <p className="text-[9px] text-muted-foreground">months of expenses</p>
+          </div>
+
+          {/* Coverage */}
+          <div className="px-4 py-3 flex flex-col gap-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Coverage</p>
+            <p className={`text-xl font-extrabold tabular-nums leading-none ${heroCoverageOk ? "text-emerald-600" : "text-rose-600"}`}>
+              {heroCoveragePct > 999 ? "—" : `${heroCoveragePct.toFixed(0)}%`}
+            </p>
+            <div className="flex items-center gap-1 mt-0.5">
+              {heroCoverageOk
+                ? <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 flex-shrink-0" />
+                : <AlertTriangle className="w-2.5 h-2.5 text-rose-500 flex-shrink-0" />}
+              <p className="text-[9px] text-muted-foreground">{heroCoverageOk ? "fully funded" : "shortfall risk"}</p>
+            </div>
+          </div>
+
+          {/* Trough */}
+          <div className="px-4 py-3 flex flex-col gap-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Trough</p>
+            <p className={`text-xl font-extrabold tabular-nums leading-none ${heroTroughValue >= 0 ? "text-foreground" : "text-rose-600"}`}>
+              {heroTroughValue >= 0 ? "+" : ""}{fmt(Math.abs(heroTroughValue), true)}
+            </p>
+            <p className="text-[9px] text-muted-foreground">lowest point · {heroTroughLabel}</p>
+          </div>
         </div>
       </div>
 
