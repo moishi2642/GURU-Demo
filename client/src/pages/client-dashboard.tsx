@@ -6314,7 +6314,7 @@ function AdvisorBriefView({
               <Send className="w-4 h-4 text-rose-600" />
             </div>
             <div>
-              <p className="text-base font-black text-foreground leading-none">Upcoming Obligations</p>
+              <p className="text-base font-black text-foreground leading-none">Move Money For Upcoming Obligations</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">Large wire &amp; ACH payments — GURU can initiate on your behalf</p>
             </div>
           </div>
