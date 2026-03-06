@@ -1869,16 +1869,16 @@ function BsTable({
       {/* Sectioned asset rows */}
       {sections && sections.map((sec) => (
         <div key={sec.label}>
-          {/* Section header — shaded key subtotal row */}
-          <div className="grid border-t border-slate-300 bg-slate-200 text-slate-900" style={{ gridTemplateColumns: COLS }}>
+          {/* Sub-groups within section */}
+          {sec.groups.map((group) => renderGroup(group, sec.groups.length > 1 || group.items.length > 1))}
+          {/* Section total — shaded blue, pinned to bottom of section */}
+          <div className="grid border-t border-blue-200 bg-blue-100 text-blue-900" style={{ gridTemplateColumns: COLS }}>
             <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest">{sec.label}</div>
             <div className="px-2 py-2 text-right tabular-nums text-[10px] font-black">{fmt(sec.total)}</div>
             <div className="px-2 py-2" />
             <div className="px-2 py-2" />
             <div className="px-2 py-2" />
           </div>
-          {/* Sub-groups within section */}
-          {sec.groups.map((group) => renderGroup(group, sec.groups.length > 1 || group.items.length > 1))}
         </div>
       ))}
 
