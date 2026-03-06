@@ -6432,9 +6432,13 @@ function AdvisorBriefView({
           </div>
         </div>
 
-        {/* Obligations list */}
+        {/* Obligations list — next 2 upcoming from DEMO_NOW */}
         <div className="divide-y divide-border">
-          {OBLIGATIONS.map((obl) => {
+          {OBLIGATIONS
+            .filter((o) => o.due >= DEMO_NOW)
+            .sort((a, b) => a.due.getTime() - b.due.getTime())
+            .slice(0, 2)
+            .map((obl) => {
             const step = obligationStep[obl.id] ?? 0;
             const isAuth = authorized.has(obl.id);
             const daysUntil = Math.ceil((obl.due.getTime() - DEMO_NOW.getTime()) / (1000 * 60 * 60 * 24));
@@ -6743,9 +6747,11 @@ export default function ClientDashboard() {
     key: ActiveView;
     label: string;
     icon: React.ElementType;
+    activeCls?: string;
+    inactiveCls?: string;
   }[] = [
+    { key: "advisorbrief", label: "Advisor Brief", icon: ClipboardList, activeCls: "bg-rose-600 text-white shadow-sm", inactiveCls: "text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200" },
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { key: "advisorbrief", label: "Advisor Brief", icon: ClipboardList },
     { key: "financials", label: "Client Financials & Forecast", icon: FileText },
     { key: "guru", label: "GURU Allocation", icon: PieChartIcon },
     { key: "moneymovement", label: "Money Movement", icon: ArrowLeftRight },
@@ -6793,15 +6799,15 @@ export default function ClientDashboard() {
 
         {/* ── Tab Navigation — pill style ─────────────────────────────────────── */}
         <div className="flex items-center gap-1 bg-card border border-border rounded-xl px-1.5 py-1.5 shadow-sm">
-          {navItems.map(({ key, label, icon: Icon }) => (
+          {navItems.map(({ key, label, icon: Icon, activeCls, inactiveCls }) => (
             <button
               key={key}
               onClick={() => setActiveView(key)}
               data-testid={`nav-${key}`}
               className={`flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg transition-all ${
                 activeView === key
-                  ? "bg-[hsl(222,47%,12%)] text-white shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                  ? (activeCls ?? "bg-[hsl(222,47%,12%)] text-white shadow-sm")
+                  : (inactiveCls ?? "text-muted-foreground hover:text-foreground hover:bg-secondary/60")
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
