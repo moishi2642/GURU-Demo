@@ -1588,7 +1588,13 @@ interface BsGroup {
   avgRate: string | null;
 }
 
-function buildAssetGroups(assets: Asset[]): BsGroup[] {
+interface BsSection {
+  label: string;
+  groups: BsGroup[];
+  total: number;
+}
+
+function buildAssetGroups(assets: Asset[]): BsSection[] {
   const isRetirement = (a: Asset) => {
     const d = (a.description ?? "").toLowerCase();
     return d.includes("401") || d.includes("ira") || d.includes("roth");
@@ -1601,32 +1607,19 @@ function buildAssetGroups(assets: Asset[]): BsGroup[] {
     (a.type === "equity" || a.type === "fixed_income") &&
     !isRetirement(a) &&
     !isRSU(a);
-
   const isBrokerageCash = (a: Asset) =>
     a.type === "cash" &&
     (a.description ?? "").toLowerCase().includes("sweep");
 
-  const checking = assets.filter(
-    (a) =>
-      a.type === "cash" &&
-      !isBrokerageCash(a) &&
-      (a.description ?? "").toLowerCase().includes("checking"),
-  );
-  const savingsMM = assets.filter(
-    (a) =>
-      a.type === "cash" &&
-      !isBrokerageCash(a) &&
-      !(a.description ?? "").toLowerCase().includes("checking"),
-  );
+  const checking    = assets.filter((a) => a.type === "cash" && !isBrokerageCash(a) && (a.description ?? "").toLowerCase().includes("checking"));
+  const savingsMM   = assets.filter((a) => a.type === "cash" && !isBrokerageCash(a) && !(a.description ?? "").toLowerCase().includes("checking"));
   const brokerageCash = assets.filter((a) => isBrokerageCash(a));
-  const brokerage = assets.filter((a) => isBrokerage(a));
-  const altAssets = assets.filter(
-    (a) => a.type === "alternative" && !isCarry(a),
-  );
-  const carry = assets.filter((a) => isCarry(a));
-  const rsus = assets.filter((a) => isRSU(a));
-  const realEstate = assets.filter((a) => a.type === "real_estate");
-  const retirement = assets.filter((a) => isRetirement(a));
+  const brokerage   = assets.filter((a) => isBrokerage(a));
+  const altAssets   = assets.filter((a) => a.type === "alternative" && !isCarry(a));
+  const carry       = assets.filter((a) => isCarry(a));
+  const rsus        = assets.filter((a) => isRSU(a));
+  const realEstate  = assets.filter((a) => a.type === "real_estate");
+  const retirement  = assets.filter((a) => isRetirement(a));
 
   const ASSET_RETURNS: Array<[string, string]> = [
     ["cresset",        "+14.2%"],
@@ -1678,95 +1671,39 @@ function buildAssetGroups(assets: Asset[]): BsGroup[] {
     }, 0);
     return weighted > 0 ? (weighted / total).toFixed(2) : null;
   };
+  const mkGroup = (category: string, arr: Asset[]): BsGroup => ({
+    category,
+    items: arr.map(toItem),
+    subtotal: subtot(arr),
+    avgRate: wavgRate(arr),
+  });
 
-  const groups: BsGroup[] = [];
+  const sections: BsSection[] = [];
 
-  if (checking.length > 0) {
-    groups.push({
-      category: "Checking Bank Accounts",
-      items: checking.map(toItem),
-      subtotal: subtot(checking),
-      avgRate: wavgRate(checking),
-    });
-  }
-  if (savingsMM.length > 0) {
-    groups.push({
-      category: "Savings & Money Market Accounts",
-      items: savingsMM.map(toItem),
-      subtotal: subtot(savingsMM),
-      avgRate: wavgRate(savingsMM),
-    });
-  }
-  const totalCash = subtot([...checking, ...savingsMM]);
-  if (totalCash > 0) {
-    groups.push({
-      category: "Cash",
-      items: [],
-      subtotal: totalCash,
-      avgRate: wavgRate([...checking, ...savingsMM]),
-    });
-  }
+  // ── Cash ──────────────────────────────────────────────────────────────────
+  const cashGroups: BsGroup[] = [];
+  if (checking.length) cashGroups.push(mkGroup("Checking Bank Accounts", checking));
+  if (savingsMM.length) cashGroups.push(mkGroup("Savings & Money Market", savingsMM));
+  if (cashGroups.length) sections.push({ label: "Cash", groups: cashGroups, total: subtot([...checking, ...savingsMM]) });
+
+  // ── Investments ───────────────────────────────────────────────────────────
+  const investGroups: BsGroup[] = [];
   const allBrokerage = [...brokerage, ...brokerageCash];
-  const investments = [...allBrokerage, ...altAssets];
-  if (allBrokerage.length > 0) {
-    groups.push({
-      category: "Taxable Brokerage",
-      items: allBrokerage.map(toItem),
-      subtotal: subtot(allBrokerage),
-      avgRate: null,
-    });
-  }
-  if (altAssets.length > 0) {
-    groups.push({
-      category: "Alternative Assets",
-      items: altAssets.map(toItem),
-      subtotal: subtot(altAssets),
-      avgRate: null,
-    });
-  }
-  if (investments.length > 0) {
-    groups.push({
-      category: "Investments",
-      items: [],
-      subtotal: subtot(investments),
-      avgRate: null,
-    });
-  }
-  if (carry.length > 0) {
-    groups.push({
-      category: "Carry",
-      items: carry.map(toItem),
-      subtotal: subtot(carry),
-      avgRate: null,
-    });
-  }
-  if (rsus.length > 0) {
-    const carryAndRSUs = [...carry, ...rsus];
-    groups.push({
-      category: "Carry and RSUs",
-      items: rsus.map(toItem),
-      subtotal: subtot(carryAndRSUs),
-      avgRate: null,
-    });
-  }
-  if (realEstate.length > 0) {
-    groups.push({
-      category: "Real Estate",
-      items: realEstate.map(toItem),
-      subtotal: subtot(realEstate),
-      avgRate: null,
-    });
-  }
-  if (retirement.length > 0) {
-    groups.push({
-      category: "Retirement",
-      items: retirement.map(toItem),
-      subtotal: subtot(retirement),
-      avgRate: null,
-    });
-  }
+  if (allBrokerage.length) investGroups.push(mkGroup("Taxable Brokerage", allBrokerage));
+  if (altAssets.length)    investGroups.push(mkGroup("Alternative Assets (PE Funds)", altAssets));
+  if (rsus.length)         investGroups.push(mkGroup("RSUs & Unvested Equity", rsus));
+  if (investGroups.length) sections.push({ label: "Investments", groups: investGroups, total: subtot([...allBrokerage, ...altAssets, ...rsus]) });
 
-  return groups;
+  // ── Real Estate ───────────────────────────────────────────────────────────
+  if (realEstate.length) sections.push({ label: "Real Estate", groups: [mkGroup("Properties", realEstate)], total: subtot(realEstate) });
+
+  // ── Carry ─────────────────────────────────────────────────────────────────
+  if (carry.length) sections.push({ label: "Carry", groups: [mkGroup("Carried Interest (PE)", carry)], total: subtot(carry) });
+
+  // ── Retirement ────────────────────────────────────────────────────────────
+  if (retirement.length) sections.push({ label: "Retirement", groups: [mkGroup("Tax-Advantaged Accounts", retirement)], total: subtot(retirement) });
+
+  return sections;
 }
 
 function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
@@ -1844,19 +1781,20 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
 
 // ─── Balance Sheet Table ───────────────────────────────────────────────────────
 function BsTable({
+  sections,
   groups,
   totalLabel,
   totalValue,
   totalRate,
   isLiability = false,
 }: {
-  groups: BsGroup[];
+  sections?: BsSection[];
+  groups?: BsGroup[];
   totalLabel: string;
   totalValue: number;
   totalRate?: string | null;
   isLiability?: boolean;
 }) {
-  const isSubtotalOnly = (g: BsGroup) => g.items.length === 0;
   const COLS = isLiability ? "1fr 90px 56px 90px" : "1fr 90px 56px 72px 80px";
   const retCls = (r: string | null) => {
     if (!r) return "text-muted-foreground/50 italic";
@@ -1865,13 +1803,56 @@ function BsTable({
     return "text-muted-foreground";
   };
 
+  const renderItems = (items: BsGroup["items"], indent = "pl-8") =>
+    items.map((item, ii) => (
+      <div
+        key={ii}
+        className="grid border-t border-border/40 hover:bg-secondary/30 transition-colors"
+        style={{ gridTemplateColumns: COLS }}
+      >
+        <div className={`px-3 py-1.5 text-muted-foreground ${indent}`}>{item.label}</div>
+        <div className="px-2 py-1.5 text-right tabular-nums font-medium text-foreground">
+          {item.value > 0 ? fmt(item.value) : "—"}
+        </div>
+        <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
+          {item.rate ? `${item.rate}%` : <span className="italic text-muted-foreground/40">—</span>}
+        </div>
+        {!isLiability && (
+          <div className={`px-2 py-1.5 text-right tabular-nums text-[10px] ${retCls(item.ret)}`}>
+            {item.ret ?? "—"}
+          </div>
+        )}
+        <div className="px-2 py-1.5">
+          {item.comment && (
+            <span className={`font-semibold text-[10px] ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}>
+              {item.comment.text}
+            </span>
+          )}
+        </div>
+      </div>
+    ));
+
+  const renderGroup = (group: BsGroup, showSubtotal: boolean) => (
+    <div key={group.category}>
+      {renderItems(group.items, "pl-10")}
+      {showSubtotal && (
+        <div className="grid border-t border-border/60 bg-slate-50 text-slate-600" style={{ gridTemplateColumns: COLS }}>
+          <div className="px-3 py-1.5 pl-6 text-[10px] font-semibold italic">{group.category}</div>
+          <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-semibold">{fmt(group.subtotal)}</div>
+          <div className="px-2 py-1.5 text-right tabular-nums text-[10px] text-slate-400">
+            {group.avgRate ? `${group.avgRate}%` : ""}
+          </div>
+          {!isLiability && <div className="px-2 py-1.5" />}
+          <div className="px-2 py-1.5" />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="border border-border rounded-xl overflow-hidden text-xs">
       {/* Header */}
-      <div
-        className="grid bg-slate-800"
-        style={{ gridTemplateColumns: COLS }}
-      >
+      <div className="grid bg-slate-800" style={{ gridTemplateColumns: COLS }}>
         <div className="px-3 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-300">
           {isLiability ? "Liability Category" : "Asset Category"}
         </div>
@@ -1885,59 +1866,32 @@ function BsTable({
         <div className="px-2 py-2.5 text-[9px] font-black uppercase tracking-widest text-slate-300">Notes</div>
       </div>
 
-      {groups.map((group, gi) => (
-        <div key={gi}>
-          {!isSubtotalOnly(group) &&
-            group.items.map((item, ii) => (
-              <div
-                key={ii}
-                className="grid border-t border-border/50 hover:bg-secondary/30 transition-colors"
-                style={{ gridTemplateColumns: COLS }}
-              >
-                <div className="px-4 py-1.5 text-muted-foreground pl-6">
-                  {item.label}
-                </div>
-                <div className="px-2 py-1.5 text-right tabular-nums font-medium text-foreground">
-                  {item.value > 0 ? fmt(item.value) : "—"}
-                </div>
-                <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-                  {item.rate ? (
-                    `${item.rate}%`
-                  ) : item.value > 0 ? (
-                    <span className="italic text-muted-foreground/50">—</span>
-                  ) : (
-                    "—"
-                  )}
-                </div>
-                {!isLiability && (
-                  <div className={`px-2 py-1.5 text-right tabular-nums text-[10px] ${retCls(item.ret)}`}>
-                    {item.ret ?? "—"}
-                  </div>
-                )}
-                <div className="px-2 py-1.5">
-                  {item.comment && (
-                    <span
-                      className={`font-semibold text-[10px] ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}
-                    >
-                      {item.comment.text}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          {/* Subtotal / category row */}
-          <div
-            className={`grid border-t border-border font-semibold ${isSubtotalOnly(group) ? "bg-slate-200/60 text-slate-800" : "bg-slate-100 text-slate-700"}`}
-            style={{ gridTemplateColumns: COLS }}
-          >
+      {/* Sectioned asset rows */}
+      {sections && sections.map((sec) => (
+        <div key={sec.label}>
+          {/* Section header — shaded key subtotal row */}
+          <div className="grid border-t border-slate-300 bg-slate-200 text-slate-900" style={{ gridTemplateColumns: COLS }}>
+            <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest">{sec.label}</div>
+            <div className="px-2 py-2 text-right tabular-nums text-[10px] font-black">{fmt(sec.total)}</div>
+            <div className="px-2 py-2" />
+            <div className="px-2 py-2" />
+            <div className="px-2 py-2" />
+          </div>
+          {/* Sub-groups within section */}
+          {sec.groups.map((group) => renderGroup(group, sec.groups.length > 1 || group.items.length > 1))}
+        </div>
+      ))}
+
+      {/* Flat liability rows (no sections) */}
+      {groups && groups.map((group) => (
+        <div key={group.category}>
+          {renderItems(group.items, "pl-6")}
+          <div className="grid border-t border-border bg-slate-100 text-slate-700" style={{ gridTemplateColumns: COLS }}>
             <div className="px-3 py-1.5 text-[10px] font-bold">{group.category}</div>
-            <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">
-              {fmt(group.subtotal)}
-            </div>
+            <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">{fmt(group.subtotal)}</div>
             <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
               {group.avgRate ? `${group.avgRate}%` : ""}
             </div>
-            {!isLiability && <div className="px-2 py-1.5" />}
             <div className="px-2 py-1.5" />
           </div>
         </div>
@@ -5803,7 +5757,7 @@ function DetailsView({
         <div className="space-y-4">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <BsTable
-              groups={assetGroups}
+              sections={assetGroups}
               totalLabel="Total Assets"
               totalValue={totalAssets}
               totalRate={totalAssetRate}
