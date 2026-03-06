@@ -1810,11 +1810,11 @@ function BsTable({
         className="grid border-t border-border/40 hover:bg-secondary/30 transition-colors"
         style={{ gridTemplateColumns: COLS }}
       >
-        <div className={`px-3 py-1.5 text-[9px] text-muted-foreground ${indent}`}>{item.label}</div>
-        <div className="px-2 py-1.5 text-right tabular-nums text-[9px] font-medium text-foreground">
+        <div className="px-3 py-1.5 text-muted-foreground pl-10 text-[11px]">{item.label}</div>
+        <div className="px-2 py-1.5 text-right tabular-nums font-medium text-foreground text-[11px]">
           {item.value > 0 ? fmt(item.value) : "—"}
         </div>
-        <div className="px-2 py-1.5 text-right tabular-nums text-[9px] text-muted-foreground">
+        <div className="px-2 py-1.5 text-right tabular-nums text-muted-foreground text-[11px]">
           {item.rate ? `${item.rate}%` : <span className="text-muted-foreground/40">—</span>}
         </div>
         {!isLiability && (
