@@ -5914,6 +5914,10 @@ function DetailsView({
 
       {tab === "bs" && (
         <div className="space-y-4">
+          <div className="flex justify-end gap-2">
+            <AddAssetModal clientId={clientId} />
+            <AddLiabilityModal clientId={clientId} />
+          </div>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <BsTable
               sections={assetGroups}
