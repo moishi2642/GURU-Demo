@@ -2305,9 +2305,11 @@ const CF_MONTHS = [
 function CashFlowForecastView({
   assets,
   cashFlows,
+  clientId,
 }: {
   assets: Asset[];
   cashFlows: CashFlow[];
+  clientId: number;
 }) {
   const { reserve } = cashBuckets(assets);
   const startBalance = reserve;
@@ -2434,6 +2436,10 @@ function CashFlowForecastView({
 
   return (
     <div className="space-y-5">
+      {/* Log Cash Flow button */}
+      <div className="flex justify-end">
+        <AddCashFlowModal clientId={clientId} />
+      </div>
       {/* Median Monthly Stats */}
       <div className="grid grid-cols-3 gap-3">
         <div
@@ -5724,7 +5730,7 @@ function DetailsView({
   cashFlows: CashFlow[];
   clientId: number;
 }) {
-  const [tab, setTab] = useState<"bs" | "assets" | "liab" | "cf">("bs");
+  const [tab] = useState<"bs">("bs");
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
   const totalLiab = liabilities.reduce((s, l) => s + Number(l.value), 0);
   const netWorth = totalAssets - totalLiab;
@@ -5751,30 +5757,6 @@ function DetailsView({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-1 border border-border rounded-lg p-1 bg-secondary/30 text-xs">
-          {(["bs", "assets", "liab", "cf"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-3 py-1.5 rounded-md font-medium transition-colors ${tab === t ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {t === "bs"
-                ? "Balance Sheet"
-                : t === "assets"
-                  ? "Assets"
-                  : t === "liab"
-                    ? "Liabilities"
-                    : "Cash Flows"}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <AddAssetModal clientId={clientId} />
-          <AddLiabilityModal clientId={clientId} />
-          <AddCashFlowModal clientId={clientId} />
-        </div>
-      </div>
 
       {tab === "bs" && (
         <div className="space-y-4">
@@ -5811,96 +5793,6 @@ function DetailsView({
         </div>
       )}
 
-      {tab === "assets" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {assets.map((a) => (
-            <div
-              key={a.id}
-              className="p-4 border border-border rounded-lg hover:border-primary/30 transition-colors"
-              data-testid={`asset-card-${a.id}`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <Badge variant="outline" className="text-xs capitalize">
-                  {a.type.replace("_", " ")}
-                </Badge>
-                <span className="font-bold text-sm">
-                  {fmt(Number(a.value))}
-                </span>
-              </div>
-              <p className="text-sm text-foreground leading-snug">
-                {a.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === "liab" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {liabilities.map((l) => (
-            <div
-              key={l.id}
-              className="p-4 border border-border rounded-lg hover:border-rose-200 transition-colors"
-              data-testid={`liability-card-${l.id}`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <Badge
-                  variant="outline"
-                  className="text-xs capitalize text-rose-600 border-rose-200"
-                >
-                  {l.type.replace("_", " ")}
-                </Badge>
-                <div className="text-right">
-                  <p className="font-bold text-sm text-rose-600">
-                    {fmt(Number(l.value))}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {l.interestRate}% APR
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">{l.description}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === "cf" && (
-        <div className="divide-y border border-border rounded-lg overflow-hidden">
-          {cashFlows.map((flow) => (
-            <div
-              key={flow.id}
-              className="p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors"
-              data-testid={`cashflow-row-${flow.id}`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${flow.type === "inflow" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600"}`}
-                >
-                  {flow.type === "inflow" ? (
-                    <TrendingUp className="w-3.5 h-3.5" />
-                  ) : (
-                    <TrendingDown className="w-3.5 h-3.5" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-medium text-sm">{flow.description}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {flow.category.replace("_", " ")} ·{" "}
-                    {format(new Date(flow.date), "MMM yyyy")}
-                  </p>
-                </div>
-              </div>
-              <span
-                className={`font-bold text-sm ${flow.type === "inflow" ? "text-emerald-600" : "text-rose-600"}`}
-              >
-                {flow.type === "inflow" ? "+" : "-"}
-                {fmt(Number(flow.amount))}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -6950,7 +6842,7 @@ export default function ClientDashboard() {
             />
           )}
           {financialsTab === "cashflow" && (
-            <CashFlowForecastView assets={assets} cashFlows={cashFlows} />
+            <CashFlowForecastView assets={assets} cashFlows={cashFlows} clientId={clientId} />
           )}
         </div>
       )}
