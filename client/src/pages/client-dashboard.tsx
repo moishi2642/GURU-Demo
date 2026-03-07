@@ -6396,15 +6396,24 @@ function AdvisorBriefView({
 
         {/* ── Card 4: 90-Day Money Flow ── */}
         {(() => {
+          const PAST_FLOWS = [
+            { date: new Date(2026, 1,  1), label: "1-Month T-Bill Matured",          detail: "T-Bill ****1907 → Citizens MM Reserve",         amount:   7478, type: "tbill"   as const, icon: BarChart2   },
+            { date: new Date(2026, 1, 14), label: "Capital Distribution Received",   detail: "Cresset Multi-Strategy → Reserve MMF",          amount:  35239, type: "capital" as const, icon: TrendingUp  },
+          ];
           const UPCOMING_FLOWS = [
-            { date: new Date(2026, 3,  1), label: "Spring Tuition",              detail: "Chase Checking → Dalton School",              amount: -15000, type: "obligation" as const, icon: GraduationCap },
-            { date: new Date(2026, 3,  8), label: "Monthly Income Allocation",   detail: "Cresset Capital → Citizens Checking",         amount:  18814, type: "income"     as const, icon: Wallet       },
-            { date: new Date(2026, 3, 15), label: "Q1 Estimated Federal Tax",    detail: "Citizens Checking → IRS (EFTPS)",             amount: -30000, type: "obligation" as const, icon: Building2    },
-            { date: new Date(2026, 3, 15), label: "GURU Reserve Draw",           detail: "Citizens MM → Operating (April shortfall)",   amount:  -6126, type: "transfer"   as const, icon: Repeat2      },
-            { date: new Date(2026, 4,  8), label: "Monthly Income Allocation",   detail: "Cresset Capital → Citizens Checking",         amount:  18814, type: "income"     as const, icon: Wallet       },
-            { date: new Date(2026, 4, 15), label: "GURU Reserve Draw",           detail: "Citizens MM → Operating (May shortfall)",     amount:  -3126, type: "transfer"   as const, icon: Repeat2      },
-            { date: new Date(2026, 5,  8), label: "Monthly Income Allocation",   detail: "Cresset Capital → Citizens Checking",         amount:  18814, type: "income"     as const, icon: Wallet       },
-            { date: new Date(2026, 5, 15), label: "GURU Reserve Draw",           detail: "Citizens MM → Operating (home repair)",       amount: -21626, type: "transfer"   as const, icon: Repeat2      },
+            { date: new Date(2026, 3,  1), label: "Spring Tuition",                  detail: "Chase Checking → Dalton School",                amount: -15000, type: "obligation" as const, icon: GraduationCap },
+            { date: new Date(2026, 3,  8), label: "Salary Allocation",               detail: "Cresset Capital → Citizens Checking",           amount:  18814, type: "income"     as const, icon: Wallet       },
+            { date: new Date(2026, 3, 12), label: "RSU Vesting — Semi-Annual",       detail: "Cresset Equity Plan → Taxable Brokerage",       amount:  22500, type: "capital"    as const, icon: BadgeCheck   },
+            { date: new Date(2026, 3, 15), label: "Q1 Estimated Federal Tax",        detail: "Citizens Checking → IRS (EFTPS)",               amount: -30000, type: "obligation" as const, icon: Building2    },
+            { date: new Date(2026, 3, 15), label: "GURU Reserve Draw",               detail: "Citizens MM → Operating (April shortfall)",     amount:  -6126, type: "transfer"   as const, icon: Repeat2      },
+            { date: new Date(2026, 3, 18), label: "Muni Bond Interest",              detail: "Build Account → credited in-place",             amount:    621, type: "interest"   as const, icon: Activity     },
+            { date: new Date(2026, 4,  8), label: "Salary Allocation",               detail: "Cresset Capital → Citizens Checking",           amount:  18814, type: "income"     as const, icon: Wallet       },
+            { date: new Date(2026, 4, 15), label: "GURU Reserve Draw",               detail: "Citizens MM → Operating (May shortfall)",       amount:  -3126, type: "transfer"   as const, icon: Repeat2      },
+            { date: new Date(2026, 4, 20), label: "Portfolio Dividends — Q2",        detail: "Schwab · E*Trade → Taxable Brokerage",          amount:   2847, type: "capital"    as const, icon: TrendingUp   },
+            { date: new Date(2026, 5,  8), label: "Salary Allocation",               detail: "Cresset Capital → Citizens Checking",           amount:  18814, type: "income"     as const, icon: Wallet       },
+            { date: new Date(2026, 5, 15), label: "GURU Reserve Draw",               detail: "Citizens MM → Operating (home repair)",         amount: -21626, type: "transfer"   as const, icon: Repeat2      },
+            { date: new Date(2026, 5, 22), label: "Capital Distribution — Q2",       detail: "Cresset Multi-Strategy → Reserve MMF",          amount:  28400, type: "capital"    as const, icon: TrendingUp   },
+            { date: new Date(2026, 6, 15), label: "3-Month T-Bill Matures",          detail: "T-Bill Jul '26 ($65K face, 4.95%) → Reserve",   amount:  65000, type: "tbill"      as const, icon: BarChart2    },
           ];
           const MONTHS = [
             { name: "April", idx: 3 },
@@ -6438,7 +6447,7 @@ function AdvisorBriefView({
                   </div>
                   <div>
                     <p className="text-base font-black text-foreground leading-none">90-Day Money Flow</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">April · May · June — GURU-managed movements</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Salary · Distributions · T-Bills · RSU · Interest — all sources</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -6455,64 +6464,128 @@ function AdvisorBriefView({
                 </div>
               </div>
 
+              {/* Last Month Recap */}
+              <div className="px-6 py-3 border-b border-border bg-slate-50/60 flex items-center gap-4 flex-wrap">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex-shrink-0">Feb Recap</span>
+                {PAST_FLOWS.map((ev, i) => {
+                  const Icon = ev.icon;
+                  const clr = ev.type === "tbill" ? "#0ea5e9" : "#10b981";
+                  const bg  = ev.type === "tbill" ? "bg-sky-50 border-sky-200 text-sky-700" : "bg-emerald-50 border-emerald-200 text-emerald-700";
+                  return (
+                    <div key={i} className={`flex items-center gap-1.5 rounded-full border px-3 py-1 ${bg}`}>
+                      <Icon className="w-3 h-3 flex-shrink-0" style={{ color: clr }} />
+                      <span className="text-[10px] font-bold">{ev.label}</span>
+                      <span className="text-[10px] font-black tabular-nums">+{fmt(ev.amount)}</span>
+                      <CheckCircle2 className="w-3 h-3 flex-shrink-0 opacity-60" />
+                    </div>
+                  );
+                })}
+                <span className="text-[9px] text-muted-foreground ml-auto">Both moved to Reserve MMF</span>
+              </div>
+
               {/* Monthly summary tiles */}
               <div className="grid grid-cols-3 divide-x divide-border border-b border-border bg-slate-50/40">
-                {grouped.map((g) => (
-                  <div key={g.name} className="px-5 py-3 flex flex-col gap-1.5">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{g.name}</p>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-emerald-700 font-bold tabular-nums">+{fmt(g.inflows)}</span>
-                        <span className="text-slate-300">·</span>
-                        <span className="text-[11px] text-rose-600 font-bold tabular-nums">−{fmt(g.outflows)}</span>
+                {grouped.map((g) => {
+                  const avgMonthlyIn = 18814;
+                  const vsAvg = g.inflows - avgMonthlyIn;
+                  return (
+                    <div key={g.name} className="px-5 py-3 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{g.name}</p>
+                        {vsAvg > 5000 && <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5">+income</span>}
+                        {g.outflows > 25000 && <span className="text-[8px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5 py-0.5">heavy</span>}
                       </div>
-                      <span className={`text-[11px] font-black tabular-nums ${g.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                        {g.net >= 0 ? "+" : "−"}{fmt(Math.abs(g.net))}
-                      </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-emerald-700 font-bold tabular-nums">+{fmt(g.inflows)}</span>
+                          <span className="text-slate-300">·</span>
+                          <span className="text-[11px] text-rose-600 font-bold tabular-nums">−{fmt(g.outflows)}</span>
+                        </div>
+                        <span className={`text-[11px] font-black tabular-nums ${g.net >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                          {g.net >= 0 ? "+" : "−"}{fmt(Math.abs(g.net))}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${g.net >= 0 ? "bg-emerald-400" : "bg-rose-400"}`}
+                          style={{ width: `${Math.min(100, Math.abs(g.net) / 75000 * 100)}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${g.net >= 0 ? "bg-emerald-400" : "bg-rose-400"}`}
-                        style={{ width: `${Math.min(100, Math.abs(g.net) / 50000 * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Timeline — events grouped by month */}
               <div className="px-6 py-4 space-y-4">
-                {grouped.map((g) => (
-                  <div key={g.name}>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-2">{g.name} 2026</p>
-                    <div className="space-y-1.5">
-                      {g.evts.map((ev, i) => {
-                        const Icon = ev.icon;
-                        const isIn  = ev.amount > 0;
-                        const isTx  = ev.type === "transfer";
-                        const clr   = isIn ? "#10b981" : isTx ? "#d97706" : "#f43f5e";
-                        const amtCls  = isIn ? "text-emerald-600" : isTx ? "text-amber-600" : "text-rose-600";
-                        const bgCls   = isIn ? "bg-emerald-50 border-emerald-200" : isTx ? "bg-amber-50 border-amber-200" : "bg-rose-50 border-rose-200";
-                        const iconBg  = isIn ? "bg-emerald-100" : isTx ? "bg-amber-100" : "bg-rose-100";
-                        return (
-                          <div key={i} className={`flex items-center gap-3 rounded-xl border ${bgCls} px-4 py-2.5`} data-testid={`flow-event-${g.name.toLowerCase()}-${i}`}>
-                            <span className="text-[10px] font-black text-foreground tabular-nums w-10 flex-shrink-0">{format(ev.date, "MMM d")}</span>
-                            <div className={`w-6 h-6 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0`}>
-                              <Icon className="w-3 h-3" style={{ color: clr }} />
+                {(() => {
+                  const evtStyle = (ev: typeof UPCOMING_FLOWS[number]) => {
+                    if (ev.amount < 0) {
+                      const isTx = ev.type === "transfer";
+                      return {
+                        clr: isTx ? "#d97706" : "#f43f5e",
+                        amtCls: isTx ? "text-amber-600" : "text-rose-600",
+                        bgCls:  isTx ? "bg-amber-50 border-amber-200" : "bg-rose-50 border-rose-200",
+                        iconBg: isTx ? "bg-amber-100" : "bg-rose-100",
+                        sign: "−",
+                      };
+                    }
+                    if (ev.type === "capital")  return { clr: "#10b981", amtCls: "text-emerald-700", bgCls: "bg-emerald-50 border-emerald-200", iconBg: "bg-emerald-100", sign: "+" };
+                    if (ev.type === "tbill")    return { clr: "#0ea5e9", amtCls: "text-sky-700",     bgCls: "bg-sky-50 border-sky-200",         iconBg: "bg-sky-100",     sign: "+" };
+                    if (ev.type === "interest") return { clr: "#8b5cf6", amtCls: "text-violet-700",  bgCls: "bg-violet-50 border-violet-200",   iconBg: "bg-violet-100",  sign: "+" };
+                    return { clr: "#6366f1", amtCls: "text-indigo-600", bgCls: "bg-indigo-50 border-indigo-200", iconBg: "bg-indigo-100", sign: "+" };
+                  };
+                  const julyEvt = UPCOMING_FLOWS.find(f => f.date.getMonth() === 6);
+                  return (
+                    <>
+                      {grouped.map((g) => (
+                        <div key={g.name}>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-2">{g.name} 2026</p>
+                          <div className="space-y-1.5">
+                            {g.evts.map((ev, i) => {
+                              const Icon = ev.icon;
+                              const s = evtStyle(ev);
+                              return (
+                                <div key={i} className={`flex items-center gap-3 rounded-xl border ${s.bgCls} px-4 py-2.5`} data-testid={`flow-event-${g.name.toLowerCase()}-${i}`}>
+                                  <span className="text-[10px] font-black text-foreground tabular-nums w-10 flex-shrink-0">{format(ev.date, "MMM d")}</span>
+                                  <div className={`w-6 h-6 rounded-lg ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
+                                    <Icon className="w-3 h-3" style={{ color: s.clr }} />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-[11px] font-bold text-foreground leading-none truncate">{ev.label}</p>
+                                    <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{ev.detail}</p>
+                                  </div>
+                                  <span className={`text-[12px] font-black tabular-nums flex-shrink-0 ${s.amtCls}`}>
+                                    {s.sign}{fmt(Math.abs(ev.amount))}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                      {julyEvt && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">July 2026 — Preview</p>
+                            <div className="flex-1 h-px border-t border-dashed border-border" />
+                          </div>
+                          <div className="flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 opacity-80">
+                            <span className="text-[10px] font-black text-foreground tabular-nums w-10 flex-shrink-0">{format(julyEvt.date, "MMM d")}</span>
+                            <div className="w-6 h-6 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+                              <BarChart2 className="w-3 h-3 text-sky-600" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-[11px] font-bold text-foreground leading-none truncate">{ev.label}</p>
-                              <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{ev.detail}</p>
+                              <p className="text-[11px] font-bold text-foreground leading-none truncate">{julyEvt.label}</p>
+                              <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{julyEvt.detail}</p>
                             </div>
-                            <span className={`text-[12px] font-black tabular-nums flex-shrink-0 ${amtCls}`}>
-                              {isIn ? "+" : "−"}{fmt(Math.abs(ev.amount))}
-                            </span>
+                            <span className="text-[12px] font-black tabular-nums flex-shrink-0 text-sky-700">+{fmt(julyEvt.amount)}</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Footer CTA */}
@@ -7096,73 +7169,112 @@ export default function ClientDashboard() {
             <LiabilitiesPanel liabilities={liabilities} />
           </div>
 
-          {/* ── Upcoming Cash Movements strip ──────────────────────────────── */}
+          {/* ── Money Flow: Next Month Outlook + Incoming Revenue ──────────── */}
           {(() => {
-            const FLOW_EVENTS = [
-              { date: new Date(2026, 3,  1), label: "Spring Tuition",            detail: "Chase → Dalton School",          amount: -15000, type: "obligation" as const, icon: GraduationCap },
-              { date: new Date(2026, 3,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
-              { date: new Date(2026, 3, 15), label: "Q1 Estimated Tax",          detail: "Citizens → IRS (EFTPS)",         amount: -30000, type: "obligation" as const, icon: Building2     },
-              { date: new Date(2026, 3, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -6126, type: "transfer"   as const, icon: Repeat2       },
-              { date: new Date(2026, 4,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
-              { date: new Date(2026, 4, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -3126, type: "transfer"   as const, icon: Repeat2       },
+            // April outlook numbers
+            const aprInflows  = 18814 + 22500 + 621;   // salary + RSU vest + muni interest
+            const aprOutflows = 15000 + 30000 + 20939;  // tuition + Q1 tax + regular ops
+            const aprNet      = aprInflows - aprOutflows;
+            const typicalNet  = 18814 - 20939;           // normal month: salary minus ops
+            const aprVsTypical = aprNet - typicalNet;    // how much worse/better vs average
+
+            // Upcoming income-generating events (next 4 months)
+            const INCOME_EVENTS = [
+              { date: new Date(2026, 3,  8), label: "Salary Allocation",       detail: "Cresset Capital → Checking",         amount:  18814, type: "income"   as const, icon: Wallet    },
+              { date: new Date(2026, 3, 12), label: "RSU Vesting",             detail: "Cresset Equity Plan → Brokerage",    amount:  22500, type: "capital"  as const, icon: BadgeCheck },
+              { date: new Date(2026, 3, 18), label: "Muni Bond Interest",      detail: "Build Account — semi-annual coupon", amount:    621, type: "interest" as const, icon: Activity  },
+              { date: new Date(2026, 4, 20), label: "Portfolio Dividends",     detail: "Schwab · E*Trade → Brokerage",       amount:   2847, type: "capital"  as const, icon: TrendingUp },
+              { date: new Date(2026, 5, 22), label: "Capital Distribution",    detail: "Cresset Multi-Strategy → Reserve",   amount:  28400, type: "capital"  as const, icon: TrendingUp },
+              { date: new Date(2026, 6, 15), label: "T-Bill Matures (Jul)",    detail: "3-mo T-Bill $65K @ 4.95% → Reserve", amount:  65000, type: "tbill"   as const, icon: BarChart2  },
             ];
-            const next45 = FLOW_EVENTS.filter(f => f.date >= DEMO_NOW && f.date <= new Date(DEMO_NOW.getTime() + 45 * 86400000));
-            const totalNetFlow = next45.reduce((s, f) => s + f.amount, 0);
+
+            const typeStyle = (type: string) => {
+              if (type === "capital")  return { clr: "#10b981", amtCls: "text-emerald-700", iconBg: "bg-emerald-100", badge: "bg-emerald-50 border-emerald-200 text-emerald-700" };
+              if (type === "tbill")    return { clr: "#0ea5e9", amtCls: "text-sky-700",     iconBg: "bg-sky-100",     badge: "bg-sky-50 border-sky-200 text-sky-700" };
+              if (type === "interest") return { clr: "#8b5cf6", amtCls: "text-violet-700",  iconBg: "bg-violet-100",  badge: "bg-violet-50 border-violet-200 text-violet-700" };
+              return { clr: "#6366f1", amtCls: "text-indigo-600", iconBg: "bg-indigo-100", badge: "bg-indigo-50 border-indigo-200 text-indigo-600" };
+            };
+
             return (
               <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid="dashboard-money-flow-panel">
-                <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+                {/* Card header */}
+                <div className="px-5 py-3 border-b border-border flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
                       <CalendarClock className="w-3.5 h-3.5 text-sky-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-foreground leading-none">Upcoming Cash Movements</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Next 45 days · GURU managed</p>
+                      <p className="text-sm font-black text-foreground leading-none">Income &amp; Cash Flow</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Next month outlook · Upcoming revenue sources</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className={`text-xs font-black tabular-nums ${totalNetFlow >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                        {totalNetFlow >= 0 ? "+" : "−"}{fmt(Math.abs(totalNetFlow))}
-                      </p>
-                      <p className="text-[9px] text-muted-foreground">45-day net</p>
-                    </div>
-                    <button
-                      onClick={() => setActiveView("moneymovement")}
-                      className="text-[10px] font-bold text-sky-600 hover:text-sky-500 flex items-center gap-1 transition-colors"
-                      data-testid="dashboard-money-flow-link"
-                    >
-                      Full view <ArrowUpRight className="w-3 h-3" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setActiveView("moneymovement")}
+                    className="text-[10px] font-bold text-sky-600 hover:text-sky-500 flex items-center gap-1 transition-colors"
+                    data-testid="dashboard-money-flow-link"
+                  >
+                    Full view <ArrowUpRight className="w-3 h-3" />
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border">
-                  {next45.map((ev, i) => {
-                    const Icon = ev.icon;
-                    const isIn  = ev.amount > 0;
-                    const isTx  = ev.type === "transfer";
-                    const clr   = isIn ? "#10b981" : isTx ? "#d97706" : "#f43f5e";
-                    const amtCls = isIn ? "text-emerald-600" : isTx ? "text-amber-600" : "text-rose-600";
-                    const bgCls  = isIn ? "bg-emerald-50/50" : isTx ? "bg-amber-50/50" : "bg-rose-50/50";
-                    const iconBg = isIn ? "bg-emerald-100" : isTx ? "bg-amber-100" : "bg-rose-100";
-                    return (
-                      <div key={i} className={`px-4 py-3.5 flex flex-col gap-2 ${bgCls}`} data-testid={`dash-flow-event-${i}`}>
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{format(ev.date, "MMM d")}</span>
-                          <div className={`w-5 h-5 rounded-md ${iconBg} flex items-center justify-center flex-shrink-0`}>
-                            <Icon className="w-2.5 h-2.5" style={{ color: clr }} />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-foreground leading-snug">{ev.label}</p>
-                          <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">{ev.detail}</p>
-                        </div>
-                        <p className={`text-sm font-black tabular-nums ${amtCls}`}>
-                          {isIn ? "+" : "−"}{fmt(Math.abs(ev.amount))}
-                        </p>
+
+                <div className="grid grid-cols-[5fr_7fr] divide-x divide-border">
+                  {/* LEFT: April Outlook scorecard */}
+                  <div className="px-5 py-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">April Outlook</p>
+                      <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-rose-50 border-rose-200 text-rose-700">
+                        Heavy Month
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground">Total inflows</span>
+                        <span className="text-[12px] font-black tabular-nums text-emerald-600">+{fmt(aprInflows)}</span>
                       </div>
-                    );
-                  })}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground">Total outflows</span>
+                        <span className="text-[12px] font-black tabular-nums text-rose-600">−{fmt(aprOutflows)}</span>
+                      </div>
+                      <div className="border-t border-border pt-2 flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-foreground">Net</span>
+                        <span className={`text-[13px] font-black tabular-nums ${aprNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                          {aprNet >= 0 ? "+" : "−"}{fmt(Math.abs(aprNet))}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="rounded-lg bg-rose-50 border border-rose-100 px-3 py-2">
+                      <p className="text-[10px] text-rose-700 leading-snug">
+                        Q1 tax + spring tuition make April{" "}
+                        <span className="font-black">{fmt(Math.abs(aprVsTypical))} worse</span>{" "}
+                        than a typical month. RSU vest partially offsets.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* RIGHT: Upcoming income sources */}
+                  <div className="divide-y divide-border">
+                    <div className="px-4 py-2 bg-slate-50/60">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Upcoming Revenue Sources · Apr–Jul</p>
+                    </div>
+                    {INCOME_EVENTS.map((ev, i) => {
+                      const Icon = ev.icon;
+                      const s = typeStyle(ev.type);
+                      const monthLabel = format(ev.date, "MMM d");
+                      return (
+                        <div key={i} className="flex items-center gap-3 px-4 py-2.5" data-testid={`dash-income-event-${i}`}>
+                          <span className="text-[9px] font-black text-muted-foreground tabular-nums w-9 flex-shrink-0">{monthLabel}</span>
+                          <div className={`w-5 h-5 rounded-md ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
+                            <Icon className="w-2.5 h-2.5" style={{ color: s.clr }} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold text-foreground leading-none truncate">{ev.label}</p>
+                            <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{ev.detail}</p>
+                          </div>
+                          <span className={`text-[11px] font-black tabular-nums flex-shrink-0 ${s.amtCls}`}>+{fmt(ev.amount)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             );
