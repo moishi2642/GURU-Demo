@@ -1065,10 +1065,6 @@ function CashManagementPanel({
                       <span className="text-[9px] font-black uppercase tracking-widest text-white truncate">{b.label}</span>
                     </div>
                     <div className={`border border-t-0 ${b.border} rounded-b-lg overflow-hidden`}>
-                      <div className={`flex items-center justify-between px-3 py-1.5 ${b.rowBg} border-b ${b.rowBorder}`}>
-                        <span className={`text-[11px] font-black tabular-nums ${b.amtCls}`}>{fmt(b.value, true)}</span>
-                        <span className="text-[9px] text-muted-foreground">{b.items.length} acct{b.items.length !== 1 ? "s" : ""}</span>
-                      </div>
                       {b.items.map((item, i) => (
                         <div key={i} className={`flex items-center justify-between px-3 py-1.5 ${b.rowBg} border-b ${b.rowBorder} last:border-0`}>
                           <span className={`text-[10px] ${b.textCls} truncate pr-1 leading-tight`}>{item.label}</span>
@@ -6736,6 +6732,9 @@ function AdvisorBriefView({
                       <div className="flex-1" />
                     </div>
                   </div>
+
+                  {/* ── Gap ── */}
+                  <div className="h-4" />
 
                   {/* ── Reserve row ── */}
                   <div className="flex items-stretch gap-3" data-testid="flow-col-reserve">
