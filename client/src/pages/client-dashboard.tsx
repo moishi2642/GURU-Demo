@@ -5962,7 +5962,7 @@ function GuruAllocationView({
                     className="rounded-xl overflow-hidden flex shadow-sm border border-border"
                   >
                     {/* ── LEFT: Header + Accounts ── */}
-                    <div className="w-[450px] flex-shrink-0 flex flex-col border-r border-border">
+                    <div className="w-[540px] flex-shrink-0 flex flex-col border-r border-border">
                       <div
                         className="px-4 py-3 flex items-center gap-2.5"
                         style={{ background: HERO_COLORS[r.def.name]?.bg ?? r.def.bg }}
