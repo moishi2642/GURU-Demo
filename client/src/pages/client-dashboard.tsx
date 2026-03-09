@@ -5993,10 +5993,10 @@ function GuruAllocationView({
                           return (
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Account</span>
-                              <div className="flex items-center gap-3">
-                                <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Balance</span>
-                                {!isG && <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Yld</span>}
-                                <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">{isG ? "5yr" : "AT"}</span>
+                              <div className="flex items-center gap-4">
+                                <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground w-20 text-right">Balance</span>
+                                {!isG && <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground w-10 text-right">Yield</span>}
+                                <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground w-24 text-right">{isG ? "5yr Return" : "Tax-Eff. Yield"}</span>
                               </div>
                             </div>
                           );
@@ -6015,33 +6015,46 @@ function GuruAllocationView({
                             { label: "Alternatives", items: r.subAccounts.filter(a => a.name === "Crypto") },
                           ].filter(g => g.items.length > 0) : [];
 
-                          const StatsRow = ({ bal, yld, at }: { bal: React.ReactNode; yld?: React.ReactNode; at: React.ReactNode }) => (
-                            <div className="flex items-center gap-3 pl-3 mt-0.5">
-                              <span className="text-[10px] font-semibold tabular-nums text-foreground">{bal}</span>
-                              {yld !== undefined && <span className="text-[10px] font-semibold tabular-nums text-foreground">{yld}</span>}
-                              <span className="text-[10px] tabular-nums text-muted-foreground">{at}</span>
+                          const AcctRow = ({ dot, name, acctNum, bal, yld, at, showYld, dotColor }: {
+                            dot?: boolean; name: React.ReactNode; acctNum?: string;
+                            bal: React.ReactNode; yld?: React.ReactNode; at: React.ReactNode;
+                            showYld: boolean; dotColor?: string;
+                          }) => (
+                            <div className="flex items-center justify-between gap-2 min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                {dot !== false && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />}
+                                <span className="text-[11px] text-muted-foreground leading-tight truncate">{name}</span>
+                                {acctNum && <span className="flex-shrink-0 text-[9px] tabular-nums text-muted-foreground/60">···{acctNum}</span>}
+                              </div>
+                              <div className="flex items-center gap-4 flex-shrink-0">
+                                <span className="text-[10px] font-semibold tabular-nums text-foreground w-20 text-right">{bal}</span>
+                                {showYld && <span className="text-[10px] font-semibold tabular-nums text-foreground w-10 text-right">{yld ?? "—"}</span>}
+                                <span className="text-[10px] tabular-nums text-muted-foreground w-24 text-right">{at}</span>
+                              </div>
                             </div>
                           );
 
                           return (
-                        <div className="space-y-2 flex-1">
+                        <div className="space-y-1.5 flex-1">
                           {isGrow ? (
                             growGroups.map((group) => {
                               const groupTotal = group.items.reduce((s, a) => s + a.value, 0);
                               return (
-                                <div key={group.label} className={`space-y-1.5 ${strikeCls}`}>
+                                <div key={group.label} className={`space-y-1 ${strikeCls}`}>
                                   <div className="flex items-center justify-between">
                                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{group.label}</span>
                                     <span className="text-[10px] font-black tabular-nums text-foreground">{fmt(groupTotal)}</span>
                                   </div>
                                   {group.items.map((acct) => (
                                     <div key={acct.name} className="pl-2">
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
-                                        <span className="text-[10px] text-muted-foreground leading-tight">{acct.name}</span>
-                                        {acct.acctNum && <span className="flex-shrink-0 text-[9px] tabular-nums text-muted-foreground/60">···{acct.acctNum}</span>}
-                                      </div>
-                                      <StatsRow bal={fmt(acct.value)} at={acct.yieldAT} />
+                                      <AcctRow
+                                        dotColor={hasNewAlloc ? "#94a3b8" : r.def.accent}
+                                        name={acct.name}
+                                        acctNum={acct.acctNum}
+                                        bal={fmt(acct.value)}
+                                        at={acct.yieldAT}
+                                        showYld={false}
+                                      />
                                     </div>
                                   ))}
                                 </div>
@@ -6049,12 +6062,15 @@ function GuruAllocationView({
                             })
                           ) : r.subAccounts.map((acct) => (
                             <div key={acct.name} className={strikeCls}>
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
-                                <span className="text-[11px] text-muted-foreground leading-tight">{acct.name}</span>
-                                {acct.acctNum && <span className="flex-shrink-0 text-[9px] tabular-nums text-muted-foreground/60">···{acct.acctNum}</span>}
-                              </div>
-                              <StatsRow bal={fmt(acct.value)} yld={acct.yield_} at={acct.yieldAT} />
+                              <AcctRow
+                                dotColor={hasNewAlloc ? "#94a3b8" : r.def.accent}
+                                name={acct.name}
+                                acctNum={acct.acctNum}
+                                bal={fmt(acct.value)}
+                                yld={acct.yield_}
+                                at={acct.yieldAT}
+                                showYld={true}
+                              />
                             </div>
                           ))}
                           {/* New amber rows for selected products */}
@@ -6063,15 +6079,15 @@ function GuruAllocationView({
                             const _outAmt = pendingTransfers.filter((t) => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
                             const allocBal = (r.current + _inAmt - _outAmt) * (sel.alloc / 100);
                             return (
-                              <div key={sel.product.name} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50">
-                                <div className="flex items-center gap-1.5 min-w-0">
+                              <div key={sel.product.name} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500" />
-                                  <span className="text-[11px] font-semibold text-amber-800 leading-tight">{sel.product.name}</span>
+                                  <span className="text-[11px] font-semibold text-amber-800 leading-tight truncate">{sel.product.name}</span>
                                 </div>
-                                <div className="flex items-center gap-3 pl-3 mt-0.5">
-                                  <span className="text-[10px] font-bold text-amber-700 tabular-nums">{fmt(allocBal)}</span>
-                                  {!isGrow && <span className="text-[10px] font-semibold text-amber-600 tabular-nums">{sel.product.grossYield}</span>}
-                                  <span className="text-[10px] text-amber-600 tabular-nums">{sel.product.atYield}</span>
+                                <div className="flex items-center gap-4 flex-shrink-0">
+                                  <span className="text-[10px] font-bold text-amber-700 tabular-nums w-20 text-right">{fmt(allocBal)}</span>
+                                  {!isGrow && <span className="text-[10px] font-semibold text-amber-600 tabular-nums w-10 text-right">{sel.product.grossYield}</span>}
+                                  <span className="text-[10px] text-amber-600 tabular-nums w-24 text-right">{sel.product.atYield}</span>
                                 </div>
                               </div>
                             );
@@ -6081,26 +6097,22 @@ function GuruAllocationView({
                           )}
                           {/* Pending outbound transfers */}
                           {pendingTransfers.filter((t) => t.from === r.def.name).map((pt) => (
-                            <div key={`outbound-${pt.to}`} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50">
-                              <div className="flex items-center gap-1.5 min-w-0">
+                            <div key={`outbound-${pt.to}`} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                 <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
                                 <span className="text-[11px] font-semibold text-amber-800 leading-tight">Transfer out → {pt.to}</span>
                               </div>
-                              <div className="pl-3 mt-0.5">
-                                <span className="text-[10px] font-bold text-red-600 tabular-nums">−{fmt(pt.amount)}</span>
-                              </div>
+                              <span className="text-[10px] font-bold text-red-600 tabular-nums flex-shrink-0">−{fmt(pt.amount)}</span>
                             </div>
                           ))}
                           {/* Pending inbound transfers */}
                           {pendingTransfers.filter((t) => t.to === r.def.name).map((pt) => (
-                            <div key={`inbound-${pt.from}`} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50">
-                              <div className="flex items-center gap-1.5 min-w-0">
+                            <div key={`inbound-${pt.from}`} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                 <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
                                 <span className="text-[11px] font-semibold text-amber-800 leading-tight">Transfer from {pt.from}</span>
                               </div>
-                              <div className="pl-3 mt-0.5">
-                                <span className="text-[10px] font-bold text-amber-700 tabular-nums">+{fmt(pt.amount)}</span>
-                              </div>
+                              <span className="text-[10px] font-bold text-amber-700 tabular-nums flex-shrink-0">+{fmt(pt.amount)}</span>
                             </div>
                           ))}
                           {pendingTransfers.filter((t) => t.to === r.def.name).length > 0 && (
