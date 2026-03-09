@@ -977,6 +977,13 @@ function CashManagementPanel({
   const trendUp = endCumulative >= 0;
   const coveragePct = monthlyBurn > 0 ? (totalLiquid / (annualOutflows)) * 100 : 999;
   const coverageOk = coveragePct >= 100;
+
+  const [liqLive, setLiqLive] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setLiqLive(true), 400);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
 
@@ -1028,43 +1035,65 @@ function CashManagementPanel({
         </div>
       </div>
 
-      {/* ── Bucket Cards ── */}
-      <div className="px-4 py-4 grid grid-cols-3 gap-3">
-        {([
-          { label: "Operating Cash", value: reserve,     items: reserveItems  ?? [], bg: "#1d4ed8", border: "#1d4ed844", rowBg: "#eff6ff", Icon: Wallet },
-          { label: "Reserve",        value: yieldBucket, items: yieldItems    ?? [], bg: "#d97706", border: "#d9770644", rowBg: "#fffbeb", Icon: ShieldCheck },
-          { label: "Build",          value: tactical,    items: tacticalItems ?? [], bg: "#16a34a", border: "#16a34a44", rowBg: "#f0fdf4", Icon: Home },
-        ] as const).map(({ label, value, items, bg, border, rowBg, Icon }) => {
-          const pct = totalLiquid > 0 ? Math.round((value / totalLiquid) * 100) : 0;
+      {/* ── Water-fill Bucket Tanks ── */}
+      <div className="px-4 py-4">
+        <style>{WATER_CSS}</style>
+        {(() => {
+          const TH = 110, TW = 82;
+          const buckets = [
+            { label: "Operating Cash", value: reserve,     items: reserveItems  ?? [], color: "#1d4ed8", waveBorder: "#93c5fd", fill: "rgba(29,78,216,0.18)"  },
+            { label: "Reserve",        value: yieldBucket, items: yieldItems    ?? [], color: "#d97706", waveBorder: "#fcd34d", fill: "rgba(217,119,6,0.18)"  },
+            { label: "Build",          value: tactical,    items: tacticalItems ?? [], color: "#16a34a", waveBorder: "#86efac", fill: "rgba(22,163,74,0.18)"  },
+          ];
           return (
-            <div key={label} className="rounded-xl overflow-hidden border-2 shadow-sm flex flex-col" style={{ borderColor: border }}>
-              {/* Bucket header */}
-              <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: bg }}>
-                <div className="flex items-center gap-1.5">
-                  <Icon className="w-3 h-3 text-white/80 flex-shrink-0" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-white leading-none">{label}</span>
-                </div>
-                <span className="text-[9px] font-bold text-white/70">{pct}%</span>
+            <>
+              {/* Tank row */}
+              <div className="flex items-start">
+                {buckets.map((b, idx) => {
+                  const pct  = totalLiquid > 0 ? Math.round((b.value / totalLiquid) * 100) : 0;
+                  const endLevel = Math.max(8, pct);
+                  const level  = liqLive ? endLevel : 5;
+                  const fillH  = (level / 100) * TH;
+                  return (
+                    <div key={b.label} className="flex flex-col items-center flex-1">
+                      {/* % badge */}
+                      <div style={{ height: 22 }} className="flex items-end justify-center">
+                        <span className="text-[10px] font-black" style={{ color: b.color }}>{pct}%</span>
+                      </div>
+                      {/* Tank */}
+                      <div style={{ width: TW, height: TH, borderRadius: 8, border: `2px solid ${b.waveBorder}`, background: "#fff", position: "relative", overflow: "hidden" }}>
+                        {/* Water fill */}
+                        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: fillH, background: b.fill, transition: "height 2.8s cubic-bezier(0.4,0,0.2,1)" }}>
+                          <svg className="wv-s" style={{ position: "absolute", top: -5, left: 0, width: "200%", height: 10 }} viewBox="0 0 200 10" preserveAspectRatio="none">
+                            <path d="M0,5 C25,0 25,10 50,5 C75,0 75,10 100,5 C125,0 125,10 150,5 C175,0 175,10 200,5" stroke={b.color} strokeWidth="1.5" fill="none" opacity="0.8" />
+                          </svg>
+                        </div>
+                        {/* Amount label */}
+                        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: b.color, textShadow: "0 0 6px white, 0 0 6px white" }}>{fmt(b.value, true)}</span>
+                        </div>
+                      </div>
+                      {/* Bucket label */}
+                      <div style={{ textAlign: "center", maxWidth: TW + 12, marginTop: 7 }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: "#1e293b", lineHeight: 1.3 }}>{b.label}</p>
+                        {b.items[0] && <p style={{ fontSize: 9, color: "#94a3b8", marginTop: 1 }} className="truncate">{b.items[0].label}</p>}
+                      </div>
+                      {/* Account rows */}
+                      <div className="w-full mt-2.5 rounded-lg overflow-hidden" style={{ background: b.fill.replace("0.18", "0.5"), maxWidth: TW + 24 }}>
+                        {b.items.map((item, i) => (
+                          <div key={i} className="flex items-center justify-between px-2.5 py-1.5 text-[9px] border-b border-black/5 last:border-0">
+                            <span className="text-foreground/70 truncate pr-1 leading-tight">{item.label}</span>
+                            <span className="tabular-nums font-bold shrink-0" style={{ color: b.color }}>{fmt(item.value, true)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              {/* Big value */}
-              <div className="px-3 pt-2.5 pb-1.5" style={{ background: rowBg }}>
-                <p className="text-[20px] font-black tabular-nums leading-none" style={{ color: bg }}>{fmt(value, true)}</p>
-              </div>
-              {/* Account rows */}
-              <div className="flex-1 divide-y divide-black/5" style={{ background: rowBg }}>
-                {items.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between px-3 py-1.5 text-[10px]">
-                    <span className="text-foreground/75 truncate pr-1 leading-tight">{item.label}</span>
-                    <span className="tabular-nums font-bold text-foreground shrink-0">{fmt(item.value, true)}</span>
-                  </div>
-                ))}
-                {items.length === 0 && (
-                  <div className="px-3 py-2 text-[10px] text-muted-foreground italic">No accounts</div>
-                )}
-              </div>
-            </div>
+            </>
           );
-        })}
+        })()}
       </div>
 
     </div>
