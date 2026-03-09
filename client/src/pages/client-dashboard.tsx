@@ -325,9 +325,8 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
   );
 }
 
-// ─── Demo date: simulate "today = December 2025" so January is the next month ──
-// This aligns the UI to the Excel model which starts in January.
-const DEMO_NOW = new Date(2025, 11, 1); // December 1, 2025
+// ─── Demo date: simulate "today = March 6, 2026" ──────────────────────────────
+const DEMO_NOW = new Date(2026, 2, 6); // March 6, 2026
 
 // ─── Formatting Helpers ────────────────────────────────────────────────────────
 const fmt = (v: number, compact = false) => {
@@ -7075,7 +7074,7 @@ export default function ClientDashboard() {
               { date: new Date(2026, 4,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
               { date: new Date(2026, 4, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -3126, type: "transfer"   as const, icon: Repeat2       },
             ];
-            const next45 = FLOW_EVENTS.filter(f => f.date >= DEMO_NOW && f.date <= new Date(DEMO_NOW.getTime() + 45 * 86400000));
+            const next45 = FLOW_EVENTS.filter(f => f.date >= DEMO_NOW && f.date <= new Date(DEMO_NOW.getTime() + 60 * 86400000));
             const totalNetFlow = next45.reduce((s, f) => s + f.amount, 0);
             return (
               <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid="dashboard-money-flow-panel">
@@ -7086,7 +7085,7 @@ export default function ClientDashboard() {
                     </div>
                     <div>
                       <p className="text-sm font-black text-foreground leading-none">Upcoming Cash Movements</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Next 45 days · GURU managed</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Next 60 days · GURU managed</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
