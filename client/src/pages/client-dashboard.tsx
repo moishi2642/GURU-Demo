@@ -6669,7 +6669,7 @@ function AdvisorBriefView({
               ))}
               <div className="flex items-center justify-between gap-2 border-t border-border pt-1.5 mt-1.5">
                 <span className="text-[10px] font-black text-muted-foreground">GURU Reserve Target (3 mo.)</span>
-                <span className="text-[11px] font-black tabular-nums text-emerald-700">−{fmt(guruReserveTarget)}</span>
+                <span className="text-[11px] font-black tabular-nums text-emerald-700">{fmt(guruReserveTarget)}</span>
               </div>
             </div>
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
