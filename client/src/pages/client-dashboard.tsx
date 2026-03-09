@@ -3283,6 +3283,17 @@ function BucketExecutionPanel({
           </div>
         ) : (
           <>
+            {/* Current / Target boxes */}
+            <div className="flex gap-2">
+              <div className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5">
+                <p className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
+                <p className="text-base font-black tabular-nums text-foreground">{fmtD(current)}</p>
+              </div>
+              <div className="flex-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+                <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
+                <p className="text-base font-black tabular-nums" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
+              </div>
+            </div>
             <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
               <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>
                 Transfer Amount
