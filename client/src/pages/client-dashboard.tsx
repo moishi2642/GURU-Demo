@@ -7430,7 +7430,7 @@ export default function ClientDashboard() {
             <CashManagementPanel assets={assets} cashFlows={cashFlows} />
           </div>
 
-          <div className="grid grid-cols-[3fr_2fr] gap-4 items-start">
+          <div className="grid grid-cols-2 gap-4 items-start">
             <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => setActiveView("cashflow")} />
             <CashFlowTicker cashFlows={cashFlows} />
           </div>
