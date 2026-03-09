@@ -6482,76 +6482,28 @@ function AdvisorBriefView({
               priority="High Priority"
               title="Harvest Excess Liquidity From Bonus"
             />
-            {/* ── Flow diagram ── */}
-            {(() => {
-              const toReserve = Math.round(totalToDeploy * 0.42);
-              const toBuild   = totalToDeploy - toReserve;
-              const FlowNode = ({ icon: Icon, label, sub, amount, accent, style }: {
-                icon: React.ElementType; label: string; sub: string;
-                amount: string; accent: string; style?: React.CSSProperties;
-              }) => (
-                <div className="absolute flex flex-col rounded-xl border-2 bg-white shadow-sm overflow-hidden" style={{ width: 152, ...style }}>
-                  <div className="flex items-center gap-1.5 px-2.5 pt-2.5 pb-1">
-                    <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: accent + "22" }}>
-                      <Icon className="w-3.5 h-3.5" style={{ color: accent }} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-black text-foreground leading-tight truncate">{label}</p>
-                      <p className="text-[9px] text-muted-foreground leading-tight truncate">{sub}</p>
-                    </div>
+            <div>
+              <p className="text-3xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToDeploy, true)}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">available to deploy based on GURU estimates</p>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Where it's sitting</p>
+              {[...reserveItems, ...brokerageCashItems].slice(0, 5).map((a) => (
+                <div key={a.id} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                    <span className="text-[11px] text-muted-foreground truncate">
+                      {(a.description ?? "").split("—")[0].split("(")[0].trim()}
+                    </span>
                   </div>
-                  <div className="px-2.5 pb-2.5">
-                    <p className="text-sm font-black tabular-nums" style={{ color: accent }}>{amount}</p>
-                  </div>
+                  <span className="text-[11px] font-bold tabular-nums text-foreground flex-shrink-0">{fmt(Number(a.value))}</span>
                 </div>
-              );
-              return (
-                <div className="relative rounded-xl border border-dashed border-border bg-slate-50/60 overflow-hidden" style={{ height: 210 }}>
-                  {/* SVG connector lines */}
-                  <svg className="absolute inset-0 pointer-events-none" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <defs>
-                      <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                        <path d="M0,0 L0,6 L6,3 z" fill="#94a3b8" />
-                      </marker>
-                    </defs>
-                    {/* Source → Reserve */}
-                    <path d="M 49,36 C 55,36 55,28 61,28" stroke="#94a3b8" strokeWidth="0.8" fill="none" markerEnd="url(#arr)" />
-                    {/* Source → Build */}
-                    <path d="M 49,64 C 55,64 55,72 61,72" stroke="#94a3b8" strokeWidth="0.8" fill="none" markerEnd="url(#arr)" />
-                  </svg>
-
-                  {/* Source node — left, vertically centered */}
-                  <FlowNode
-                    icon={Wallet}
-                    label="Excess Cash Pool"
-                    sub="above 3-mo. target"
-                    amount={fmt(totalToDeploy, true)}
-                    accent="#10b981"
-                    style={{ left: 12, top: "50%", transform: "translateY(-50%)", borderColor: "#10b98133" }}
-                  />
-
-                  {/* Reserve destination — right upper */}
-                  <FlowNode
-                    icon={ShieldCheck}
-                    label="Reserve"
-                    sub="JPMorgan MMF"
-                    amount={`+${fmt(toReserve, true)}`}
-                    accent="#d97706"
-                    style={{ right: 12, top: 18, borderColor: "#d9770633" }}
-                  />
-
-                  {/* Build destination — right lower */}
-                  <FlowNode
-                    icon={Home}
-                    label="Build"
-                    sub="T-Bills / ladder"
-                    amount={`+${fmt(toBuild, true)}`}
-                    accent="#16a34a"
-                    style={{ right: 12, bottom: 18, borderColor: "#16a34a33" }}
-                  />
-                </div>
-              );
-            })()}
+              ))}
+              <div className="flex items-center justify-between gap-2 border-t border-border pt-1.5 mt-1.5">
+                <span className="text-[10px] font-black text-muted-foreground">GURU Reserve Target (3 mo.)</span>
+                <span className="text-[11px] font-black tabular-nums text-emerald-700">−{fmt(guruReserveTarget)}</span>
+              </div>
+            </div>
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Lightbulb className="w-3 h-3 text-emerald-600" />
@@ -6693,82 +6645,6 @@ function AdvisorBriefView({
 
         {/* ── Card 4: Account Cash Movements ── */}
         {(() => {
-          // Shared row renderer
-          const LINK_COLOR = "#6366f1";
-          const FlowRow = ({
-            date, label, amount, amtColor, from, to, icon: Icon, iconBg, iconColor, testId, sign, linkedTag,
-          }: {
-            date: string; label: string; amount: number | null; amtColor: string;
-            from: string; to: string;
-            icon: React.ElementType; iconBg: string; iconColor: string; testId: string;
-            sign?: "+" | "-";
-            linkedTag?: string;
-          }) => (
-            <div className="relative flex" data-testid={testId}>
-              {/* ── Org-chart left connector (only when this row is linked) ── */}
-              {linkedTag && (
-                <div className="flex-shrink-0 relative" style={{ width: 48, marginLeft: -48 }}>
-                  {/* Vertical spine — full height */}
-                  <div className="absolute" style={{
-                    left: 24, top: 0, bottom: 0, width: 2,
-                    background: `linear-gradient(to bottom, transparent 0%, ${LINK_COLOR} 18%, ${LINK_COLOR} 82%, transparent 100%)`,
-                    opacity: 0.55,
-                  }} />
-                  {/* Horizontal branch → toward content */}
-                  <div className="absolute" style={{
-                    left: 24, top: "50%", width: 24, height: 2,
-                    background: LINK_COLOR, opacity: 0.7,
-                    transform: "translateY(-50%)",
-                  }} />
-                  {/* Dot at branch tip */}
-                  <div className="absolute rounded-full" style={{
-                    left: 19, top: "50%", width: 10, height: 10,
-                    background: LINK_COLOR,
-                    transform: "translateY(-50%)",
-                    boxShadow: `0 0 0 2px white`,
-                  }} />
-                  {/* Rotated label */}
-                  <div className="absolute flex items-center justify-center" style={{
-                    left: 2, top: "50%", width: 40, height: 14,
-                    transform: "translateY(-50%) rotate(-90deg)",
-                    transformOrigin: "center center",
-                  }}>
-                    <span className="text-[8px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: LINK_COLOR, opacity: 0.8 }}>
-                      Linked
-                    </span>
-                  </div>
-                </div>
-              )}
-              {/* ── Row content ── */}
-              <div className="flex-1 py-4 px-6">
-                <div className="flex items-start gap-3">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${iconBg}`}>
-                    <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between gap-4">
-                      <div className="flex items-baseline gap-2 min-w-0">
-                        <p className="text-sm font-bold text-foreground leading-tight">{label}</p>
-                        <span className="text-[10px] font-semibold text-muted-foreground shrink-0">{date}</span>
-                      </div>
-                      {amount !== null && (
-                        <p className={`text-sm font-black tabular-nums shrink-0 ${amtColor}`}>{sign ?? ""}{fmt(amount)}</p>
-                      )}
-                    </div>
-                    <div className="mt-1.5 space-y-0.5">
-                      <p className="text-[11px] text-muted-foreground">
-                        <span className="font-semibold text-foreground/70">From:</span> {from}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        <span className="font-semibold text-foreground/70">To:</span> {to}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-
           return (
             <div className="col-span-2 pl-12">
             <div
@@ -6789,98 +6665,115 @@ function AdvisorBriefView({
                 />
               </div>
 
-              {/* ── Bucket sections ── */}
-              <div className="divide-y divide-border">
+              {/* ── Org-chart flow diagram ── */}
+              <div className="px-6 py-5 bg-slate-50/40">
+                <div className="relative" style={{ height: 248 }}>
+                  {/* SVG connector lines — viewBox 0 0 100 100 maps to container size */}
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                      <marker id="flow-arr" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto">
+                        <path d="M0,0 L0,5 L5,2.5 z" fill="#6366f1" />
+                      </marker>
+                    </defs>
+                    {/* Horizontal spine: Ops right edge → Reserve left edge */}
+                    <line x1="31" y1="16" x2="35" y2="16" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Horizontal spine: Reserve right edge → Build left edge */}
+                    <line x1="65" y1="16" x2="69" y2="16" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Flow arrow: Reserve → Ops (autodraw), dashed indigo */}
+                    <path d="M 35,13 L 31.5,13" stroke="#6366f1" strokeWidth="0.9" strokeDasharray="1.5,1" fill="none" markerEnd="url(#flow-arr)" />
+                    {/* Vertical drop: Ops bucket → Ops account */}
+                    <line x1="16" y1="32" x2="16" y2="56" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Vertical drop: Reserve → branch point */}
+                    <line x1="50" y1="32" x2="50" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Branch left → JPMorgan */}
+                    <polyline points="50,44 40,44 40,56" stroke="#cbd5e1" strokeWidth="0.7" fill="none" />
+                    {/* Branch right → T-Bill */}
+                    <polyline points="50,44 60,44 60,56" stroke="#cbd5e1" strokeWidth="0.7" fill="none" />
+                    {/* Vertical drop: Build bucket → Build account */}
+                    <line x1="84" y1="32" x2="84" y2="56" stroke="#cbd5e1" strokeWidth="0.7" />
+                  </svg>
 
-                {/* ── Operating Cash ── */}
-                <div>
-                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#1d4ed8" }}>
-                    <Wallet className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
-                    <span className="text-[11px] font-black uppercase tracking-widest text-white">Operating Cash</span>
-                  </div>
-                  <div style={{ background: "#eff6ff" }}>
-                    <FlowRow
-                      date="March"
-                      label="Inflow to Primary Account"
-                      amount={47126}
-                      amtColor="text-emerald-700"
-                      from="Autodraw from Reserve — JPMorgan 100% Treasury Money Market Fund ****2847"
-                      to="Citizens Private Banking Checking ****7291"
-                      icon={ArrowUp}
-                      iconBg="bg-emerald-100"
-                      iconColor="text-emerald-600"
-                      testId="flow-row-ops-march"
-                      sign="+"
-                      linkedTag="Linked · Reserve autodraw below"
-                    />
-                  </div>
-                </div>
+                  {/* ── ROW 1: Bucket nodes ── */}
 
-                {/* ── Reserve ── */}
-                <div>
-                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#d97706" }}>
-                    <ShieldCheck className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
-                    <span className="text-[11px] font-black uppercase tracking-widest text-white">Reserve</span>
-                  </div>
-                  <div className="divide-y divide-border/60" style={{ background: "#fffbeb" }}>
-                    <FlowRow
-                      date="March 31"
-                      label="T-Bill Maturity — Internal Transfer"
-                      amount={41877}
-                      amtColor="text-slate-600"
-                      from="US Treasury Bill (maturing)"
-                      to="JPMorgan 100% Treasury Money Market Fund ****2847"
-                      icon={ArrowLeftRight}
-                      iconBg="bg-slate-100"
-                      iconColor="text-slate-500"
-                      testId="flow-row-reserve-tbill"
-                    />
-                    <FlowRow
-                      date="March"
-                      label="Autodraw to Operating Cash"
-                      amount={47126}
-                      amtColor="text-rose-700"
-                      from="JPMorgan 100% Treasury Money Market Fund ****2847"
-                      to="Citizens Private Banking Checking ****7291"
-                      icon={ArrowDown}
-                      iconBg="bg-rose-100"
-                      iconColor="text-rose-600"
-                      testId="flow-row-reserve-autodraw"
-                      sign="-"
-                      linkedTag="Linked · Inflow to Operating Cash above"
-                    />
-                  </div>
-                </div>
-
-                {/* ── Build ── */}
-                <div>
-                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#16a34a" }}>
-                    <Home className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
-                    <span className="text-[11px] font-black uppercase tracking-widest text-white">Build</span>
-                  </div>
-                  <div className="px-6 py-4" data-testid="flow-row-build" style={{ background: "#f0fdf4" }}>
-                    <div className="flex items-start gap-3">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-green-100">
-                        <Minus className="w-3.5 h-3.5 text-green-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline justify-between gap-4">
-                          <p className="text-sm font-bold text-foreground">No movement this period</p>
-                          <p className="text-sm font-black tabular-nums text-muted-foreground shrink-0">$0</p>
-                        </div>
-                        <div className="mt-1.5 space-y-0.5">
-                          <p className="text-[11px] text-muted-foreground">
-                            <span className="font-semibold text-foreground/70">Holding:</span> Savings toward home upgrade · earning ~4.75%
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            <span className="font-semibold text-foreground/70">Account:</span> Citizens Private Bank Money Market ****4192
-                          </p>
-                        </div>
-                      </div>
+                  {/* Operating Cash */}
+                  <div className="absolute rounded-xl overflow-hidden border-2 shadow-sm" style={{ left: "1%", top: 0, width: "29%", borderColor: "#1d4ed844" }}>
+                    <div className="px-3 py-2 flex items-center gap-2" style={{ background: "#1d4ed8" }}>
+                      <Wallet className="w-3 h-3 text-white/80 flex-shrink-0" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-white">Operating Cash</span>
+                    </div>
+                    <div className="px-3 py-2 bg-blue-50">
+                      <p className="text-[10px] font-bold text-blue-900 tabular-nums">+$47,126 inbound</p>
+                      <p className="text-[9px] text-blue-600 mt-0.5">from Reserve · March</p>
                     </div>
                   </div>
-                </div>
 
+                  {/* Reserve */}
+                  <div className="absolute rounded-xl overflow-hidden border-2 shadow-sm" style={{ left: "35%", top: 0, width: "29%", borderColor: "#d9770644" }}>
+                    <div className="px-3 py-2 flex items-center gap-2" style={{ background: "#d97706" }}>
+                      <ShieldCheck className="w-3 h-3 text-white/80 flex-shrink-0" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-white">Reserve</span>
+                    </div>
+                    <div className="px-3 py-2 bg-amber-50">
+                      <p className="text-[10px] font-bold text-amber-900 tabular-nums">−$47,126 autodraw</p>
+                      <p className="text-[9px] text-amber-700 mt-0.5">→ Operating Cash · March</p>
+                    </div>
+                  </div>
+
+                  {/* Build */}
+                  <div className="absolute rounded-xl overflow-hidden border-2 shadow-sm" style={{ left: "70%", top: 0, width: "29%", borderColor: "#16a34a44" }}>
+                    <div className="px-3 py-2 flex items-center gap-2" style={{ background: "#16a34a" }}>
+                      <Home className="w-3 h-3 text-white/80 flex-shrink-0" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-white">Build</span>
+                    </div>
+                    <div className="px-3 py-2 bg-green-50">
+                      <p className="text-[10px] font-bold text-green-900">No movement</p>
+                      <p className="text-[9px] text-green-700 mt-0.5">holding · ~4.75%</p>
+                    </div>
+                  </div>
+
+                  {/* ── ROW 2: Account nodes ── */}
+
+                  {/* Under Ops: Citizens Checking */}
+                  <div className="absolute rounded-lg border border-slate-200 bg-white shadow-sm" style={{ left: "1%", top: 140, width: "29%" }} data-testid="flow-row-ops-march">
+                    <div className="px-2.5 py-2.5">
+                      <p className="text-[10px] font-bold text-foreground leading-tight">Citizens Private Banking</p>
+                      <p className="text-[9px] text-muted-foreground">Checking ****7291</p>
+                      <p className="text-[12px] font-black text-emerald-700 mt-1.5 tabular-nums">+$47,126</p>
+                      <p className="text-[9px] text-muted-foreground">inflow · March</p>
+                    </div>
+                  </div>
+
+                  {/* Under Reserve: JPMorgan MMF */}
+                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 140, width: "14%" }} data-testid="flow-row-reserve-autodraw">
+                    <div className="px-2.5 py-2.5">
+                      <p className="text-[9px] font-bold text-amber-900 leading-tight">JPMorgan MMF</p>
+                      <p className="text-[8px] text-amber-700">****2847</p>
+                      <p className="text-[12px] font-black text-rose-700 mt-1.5 tabular-nums">−$47,126</p>
+                      <p className="text-[8px] text-muted-foreground">autodraw out</p>
+                    </div>
+                  </div>
+
+                  {/* Under Reserve: T-Bill Ladder */}
+                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "51%", top: 140, width: "14%" }} data-testid="flow-row-reserve-tbill">
+                    <div className="px-2.5 py-2.5">
+                      <p className="text-[9px] font-bold text-amber-900 leading-tight">T-Bill Ladder</p>
+                      <p className="text-[8px] text-amber-700">matures 3/31</p>
+                      <p className="text-[12px] font-black text-slate-700 mt-1.5 tabular-nums">$41,877</p>
+                      <p className="text-[8px] text-muted-foreground">→ stays in MMF</p>
+                    </div>
+                  </div>
+
+                  {/* Under Build: Citizens MM */}
+                  <div className="absolute rounded-lg border border-slate-200 bg-white shadow-sm" style={{ left: "70%", top: 140, width: "29%" }} data-testid="flow-row-build">
+                    <div className="px-2.5 py-2.5">
+                      <p className="text-[10px] font-bold text-foreground leading-tight">Citizens Private Bank</p>
+                      <p className="text-[9px] text-muted-foreground">Money Market ****4192</p>
+                      <p className="text-[12px] font-black text-muted-foreground mt-1.5 tabular-nums">$0 movement</p>
+                      <p className="text-[9px] text-muted-foreground">earning ~4.75%</p>
+                    </div>
+                  </div>
+
+                </div>
               </div>
 
               {/* Footer */}
