@@ -6367,7 +6367,11 @@ function AdvisorBriefView({
             )}
           </div>
         </div>
-        <span className="text-[8px] font-black uppercase tracking-wider text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5">
+        <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 border ${
+          priority === "Time Sensitive" || priority === "High Priority"
+            ? "text-rose-600 bg-rose-50 border-rose-200"
+            : "text-slate-500 bg-slate-50 border-slate-200"
+        }`}>
           {priority}
         </span>
       </div>
