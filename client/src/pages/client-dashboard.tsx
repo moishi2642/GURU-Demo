@@ -1087,7 +1087,7 @@ function CashManagementPanel({
                 return (
                   <div key={b.label} className="flex-1 min-w-0">
                     {/* ── Mini water tank ── */}
-                    <div style={{ width: '100%', height: 56, borderRadius: '8px 8px 0 0', border: `1.5px solid ${b.color}40`, borderBottom: 'none', background: '#f8fafc', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: 96, borderRadius: '8px 8px 0 0', border: `1.5px solid ${b.color}40`, borderBottom: 'none', background: '#f8fafc', position: 'relative', overflow: 'hidden' }}>
                       {/* Fill */}
                       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${fillH}%`, background: `${b.color}22`, transition: 'height 2.6s cubic-bezier(0.4,0,0.2,1)' }}>
                         {/* Wave */}
@@ -6300,9 +6300,9 @@ function AdvisorBriefView({
   const bpsPickup = Math.round((_guruLiquidYield - _currentLiquidYield) * 100);
 
   // ── Fed rate cut lock-in scenario ──
-  // $247K = excess cash not already in treasuries, excluding Fidelity
+  // excess = totalLiquid − forecasted trough (the cash above minimum needed reserve)
   const _fedCutBps = 50;
-  const _excessNotTreasuries = 247000;
+  const _excessNotTreasuries = cashExcess; // $372K total liquid − $125K trough
   const _fedLockInSavings = Math.round(_excessNotTreasuries * (_fedCutBps / 10000));
 
   // ── Single-stock risk ──
