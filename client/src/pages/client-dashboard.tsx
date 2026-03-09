@@ -2924,7 +2924,7 @@ function CashFlowForecastView({
             </div>
             <div className="px-3 pb-3 bg-card">
               {/* Quarter bracket labels */}
-              <div className="flex text-[8px] font-bold uppercase tracking-widest text-slate-400 pt-2 pb-1" style={{ paddingLeft: 70 }}>
+              <div className="flex text-[8px] font-bold uppercase tracking-widest text-slate-400 pt-2 pb-1" style={{ paddingLeft: 8 }}>
                 {Q_DEFS.map((q, qi) => (
                   <div key={qi} className={`flex-1 text-center border-l border-t pt-1 transition-colors ${hoveredQuarter === qi ? "border-blue-400 text-blue-600 bg-blue-50/40" : "border-slate-200"}`}>
                     {q.qLabel}
@@ -2935,7 +2935,7 @@ function CashFlowForecastView({
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={bars}
-                    margin={{ top: 32, right: 16, left: 8, bottom: 0 }}
+                    margin={{ top: 32, right: 16, left: 4, bottom: 0 }}
                     barCategoryGap="18%"
                     onMouseMove={(data: any) => {
                       if (data?.activePayload?.length) {
@@ -2947,7 +2947,7 @@ function CashFlowForecastView({
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" tick={<CustomTick />} axisLine={false} tickLine={false} height={28} />
-                    <YAxis tickFormatter={fmtK} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
+                    <YAxis hide={true} domain={[100000, 'auto']} />
                     <RechartsTooltip content={() => null} />
                     {/* Sep 30 callout */}
                     <ReferenceLine x="Sep 30" stroke="transparent" label={<Sep30CalloutLabel />} />
@@ -2964,7 +2964,7 @@ function CashFlowForecastView({
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex items-center gap-5 px-14 pb-1 text-[9px] text-muted-foreground">
+              <div className="flex items-center gap-5 px-2 pb-1 text-[9px] text-muted-foreground">
                 <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: BLUE, opacity: 0.82 }} />Balance</span>
                 <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: GREEN_BAR }} />Income</span>
                 <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: CORE_RED }} />Core Expenses</span>
