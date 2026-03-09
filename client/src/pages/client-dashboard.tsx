@@ -332,6 +332,16 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
 // ─── Demo date: simulate "today = March 6, 2026" ──────────────────────────────
 const DEMO_NOW = new Date(2026, 2, 6); // March 6, 2026
 
+const HERO_COLORS: Record<string, { bg: string; accent: string; dot: string }> = {
+  "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd", dot: "#60a5fa" },
+  Reserve:          { bg: "#d97706", accent: "#fde68a", dot: "#fbbf24" },
+  Build:            { bg: "#16a34a", accent: "#86efac", dot: "#4ade80" },
+  Grow:             { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
+  "Real Estate":        { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
+  "Alternative Assets": { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
+  "529 Plans":          { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
+};
+
 // ─── Formatting Helpers ────────────────────────────────────────────────────────
 const fmt = (v: number, compact = false) => {
   if (compact && Math.abs(v) >= 1_000_000)
@@ -1320,111 +1330,29 @@ interface WFlowTank {
 }
 
 function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
-  const [live, setLive] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setLive(true), 500); return () => clearTimeout(t); }, []);
+  const [scheduled, setScheduled] = useState<Set<string>>(new Set(["prop-tax-jan"]));
 
-  const TH = 118, TW = 84;
-
-  const tanks: WFlowTank[] = [
-    {
-      id: "tbill", label: "3-Month T-Bill", sub: "Matures March 31, 2026",
-      amount: 41877, startLevel: 76, endLevel: 5,
-      color: "#0ea5e9", border: "#7dd3fc", fill: "rgba(14,165,233,0.20)",
-      badge: "$41,877", badgeSub: "→ Reserve",
-    },
-    {
-      id: "reserve", label: "Reserve Money Market", sub: "Citizens Bank MM",
-      amount: 109323, startLevel: 52, endLevel: 40,
-      color: "#6366f1", border: "#a5b4fc", fill: "rgba(99,102,241,0.20)",
-      badge: "$53,252", badgeSub: "→ Operating",
-    },
-    {
-      id: "operating", label: "Operating Checking", sub: "Citizens Bank",
-      amount: 112424, startLevel: 28, endLevel: 64,
-      color: "#f59e0b", border: "#fcd34d", fill: "rgba(245,158,11,0.20)",
-    },
-    {
-      id: "build", label: "Build Account", sub: "No movement · 4.75%",
-      amount: 194384, startLevel: 74, endLevel: 74,
-      color: "#7c3aed", border: "#c4b5fd", fill: "rgba(124,58,237,0.18)",
-      stable: true,
-    },
+  const MOVEMENTS = [
+    { date: "Jan", bucket: "Operating Cash", color: "#1d4ed8", label: "JPMorgan MMF → CIT Bank", detail: "Autodraw to operating account", amount: 46739, kind: "in" as const },
+    { date: "Jan", bucket: "Reserve", color: "#d97706", label: "T-Bill → JPMorgan MMF", detail: "Maturing proceeds roll into MMF", amount: 7478, kind: "in" as const },
+    { date: "Apr 1", bucket: "Operating Cash", color: "#1d4ed8", label: "Spring Tuition", detail: "Chase → Dalton School", amount: 15000, kind: "out" as const },
+    { date: "Apr 8", bucket: "Operating Cash", color: "#1d4ed8", label: "Income Allocation", detail: "Cresset → Citizens Checking", amount: 18814, kind: "in" as const },
+    { date: "Apr 15", bucket: "Operating Cash", color: "#1d4ed8", label: "Q1 Estimated Tax", detail: "Citizens → IRS (EFTPS)", amount: 30000, kind: "out" as const },
+    { date: "Apr 15", bucket: "Reserve", color: "#d97706", label: "GURU Reserve Draw", detail: "Citizens MM → Operating", amount: 6126, kind: "xfr" as const },
+    { date: "May 8", bucket: "Operating Cash", color: "#1d4ed8", label: "Income Allocation", detail: "Cresset → Citizens Checking", amount: 18814, kind: "in" as const },
+    { date: "May 15", bucket: "Reserve", color: "#d97706", label: "GURU Reserve Draw", detail: "Citizens MM → Operating", amount: 3126, kind: "xfr" as const },
   ];
 
-  const renderTank = (t: WFlowTank) => {
-    const level = live ? t.endLevel : t.startLevel;
-    const fillH = (level / 100) * TH;
-    return (
-      <div key={t.id} className="flex flex-col items-center" style={{ gap: 10 }}>
-        {/* Badge above */}
-        <div style={{ height: 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
-          {t.badge && (
-            <>
-              <span style={{ fontSize: 11, fontWeight: 900, color: t.color, lineHeight: 1.2 }}>{t.badge}</span>
-              <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>{t.badgeSub}</span>
-            </>
-          )}
-        </div>
-        {/* Tank */}
-        <div style={{ width: TW, height: TH, borderRadius: 8, border: `2px solid ${t.border}`, background: "#fff", position: "relative", overflow: "hidden" }}>
-          {/* Water fill */}
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: fillH, background: t.fill, transition: "height 2.8s cubic-bezier(0.4,0,0.2,1)" }}>
-            {/* Wave SVG scrolling horizontally */}
-            <svg className="wv-s" style={{ position: "absolute", top: -5, left: 0, width: "200%", height: 10 }} viewBox="0 0 200 10" preserveAspectRatio="none">
-              <path d="M0,5 C25,0 25,10 50,5 C75,0 75,10 100,5 C125,0 125,10 150,5 C175,0 175,10 200,5" stroke={t.color} strokeWidth="1.5" fill="none" opacity="0.8" />
-            </svg>
-          </div>
-          {/* Centre amount label */}
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 11, fontWeight: 900, color: t.color, textShadow: "0 0 6px white, 0 0 6px white" }}>{fmt(t.amount, true)}</span>
-          </div>
-          {/* Stable badge */}
-          {t.stable && (
-            <div style={{ position: "absolute", top: 5, right: 5, background: t.border, borderRadius: 3, padding: "1px 5px" }}>
-              <span style={{ fontSize: 8, fontWeight: 800, color: t.color }}>STABLE</span>
-            </div>
-          )}
-        </div>
-        {/* Label below */}
-        <div style={{ textAlign: "center", maxWidth: TW + 16 }}>
-          <p style={{ fontSize: 10, fontWeight: 700, color: "#1e293b", lineHeight: 1.3 }}>{t.label}</p>
-          <p style={{ fontSize: 9, color: "#94a3b8", marginTop: 2 }}>{t.sub}</p>
-        </div>
-      </div>
-    );
-  };
-
-  const Pipe = () => (
-    <div style={{ display: "flex", alignItems: "center", paddingBottom: 48, paddingTop: 6 }}>
-      <svg width="52" height="28" viewBox="0 0 52 28">
-        <defs>
-          <marker id="wf-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L6,3 z" fill="#cbd5e1" />
-          </marker>
-        </defs>
-        <path
-          d="M2,14 C14,14 38,14 50,14"
-          stroke="#cbd5e1" strokeWidth="2" fill="none"
-          strokeDasharray="5 4"
-          markerEnd="url(#wf-arrow)"
-          className={live ? "pipe-flow" : ""}
-        />
-      </svg>
-    </div>
-  );
-
-  const events = [
-    { date: "Apr 1",  label: "Spring Tuition",    detail: "Chase → Dalton School",       amount: -15000, kind: "out" as const },
-    { date: "Apr 8",  label: "Income Allocation", detail: "Cresset → Citizens Checking",  amount:  18814, kind: "in"  as const },
-    { date: "Apr 15", label: "Q1 Estimated Tax",  detail: "Citizens → IRS (EFTPS)",       amount: -30000, kind: "out" as const },
-    { date: "Apr 15", label: "GURU Reserve Draw", detail: "Citizens MM → Operating",       amount:  -6126, kind: "xfr" as const },
-    { date: "May 8",  label: "Income Allocation", detail: "Cresset → Citizens Checking",  amount:  18814, kind: "in"  as const },
-    { date: "May 15", label: "GURU Reserve Draw", detail: "Citizens MM → Operating",       amount:  -3126, kind: "xfr" as const },
+  const OBLIGATIONS = [
+    { id: "prop-tax-jan", label: "NYC Property Tax — 1st Installment", amount: 17500, due: new Date(2026, 0, 15), method: "Wire", category: "tax" },
+    { id: "est-tax-q1",   label: "Federal Estimated Tax — Q1 2026",    amount: 30000, due: new Date(2026, 3, 15), method: "ACH",  category: "tax" },
+    { id: "tuition-spring", label: "Private School Tuition — Spring",   amount: 15000, due: new Date(2026, 3, 1),  method: "Wire", category: "education" },
+    { id: "prop-tax-jul", label: "NYC Property Tax — 2nd Installment",  amount: 17500, due: new Date(2026, 6, 15), method: "Wire", category: "tax" },
+    { id: "est-tax-q3",   label: "Federal Estimated Tax — Q3 2026",     amount: 30000, due: new Date(2026, 8, 15), method: "ACH",  category: "tax" },
   ];
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid="dashboard-money-flow-panel">
-      <style>{WATER_CSS}</style>
       {/* Header */}
       <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -1432,8 +1360,8 @@ function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
             <Repeat2 className="w-3.5 h-3.5 text-sky-600" />
           </div>
           <div>
-            <p className="text-sm font-black text-foreground leading-none">GURU Scheduled Cash Movements</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Next 60 days · GURU managed · March–May 2026</p>
+            <p className="text-sm font-black text-foreground leading-none">GURU Cash Management</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Upcoming movements &amp; scheduled payments · Jan–May 2026</p>
           </div>
         </div>
         <button
@@ -1445,40 +1373,81 @@ function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
         </button>
       </div>
 
-      {/* Tanks row */}
-      <div className="px-6 pt-5 pb-3 overflow-x-auto">
-        <div className="flex items-start min-w-max" style={{ gap: 0 }}>
-          {renderTank(tanks[0])}
-          <Pipe />
-          {renderTank(tanks[1])}
-          <Pipe />
-          {renderTank(tanks[2])}
-          {/* Divider */}
-          <div style={{ width: 1, background: "#e2e8f0", alignSelf: "stretch", margin: "0 20px" }} />
-          {renderTank(tanks[3])}
-        </div>
-      </div>
+      {/* Two-column body */}
+      <div className="grid grid-cols-2 divide-x divide-border">
 
-      {/* Event list */}
-      <div className="px-5 pb-4">
-        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2.5">Upcoming Events</p>
-        <div className="space-y-1.5">
-          {events.map((ev, i) => {
-            const amtCls = ev.kind === "in" ? "text-emerald-600" : ev.kind === "xfr" ? "text-amber-600" : "text-rose-600";
-            return (
-              <div key={i} className="flex items-center gap-3" data-testid={`dash-flow-event-${i}`}>
-                <span className="text-[9px] font-black text-muted-foreground w-10 shrink-0 tabular-nums">{ev.date}</span>
-                <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
-                  <span className="text-[10px] font-bold text-foreground">{ev.label}</span>
-                  <span className="text-[9px] text-muted-foreground truncate">{ev.detail}</span>
+        {/* ── Left: GURU Cash Movements ── */}
+        <div className="px-5 py-4">
+          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">GURU Scheduled Movements</p>
+          <div className="space-y-2">
+            {MOVEMENTS.map((mv, i) => {
+              const amtCls = mv.kind === "in" ? "text-emerald-600" : mv.kind === "xfr" ? "text-amber-600" : "text-rose-600";
+              const amtPrefix = mv.kind === "in" ? "+" : "−";
+              return (
+                <div key={i} className="flex items-center gap-3 py-1.5 border-b border-border/50 last:border-0" data-testid={`dash-flow-event-${i}`}>
+                  <span className="text-[9px] font-black tabular-nums text-muted-foreground w-9 shrink-0">{mv.date}</span>
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: mv.color }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-foreground leading-tight">{mv.label}</p>
+                    <p className="text-[9px] text-muted-foreground">{mv.detail}</p>
+                  </div>
+                  <span className={`text-[11px] font-black tabular-nums shrink-0 ${amtCls}`}>
+                    {amtPrefix}{fmt(mv.amount)}
+                  </span>
                 </div>
-                <span className={`text-[10px] font-black tabular-nums shrink-0 ${amtCls}`}>
-                  {ev.kind === "in" ? "+" : "−"}{fmt(Math.abs(ev.amount))}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
+
+        {/* ── Right: Autobill Payments ── */}
+        <div className="px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Autobill Payments</p>
+            <span className="text-[9px] font-bold text-violet-600">{scheduled.size} of {OBLIGATIONS.length} scheduled</span>
+          </div>
+          <div className="space-y-2">
+            {OBLIGATIONS.map((obl) => {
+              const isScheduled = scheduled.has(obl.id);
+              const daysUntil = Math.ceil((obl.due.getTime() - DEMO_NOW.getTime()) / 86400000);
+              const isUrgent = daysUntil > 0 && daysUntil <= 45;
+              const catCls = obl.category === "tax"
+                ? "bg-rose-50 text-rose-700 border-rose-200"
+                : "bg-violet-50 text-violet-700 border-violet-200";
+              return (
+                <div key={obl.id} className={`flex items-center gap-3 py-1.5 border-b border-border/50 last:border-0 ${isScheduled ? "opacity-50" : ""}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full border flex-shrink-0 ${catCls}`}>
+                        {obl.category === "tax" ? "Tax" : "Edu"}
+                      </span>
+                      <p className="text-[11px] font-semibold text-foreground leading-tight truncate">{obl.label}</p>
+                    </div>
+                    <p className={`text-[9px] mt-0.5 font-medium ${isUrgent ? "text-rose-600" : "text-muted-foreground"}`}>
+                      {format(obl.due, "MMM d, yyyy")} · {isUrgent ? `${daysUntil}d — urgent` : daysUntil > 0 ? `in ${daysUntil}d` : "past due"}
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-black tabular-nums text-rose-700 shrink-0">{fmt(obl.amount)}</span>
+                  {isScheduled ? (
+                    <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 shrink-0">
+                      <CheckSquare className="w-3 h-3 text-emerald-600" />
+                      <span className="text-[8px] font-black text-emerald-700">Done</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setScheduled((s) => new Set([...s, obl.id]))}
+                      className="flex items-center gap-1 bg-violet-600 hover:bg-violet-500 text-white rounded-lg px-2.5 py-1 text-[9px] font-bold transition-colors shrink-0 whitespace-nowrap"
+                    >
+                      <Send className="w-2.5 h-2.5" />
+                      {obl.method}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
     </div>
   );
@@ -5494,18 +5463,6 @@ function GuruAllocationView({
           <div className="space-y-5">
             {/* ── Portfolio Overview Hero ── */}
             {(() => {
-              const HERO_COLORS: Record<
-                string,
-                { bg: string; accent: string; dot: string }
-              > = {
-                "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd", dot: "#60a5fa" },
-                Reserve:          { bg: "#d97706", accent: "#fde68a", dot: "#fbbf24" },
-                Build:            { bg: "#16a34a", accent: "#86efac", dot: "#4ade80" },
-                Grow:             { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
-                "Real Estate":        { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
-                "Alternative Assets": { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
-                "529 Plans":          { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
-              };
               const heroCardTotal = assets.reduce((s, a) => s + Number(a.value), 0);
               return (
                 <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
