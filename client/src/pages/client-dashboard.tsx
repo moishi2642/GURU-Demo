@@ -6829,7 +6829,7 @@ function AdvisorBriefView({
                   <div className="flex items-stretch gap-3" data-testid="flow-col-build">
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#16a34a" }}>
                       <Home className="w-3.5 h-3.5 text-white/80" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Build</span>
+                      <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Build</span>
                       <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">226,545</span>
                     </div>
                     {/* Branch connector from pill to both stacked cards */}
