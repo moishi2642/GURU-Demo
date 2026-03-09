@@ -6716,7 +6716,7 @@ function AdvisorBriefView({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline justify-between gap-4">
                           <p className="text-sm font-bold text-foreground">No movement this period</p>
-                          <p className="text-sm font-black tabular-nums text-violet-700 shrink-0">{fmt(194384)}</p>
+                          <p className="text-sm font-black tabular-nums text-muted-foreground shrink-0">$0</p>
                         </div>
                         <div className="mt-1.5 space-y-0.5">
                           <p className="text-[11px] text-muted-foreground">
