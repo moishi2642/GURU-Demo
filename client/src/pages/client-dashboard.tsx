@@ -6428,28 +6428,76 @@ function AdvisorBriefView({
               priority="High Priority"
               title="Harvest Excess Liquidity From Bonus"
             />
-            <div>
-              <p className="text-3xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToDeploy, true)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">available to deploy based on GURU estimates</p>
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Where it's sitting</p>
-              {[...reserveItems, ...brokerageCashItems].slice(0, 5).map((a) => (
-                <div key={a.id} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      {(a.description ?? "").split("—")[0].split("(")[0].trim()}
-                    </span>
+            {/* ── Flow diagram ── */}
+            {(() => {
+              const toReserve = Math.round(totalToDeploy * 0.42);
+              const toBuild   = totalToDeploy - toReserve;
+              const FlowNode = ({ icon: Icon, label, sub, amount, accent, style }: {
+                icon: React.ElementType; label: string; sub: string;
+                amount: string; accent: string; style?: React.CSSProperties;
+              }) => (
+                <div className="absolute flex flex-col rounded-xl border-2 bg-white shadow-sm overflow-hidden" style={{ width: 152, ...style }}>
+                  <div className="flex items-center gap-1.5 px-2.5 pt-2.5 pb-1">
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: accent + "22" }}>
+                      <Icon className="w-3.5 h-3.5" style={{ color: accent }} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-black text-foreground leading-tight truncate">{label}</p>
+                      <p className="text-[9px] text-muted-foreground leading-tight truncate">{sub}</p>
+                    </div>
                   </div>
-                  <span className="text-[11px] font-bold tabular-nums text-foreground flex-shrink-0">{fmt(Number(a.value))}</span>
+                  <div className="px-2.5 pb-2.5">
+                    <p className="text-sm font-black tabular-nums" style={{ color: accent }}>{amount}</p>
+                  </div>
                 </div>
-              ))}
-              <div className="flex items-center justify-between gap-2 border-t border-border pt-1.5 mt-1.5">
-                <span className="text-[10px] font-black text-muted-foreground">GURU Reserve Target (3 mo.)</span>
-                <span className="text-[11px] font-black tabular-nums text-emerald-700">−{fmt(guruReserveTarget)}</span>
-              </div>
-            </div>
+              );
+              return (
+                <div className="relative rounded-xl border border-dashed border-border bg-slate-50/60 overflow-hidden" style={{ height: 210 }}>
+                  {/* SVG connector lines */}
+                  <svg className="absolute inset-0 pointer-events-none" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                      <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                        <path d="M0,0 L0,6 L6,3 z" fill="#94a3b8" />
+                      </marker>
+                    </defs>
+                    {/* Source → Reserve */}
+                    <path d="M 49,36 C 55,36 55,28 61,28" stroke="#94a3b8" strokeWidth="0.8" fill="none" markerEnd="url(#arr)" />
+                    {/* Source → Build */}
+                    <path d="M 49,64 C 55,64 55,72 61,72" stroke="#94a3b8" strokeWidth="0.8" fill="none" markerEnd="url(#arr)" />
+                  </svg>
+
+                  {/* Source node — left, vertically centered */}
+                  <FlowNode
+                    icon={Wallet}
+                    label="Excess Cash Pool"
+                    sub="above 3-mo. target"
+                    amount={fmt(totalToDeploy, true)}
+                    accent="#10b981"
+                    style={{ left: 12, top: "50%", transform: "translateY(-50%)", borderColor: "#10b98133" }}
+                  />
+
+                  {/* Reserve destination — right upper */}
+                  <FlowNode
+                    icon={ShieldCheck}
+                    label="Reserve"
+                    sub="JPMorgan MMF"
+                    amount={`+${fmt(toReserve, true)}`}
+                    accent="#d97706"
+                    style={{ right: 12, top: 18, borderColor: "#d9770633" }}
+                  />
+
+                  {/* Build destination — right lower */}
+                  <FlowNode
+                    icon={Home}
+                    label="Build"
+                    sub="T-Bills / ladder"
+                    amount={`+${fmt(toBuild, true)}`}
+                    accent="#16a34a"
+                    style={{ right: 12, bottom: 18, borderColor: "#16a34a33" }}
+                  />
+                </div>
+              );
+            })()}
             <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Lightbulb className="w-3 h-3 text-emerald-600" />
