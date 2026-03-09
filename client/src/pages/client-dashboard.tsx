@@ -1361,17 +1361,6 @@ interface WFlowTank {
 function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
   const [scheduled, setScheduled] = useState<Set<string>>(new Set(["prop-tax-jan"]));
 
-  const MOVEMENTS = [
-    { date: "Jan", bucket: "Operating Cash", color: "#1d4ed8", label: "JPMorgan MMF → CIT Bank", detail: "Autodraw to operating account", amount: 46739, kind: "in" as const },
-    { date: "Jan", bucket: "Reserve", color: "#d97706", label: "T-Bill → JPMorgan MMF", detail: "Maturing proceeds roll into MMF", amount: 7478, kind: "in" as const },
-    { date: "Apr 1", bucket: "Operating Cash", color: "#1d4ed8", label: "Spring Tuition", detail: "Chase → Dalton School", amount: 15000, kind: "out" as const },
-    { date: "Apr 8", bucket: "Operating Cash", color: "#1d4ed8", label: "Income Allocation", detail: "Cresset → Citizens Checking", amount: 18814, kind: "in" as const },
-    { date: "Apr 15", bucket: "Operating Cash", color: "#1d4ed8", label: "Q1 Estimated Tax", detail: "Citizens → IRS (EFTPS)", amount: 30000, kind: "out" as const },
-    { date: "Apr 15", bucket: "Reserve", color: "#d97706", label: "GURU Reserve Draw", detail: "Citizens MM → Operating", amount: 6126, kind: "xfr" as const },
-    { date: "May 8", bucket: "Operating Cash", color: "#1d4ed8", label: "Income Allocation", detail: "Cresset → Citizens Checking", amount: 18814, kind: "in" as const },
-    { date: "May 15", bucket: "Reserve", color: "#d97706", label: "GURU Reserve Draw", detail: "Citizens MM → Operating", amount: 3126, kind: "xfr" as const },
-  ];
-
   const OBLIGATIONS = [
     { id: "prop-tax-jan", label: "NYC Property Tax — 1st Installment", amount: 17500, due: new Date(2026, 0, 15), method: "Wire", category: "tax" },
     { id: "est-tax-q1",   label: "Federal Estimated Tax — Q1 2026",    amount: 30000, due: new Date(2026, 3, 15), method: "ACH",  category: "tax" },
@@ -1405,27 +1394,107 @@ function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
       {/* Two-column body */}
       <div className="grid grid-cols-2 divide-x divide-border">
 
-        {/* ── Left: GURU Cash Movements ── */}
-        <div className="px-5 py-4">
-          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">GURU Scheduled Movements</p>
-          <div className="space-y-2">
-            {MOVEMENTS.map((mv, i) => {
-              const amtCls = mv.kind === "in" ? "text-emerald-600" : mv.kind === "xfr" ? "text-amber-600" : "text-rose-600";
-              const amtPrefix = mv.kind === "in" ? "+" : "−";
-              return (
-                <div key={i} className="flex items-center gap-3 py-1.5 border-b border-border/50 last:border-0" data-testid={`dash-flow-event-${i}`}>
-                  <span className="text-[9px] font-black tabular-nums text-muted-foreground w-9 shrink-0">{mv.date}</span>
-                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: mv.color }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-foreground leading-tight">{mv.label}</p>
-                    <p className="text-[9px] text-muted-foreground">{mv.detail}</p>
+        {/* ── Left: Animated Cash Flow (mini version of Card 4) ── */}
+        <div className="px-4 py-4">
+          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Scheduled Cash Movements · January</p>
+          <div className="flex flex-col gap-0">
+
+            {/* Operating Cash bucket row */}
+            <div className="flex items-stretch gap-2" data-testid="mini-flow-ops">
+              <div className="w-[78px] flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1 py-3" style={{ background: "#1d4ed8" }}>
+                <Wallet className="w-3 h-3 text-white/80" />
+                <span className="font-black uppercase tracking-widest text-white text-center px-1 text-[8px] leading-tight">Operating Cash</span>
+                <span className="font-black tabular-nums text-white/90 text-[9px]">$90,879</span>
+              </div>
+              <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-3 bg-blue-50/60">
+                  <div className="min-w-0 mr-2">
+                    <p className="text-[10px] font-semibold text-blue-900 leading-tight">CIT Money Market</p>
+                    <p className="text-[8px] text-blue-600 mt-0.5">Primary operating · Jan ending</p>
                   </div>
-                  <span className={`text-[11px] font-black tabular-nums shrink-0 ${amtCls}`}>
-                    {amtPrefix}{fmt(mv.amount)}
-                  </span>
+                  <span className="text-[10px] font-black text-blue-700 tabular-nums flex-shrink-0">$90,879</span>
                 </div>
-              );
-            })}
+              </div>
+            </div>
+
+            {/* Flow connector: JPMorgan → CIT ($46,739) */}
+            <div className="flex items-center" style={{ minHeight: 38, paddingLeft: "calc(78px + 0.5rem)" }}>
+              <div className="group relative flex items-center gap-2 cursor-default" style={{ marginLeft: 18 }}>
+                <svg width="12" height="38" className="flex-shrink-0 overflow-visible">
+                  <path d="M 6,36 L 6,2" stroke="#2563eb" strokeWidth="1.5" strokeDasharray="3.5,2.5" fill="none" />
+                  <polygon points="0,-4 3.5,2.5 -3.5,2.5" fill="#2563eb" opacity="0.95">
+                    <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 6,36 L 6,2" />
+                  </polygon>
+                </svg>
+                <span className="text-[9px] font-black text-blue-700 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm">
+                  ↑ $46,739 · JPMorgan → CIT
+                </span>
+                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
+                  <div className="bg-slate-900 text-white text-[9px] font-medium rounded-lg px-3 py-2 shadow-2xl leading-relaxed max-w-[230px]">
+                    Autodraw from JPMorgan 100% Treasuries MMF into CIT operating account — building 2 months of forward cash expenses
+                  </div>
+                  <div className="w-2 h-2 bg-slate-900 rotate-45 ml-4 -mt-1 flex-shrink-0" />
+                </div>
+              </div>
+            </div>
+
+            {/* Reserve bucket row */}
+            <div className="flex items-stretch gap-2" data-testid="mini-flow-reserve">
+              <div className="w-[78px] flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1 py-3" style={{ background: "#d97706" }}>
+                <ShieldCheck className="w-3 h-3 text-white/80" />
+                <span className="font-black uppercase tracking-widest text-white text-center px-1 text-[8px] leading-tight">Reserve</span>
+                <span className="font-black tabular-nums text-white/90 text-[9px]">$129,385</span>
+              </div>
+              {/* Branch connector */}
+              <div className="flex-shrink-0 relative" style={{ width: 18, alignSelf: "stretch" }}>
+                <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} viewBox="0 0 18 100" preserveAspectRatio="none">
+                  <line x1="0" y1="50" x2="9" y2="50" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
+                  <line x1="9" y1="25" x2="9" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
+                  <line x1="9" y1="25" x2="18" y2="25" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
+                  <line x1="9" y1="75" x2="18" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
+                </svg>
+              </div>
+              {/* Stacked sub-account cards */}
+              <div className="flex-1 flex flex-col gap-0">
+                <div className="border border-amber-200 rounded-t-lg overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-amber-50/60">
+                    <div className="min-w-0 mr-2">
+                      <p className="text-[10px] font-semibold text-amber-900 leading-tight">JPMorgan Treasuries MMF</p>
+                      <p className="text-[8px] text-amber-600 mt-0.5">Autodraw to Operating</p>
+                    </div>
+                    <span className="text-[10px] font-black text-amber-700 tabular-nums flex-shrink-0">$27,927</span>
+                  </div>
+                </div>
+                {/* Flow connector: T-Bill → JPMorgan */}
+                <div className="group relative flex items-center gap-2 cursor-default py-1 px-2">
+                  <svg width="12" height="28" className="flex-shrink-0 overflow-visible">
+                    <path d="M 6,26 L 6,2" stroke="#d97706" strokeWidth="1.5" strokeDasharray="3.5,2.5" fill="none" />
+                    <polygon points="0,-3.5 3.5,2.5 -3.5,2.5" fill="#f59e0b" opacity="0.95">
+                      <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 6,26 L 6,2" />
+                    </polygon>
+                  </svg>
+                  <span className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full whitespace-nowrap shadow-sm">
+                    ↑ $7,478 · T-Bill → JPMorgan
+                  </span>
+                  <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
+                    <div className="bg-slate-900 text-white text-[9px] font-medium rounded-lg px-3 py-2 shadow-2xl leading-relaxed max-w-[220px]">
+                      1-month T-Bill maturing in January — proceeds roll into JPMorgan 100% Treasuries MMF
+                    </div>
+                    <div className="w-2 h-2 bg-slate-900 rotate-45 ml-4 -mt-1 flex-shrink-0" />
+                  </div>
+                </div>
+                <div className="border border-amber-200 rounded-b-lg overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-amber-50/60">
+                    <div className="min-w-0 mr-2">
+                      <p className="text-[10px] font-semibold text-amber-900 leading-tight">T-Bill Ladder</p>
+                      <p className="text-[8px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo · Maturing</p>
+                    </div>
+                    <span className="text-[10px] font-black text-amber-700 tabular-nums flex-shrink-0">$101,458</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
