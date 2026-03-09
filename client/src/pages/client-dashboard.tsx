@@ -4384,7 +4384,9 @@ function MoneyMovementView({
                         <div key={t.label} className="relative mb-2">
                           {/* Branch from card right edge to spine — animated dot + plain label */}
                           <div style={{ position: 'absolute', right: -44, top: '50%', width: 44, transform: 'translateY(-50%)', zIndex: 10 }}>
-                            <span style={{ position: 'absolute', top: -16, right: 2, fontSize: 9, fontWeight: 900, color: '#d97706', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                            <span
+                              style={{ position: 'absolute', top: -16, right: 2, fontSize: 9, fontWeight: 900, color: '#d97706', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', lineHeight: 1 }}
+                              className="text-[12px]">
                               {fmtBal(t.balances[sm - 1] ?? 0)}
                             </span>
                             <span style={{ position: 'absolute', top: -6, right: 2, fontSize: 7, fontWeight: 700, color: '#d97706', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1, opacity: 0.75, whiteSpace: 'nowrap' }}>
