@@ -6729,8 +6729,8 @@ function AdvisorBriefView({
             {/* Headline stats */}
             <div className="flex items-center gap-5 py-1">
               <div>
-                <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">−{_fedCutBps} bps</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">expected Fed cut · lock in now</p>
+                <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{_fedCutBps} bps</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">saved by locking in now</p>
               </div>
               <div className="w-px h-8 bg-border flex-shrink-0" />
               <div>
