@@ -6442,13 +6442,13 @@ function AdvisorBriefView({
       <div className="grid grid-cols-2 gap-5">
 
         {/* ── Section Header: Investments & Liquidity ── */}
-        <div className="col-span-2 flex items-center gap-3 pb-1">
-          <div className="flex items-center gap-2.5">
-            <div className="w-1 h-5 rounded-full bg-emerald-500 flex-shrink-0" />
-            <p className="text-[11px] font-black uppercase tracking-widest text-foreground">Investments &amp; Liquidity Positioning</p>
+        <div className="col-span-2 flex items-center gap-4 py-2">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-7 rounded-full bg-emerald-500 flex-shrink-0" />
+            <p className="text-sm font-black uppercase tracking-widest text-foreground">Investments &amp; Liquidity Positioning</p>
           </div>
           <div className="flex-1 h-px bg-border" />
-          <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">3 items</span>
+          <span className="text-[11px] text-muted-foreground font-semibold flex-shrink-0">3 items</span>
         </div>
 
         {/* ── Card 1: Deploy Excess Liquidity ── */}
@@ -6627,13 +6627,13 @@ function AdvisorBriefView({
         </div>
 
         {/* ── Section Header: Money Movement ── */}
-        <div className="col-span-2 flex items-center gap-3 pb-1 pt-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-1 h-5 rounded-full bg-violet-500 flex-shrink-0" />
-            <p className="text-[11px] font-black uppercase tracking-widest text-foreground">Money Movement</p>
+        <div className="col-span-2 flex items-center gap-4 py-2 pt-4">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-7 rounded-full bg-violet-500 flex-shrink-0" />
+            <p className="text-sm font-black uppercase tracking-widest text-foreground">Money Movement</p>
           </div>
           <div className="flex-1 h-px bg-border" />
-          <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">2 items</span>
+          <span className="text-[11px] text-muted-foreground font-semibold flex-shrink-0">2 items</span>
         </div>
 
         {/* ── Card 4: Account Cash Movements ── */}
