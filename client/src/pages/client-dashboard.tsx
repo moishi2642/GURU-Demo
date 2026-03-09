@@ -7322,12 +7322,12 @@ export function BookOfBusinessView() {
         {/* Header */}
         <div
           className="grid px-4 py-2.5 border-b bg-muted/30 text-[9px] font-black uppercase tracking-widest text-muted-foreground"
-          style={{ gridTemplateColumns: "2fr 130px 130px 65px 1fr 120px 185px" }}
+          style={{ gridTemplateColumns: "2fr 130px 130px 110px 1fr 120px 185px" }}
         >
           <span>Client</span>
           <span className="text-right leading-tight">Assets Under<br/>Management</span>
           <span className="text-right leading-tight">Total<br/>Assets</span>
-          <span className="text-right">Cash %</span>
+          <span className="text-right">Liquid Cash</span>
           <span>Flags</span>
           <span>Advisor</span>
           <span>Actions</span>
@@ -7346,7 +7346,7 @@ export function BookOfBusinessView() {
               <div
                 key={client.id}
                 className={`grid px-4 py-2.5 items-center transition-colors hover:bg-muted/20 ${allActsDone && client.flags.length > 0 ? "opacity-50" : ""}`}
-                style={{ gridTemplateColumns: "2fr 130px 130px 65px 1fr 120px 185px" }}
+                style={{ gridTemplateColumns: "2fr 130px 130px 110px 1fr 120px 185px" }}
                 data-testid={`bob-row-${client.id}`}
               >
                 {/* Client */}
@@ -7361,8 +7361,8 @@ export function BookOfBusinessView() {
                 <span className="text-[12px] font-semibold tabular-nums text-right">{fmt(client.aum)}</span>
                 {/* Total Assets */}
                 <span className="text-[12px] font-semibold tabular-nums text-right text-slate-500">{fmt(client.totalAssets)}</span>
-                {/* Cash % */}
-                <span className={`text-[12px] font-black tabular-nums text-right ${cashCls}`}>{client.cashPct}%</span>
+                {/* Liquid Cash */}
+                <span className={`text-[12px] font-black tabular-nums text-right ${cashCls}`}>{fmt(client.liquidCash)}</span>
                 {/* Flags */}
                 <div className="flex flex-wrap gap-1 min-w-0">
                   {client.flags.map(f => (
