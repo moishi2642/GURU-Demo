@@ -6761,64 +6761,97 @@ function AdvisorBriefView({
 
                   {/* ── Operating Cash row ── */}
                   <div className="flex items-stretch gap-3" data-testid="flow-col-ops">
-                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-2 py-4" style={{ background: "#1d4ed8" }}>
+                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#1d4ed8" }}>
                       <Wallet className="w-3.5 h-3.5 text-white/80" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Operating Cash</span>
+                      <span className="text-[13px] font-black tabular-nums text-white/90 mt-0.5">90,879</span>
                     </div>
-                    <div className="flex-1 flex items-stretch gap-0">
-                      <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
-                        <div className="flex items-center justify-between px-4 py-4 bg-blue-50/60" data-testid="flow-row-ops-march">
-                          <div className="min-w-0 mr-2">
-                            <p className="text-[11px] font-semibold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
-                            <p className="text-[9px] text-blue-600 mt-0.5">Primary operating</p>
-                          </div>
-                          <span className="text-[11px] font-black text-blue-700 tabular-nums flex-shrink-0">$90,879</span>
+                    <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-4 bg-blue-50/60" data-testid="flow-row-ops-jan">
+                        <div className="min-w-0 mr-2">
+                          <p className="text-[11px] font-semibold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
+                          <p className="text-[9px] text-blue-600 mt-0.5">Primary operating · Jan ending</p>
                         </div>
+                        <span className="text-[11px] font-black text-blue-700 tabular-nums flex-shrink-0">90,879</span>
                       </div>
-                      <div className="flex-shrink-0" style={{ width: 80 }} />
-                      <div className="flex-1" />
                     </div>
                   </div>
 
-                  {/* ── Gap ── */}
-                  <div className="h-4" />
+                  {/* ── Flow connector 2: JPMorgan → CIT ($46,739) ── */}
+                  <div className="flex items-center" style={{ minHeight: 44, paddingLeft: 'calc(9rem + 0.75rem)' }}>
+                    <div className="group relative flex items-center gap-2.5 cursor-default" style={{ marginLeft: 28 + 12 }}>
+                      <svg width="14" height="44" className="flex-shrink-0 overflow-visible">
+                        <path d="M 7,42 L 7,2" stroke="#d97706" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
+                        <circle r="3.5" fill="#f59e0b" opacity="0.92">
+                          <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 7,42 L 7,2" />
+                        </circle>
+                      </svg>
+                      <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm">
+                        ↑ $46,739 · JPMorgan → CIT
+                      </span>
+                      <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
+                        <div className="bg-slate-900 text-white text-[9px] font-medium rounded-lg px-3 py-2 shadow-2xl leading-relaxed max-w-[260px]">
+                          Autodraw from JPMorgan 100% Treasuries MMF into CIT operating account — building 2 months of forward cash expenses
+                        </div>
+                        <div className="w-2 h-2 bg-slate-900 rotate-45 ml-4 -mt-1 flex-shrink-0" />
+                      </div>
+                    </div>
+                  </div>
 
                   {/* ── Reserve row ── */}
                   <div className="flex items-stretch gap-3" data-testid="flow-col-reserve">
-                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-2 py-4" style={{ background: "#d97706" }}>
+                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#d97706" }}>
                       <ShieldCheck className="w-3.5 h-3.5 text-white/80" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Reserve</span>
+                      <span className="text-[13px] font-black tabular-nums text-white/90 mt-0.5">129,385</span>
                     </div>
                     {/* Branch connector from pill to both stacked cards */}
                     <div className="flex-shrink-0 relative" style={{ width: 28, alignSelf: 'stretch' }}>
-                      <svg
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                        viewBox="0 0 28 100"
-                        preserveAspectRatio="none"
-                      >
+                      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} viewBox="0 0 28 100" preserveAspectRatio="none">
                         <line x1="0" y1="50" x2="14" y2="50" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="25" x2="14" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="25" x2="28" y2="25" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="75" x2="28" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
                       </svg>
                     </div>
-                    {/* Stacked sub-account cards */}
-                    <div className="flex-1 flex flex-col gap-3">
-                      <div className="flex-1 border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-jpm">
+                    {/* Stacked sub-account cards with flow connector between them */}
+                    <div className="flex-1 flex flex-col gap-0">
+                      <div className="border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-jpm">
                         <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60">
                           <div className="min-w-0 mr-2">
                             <p className="text-[11px] font-semibold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
                             <p className="text-[9px] text-amber-600 mt-0.5">Autodraw to Operating</p>
                           </div>
+                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">27,927</span>
                         </div>
                       </div>
-                      <div className="flex-1 border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-tbill">
+
+                      {/* ── Flow connector 1: T-Bill → JPMorgan ($7,478) ── */}
+                      <div className="group relative flex items-center gap-2.5 cursor-default py-1 px-3">
+                        <svg width="14" height="32" className="flex-shrink-0 overflow-visible">
+                          <path d="M 7,30 L 7,2" stroke="#d97706" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
+                          <circle r="3" fill="#f59e0b" opacity="0.92">
+                            <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 7,30 L 7,2" />
+                          </circle>
+                        </svg>
+                        <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm">
+                          ↑ $7,478 · T-Bill → JPMorgan
+                        </span>
+                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
+                          <div className="bg-slate-900 text-white text-[9px] font-medium rounded-lg px-3 py-2 shadow-2xl leading-relaxed max-w-[260px]">
+                            1-month T-Bill maturing in January — proceeds roll directly into JPMorgan 100% Treasuries MMF
+                          </div>
+                          <div className="w-2 h-2 bg-slate-900 rotate-45 ml-4 -mt-1 flex-shrink-0" />
+                        </div>
+                      </div>
+
+                      <div className="border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-tbill">
                         <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60">
                           <div className="min-w-0 mr-2">
                             <p className="text-[11px] font-semibold text-amber-900 leading-tight">T-Bill Ladder</p>
                             <p className="text-[9px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</p>
                           </div>
-                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$101,458</span>
+                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">101,458</span>
                         </div>
                       </div>
                     </div>
@@ -6829,17 +6862,14 @@ function AdvisorBriefView({
 
                   {/* ── Build row ── */}
                   <div className="flex items-stretch gap-3" data-testid="flow-col-build">
-                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-2 py-4" style={{ background: "#16a34a" }}>
+                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#16a34a" }}>
                       <Home className="w-3.5 h-3.5 text-white/80" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Build</span>
+                      <span className="text-[13px] font-black tabular-nums text-white/90 mt-0.5">226,545</span>
                     </div>
                     {/* Branch connector from pill to both stacked cards */}
                     <div className="flex-shrink-0 relative" style={{ width: 28, alignSelf: 'stretch' }}>
-                      <svg
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                        viewBox="0 0 28 100"
-                        preserveAspectRatio="none"
-                      >
+                      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} viewBox="0 0 28 100" preserveAspectRatio="none">
                         <line x1="0" y1="50" x2="14" y2="50" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="25" x2="14" y2="75" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="25" x2="28" y2="25" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
@@ -6854,6 +6884,7 @@ function AdvisorBriefView({
                             <p className="text-[11px] font-semibold text-emerald-900 leading-tight">2028 Municipal Bonds</p>
                             <p className="text-[9px] text-emerald-600 mt-0.5">Tax-advantaged income</p>
                           </div>
+                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">32,161</span>
                         </div>
                       </div>
                       <div className="border border-emerald-200 rounded-lg overflow-hidden" data-testid="flow-row-build-tbill">
@@ -6862,7 +6893,7 @@ function AdvisorBriefView({
                             <p className="text-[11px] font-semibold text-emerald-900 leading-tight">S&amp;P Low Volatility Index</p>
                             <p className="text-[9px] text-emerald-600 mt-0.5">Short-duration ladder</p>
                           </div>
-                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">$194,384</span>
+                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">194,384</span>
                         </div>
                       </div>
                     </div>
