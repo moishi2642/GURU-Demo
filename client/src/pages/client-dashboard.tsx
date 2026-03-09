@@ -6716,7 +6716,7 @@ function AdvisorBriefView({
                   icon={CalendarClock}
                   badge="Cash Management"
                   priority="January"
-                  title="Scheduled Cash Movements for Next Month (January)"
+                  title="Scheduled Cash Movements Next Month (January)"
                   subtitle="What moves between accounts over the next 60 days"
                 />
               </div>
