@@ -6296,18 +6296,25 @@ function AdvisorBriefView({
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
   // ── Liquidity calcs — aligned with GURU tab ──
-  const { totalLiquid: _abvTotalLiquid, reserve: _abvReserve, yieldBucket: _abvYieldBucket } = cashBuckets(assets);
+  const { totalLiquid: _abvTotalLiquid } = cashBuckets(assets);
   const _abvForecast = buildForecast(cashFlows);
-  // Use the actual minimum cumulative net flow as the trough buffer to keep
-  // (computeTrough only returns >0 when cumulative dips negative, which it doesn't here)
   const cashTroughAbv = Math.min(..._abvForecast.map((d) => d.cumulative));
-  // Non-treasury cash only (checking + money market, excludes T-bills/treasuries)
-  const _nonTreasuryCash = _abvReserve + _abvYieldBucket;
-  const cashExcess = Math.max(0, _nonTreasuryCash - cashTroughAbv);
   const guruReserveTarget = cashTroughAbv;
+  // reserveItems = idle bank cash (checking + savings + MM), excluding Fidelity brokerage sweep
   const reserveItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().match(/checking|savings|money market|mm|sweep/) && !(a.description ?? "").toLowerCase().includes("fidelity"),
   );
+  // Non-treasury cash = sum of idle bank accounts (no T-bills/Fidelity)
+  // Deduped by taking the most recent asset per description prefix to avoid double-counting from multi-seeding
+  const _seenDescs = new Set<string>();
+  const _dedupedReserveItems = reserveItems.filter((a) => {
+    const key = (a.description ?? "").slice(0, 30).toLowerCase();
+    if (_seenDescs.has(key)) return false;
+    _seenDescs.add(key);
+    return true;
+  });
+  const _nonTreasuryCash = _dedupedReserveItems.reduce((s, a) => s + Number(a.value), 0);
+  const cashExcess = Math.max(0, _nonTreasuryCash - cashTroughAbv);
   const brokerageCashItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"),
   );
@@ -6773,18 +6780,81 @@ function AdvisorBriefView({
                   <p className="text-[10px] font-semibold text-amber-700">idle bank + money market</p>
                 </div>
               </div>
-              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700 mb-0.5">Fed Funds Target 2026</p>
-                  <p className="text-base font-black tabular-nums text-amber-800">3.50–3.75%</p>
-                  <p className="text-[9px] text-amber-600 mt-0.5">today</p>
+              {/* Fed rate path chart */}
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 pt-2.5 pb-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700">Fed Funds Path · 2026</p>
+                  <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5 py-0.5">−{_fedCutBps} bps expected</span>
                 </div>
-                <span className="text-amber-400 text-lg font-black flex-shrink-0">→</span>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700 mb-0.5">Expected year-end</p>
-                  <p className="text-base font-black tabular-nums text-amber-800">3.00–3.50%</p>
-                  <p className="text-[9px] text-amber-600 mt-0.5">−{_fedCutBps} bps</p>
-                </div>
+                {(() => {
+                  const W = 260, H = 62, PAD_L = 38, PAD_R = 10, PAD_T = 8, PAD_B = 18;
+                  const chartW = W - PAD_L - PAD_R;
+                  const chartH = H - PAD_T - PAD_B;
+                  // Quarterly midpoints: Q1=3.625, Q2=3.625, Q3=3.375, Q4=3.125
+                  const pts = [
+                    { q: "Now", v: 3.625 },
+                    { q: "Q2", v: 3.625 },
+                    { q: "Q3", v: 3.375 },
+                    { q: "Q4", v: 3.125 },
+                  ];
+                  const minV = 2.9, maxV = 3.8;
+                  const xOf = (i: number) => PAD_L + (i / (pts.length - 1)) * chartW;
+                  const yOf = (v: number) => PAD_T + (1 - (v - minV) / (maxV - minV)) * chartH;
+                  // Build step path
+                  let d = "";
+                  pts.forEach((p, i) => {
+                    const x = xOf(i), y = yOf(p.v);
+                    if (i === 0) { d += `M ${x} ${y}`; }
+                    else {
+                      const prevX = xOf(i - 1);
+                      d += ` H ${x} V ${y}`;
+                      void prevX;
+                    }
+                  });
+                  // Y-axis ticks
+                  const yTicks = [3.125, 3.375, 3.625];
+                  return (
+                    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+                      {/* Grid lines */}
+                      {yTicks.map((v) => (
+                        <line key={v} x1={PAD_L} x2={W - PAD_R} y1={yOf(v)} y2={yOf(v)}
+                          stroke="#f59e0b" strokeOpacity={0.2} strokeWidth={1} strokeDasharray="3,2" />
+                      ))}
+                      {/* Y-axis labels */}
+                      {yTicks.map((v) => (
+                        <text key={v} x={PAD_L - 4} y={yOf(v) + 3.5} textAnchor="end"
+                          fill="#b45309" fontSize={8} fontWeight="700">
+                          {v.toFixed(2)}
+                        </text>
+                      ))}
+                      {/* Shaded area under step */}
+                      <path
+                        d={`${d} V ${PAD_T + chartH} H ${PAD_L} Z`}
+                        fill="#f59e0b" fillOpacity={0.12}
+                      />
+                      {/* Step line */}
+                      <path d={d} fill="none" stroke="#d97706" strokeWidth={2} strokeLinejoin="round" />
+                      {/* Dots + labels */}
+                      {pts.map((p, i) => (
+                        <g key={i}>
+                          <circle cx={xOf(i)} cy={yOf(p.v)} r={i === 0 || i === pts.length - 1 ? 4 : 3}
+                            fill={i === pts.length - 1 ? "#dc2626" : "#d97706"}
+                            stroke="white" strokeWidth={1.5} />
+                          <text x={xOf(i)} y={H - 4} textAnchor="middle"
+                            fill="#92400e" fontSize={8} fontWeight={i === 0 || i === pts.length - 1 ? "900" : "600"}>
+                            {p.q}
+                          </text>
+                          {(i === 0 || i === pts.length - 1) && (
+                            <text x={xOf(i)} y={yOf(p.v) - 7} textAnchor="middle"
+                              fill={i === pts.length - 1 ? "#dc2626" : "#92400e"} fontSize={8} fontWeight="900">
+                              {i === 0 ? "3.50–3.75%" : "3.00–3.50%"}
+                            </text>
+                          )}
+                        </g>
+                      ))}
+                    </svg>
+                  );
+                })()}
               </div>
             </div>
             <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
