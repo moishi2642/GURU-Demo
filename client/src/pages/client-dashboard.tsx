@@ -354,7 +354,7 @@ const FLAG_META: Record<FlagKey, { label: string; short: string; color: string; 
   autobill_approval: { label: "Autobill Approval", short: "Autobill",     color: "#ec4899", bg: "bg-pink-50",   text: "text-pink-700",   border: "border-pink-200" },
   money_movement:    { label: "Money Movement",    short: "Movement",     color: "#06b6d4", bg: "bg-cyan-50",   text: "text-cyan-700",   border: "border-cyan-200" },
 };
-interface BobClient { id: number; name: string; initials: string; aum: number; liquidCash: number; cashPct: number; flags: FlagKey[]; advisor: string; lastContact: string; }
+interface BobClient { id: number; name: string; initials: string; aum: number; totalAssets: number; liquidCash: number; cashPct: number; flags: FlagKey[]; advisor: string; lastContact: string; }
 const BOB_CLIENTS: BobClient[] = (() => {
   const LN = ["Adams","Allen","Anderson","Baker","Barnes","Bell","Bennett","Brooks","Brown","Campbell","Carter","Clark","Collins","Cook","Cooper","Cox","Davis","Evans","Fisher","Foster","Garcia","Gonzalez","Gray","Green","Hall","Harris","Harrison","Hayes","Hill","Howard","Hughes","Jackson","James","Jenkins","Johnson","Jones","Kelly","King","Lee","Lewis","Long","Martin","Martinez","Mason","Miller","Mitchell","Moore","Morgan","Morris","Murphy","Nelson","Parker","Patterson","Perry","Peterson","Phillips","Powell","Price","Reed","Richardson","Rivera","Roberts","Robinson","Rogers","Ross","Russell","Sanders","Scott","Shaw","Simpson","Smith","Stewart","Sullivan","Taylor","Thomas","Thompson","Torres","Turner","Walker","Ward","Watson","White","Williams","Wilson","Wood","Wright","Young"];
   const FN = ["James","Mary","Robert","Patricia","John","Jennifer","Michael","Linda","William","Barbara","David","Susan","Richard","Jessica","Joseph","Karen","Charles","Sarah","Thomas","Lisa","Daniel","Nancy","Anthony","Betty","Donald","Margaret","Mark","Sandra","Paul","Ashley","Steven","Dorothy","Andrew","Kimberly","Kenneth","Emily","Joshua","Donna","Kevin","Michelle"];
@@ -365,8 +365,9 @@ const BOB_CLIENTS: BobClient[] = (() => {
   return Array.from({length:100},(_,i)=>{
     const flags = FS[i % FS.length];
     const aum = Math.round(AUML[i % AUML.length] * (1 + (i * 0.17) % 0.85));
+    const totalAssets = Math.round(aum * (1.18 + (i * 0.041) % 0.32));
     const cpct = flags.includes("excess_cash") ? 12+(i%18) : flags.includes("cash_deficit") ? 0.4+(i%2)*0.8 : 2.5+(i%7);
-    return { id:i+1, name:`${LN[i%LN.length]}, ${FN[i%FN.length]}`, initials:`${FN[i%FN.length][0]}${LN[i%LN.length][0]}`, aum, liquidCash:Math.round(aum*cpct/100), cashPct:Math.round(cpct*10)/10, flags, advisor:ADV[i%ADV.length], lastContact:CTACT[i%CTACT.length] };
+    return { id:i+1, name:`${LN[i%LN.length]}, ${FN[i%FN.length]}`, initials:`${FN[i%FN.length][0]}${LN[i%LN.length][0]}`, aum, totalAssets, liquidCash:Math.round(aum*cpct/100), cashPct:Math.round(cpct*10)/10, flags, advisor:ADV[i%ADV.length], lastContact:CTACT[i%CTACT.length] };
   });
 })();
 
@@ -7321,10 +7322,11 @@ export function BookOfBusinessView() {
         {/* Header */}
         <div
           className="grid px-4 py-2.5 border-b bg-muted/30 text-[9px] font-black uppercase tracking-widest text-muted-foreground"
-          style={{ gridTemplateColumns: "2fr 90px 65px 1fr 120px 185px" }}
+          style={{ gridTemplateColumns: "2fr 130px 130px 65px 1fr 120px 185px" }}
         >
           <span>Client</span>
-          <span className="text-right">AUM</span>
+          <span className="text-right leading-tight">Assets Under<br/>Management</span>
+          <span className="text-right leading-tight">Total<br/>Assets</span>
           <span className="text-right">Cash %</span>
           <span>Flags</span>
           <span>Advisor</span>
@@ -7344,7 +7346,7 @@ export function BookOfBusinessView() {
               <div
                 key={client.id}
                 className={`grid px-4 py-2.5 items-center transition-colors hover:bg-muted/20 ${allActsDone && client.flags.length > 0 ? "opacity-50" : ""}`}
-                style={{ gridTemplateColumns: "2fr 90px 65px 1fr 120px 185px" }}
+                style={{ gridTemplateColumns: "2fr 130px 130px 65px 1fr 120px 185px" }}
                 data-testid={`bob-row-${client.id}`}
               >
                 {/* Client */}
@@ -7355,8 +7357,10 @@ export function BookOfBusinessView() {
                     <p className="text-[9px] text-muted-foreground mt-0.5">{client.lastContact}</p>
                   </div>
                 </div>
-                {/* AUM */}
-                <span className="text-[12px] font-semibold tabular-nums text-right">{fmt(client.aum, true)}</span>
+                {/* Assets Under Management */}
+                <span className="text-[12px] font-semibold tabular-nums text-right">{fmt(client.aum)}</span>
+                {/* Total Assets */}
+                <span className="text-[12px] font-semibold tabular-nums text-right text-slate-500">{fmt(client.totalAssets)}</span>
                 {/* Cash % */}
                 <span className={`text-[12px] font-black tabular-nums text-right ${cashCls}`}>{client.cashPct}%</span>
                 {/* Flags */}
@@ -7709,12 +7713,39 @@ export default function ClientDashboard() {
       )}
       {/* ── Advisor Brief View ───────────────────────────────────────────────── */}
       {activeView === "advisorbrief" && (
-        <AdvisorBriefView
-          assets={assets}
-          cashFlows={cashFlows}
-          liabilities={liabilities}
-          onNavigate={(v) => setActiveView(v as ActiveView)}
-        />
+        <div className="space-y-4">
+          <div className="rounded-xl overflow-hidden border border-violet-200 shadow-sm" data-testid="advisor-brief-ai-banner">
+            <div className="bg-gradient-to-r from-violet-700 via-indigo-700 to-blue-700 px-6 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                  <BrainCircuit className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-black text-white tracking-wide leading-none">Personalized GURU AI</p>
+                  <p className="text-[10px] text-violet-200 mt-0.5 leading-none">Intelligent advisor briefing · Kessler household profile</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-5">
+                {[
+                  { label: "Model", value: "GPT-5" },
+                  { label: "Last Run", value: "Mar 6, 2026" },
+                  { label: "Confidence", value: "94%" },
+                ].map((s) => (
+                  <div key={s.label} className="text-right">
+                    <p className="text-[9px] font-bold text-violet-300 uppercase tracking-widest leading-none">{s.label}</p>
+                    <p className="text-[12px] font-black text-white leading-tight mt-0.5">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <AdvisorBriefView
+            assets={assets}
+            cashFlows={cashFlows}
+            liabilities={liabilities}
+            onNavigate={(v) => setActiveView(v as ActiveView)}
+          />
+        </div>
       )}
       {/* ── Client Financials & Forecast ───────────────────────────────────────── */}
       {activeView === "financials" && (
