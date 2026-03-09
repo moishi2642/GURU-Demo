@@ -6729,7 +6729,7 @@ function AdvisorBriefView({
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#1d4ed8" }}>
                       <Wallet className="w-3.5 h-3.5 text-white/80" />
                       <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Operating Cash</span>
-                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">90,879</span>
+                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">$90,879</span>
                     </div>
                     <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-4 bg-blue-50/60" data-testid="flow-row-ops-jan">
@@ -6768,7 +6768,7 @@ function AdvisorBriefView({
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#d97706" }}>
                       <ShieldCheck className="w-3.5 h-3.5 text-white/80" />
                       <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Reserve</span>
-                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">129,385</span>
+                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">$129,385</span>
                     </div>
                     {/* Branch connector from pill to both stacked cards */}
                     <div className="flex-shrink-0 relative" style={{ width: 28, alignSelf: 'stretch' }}>
@@ -6830,7 +6830,7 @@ function AdvisorBriefView({
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#16a34a" }}>
                       <Home className="w-3.5 h-3.5 text-white/80" />
                       <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[12px]">Build</span>
-                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">226,545</span>
+                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">$226,545</span>
                     </div>
                     {/* Branch connector from pill to both stacked cards */}
                     <div className="flex-shrink-0 relative" style={{ width: 28, alignSelf: 'stretch' }}>
