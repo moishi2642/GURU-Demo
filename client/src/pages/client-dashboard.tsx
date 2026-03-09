@@ -85,7 +85,6 @@ import {
   Link2,
   Search,
   BookOpen,
-  Users2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ResponsiveSankey } from "@nivo/sankey";
@@ -7210,7 +7209,7 @@ function AdvisorBriefView({
 }
 
 // ─── Book of Business View ─────────────────────────────────────────────────────
-function BookOfBusinessView() {
+export function BookOfBusinessView() {
   const [search, setSearch] = useState("");
   const [activeFlag, setActiveFlag] = useState<FlagKey | "all">("all");
   const [doneActions, setDoneActions] = useState<Set<string>>(new Set());
@@ -7393,8 +7392,7 @@ type ActiveView =
   | "advisorbrief"
   | "financials"
   | "guru"
-  | "moneymovement"
-  | "bookofbusiness";
+  | "moneymovement";
 
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -7555,7 +7553,6 @@ export default function ClientDashboard() {
     { key: "financials", label: "Kessler Financials & Forecast", icon: FileText },
     { key: "guru", label: "GURU Allocation", icon: PieChartIcon },
     { key: "moneymovement", label: "Money Movement", icon: ArrowLeftRight },
-    { key: "bookofbusiness", label: "Book of Business", icon: Users2, activeCls: "bg-slate-800 text-white shadow-sm", inactiveCls: "text-slate-600 hover:text-foreground hover:bg-secondary/60" },
   ];
 
   return (
@@ -7803,8 +7800,6 @@ export default function ClientDashboard() {
           />
         </div>
       )}
-      {/* ── Book of Business View ────────────────────────────────────────────────── */}
-      {activeView === "bookofbusiness" && <BookOfBusinessView />}
     </Layout>
   );
 }

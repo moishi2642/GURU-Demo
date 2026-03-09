@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, BrainCircuit, BarChart3, Layers, Bell, Search } from "lucide-react";
+import { Users, BrainCircuit, BarChart3, Layers, Bell, Search, Users2 } from "lucide-react";
 
 type HeatStatus = "ok" | "excess" | "deficit" | "product" | "followup" | "autobill" | "movement";
 const HM_COLORS: Record<HeatStatus, string> = {
@@ -36,6 +36,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   const navItems = [
     { label: "Client Portfolios", href: "/", icon: Users },
+    { label: "Book of Business", href: "/bookofbusiness", icon: Users2 },
     { label: "AI Insights", href: "/insights", icon: BrainCircuit },
   ];
 
