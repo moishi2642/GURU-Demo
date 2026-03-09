@@ -977,6 +977,8 @@ function CashManagementPanel({
   const trendUp = endCumulative >= 0;
   const coveragePct = monthlyBurn > 0 ? (totalLiquid / (annualOutflows)) * 100 : 999;
   const coverageOk = coveragePct >= 100;
+  const [liqLive, setLiqLive] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setLiqLive(true), 350); return () => clearTimeout(t); }, []);
 
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
@@ -1031,6 +1033,7 @@ function CashManagementPanel({
 
       {/* ── Bucket tables ── */}
       <div className="px-4 py-4">
+        <style>{`@keyframes liqWv{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}.liq-wv{animation:liqWv 2.2s linear infinite;}`}</style>
         {(() => {
           const buckets = [
             { label: "Operating Cash", value: reserve,     items: reserveItems  ?? [], color: "#1d4ed8", border: "border-blue-200",    rowBg: "bg-blue-50/60",    rowBorder: "border-blue-100",    textCls: "text-blue-900",    amtCls: "text-blue-700"    },
@@ -1041,11 +1044,25 @@ function CashManagementPanel({
             <div className="flex items-start gap-3">
               {buckets.map((b) => {
                 const pct = totalLiquid > 0 ? Math.round((b.value / totalLiquid) * 100) : 0;
+                const fillH = liqLive ? pct : 0;
                 return (
                   <div key={b.label} className="flex-1 min-w-0">
-                    <div className="rounded-t-lg px-3 py-2 flex items-center justify-between" style={{ background: b.color }}>
+                    {/* ── Mini water tank ── */}
+                    <div style={{ width: '100%', height: 56, borderRadius: '8px 8px 0 0', border: `1.5px solid ${b.color}40`, borderBottom: 'none', background: '#f8fafc', position: 'relative', overflow: 'hidden' }}>
+                      {/* Fill */}
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${fillH}%`, background: `${b.color}22`, transition: 'height 2.6s cubic-bezier(0.4,0,0.2,1)' }}>
+                        {/* Wave */}
+                        <svg className="liq-wv" style={{ position: 'absolute', top: -5, left: 0, width: '200%', height: 10 }} viewBox="0 0 200 10" preserveAspectRatio="none">
+                          <path d="M0,5 C25,0 25,10 50,5 C75,0 75,10 100,5 C125,0 125,10 150,5 C175,0 175,10 200,5" stroke={b.color} strokeWidth="1.5" fill="none" opacity="0.7" />
+                        </svg>
+                      </div>
+                      {/* Centered pct label */}
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: b.color, textShadow: '0 0 8px white, 0 0 8px white', lineHeight: 1 }}>{pct}%</span>
+                      </div>
+                    </div>
+                    <div className="px-3 py-2 flex items-center justify-between" style={{ background: b.color }}>
                       <span className="text-[9px] font-black uppercase tracking-widest text-white truncate">{b.label}</span>
-                      <span className="text-[9px] font-black text-white/80 tabular-nums ml-1 flex-shrink-0">{pct}%</span>
                     </div>
                     <div className={`border border-t-0 ${b.border} rounded-b-lg overflow-hidden`}>
                       <div className={`flex items-center justify-between px-3 py-1.5 ${b.rowBg} border-b ${b.rowBorder}`}>
