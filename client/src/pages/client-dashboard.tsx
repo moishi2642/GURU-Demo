@@ -6731,7 +6731,7 @@ function AdvisorBriefView({
                       <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Operating Cash</span>
                       <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">$90,879</span>
                     </div>
-                    <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
+                    <div className="border border-blue-200 rounded-lg overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-4 bg-blue-50/60" data-testid="flow-row-ops-jan">
                         <div className="min-w-0 mr-2">
                           <p className="text-[11px] font-semibold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
