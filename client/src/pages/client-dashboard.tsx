@@ -80,6 +80,7 @@ import {
   CheckSquare,
   Lock,
   ArrowUp,
+  ArrowDown,
   Minus,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -6669,7 +6670,7 @@ function AdvisorBriefView({
                     <ShieldCheck className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
                     <span className="text-[11px] font-black uppercase tracking-widest text-white">Reserve</span>
                   </div>
-                  <div>
+                  <div className="divide-y divide-border/60">
                     <FlowRow
                       date="March 31"
                       label="Proceeds from T-Bill Maturity"
@@ -6680,7 +6681,19 @@ function AdvisorBriefView({
                       icon={ArrowUp}
                       iconBg="bg-sky-100"
                       iconColor="text-sky-600"
-                      testId="flow-row-reserve"
+                      testId="flow-row-reserve-tbill"
+                    />
+                    <FlowRow
+                      date="March"
+                      label="Autodraw to Operating Cash"
+                      amount={47126}
+                      amtColor="text-rose-700"
+                      from="JPMorgan 100% Treasury Money Market Fund ****2847"
+                      to="Citizens Private Banking Checking ****7291"
+                      icon={ArrowDown}
+                      iconBg="bg-rose-100"
+                      iconColor="text-rose-600"
+                      testId="flow-row-reserve-autodraw"
                     />
                   </div>
                 </div>
