@@ -6783,81 +6783,37 @@ function AdvisorBriefView({
                   <p className="text-[10px] font-semibold text-amber-700">idle bank + money market</p>
                 </div>
               </div>
-              {/* Fed rate path chart */}
-              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 pt-2.5 pb-2">
-                <div className="flex items-center justify-between mb-1.5">
+              {/* Fed rate path strip */}
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5">
+                <div className="flex items-center justify-between mb-2">
                   <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700">Fed Funds Path · 2026</p>
                   <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5 py-0.5">−{_fedCutBps} bps expected</span>
                 </div>
-                {(() => {
-                  const W = 260, H = 62, PAD_L = 38, PAD_R = 10, PAD_T = 8, PAD_B = 18;
-                  const chartW = W - PAD_L - PAD_R;
-                  const chartH = H - PAD_T - PAD_B;
-                  // Quarterly midpoints: Q1=3.625, Q2=3.625, Q3=3.375, Q4=3.125
-                  const pts = [
-                    { q: "Now", v: 3.625 },
-                    { q: "Q2", v: 3.625 },
-                    { q: "Q3", v: 3.375 },
-                    { q: "Q4", v: 3.125 },
-                  ];
-                  const minV = 2.9, maxV = 3.8;
-                  const xOf = (i: number) => PAD_L + (i / (pts.length - 1)) * chartW;
-                  const yOf = (v: number) => PAD_T + (1 - (v - minV) / (maxV - minV)) * chartH;
-                  // Build step path
-                  let d = "";
-                  pts.forEach((p, i) => {
-                    const x = xOf(i), y = yOf(p.v);
-                    if (i === 0) { d += `M ${x} ${y}`; }
-                    else {
-                      const prevX = xOf(i - 1);
-                      d += ` H ${x} V ${y}`;
-                      void prevX;
-                    }
-                  });
-                  // Y-axis ticks
-                  const yTicks = [3.125, 3.375, 3.625];
-                  return (
-                    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
-                      {/* Grid lines */}
-                      {yTicks.map((v) => (
-                        <line key={v} x1={PAD_L} x2={W - PAD_R} y1={yOf(v)} y2={yOf(v)}
-                          stroke="#f59e0b" strokeOpacity={0.2} strokeWidth={1} strokeDasharray="3,2" />
-                      ))}
-                      {/* Y-axis labels */}
-                      {yTicks.map((v) => (
-                        <text key={v} x={PAD_L - 4} y={yOf(v) + 3.5} textAnchor="end"
-                          fill="#b45309" fontSize={8} fontWeight="700">
-                          {v.toFixed(2)}
-                        </text>
-                      ))}
-                      {/* Shaded area under step */}
-                      <path
-                        d={`${d} V ${PAD_T + chartH} H ${PAD_L} Z`}
-                        fill="#f59e0b" fillOpacity={0.12}
-                      />
-                      {/* Step line */}
-                      <path d={d} fill="none" stroke="#d97706" strokeWidth={2} strokeLinejoin="round" />
-                      {/* Dots + labels */}
-                      {pts.map((p, i) => (
-                        <g key={i}>
-                          <circle cx={xOf(i)} cy={yOf(p.v)} r={i === 0 || i === pts.length - 1 ? 4 : 3}
-                            fill={i === pts.length - 1 ? "#dc2626" : "#d97706"}
-                            stroke="white" strokeWidth={1.5} />
-                          <text x={xOf(i)} y={H - 4} textAnchor="middle"
-                            fill="#92400e" fontSize={8} fontWeight={i === 0 || i === pts.length - 1 ? "900" : "600"}>
-                            {p.q}
-                          </text>
-                          {(i === 0 || i === pts.length - 1) && (
-                            <text x={xOf(i)} y={yOf(p.v) - 7} textAnchor="middle"
-                              fill={i === pts.length - 1 ? "#dc2626" : "#92400e"} fontSize={8} fontWeight="900">
-                              {i === 0 ? "3.50–3.75%" : "3.00–3.50%"}
-                            </text>
-                          )}
-                        </g>
-                      ))}
-                    </svg>
-                  );
-                })()}
+                <div className="flex items-center gap-1">
+                  {[
+                    { q: "Now", range: "3.50–3.75%", rate: "3.625%", current: true },
+                    { q: "Q2 '26", range: "3.50–3.75%", rate: "Hold", current: false },
+                    { q: "Q3 '26", range: "3.25–3.50%", rate: "−25 bps", cut: true },
+                    { q: "Q4 '26", range: "3.00–3.25%", rate: "−25 bps", cut: true, last: true },
+                  ].map((step, i, arr) => (
+                    <div key={i} className="flex items-center gap-1 flex-1 min-w-0">
+                      <div className={`flex-1 min-w-0 rounded-md px-2 py-1.5 text-center border ${
+                        step.current
+                          ? "bg-amber-100 border-amber-300"
+                          : step.cut
+                          ? "bg-rose-50 border-rose-200"
+                          : "bg-white border-amber-200"
+                      }`}>
+                        <p className={`text-[8px] font-black uppercase tracking-wider ${step.current ? "text-amber-700" : step.cut ? "text-rose-600" : "text-amber-600"}`}>{step.q}</p>
+                        <p className={`text-[10px] font-black tabular-nums leading-tight mt-0.5 ${step.current ? "text-amber-800" : step.cut ? "text-rose-700" : "text-amber-700"}`}>{step.range}</p>
+                        <p className={`text-[8px] font-semibold mt-0.5 ${step.cut ? "text-rose-500" : "text-amber-500"}`}>{step.rate}</p>
+                      </div>
+                      {i < arr.length - 1 && (
+                        <span className="text-amber-400 text-[10px] flex-shrink-0">›</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
