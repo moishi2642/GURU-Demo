@@ -6792,7 +6792,7 @@ function AdvisorBriefView({
           );
         })()}
 
-        {/* ── Upcoming Obligations — Bill Pay Table ── */}
+        {/* ── Approve Autobill Pay ── */}
         {(() => {
           const upcoming = OBLIGATIONS
             .filter((o) => o.due >= DEMO_NOW)
@@ -6811,7 +6811,7 @@ function AdvisorBriefView({
                   <Send className="w-4 h-4 text-violet-600" />
                 </div>
                 <div>
-                  <p className="text-base font-black text-foreground leading-none">Upcoming Obligations — Wire &amp; ACH Payments</p>
+                  <p className="text-base font-black text-foreground leading-none">Approve Autobill Pay</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Schedule payments directly from your connected accounts</p>
                 </div>
               </div>
