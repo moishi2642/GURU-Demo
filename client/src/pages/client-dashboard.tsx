@@ -2807,7 +2807,7 @@ function CashFlowForecastView({
         </div>
 
         {/* KPI tiles row */}
-        <div className="grid grid-cols-6 divide-x divide-border/60">
+        <div className="grid grid-cols-8 divide-x divide-border/60">
           {/* Annual Inflows */}
           <div className="px-4 py-3 flex flex-col gap-0.5" data-testid="stat-avg-inflow">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Inflows</p>
@@ -2865,6 +2865,24 @@ function CashFlowForecastView({
               {heroTroughValue >= 0 ? "+" : ""}{fmt(Math.abs(heroTroughValue), true)}
             </p>
             <p className="text-[9px] text-muted-foreground">lowest point · {heroTroughLabel}</p>
+          </div>
+
+          {/* Avg Monthly Net */}
+          <div className="px-4 py-3 flex flex-col gap-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Avg Monthly Net</p>
+            <p className={`text-xl font-extrabold tabular-nums leading-none ${annualNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {annualNet >= 0 ? "+" : ""}{fmt(Math.round(annualNet / 12), true)}
+            </p>
+            <p className="text-[9px] text-muted-foreground">net cash flow / mo</p>
+          </div>
+
+          {/* Avg Monthly Expenses */}
+          <div className="px-4 py-3 flex flex-col gap-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Avg Monthly Exp.</p>
+            <p className="text-xl font-extrabold tabular-nums leading-none text-rose-600">
+              ({fmt(Math.round(totalOut / 12), true)})
+            </p>
+            <p className="text-[9px] text-muted-foreground">avg expenses / mo</p>
           </div>
         </div>
       </div>
