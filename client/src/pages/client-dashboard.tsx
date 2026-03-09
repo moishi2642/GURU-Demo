@@ -6785,7 +6785,7 @@ function AdvisorBriefView({
                       </div>
                       {/* Horizontal animated connector — dot flows right→left (T-Bill matures into JPMorgan) */}
                       <div className="flex-shrink-0 flex flex-col items-center justify-center px-2" style={{ width: 80 }}>
-                        <span className="text-[8px] font-bold text-amber-600 whitespace-nowrap mb-1">← matures</span>
+                        <span className="text-[8px] font-bold text-amber-600 whitespace-nowrap mb-1">+$7,478 Maturing ←</span>
                         <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: "rgba(217,119,6,0.25)" }}>
                           <motion.div
                             className="absolute top-1/2 -translate-y-1/2 rounded-full"
