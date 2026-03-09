@@ -6655,13 +6655,6 @@ function AdvisorBriefView({
                         <span className="font-semibold text-foreground/70">To:</span> {to}
                       </p>
                     </div>
-                    {linkedTag && (
-                      <div className="mt-2 flex items-center gap-1.5">
-                        <div className="h-px flex-shrink-0 w-4" style={{ background: LINK_COLOR, opacity: 0.5 }} />
-                        <Link2 className="w-3 h-3 flex-shrink-0" style={{ color: LINK_COLOR, opacity: 0.75 }} />
-                        <span className="text-[10px] font-bold" style={{ color: LINK_COLOR }}>{linkedTag}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
