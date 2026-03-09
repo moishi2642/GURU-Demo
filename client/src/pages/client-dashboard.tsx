@@ -4445,7 +4445,7 @@ function MoneyMovementView({
                             shade="#fffbeb"
                             beginningBalance={fmtBal(t.balances[sm - 1] ?? 0)}
                             entries={[
-                              { label: 'Proceeds → JPMorgan 100% Treasuries MMF', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
+                              { label: 'Maturing and Deposited into JPMorgan 100% Treasuries Money Market Fund', amount: `(${fmtBal(t.balances[sm - 1] ?? 0)})`, type: 'less' },
                             ]}
                           />
                         </div>
