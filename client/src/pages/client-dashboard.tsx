@@ -6647,10 +6647,10 @@ function AdvisorBriefView({
 
               {/* ── Bucket tables ── */}
               <div className="px-6 py-5 bg-slate-50/40">
-                <div className="flex items-start gap-0">
+                <div className="flex items-start justify-center gap-0">
 
                   {/* ── Operating Cash column ── */}
-                  <div className="flex-1 min-w-0" data-testid="flow-col-ops">
+                  <div className="w-44 flex-shrink-0" data-testid="flow-col-ops">
                     <div className="rounded-t-lg px-3 py-2 flex items-center gap-2" style={{ background: "#1d4ed8" }}>
                       <Wallet className="w-3 h-3 text-white/80 flex-shrink-0" />
                       <span className="text-[9px] font-black uppercase tracking-widest text-white">Operating Cash</span>
@@ -6659,7 +6659,7 @@ function AdvisorBriefView({
                       {[
                         { name: "CIT Money Market Bank Account", sub: "Primary operating", amount: "$90,879" },
                       ].map((row, i) => (
-                        <div key={i} className="flex items-center justify-between px-3 py-2.5 bg-blue-50/60 border-b border-blue-100 last:border-0" data-testid="flow-row-ops-march">
+                        <div key={i} className="flex items-center justify-between px-3 py-4 bg-blue-50/60 border-b border-blue-100 last:border-0" data-testid="flow-row-ops-march">
                           <div className="min-w-0 mr-2">
                             <p className="text-[11px] font-semibold text-blue-900 leading-tight">{row.name}</p>
                             <p className="text-[9px] text-blue-600 mt-0.5">{row.sub}</p>
@@ -6684,7 +6684,7 @@ function AdvisorBriefView({
                   </div>
 
                   {/* ── Reserve column ── */}
-                  <div className="flex-1 min-w-0" data-testid="flow-col-reserve">
+                  <div className="w-44 flex-shrink-0" data-testid="flow-col-reserve">
                     <div className="rounded-t-lg px-3 py-2 flex items-center gap-2" style={{ background: "#d97706" }}>
                       <ShieldCheck className="w-3 h-3 text-white/80 flex-shrink-0" />
                       <span className="text-[9px] font-black uppercase tracking-widest text-white">Reserve</span>
@@ -6694,7 +6694,7 @@ function AdvisorBriefView({
                         { name: "JPMorgan 100% Treasuries Money Market Fund", sub: "Autodraw to Operating", amount: null },
                         { name: "T-Bill Ladder", sub: "3-Mo / 6-Mo / 9-Mo · matures → JPMorgan", amount: "$101,458" },
                       ].map((row, i) => (
-                        <div key={i} className="flex items-center justify-between px-3 py-2.5 bg-amber-50/60 border-b border-amber-100 last:border-0" data-testid={i === 0 ? "flow-row-reserve-jpm" : "flow-row-reserve-tbill"}>
+                        <div key={i} className="flex items-center justify-between px-3 py-4 bg-amber-50/60 border-b border-amber-100 last:border-0" data-testid={i === 0 ? "flow-row-reserve-jpm" : "flow-row-reserve-tbill"}>
                           <div className="min-w-0 mr-2">
                             <p className="text-[11px] font-semibold text-amber-900 leading-tight">{row.name}</p>
                             <p className="text-[9px] text-amber-600 mt-0.5">{row.sub}</p>
@@ -6709,7 +6709,7 @@ function AdvisorBriefView({
                   <div className="w-3 flex-shrink-0" />
 
                   {/* ── Build column ── */}
-                  <div className="flex-1 min-w-0" data-testid="flow-col-build">
+                  <div className="w-44 flex-shrink-0" data-testid="flow-col-build">
                     <div className="rounded-t-lg px-3 py-2 flex items-center gap-2" style={{ background: "#16a34a" }}>
                       <Home className="w-3 h-3 text-white/80 flex-shrink-0" />
                       <span className="text-[9px] font-black uppercase tracking-widest text-white">Build</span>
@@ -6719,7 +6719,7 @@ function AdvisorBriefView({
                         { name: "2028 Municipal Bonds", sub: "Tax-advantaged income", amount: null },
                         { name: "1-Year Treasury Bills", sub: "Short-duration ladder", amount: "$194,384" },
                       ].map((row, i) => (
-                        <div key={i} className="flex items-center justify-between px-3 py-2.5 bg-emerald-50/60 border-b border-emerald-100 last:border-0" data-testid={i === 0 ? "flow-row-build-munis" : "flow-row-build-tbill"}>
+                        <div key={i} className="flex items-center justify-between px-3 py-4 bg-emerald-50/60 border-b border-emerald-100 last:border-0" data-testid={i === 0 ? "flow-row-build-munis" : "flow-row-build-tbill"}>
                           <div className="min-w-0 mr-2">
                             <p className="text-[11px] font-semibold text-emerald-900 leading-tight">{row.name}</p>
                             <p className="text-[9px] text-emerald-600 mt-0.5">{row.sub}</p>
