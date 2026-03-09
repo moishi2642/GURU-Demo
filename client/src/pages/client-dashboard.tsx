@@ -6738,8 +6738,8 @@ function AdvisorBriefView({
                   color="#0ea5e9"
                   icon={CalendarClock}
                   badge="Cash Management"
-                  priority="March"
-                  title="Scheduled Cash Movements for Next Month (March)"
+                  priority="January"
+                  title="Scheduled Cash Movements for Next Month (January)"
                   subtitle="What moves between accounts over the next 60 days"
                 />
               </div>
