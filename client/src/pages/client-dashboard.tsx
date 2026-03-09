@@ -6661,27 +6661,34 @@ function AdvisorBriefView({
 
               {/* ── Org-chart flow diagram ── */}
               <div className="px-6 py-5 bg-slate-50/40">
-                <div className="relative" style={{ height: 240 }}>
-                  {/* SVG connector lines — viewBox 0 0 100 100, container 240px tall */}
+                <div className="relative" style={{ height: 320 }}>
+                  {/*
+                    SVG viewBox 0 0 100 100, container 320px tall.
+                    Bucket row: top=0 (~32px tall → SVG y≈10)
+                    Account row 1: top=80 (~42px tall → SVG y≈25–38)
+                    Account row 2: top=215 (~42px tall → SVG y≈67–80)
+                  */}
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                     {/* Horizontal spine: Ops right → Reserve left */}
                     <line x1="31" y1="6" x2="35" y2="6" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Horizontal spine: Reserve right → Build left */}
                     <line x1="65" y1="6" x2="69" y2="6" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Vertical drop: Ops bucket → Ops account */}
-                    <line x1="16" y1="13" x2="16" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Vertical drop: Reserve bucket → JPMorgan */}
-                    <line x1="50" y1="13" x2="50" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Vertical drop: Build bucket → first Build account */}
-                    <line x1="84" y1="13" x2="84" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Vertical drop: between the two Build accounts */}
-                    <line x1="84" y1="55" x2="84" y2="70" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Vertical drop: Ops bucket → CIT MM */}
+                    <line x1="16" y1="10" x2="16" y2="25" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Vertical drop: Reserve bucket → JPMorgan MMF */}
+                    <line x1="50" y1="10" x2="50" y2="25" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Vertical drop: Build bucket → 2028 Munis */}
+                    <line x1="84" y1="10" x2="84" y2="25" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Vertical: JPMorgan bottom → T-Bill Ladder top (Reserve) */}
+                    <line x1="50" y1="38" x2="50" y2="67" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Vertical: 2028 Munis bottom → 1-Year T-Bills top (Build) */}
+                    <line x1="84" y1="38" x2="84" y2="67" stroke="#cbd5e1" strokeWidth="0.7" />
                   </svg>
 
-                  {/* Animated connector: JPMorgan MMF → CIT MM (amber, matching Money Movement tab) */}
+                  {/* Animated connector: JPMorgan MMF → CIT MM ($5,816 autodraw) */}
                   <div
                     className="absolute flex flex-col items-center gap-0.5"
-                    style={{ left: "30%", top: 113, width: "5%" }}
+                    style={{ left: "30%", top: 101, width: "5%" }}
                   >
                     <span className="text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: "#d97706" }}>$5,816</span>
                     <div className="relative w-full overflow-hidden rounded-full" style={{ height: 2, backgroundColor: "rgba(217,119,6,0.25)" }}>
@@ -6694,7 +6701,22 @@ function AdvisorBriefView({
                     </div>
                   </div>
 
-                  {/* ── ROW 1: Bucket nodes (label strip only) ── */}
+                  {/* Animated connector: T-Bill Ladder (Reserve) maturity → JPMorgan MMF (upward) */}
+                  <div
+                    className="absolute flex items-center justify-center"
+                    style={{ left: "48.5%", top: 122, width: 14, height: 93 }}
+                  >
+                    <div className="relative overflow-hidden" style={{ width: 2, height: "100%", backgroundColor: "rgba(217,119,6,0.25)", borderRadius: 2 }}>
+                      <motion.div
+                        className="absolute left-1/2 -translate-x-1/2 rounded-full"
+                        style={{ width: 8, height: 8, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
+                        animate={{ top: ["100%", "-8px"] }}
+                        transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── ROW 1: Bucket header nodes ── */}
 
                   {/* Operating Cash */}
                   <div className="absolute rounded-xl overflow-hidden border-2 shadow-sm" style={{ left: "1%", top: 0, width: "29%", borderColor: "#1d4ed844" }}>
@@ -6720,45 +6742,43 @@ function AdvisorBriefView({
                     </div>
                   </div>
 
-                  {/* ── ROW 2: Account nodes ── */}
+                  {/* ── ROW 2: Primary account nodes ── */}
 
                   {/* Under Ops: CIT Money Market Bank Account */}
-                  <div className="absolute rounded-lg border border-blue-200 bg-blue-50/60 shadow-sm" style={{ left: "1%", top: 90, width: "29%" }} data-testid="flow-row-ops-march">
+                  <div className="absolute rounded-lg border border-blue-200 bg-blue-50/60 shadow-sm" style={{ left: "1%", top: 80, width: "29%" }} data-testid="flow-row-ops-march">
                     <div className="px-2.5 py-2.5">
-                      <div className="flex items-center gap-1">
-                        <p className="text-[10px] font-bold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
-                        <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
-                      </div>
+                      <p className="text-[10px] font-bold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
                     </div>
                   </div>
 
-                  {/* Under Reserve: JPMorgan 100% Treasuries MMF */}
-                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 90, width: "29%" }} data-testid="flow-row-reserve-autodraw">
+                  {/* Under Reserve: JPMorgan 100% Treasuries Money Market Fund */}
+                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 80, width: "29%" }} data-testid="flow-row-reserve-jpm">
                     <div className="px-2.5 py-2.5">
-                      <div className="flex items-center gap-1">
-                        <p className="text-[10px] font-bold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
-                        <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
-                      </div>
+                      <p className="text-[10px] font-bold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
                     </div>
                   </div>
 
-                  {/* Under Build: Municipal Bonds */}
-                  <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 90, width: "29%" }} data-testid="flow-row-build-munis">
+                  {/* Under Build: 2028 Municipal Bonds */}
+                  <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 80, width: "29%" }} data-testid="flow-row-build-munis">
                     <div className="px-2.5 py-2.5">
-                      <div className="flex items-center gap-1">
-                        <p className="text-[10px] font-bold text-emerald-900 leading-tight">Municipal Bonds</p>
-                        <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
-                      </div>
+                      <p className="text-[10px] font-bold text-emerald-900 leading-tight">2028 Municipal Bonds</p>
                     </div>
                   </div>
 
-                  {/* Under Build: T-Bill Ladder */}
-                  <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 168, width: "29%" }} data-testid="flow-row-build-tbill">
+                  {/* ── ROW 3: Secondary account nodes ── */}
+
+                  {/* Under Reserve: T-Bill Ladder (matures → JPMorgan) */}
+                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 215, width: "29%" }} data-testid="flow-row-reserve-tbill">
                     <div className="px-2.5 py-2.5">
-                      <div className="flex items-center gap-1">
-                        <p className="text-[10px] font-bold text-emerald-900 leading-tight">T-Bill Ladder</p>
-                        <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
-                      </div>
+                      <p className="text-[10px] font-bold text-amber-900 leading-tight">T-Bill Ladder</p>
+                      <p className="text-[9px] text-amber-700 mt-0.5">3-Mo / 6-Mo / 9-Mo</p>
+                    </div>
+                  </div>
+
+                  {/* Under Build: 1-Year Treasury Bills */}
+                  <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 215, width: "29%" }} data-testid="flow-row-build-tbill">
+                    <div className="px-2.5 py-2.5">
+                      <p className="text-[10px] font-bold text-emerald-900 leading-tight">1-Year Treasury Bills</p>
                     </div>
                   </div>
 
