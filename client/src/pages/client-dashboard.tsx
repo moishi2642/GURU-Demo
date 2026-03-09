@@ -1336,6 +1336,186 @@ const MARKET_RATES: Record<string, number> = {
   heloc:         8.50,
 };
 
+// ─── Water-Flow Dashboard Widget ──────────────────────────────────────────────
+const WATER_CSS = `
+  @keyframes wv { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  @keyframes pipeDash { to { stroke-dashoffset: -18 } }
+  .wv-s { animation: wv 2.2s linear infinite; }
+  .pipe-flow { animation: pipeDash 0.7s linear infinite; }
+`;
+
+interface WFlowTank {
+  id: string; label: string; sub: string; amount: number;
+  startLevel: number; endLevel: number;
+  color: string; border: string; fill: string;
+  badge?: string; badgeSub?: string; stable?: boolean;
+}
+
+function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
+  const [live, setLive] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setLive(true), 500); return () => clearTimeout(t); }, []);
+
+  const TH = 118, TW = 84;
+
+  const tanks: WFlowTank[] = [
+    {
+      id: "tbill", label: "3-Month T-Bill", sub: "Matures March 31, 2026",
+      amount: 41877, startLevel: 76, endLevel: 5,
+      color: "#0ea5e9", border: "#7dd3fc", fill: "rgba(14,165,233,0.20)",
+      badge: "$41,877", badgeSub: "→ Reserve",
+    },
+    {
+      id: "reserve", label: "Reserve Money Market", sub: "Citizens Bank MM",
+      amount: 109323, startLevel: 52, endLevel: 40,
+      color: "#6366f1", border: "#a5b4fc", fill: "rgba(99,102,241,0.20)",
+      badge: "$53,252", badgeSub: "→ Operating",
+    },
+    {
+      id: "operating", label: "Operating Checking", sub: "Citizens Bank",
+      amount: 112424, startLevel: 28, endLevel: 64,
+      color: "#f59e0b", border: "#fcd34d", fill: "rgba(245,158,11,0.20)",
+    },
+    {
+      id: "build", label: "Build Account", sub: "No movement · 4.75%",
+      amount: 194384, startLevel: 74, endLevel: 74,
+      color: "#7c3aed", border: "#c4b5fd", fill: "rgba(124,58,237,0.18)",
+      stable: true,
+    },
+  ];
+
+  const renderTank = (t: WFlowTank) => {
+    const level = live ? t.endLevel : t.startLevel;
+    const fillH = (level / 100) * TH;
+    return (
+      <div key={t.id} className="flex flex-col items-center" style={{ gap: 10 }}>
+        {/* Badge above */}
+        <div style={{ height: 32, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
+          {t.badge && (
+            <>
+              <span style={{ fontSize: 11, fontWeight: 900, color: t.color, lineHeight: 1.2 }}>{t.badge}</span>
+              <span style={{ fontSize: 9, color: "#94a3b8", fontWeight: 600 }}>{t.badgeSub}</span>
+            </>
+          )}
+        </div>
+        {/* Tank */}
+        <div style={{ width: TW, height: TH, borderRadius: 8, border: `2px solid ${t.border}`, background: "#fff", position: "relative", overflow: "hidden" }}>
+          {/* Water fill */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: fillH, background: t.fill, transition: "height 2.8s cubic-bezier(0.4,0,0.2,1)" }}>
+            {/* Wave SVG scrolling horizontally */}
+            <svg className="wv-s" style={{ position: "absolute", top: -5, left: 0, width: "200%", height: 10 }} viewBox="0 0 200 10" preserveAspectRatio="none">
+              <path d="M0,5 C25,0 25,10 50,5 C75,0 75,10 100,5 C125,0 125,10 150,5 C175,0 175,10 200,5" stroke={t.color} strokeWidth="1.5" fill="none" opacity="0.8" />
+            </svg>
+          </div>
+          {/* Centre amount label */}
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 11, fontWeight: 900, color: t.color, textShadow: "0 0 6px white, 0 0 6px white" }}>{fmt(t.amount, true)}</span>
+          </div>
+          {/* Stable badge */}
+          {t.stable && (
+            <div style={{ position: "absolute", top: 5, right: 5, background: t.border, borderRadius: 3, padding: "1px 5px" }}>
+              <span style={{ fontSize: 8, fontWeight: 800, color: t.color }}>STABLE</span>
+            </div>
+          )}
+        </div>
+        {/* Label below */}
+        <div style={{ textAlign: "center", maxWidth: TW + 16 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#1e293b", lineHeight: 1.3 }}>{t.label}</p>
+          <p style={{ fontSize: 9, color: "#94a3b8", marginTop: 2 }}>{t.sub}</p>
+        </div>
+      </div>
+    );
+  };
+
+  const Pipe = () => (
+    <div style={{ display: "flex", alignItems: "center", paddingBottom: 48, paddingTop: 6 }}>
+      <svg width="52" height="28" viewBox="0 0 52 28">
+        <defs>
+          <marker id="wf-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3 z" fill="#cbd5e1" />
+          </marker>
+        </defs>
+        <path
+          d="M2,14 C14,14 38,14 50,14"
+          stroke="#cbd5e1" strokeWidth="2" fill="none"
+          strokeDasharray="5 4"
+          markerEnd="url(#wf-arrow)"
+          className={live ? "pipe-flow" : ""}
+        />
+      </svg>
+    </div>
+  );
+
+  const events = [
+    { date: "Apr 1",  label: "Spring Tuition",    detail: "Chase → Dalton School",       amount: -15000, kind: "out" as const },
+    { date: "Apr 8",  label: "Income Allocation", detail: "Cresset → Citizens Checking",  amount:  18814, kind: "in"  as const },
+    { date: "Apr 15", label: "Q1 Estimated Tax",  detail: "Citizens → IRS (EFTPS)",       amount: -30000, kind: "out" as const },
+    { date: "Apr 15", label: "GURU Reserve Draw", detail: "Citizens MM → Operating",       amount:  -6126, kind: "xfr" as const },
+    { date: "May 8",  label: "Income Allocation", detail: "Cresset → Citizens Checking",  amount:  18814, kind: "in"  as const },
+    { date: "May 15", label: "GURU Reserve Draw", detail: "Citizens MM → Operating",       amount:  -3126, kind: "xfr" as const },
+  ];
+
+  return (
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid="dashboard-money-flow-panel">
+      <style>{WATER_CSS}</style>
+      {/* Header */}
+      <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+            <Repeat2 className="w-3.5 h-3.5 text-sky-600" />
+          </div>
+          <div>
+            <p className="text-sm font-black text-foreground leading-none">Account Cash Movements</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Next 60 days · GURU managed · March–May 2026</p>
+          </div>
+        </div>
+        <button
+          onClick={onNavigate}
+          className="text-[10px] font-bold text-sky-600 hover:text-sky-500 flex items-center gap-1 transition-colors"
+          data-testid="dashboard-money-flow-link"
+        >
+          Full view <ArrowUpRight className="w-3 h-3" />
+        </button>
+      </div>
+
+      {/* Tanks row */}
+      <div className="px-6 pt-5 pb-3 overflow-x-auto">
+        <div className="flex items-start min-w-max" style={{ gap: 0 }}>
+          {renderTank(tanks[0])}
+          <Pipe />
+          {renderTank(tanks[1])}
+          <Pipe />
+          {renderTank(tanks[2])}
+          {/* Divider */}
+          <div style={{ width: 1, background: "#e2e8f0", alignSelf: "stretch", margin: "0 20px" }} />
+          {renderTank(tanks[3])}
+        </div>
+      </div>
+
+      {/* Event list */}
+      <div className="px-5 pb-4">
+        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2.5">Upcoming Events</p>
+        <div className="space-y-1.5">
+          {events.map((ev, i) => {
+            const amtCls = ev.kind === "in" ? "text-emerald-600" : ev.kind === "xfr" ? "text-amber-600" : "text-rose-600";
+            return (
+              <div key={i} className="flex items-center gap-3" data-testid={`dash-flow-event-${i}`}>
+                <span className="text-[9px] font-black text-muted-foreground w-10 shrink-0 tabular-nums">{ev.date}</span>
+                <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
+                  <span className="text-[10px] font-bold text-foreground">{ev.label}</span>
+                  <span className="text-[9px] text-muted-foreground truncate">{ev.detail}</span>
+                </div>
+                <span className={`text-[10px] font-black tabular-nums shrink-0 ${amtCls}`}>
+                  {ev.kind === "in" ? "+" : "−"}{fmt(Math.abs(ev.amount))}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LiabilitiesPanel({ liabilities }: { liabilities: Liability[] }) {
   const totalDebt = liabilities.reduce((s, l) => s + Number(l.value), 0);
   const wtdRate = liabilities.reduce((s, l) => s + parseFloat(l.interestRate) * Number(l.value), 0) / (totalDebt || 1);
@@ -7064,77 +7244,8 @@ export default function ClientDashboard() {
             <LiabilitiesPanel liabilities={liabilities} />
           </div>
 
-          {/* ── Upcoming Cash Movements strip ──────────────────────────────── */}
-          {(() => {
-            const FLOW_EVENTS = [
-              { date: new Date(2026, 3,  1), label: "Spring Tuition",            detail: "Chase → Dalton School",          amount: -15000, type: "obligation" as const, icon: GraduationCap },
-              { date: new Date(2026, 3,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
-              { date: new Date(2026, 3, 15), label: "Q1 Estimated Tax",          detail: "Citizens → IRS (EFTPS)",         amount: -30000, type: "obligation" as const, icon: Building2     },
-              { date: new Date(2026, 3, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -6126, type: "transfer"   as const, icon: Repeat2       },
-              { date: new Date(2026, 4,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
-              { date: new Date(2026, 4, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -3126, type: "transfer"   as const, icon: Repeat2       },
-            ];
-            const next45 = FLOW_EVENTS.filter(f => f.date >= DEMO_NOW && f.date <= new Date(DEMO_NOW.getTime() + 60 * 86400000));
-            const totalNetFlow = next45.reduce((s, f) => s + f.amount, 0);
-            return (
-              <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid="dashboard-money-flow-panel">
-                <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
-                      <CalendarClock className="w-3.5 h-3.5 text-sky-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-black text-foreground leading-none">Upcoming Cash Movements</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Next 60 days · GURU managed</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className={`text-xs font-black tabular-nums ${totalNetFlow >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                        {totalNetFlow >= 0 ? "+" : "−"}{fmt(Math.abs(totalNetFlow))}
-                      </p>
-                      <p className="text-[9px] text-muted-foreground">45-day net</p>
-                    </div>
-                    <button
-                      onClick={() => setActiveView("moneymovement")}
-                      className="text-[10px] font-bold text-sky-600 hover:text-sky-500 flex items-center gap-1 transition-colors"
-                      data-testid="dashboard-money-flow-link"
-                    >
-                      Full view <ArrowUpRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border">
-                  {next45.map((ev, i) => {
-                    const Icon = ev.icon;
-                    const isIn  = ev.amount > 0;
-                    const isTx  = ev.type === "transfer";
-                    const clr   = isIn ? "#10b981" : isTx ? "#d97706" : "#f43f5e";
-                    const amtCls = isIn ? "text-emerald-600" : isTx ? "text-amber-600" : "text-rose-600";
-                    const bgCls  = isIn ? "bg-emerald-50/50" : isTx ? "bg-amber-50/50" : "bg-rose-50/50";
-                    const iconBg = isIn ? "bg-emerald-100" : isTx ? "bg-amber-100" : "bg-rose-100";
-                    return (
-                      <div key={i} className={`px-4 py-3.5 flex flex-col gap-2 ${bgCls}`} data-testid={`dash-flow-event-${i}`}>
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{format(ev.date, "MMM d")}</span>
-                          <div className={`w-5 h-5 rounded-md ${iconBg} flex items-center justify-center flex-shrink-0`}>
-                            <Icon className="w-2.5 h-2.5" style={{ color: clr }} />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-foreground leading-snug">{ev.label}</p>
-                          <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">{ev.detail}</p>
-                        </div>
-                        <p className={`text-sm font-black tabular-nums ${amtCls}`}>
-                          {isIn ? "+" : "−"}{fmt(Math.abs(ev.amount))}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
+          {/* ── Account Cash Movements — animated water-flow widget ─────────── */}
+          <DashboardFlowWidget onNavigate={() => setActiveView("moneymovement")} />
 
         </div>
       )}
