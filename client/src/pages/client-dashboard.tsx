@@ -6464,6 +6464,7 @@ function AdvisorBriefView({
               badge="Liquidity"
               priority="High Priority"
               title="Harvest Excess Liquidity From Bonus"
+              subtitle="Opportunity to increase investment portfolio"
             />
             <div>
               <p className="text-3xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToDeploy, true)}</p>
@@ -6519,6 +6520,7 @@ function AdvisorBriefView({
               badge="Investments"
               priority="Medium Priority"
               title="Rebalance Portfolio with Excess Cash"
+              subtitle="Ideas to discuss with Sarah and Michael after liquidity conversation"
             />
             {singleStockVal > 0 && (
               <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 flex items-start gap-2.5">
