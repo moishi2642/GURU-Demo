@@ -6137,21 +6137,21 @@ function GuruAllocationView({
                               <span className="text-[9px] text-muted-foreground italic">
                                 {r.subAccounts.length} position{r.subAccounts.length !== 1 ? "s" : ""}
                               </span>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-4">
                                 {hasPending ? (
-                                  <span className="text-xs font-bold tabular-nums flex flex-col items-end leading-tight">
+                                  <span className="text-xs font-bold tabular-nums flex flex-col items-end leading-tight w-20">
                                     <span className="text-muted-foreground line-through text-[10px]">{fmt(r.current)}</span>
                                     <span className="text-amber-600">{fmt(adjTotal)}</span>
                                   </span>
                                 ) : (
-                                  <span className="text-xs font-bold tabular-nums text-foreground">{fmt(r.current)}</span>
+                                  <span className="text-xs font-bold tabular-nums text-foreground w-20 text-right">{fmt(r.current)}</span>
                                 )}
                                 {!ftIsGrow && (
-                                  <span className="text-[10px] font-bold tabular-nums" style={{ color: r.def.bg }}>
+                                  <span className="text-[10px] font-bold tabular-nums w-10 text-right" style={{ color: r.def.bg }}>
                                     {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
                                   </span>
                                 )}
-                                <span className="text-[9px] text-muted-foreground tabular-nums">
+                                <span className="text-[9px] text-muted-foreground tabular-nums w-24 text-right">
                                   {r.current > 0 ? `${weightedATYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
                                 </span>
                               </div>
