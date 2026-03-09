@@ -6298,7 +6298,7 @@ function AdvisorBriefView({
       );
     if (checked.has("cashflow"))
       paras.push(
-        `I also wanted to give you a heads-up on some account movements we will be making on your behalf over the next two months:\n\n• In March, $47,126 will move from your Reserve Money Market into your Operating Checking Account to cover the Q1 tax payment and spring tuition — this rebuilds your two-month expense buffer of $41,878.\n\n• A smaller draw of $6,126 will follow in April to cover that month's operating shortfall.\n\n• Separately, your 3-Month Treasury Bill matures on March 31st — those $41,877 in proceeds will stay in your Reserve Money Market as a liquidity buffer, keeping it ready to fund operations through the spring.\n\n• Your Build Account is holding flat at approximately $194,000, earning around 4.75% passively. No changes are planned — this account remains earmarked as long-term savings toward the home upgrade when you are ready to move forward.`,
+        `I also wanted to give you a heads-up on some account movements we will be making on your behalf over the next month:\n\nOPERATING CASH\n• In March, $47,126 will move from your Reserve Money Market into your Operating Checking Account to cover the Q1 tax payment and spring tuition — this rebuilds your two-month expense buffer.\n\nRESERVE\n• Your 3-Month Treasury Bill matures on March 31st — those $41,877 in proceeds will stay in your Reserve Money Market as a liquidity buffer, keeping it ready to fund operations through the spring.\n\nBUILD\n• Your Build Account is holding flat at approximately $194,000, earning around 4.75% passively. No changes are planned — this account remains earmarked as long-term savings toward the home upgrade when you are ready to move forward.`,
       );
     if (paras.length === 0)
       paras.push("We wanted to check in and share a few items we've been working through on your behalf.");
@@ -6315,6 +6315,60 @@ function AdvisorBriefView({
       "Best,",
       "Your Advisor",
     ].join("\n");
+  };
+
+  const buildEmailJSX = () => {
+    const BucketHeader = ({ color, label }: { color: string; label: string }) => (
+      <div className="flex items-center gap-2 mt-4 mb-1">
+        <div className="h-3.5 w-1 rounded-full flex-shrink-0" style={{ background: color }} />
+        <span className="text-[9px] font-black uppercase tracking-widest" style={{ color }}>{label}</span>
+        <div className="flex-1 h-px" style={{ background: color + "33" }} />
+      </div>
+    );
+    const blocks: React.ReactNode[] = [];
+    blocks.push(
+      <p key="greeting" className="font-serif">Hi Sarah and Michael,</p>,
+      <p key="opener" className="font-serif">Hope you're both doing well. I wanted to reach out with a few things on our end that I think are worth a conversation.</p>,
+    );
+    if (checked.has("liquidity"))
+      blocks.push(
+        <p key="liq" className="font-serif">As we approach the new year, your December bonus has created a meaningful liquidity surplus — roughly {fmt(totalToDeploy)} above your 3-month reserve target. Rather than letting that sit idle, we'd like to put it to work for you across the Build and Grow allocations we've modeled. The opportunity cost of leaving it in cash is real, and we think the timing is right to act.</p>
+      );
+    if (checked.has("rebalance"))
+      blocks.push(
+        <p key="reb" className="font-serif">We've also been monitoring your single-stock concentration. Your E*Trade positions in Meta and Bank of America now represent about {singleStockPct}% of your total portfolio — above the 5% threshold we'd generally feel comfortable with. We'd like to walk you through a gradual trim strategy that reduces that risk without triggering a large tax event all at once.</p>
+      );
+    if (checked.has("yield"))
+      blocks.push(
+        <p key="yld" className="font-serif">On the fixed-income side, there's an opportunity to improve what your reserve accounts are earning. We've identified products that could add roughly +{bpsPickup} basis points in after-tax yield — that translates to approximately {fmt(_yieldPickupAnnual)} per year in incremental income at essentially the same risk profile. With the Fed cutting rates, we think this window is time-sensitive.</p>
+      );
+    if (checked.has("cashflow"))
+      blocks.push(
+        <div key="cf">
+          <p className="font-serif">I also wanted to give you a heads-up on some account movements we will be making on your behalf over the next month:</p>
+          <BucketHeader color="#1d4ed8" label="Operating Cash" />
+          <ul className="list-none pl-3 space-y-0.5">
+            <li className="font-serif text-[12px]">• In March, $47,126 will move from your Reserve Money Market into your Operating Checking Account to cover the Q1 tax payment and spring tuition — this rebuilds your two-month expense buffer.</li>
+          </ul>
+          <BucketHeader color="#d97706" label="Reserve" />
+          <ul className="list-none pl-3 space-y-0.5">
+            <li className="font-serif text-[12px]">• Your 3-Month Treasury Bill matures on March 31st — those $41,877 in proceeds will stay in your Reserve Money Market as a liquidity buffer, keeping it ready to fund operations through the spring.</li>
+          </ul>
+          <BucketHeader color="#16a34a" label="Build" />
+          <ul className="list-none pl-3 space-y-0.5">
+            <li className="font-serif text-[12px]">• Your Build Account is holding flat at approximately $194,000, earning around 4.75% passively. No changes are planned — this account remains earmarked as long-term savings toward the home upgrade when you are ready to move forward.</li>
+          </ul>
+        </div>
+      );
+    if (blocks.length === 2)
+      blocks.push(<p key="fallback" className="font-serif">We wanted to check in and share a few items we've been working through on your behalf.</p>);
+    blocks.push(
+      <p key="close1" className="font-serif">None of this requires any immediate action on your part — I just want to make sure you have the full picture so we can decide together what makes the most sense. Happy to set up a quick call whenever works for you.</p>,
+      <p key="close2" className="font-serif">As always, please don't hesitate to reach out with any questions.</p>,
+      <p key="sig1" className="font-serif">Best,</p>,
+      <p key="sig2" className="font-serif">Your Advisor</p>,
+    );
+    return <div className="space-y-3 leading-7">{blocks}</div>;
   };
 
   // ── Card checkbox header helper ──
@@ -7095,8 +7149,8 @@ function AdvisorBriefView({
               <div><span className="font-semibold">To:</span> Sarah &amp; Michael Kessler &lt;kessler.family@privatebank.com&gt;</div>
               <div className="ml-auto"><span className="font-semibold">Subject:</span> A few things worth discussing — your portfolio update</div>
             </div>
-            <div className="rounded-xl border border-border bg-background px-5 py-4 text-[12px] leading-7 text-foreground whitespace-pre-wrap font-serif min-h-[280px]">
-              {buildEmail()}
+            <div className="rounded-xl border border-border bg-background px-5 py-4 text-[12px] text-foreground min-h-[280px]">
+              {buildEmailJSX()}
             </div>
             <div className="flex items-center gap-3 justify-end">
               <button
