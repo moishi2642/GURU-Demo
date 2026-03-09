@@ -6409,8 +6409,18 @@ function AdvisorBriefView({
         </div>
       </div>
 
-      {/* ── Priority cards (3 in a 2+1 layout) ── */}
+      {/* ── Priority cards ── */}
       <div className="grid grid-cols-2 gap-5">
+
+        {/* ── Section Header: Investments & Liquidity ── */}
+        <div className="col-span-2 flex items-center gap-3 pb-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-1 h-5 rounded-full bg-emerald-500 flex-shrink-0" />
+            <p className="text-[11px] font-black uppercase tracking-widest text-foreground">Investments &amp; Liquidity Positioning</p>
+          </div>
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">3 items</span>
+        </div>
 
         {/* ── Card 1: Deploy Excess Liquidity ── */}
         <div
@@ -6587,10 +6597,20 @@ function AdvisorBriefView({
           </div>
         </div>
 
+        {/* ── Section Header: Money Movement ── */}
+        <div className="col-span-2 flex items-center gap-3 pb-1 pt-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-1 h-5 rounded-full bg-violet-500 flex-shrink-0" />
+            <p className="text-[11px] font-black uppercase tracking-widest text-foreground">Money Movement</p>
+          </div>
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-[10px] text-muted-foreground font-medium flex-shrink-0">2 items</span>
+        </div>
+
         {/* ── Card 4: Account Cash Movements ── */}
         {(() => {
           return (
-            <div className="col-span-2 pl-12">
+            <div className="col-span-2">
             <div
               className={`rounded-2xl border bg-card shadow-sm transition-all ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
               style={{ borderTop: "4px solid #0ea5e9" }}
