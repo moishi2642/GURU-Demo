@@ -1466,7 +1466,7 @@ function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
             <Repeat2 className="w-3.5 h-3.5 text-sky-600" />
           </div>
           <div>
-            <p className="text-sm font-black text-foreground leading-none">Account Cash Movements</p>
+            <p className="text-sm font-black text-foreground leading-none">GURU Scheduled Cash Movements</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Next 60 days · GURU managed · March–May 2026</p>
           </div>
         </div>
@@ -6633,7 +6633,7 @@ function AdvisorBriefView({
                   icon={CalendarClock}
                   badge="Cash Management"
                   priority="March · April"
-                  title="Account Cash Movements"
+                  title="GURU Scheduled Cash Movements"
                   subtitle="What moves between accounts over the next 60 days"
                 />
               </div>
