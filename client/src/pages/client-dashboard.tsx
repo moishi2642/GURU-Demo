@@ -82,6 +82,7 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
+  Link2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ResponsiveSankey } from "@nivo/sankey";
@@ -6586,12 +6587,13 @@ function AdvisorBriefView({
         {(() => {
           // Shared row renderer
           const FlowRow = ({
-            date, label, amount, amtColor, from, to, icon: Icon, iconBg, iconColor, testId, sign,
+            date, label, amount, amtColor, from, to, icon: Icon, iconBg, iconColor, testId, sign, linkedTag,
           }: {
             date: string; label: string; amount: number | null; amtColor: string;
             from: string; to: string;
             icon: React.ElementType; iconBg: string; iconColor: string; testId: string;
             sign?: "+" | "-";
+            linkedTag?: string;
           }) => (
             <div className="px-6 py-4" data-testid={testId}>
               <div className="flex items-start gap-3">
@@ -6616,6 +6618,14 @@ function AdvisorBriefView({
                       <span className="font-semibold text-foreground/70">To:</span> {to}
                     </p>
                   </div>
+                  {linkedTag && (
+                    <div className="mt-2">
+                      <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                        <Link2 className="w-2.5 h-2.5" />
+                        {linkedTag}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -6662,6 +6672,7 @@ function AdvisorBriefView({
                       iconColor="text-emerald-600"
                       testId="flow-row-ops-march"
                       sign="+"
+                      linkedTag="Linked · Reserve autodraw below"
                     />
                   </div>
                 </div>
@@ -6698,6 +6709,7 @@ function AdvisorBriefView({
                       iconColor="text-rose-600"
                       testId="flow-row-reserve-autodraw"
                       sign="-"
+                      linkedTag="Linked · Inflow to Operating Cash above"
                     />
                   </div>
                 </div>
