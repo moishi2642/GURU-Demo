@@ -6671,8 +6671,6 @@ function AdvisorBriefView({
                     <line x1="16" y1="13" x2="16" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Vertical drop: Reserve bucket → JPMorgan */}
                     <line x1="50" y1="13" x2="50" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* JPMorgan → T-Bill (stacked) */}
-                    <line x1="50" y1="60" x2="50" y2="70" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Vertical drop: Build bucket → Build account */}
                     <line x1="84" y1="13" x2="84" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
                   </svg>
@@ -6740,6 +6738,21 @@ function AdvisorBriefView({
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
                       <p className="text-[9px] text-amber-700">Reserve buffer · ~5.00%</p>
+                    </div>
+                  </div>
+
+                  {/* Animated connector: T-Bill Ladder → JPMorgan MMF (upward, maturity reinvestment) */}
+                  <div
+                    className="absolute flex items-center justify-center"
+                    style={{ left: "48.5%", top: 142, width: 14, height: 26 }}
+                  >
+                    <div className="relative overflow-hidden" style={{ width: 2, height: "100%", backgroundColor: "rgba(217,119,6,0.25)", borderRadius: 2 }}>
+                      <motion.div
+                        className="absolute left-1/2 -translate-x-1/2 rounded-full"
+                        style={{ width: 8, height: 8, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
+                        animate={{ top: ["100%", "-8px"] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      />
                     </div>
                   </div>
 
