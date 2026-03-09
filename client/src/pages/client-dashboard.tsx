@@ -6738,20 +6738,32 @@ function AdvisorBriefView({
                 <p className="text-[10px] text-muted-foreground mt-0.5">saved vs. waiting for cut</p>
               </div>
             </div>
-            {/* Comparison table */}
-            <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Lock In Now vs. Post-Cut Rate</p>
-              {[
-                { label: fmt(_excessNotTreasuries) + " excess cash (ex-Fidelity)", current: "Today's rate", note: `−${_fedCutBps} bps after cut` },
-                { label: "Checking / Savings (idle)", current: "~0.01%", note: "→ T-Bills at 4.3%" },
-                { label: "CIT Money Market", current: "4.30% gross", note: `−${_fedCutBps} bps if you wait` },
-              ].map((row) => (
-                <div key={row.label} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2">
-                  <span className="text-[10px] text-muted-foreground truncate">{row.label}</span>
-                  <span className="text-[10px] tabular-nums text-foreground flex-shrink-0">{row.current}</span>
-                  <span className="text-[10px] tabular-nums font-bold text-amber-700 flex-shrink-0">{row.note}</span>
+            {/* Rate cut scenario */}
+            <div className="space-y-2">
+              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Rate Cut Exposure</p>
+              <div className="rounded-lg border border-border bg-background px-3 py-2.5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground mb-0.5">Cash exposed to rate changes</p>
+                  <p className="text-base font-black tabular-nums text-foreground">{fmt(_excessNotTreasuries)}</p>
                 </div>
-              ))}
+                <div className="text-right flex-shrink-0">
+                  <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground mb-0.5">Not in treasuries · ex-Fidelity</p>
+                  <p className="text-[10px] font-semibold text-amber-700">idle bank + money market</p>
+                </div>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700 mb-0.5">Fed Funds Target 2026</p>
+                  <p className="text-base font-black tabular-nums text-amber-800">3.50–3.75%</p>
+                  <p className="text-[9px] text-amber-600 mt-0.5">today</p>
+                </div>
+                <span className="text-amber-400 text-lg font-black flex-shrink-0">→</span>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700 mb-0.5">Expected year-end</p>
+                  <p className="text-base font-black tabular-nums text-amber-800">3.00–3.50%</p>
+                  <p className="text-[9px] text-amber-600 mt-0.5">−{_fedCutBps} bps</p>
+                </div>
+              </div>
             </div>
             <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
