@@ -6729,7 +6729,7 @@ function AdvisorBriefView({
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#1d4ed8" }}>
                       <Wallet className="w-3.5 h-3.5 text-white/80" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Operating Cash</span>
-                      <span className="text-[13px] font-black tabular-nums text-white/90 mt-0.5">90,879</span>
+                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">90,879</span>
                     </div>
                     <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-4 bg-blue-50/60" data-testid="flow-row-ops-jan">
@@ -7466,10 +7466,10 @@ export default function ClientDashboard() {
                 <button
                   key={tab}
                   onClick={() => setFinancialsTab(tab)}
-                  className={`px-5 py-2.5 text-[11px] font-bold tracking-wide border-b-2 -mb-px transition-colors ${
+                  className={`px-6 py-2.5 text-sm font-bold tracking-wide rounded-lg transition-colors ${
                     isActive
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-transparent text-muted-foreground hover:bg-slate-100 hover:text-foreground"
                   }`}
                 >
                   {label}
