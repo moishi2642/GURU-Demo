@@ -6298,8 +6298,11 @@ function AdvisorBriefView({
   // ── Liquidity calcs — aligned with GURU tab ──
   const { totalLiquid: _abvTotalLiquid } = cashBuckets(assets);
   const _abvForecast = buildForecast(cashFlows);
+  // trough is the minimum cumulative net cash flow (usually negative, meaning cash goes into deficit)
   const cashTroughAbv = Math.min(..._abvForecast.map((d) => d.cumulative));
-  const guruReserveTarget = cashTroughAbv;
+  // buffer = how much cash you need to hold to cover the worst cumulative shortfall
+  const cashTroughBuffer = Math.max(0, -cashTroughAbv);
+  const guruReserveTarget = cashTroughBuffer;
   // reserveItems = idle bank cash (checking + savings + MM), excluding Fidelity brokerage sweep
   const reserveItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().match(/checking|savings|money market|mm|sweep/) && !(a.description ?? "").toLowerCase().includes("fidelity"),
@@ -6314,7 +6317,7 @@ function AdvisorBriefView({
     return true;
   });
   const _nonTreasuryCash = _dedupedReserveItems.reduce((s, a) => s + Number(a.value), 0);
-  const cashExcess = Math.max(0, _nonTreasuryCash - cashTroughAbv);
+  const cashExcess = Math.max(0, _nonTreasuryCash - cashTroughBuffer);
   const brokerageCashItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"),
   );
@@ -7802,7 +7805,7 @@ export default function ClientDashboard() {
             <CashFlowTicker cashFlows={cashFlows} />
           </div>
 
-          <div className="grid grid-cols-[3fr_2fr] gap-4 items-start">
+          <div className="grid grid-cols-2 gap-4 items-start">
             <BrokeragePanel assets={assets} />
             <LiabilitiesPanel liabilities={liabilities} />
           </div>
