@@ -6639,9 +6639,8 @@ function AdvisorBriefView({
         {/* ── Card 4: Account Cash Movements ── */}
         {(() => {
           return (
-            <div className="col-span-2">
             <div
-              className={`rounded-2xl border bg-card shadow-sm transition-all ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
+              className={`rounded-2xl border bg-card shadow-sm transition-all flex flex-col ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
               style={{ borderTop: "4px solid #0ea5e9" }}
               data-testid="advisor-brief-money-flow-card"
             >
@@ -6790,7 +6789,6 @@ function AdvisorBriefView({
                 <span className="text-[11px] font-bold text-sky-700 flex items-center gap-1">Open Money Movement <ArrowUpRight className="w-3.5 h-3.5" /></span>
               </div>
             </div>
-            </div>
           );
         })()}
 
@@ -6805,7 +6803,7 @@ function AdvisorBriefView({
           const activeObl = OBLIGATIONS.find((o) => o.id === wireModalId);
 
           return (
-          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden col-span-2">
+          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
             {/* Header */}
             <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #7c3aed" }}>
               <div className="flex items-center gap-3">
