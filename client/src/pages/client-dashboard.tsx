@@ -6277,34 +6277,25 @@ function AdvisorBriefView({
 }) {
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
-  // ── Liquidity calcs ──
+  // ── Liquidity calcs — aligned with GURU tab ──
+  const { totalLiquid: _abvTotalLiquid } = cashBuckets(assets);
+  const _abvForecast = buildForecast(cashFlows);
+  const cashTroughAbv = computeTrough(_abvForecast);
+  const cashExcess = Math.max(0, _abvTotalLiquid - cashTroughAbv);
+  const guruReserveTarget = cashTroughAbv;
   const reserveItems = assets.filter(
-    (a) => a.type === "cash" && (a.description ?? "").toLowerCase().match(/checking|savings|money market|mm|sweep/),
+    (a) => a.type === "cash" && (a.description ?? "").toLowerCase().match(/checking|savings|money market|mm|sweep/) && !(a.description ?? "").toLowerCase().includes("fidelity"),
   );
   const brokerageCashItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"),
   );
-  const reserveTotal = reserveItems.reduce((s, a) => s + Number(a.value), 0);
   const brokerageCashTotal = brokerageCashItems.reduce((s, a) => s + Number(a.value), 0);
-  const monthlyExpenses = cashFlows
-    .filter((cf) => cf.type === "outflow")
-    .reduce((map, cf) => {
-      const mo = new Date(cf.date).getMonth();
-      map.set(mo, (map.get(mo) ?? 0) + Number(cf.amount));
-      return map;
-    }, new Map<number, number>());
-  const avgMonthlyExpense =
-    monthlyExpenses.size > 0
-      ? [...monthlyExpenses.values()].reduce((s, v) => s + v, 0) / monthlyExpenses.size
-      : 30600;
-  const guruReserveTarget = avgMonthlyExpense * 3;
-  const cashExcess = Math.max(0, reserveTotal - guruReserveTarget);
   const totalToDeploy = Math.round(brokerageCashTotal + cashExcess);
 
   // ── Yield calcs ──
   const _currentLiquidYield = 1.4;
   const _guruLiquidYield = 2.7;
-  const liquidHero = reserveTotal + brokerageCashTotal;
+  const liquidHero = _abvTotalLiquid + brokerageCashTotal;
   const _yieldPickupAnnual = Math.round(liquidHero * ((_guruLiquidYield - _currentLiquidYield) / 100));
   const bpsPickup = Math.round((_guruLiquidYield - _currentLiquidYield) * 100);
 
@@ -6619,7 +6610,7 @@ function AdvisorBriefView({
             </div>
             <div className="space-y-1.5">
               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Where it's sitting</p>
-              {[...reserveItems, ...brokerageCashItems].slice(0, 5).map((a) => (
+              {[...reserveItems, ...brokerageCashItems.filter(a => !(a.description ?? "").toLowerCase().includes("fidelity"))].slice(0, 5).map((a) => (
                 <div key={a.id} className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
