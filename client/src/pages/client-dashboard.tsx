@@ -6746,12 +6746,12 @@ function AdvisorBriefView({
                   <div className="flex items-center" style={{ minHeight: 44, paddingLeft: 'calc(9rem + 0.75rem)' }}>
                     <div className="group relative flex items-center gap-2.5 cursor-default" style={{ marginLeft: 28 + 12 }}>
                       <svg width="14" height="44" className="flex-shrink-0 overflow-visible">
-                        <path d="M 7,42 L 7,2" stroke="#d97706" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
-                        <circle r="3.5" fill="#f59e0b" opacity="0.92">
+                        <path d="M 7,42 L 7,2" stroke="#2563eb" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
+                        <polygon points="0,-5 4.5,3 -4.5,3" fill="#2563eb" opacity="0.95">
                           <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 7,42 L 7,2" />
-                        </circle>
+                        </polygon>
                       </svg>
-                      <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm">
+                      <span className="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-300 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm">
                         ↑ $46,739 · JPMorgan → CIT
                       </span>
                       <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
@@ -6795,9 +6795,9 @@ function AdvisorBriefView({
                       <div className="group relative flex items-center gap-2.5 cursor-default py-1 px-3">
                         <svg width="14" height="32" className="flex-shrink-0 overflow-visible">
                           <path d="M 7,30 L 7,2" stroke="#d97706" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
-                          <circle r="3" fill="#f59e0b" opacity="0.92">
+                          <polygon points="0,-4 4,3 -4,3" fill="#f59e0b" opacity="0.95">
                             <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 7,30 L 7,2" />
-                          </circle>
+                          </polygon>
                         </svg>
                         <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm">
                           ↑ $7,478 · T-Bill → JPMorgan
