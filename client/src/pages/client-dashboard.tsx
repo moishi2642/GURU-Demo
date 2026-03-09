@@ -7552,7 +7552,7 @@ export default function ClientDashboard() {
   }[] = [
     { key: "advisorbrief", label: "Advisor Brief", icon: ClipboardList, activeCls: "bg-rose-600 text-white shadow-sm", inactiveCls: "text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200" },
     { key: "dashboard", label: "Kessler Dashboard", icon: LayoutDashboard },
-    { key: "financials", label: "Client Financials & Forecast", icon: FileText },
+    { key: "financials", label: "Kessler Financials & Forecast", icon: FileText },
     { key: "guru", label: "GURU Allocation", icon: PieChartIcon },
     { key: "moneymovement", label: "Money Movement", icon: ArrowLeftRight },
     { key: "bookofbusiness", label: "Book of Business", icon: Users2, activeCls: "bg-slate-800 text-white shadow-sm", inactiveCls: "text-slate-600 hover:text-foreground hover:bg-secondary/60" },
@@ -7727,7 +7727,33 @@ export default function ClientDashboard() {
       )}
       {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
       {activeView === "guru" && (
-        <GuruAllocationView
+        <div className="space-y-4">
+          <div className="rounded-xl overflow-hidden border border-violet-200 shadow-sm" data-testid="guru-ai-banner">
+            <div className="bg-gradient-to-r from-violet-700 via-indigo-700 to-blue-700 px-6 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                  <BrainCircuit className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-black text-white tracking-wide leading-none">Personalized GURU AI</p>
+                  <p className="text-[10px] text-violet-200 mt-0.5 leading-none">Intelligent cash allocation engine · Kessler household profile</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-5">
+                {[
+                  { label: "Model", value: "GPT-5" },
+                  { label: "Last Run", value: "Mar 6, 2026" },
+                  { label: "Confidence", value: "94%" },
+                ].map((s) => (
+                  <div key={s.label} className="text-right">
+                    <p className="text-[9px] font-bold text-violet-300 uppercase tracking-widest leading-none">{s.label}</p>
+                    <p className="text-[12px] font-black text-white leading-tight mt-0.5">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <GuruAllocationView
           assets={assets}
           cashFlows={cashFlows}
           opsCashMonths={opsCashMonths}
@@ -7737,17 +7763,45 @@ export default function ClientDashboard() {
           bucketProductSelections={bucketProductSelections}
           setBucketProductSelections={setBucketProductSelections}
         />
+        </div>
       )}
       {/* ── Money Movement View ─────────────────────────────────────────────────── */}
       {activeView === "moneymovement" && (
-        <MoneyMovementView
-          assets={assets}
-          cashFlows={cashFlows}
-          opsCashMonths={opsCashMonths}
-          clientName={client.name}
-          pendingTransfers={pendingTransfers}
-          bucketProductSelections={bucketProductSelections}
-        />
+        <div className="space-y-4">
+          <div className="rounded-xl overflow-hidden border border-violet-200 shadow-sm" data-testid="money-movement-ai-banner">
+            <div className="bg-gradient-to-r from-violet-700 via-indigo-700 to-blue-700 px-6 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                  <BrainCircuit className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-black text-white tracking-wide leading-none">Personalized GURU AI</p>
+                  <p className="text-[10px] text-violet-200 mt-0.5 leading-none">Intelligent cash movement engine · Kessler household profile</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-5">
+                {[
+                  { label: "Model", value: "GPT-5" },
+                  { label: "Last Run", value: "Mar 6, 2026" },
+                  { label: "Confidence", value: "94%" },
+                ].map((s) => (
+                  <div key={s.label} className="text-right">
+                    <p className="text-[9px] font-bold text-violet-300 uppercase tracking-widest leading-none">{s.label}</p>
+                    <p className="text-[12px] font-black text-white leading-tight mt-0.5">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <MoneyMovementView
+            assets={assets}
+            cashFlows={cashFlows}
+            opsCashMonths={opsCashMonths}
+            clientName={client.name}
+            pendingTransfers={pendingTransfers}
+            bucketProductSelections={bucketProductSelections}
+          />
+        </div>
       )}
       {/* ── Book of Business View ────────────────────────────────────────────────── */}
       {activeView === "bookofbusiness" && <BookOfBusinessView />}
