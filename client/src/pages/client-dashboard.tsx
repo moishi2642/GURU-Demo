@@ -6111,7 +6111,7 @@ function AdvisorBriefView({
       );
     if (checked.has("cashflow"))
       paras.push(
-        `I also wanted to give you a quick heads-up on some cash movements GURU will be making on your behalf over the next two months:\n\n• Operating: In March, $47,126 will transfer from your Reserve money market into your operating checking to cover the Q1 tax payment and spring tuition — rebuilding your 2-month expense buffer. A smaller draw of $6,126 will follow in April.\n\n• Reserve: Your 3-month T-bill matures in late March — those $41,877 in proceeds will stay in your JPM Money Market Fund as a liquidity buffer, keeping your Reserve well-positioned to fund any further operating draws through spring.\n\n• Build: Your Build account is holding flat at approximately $194,000, earning around 4.75% passively. No changes are planned here — this account remains earmarked as long-term savings toward the home upgrade when you're ready to move forward.`,
+        `I also wanted to give you a heads-up on some account movements we will be making on your behalf over the next two months:\n\n• In March, $47,126 will move from your Reserve Money Market into your Operating Checking Account to cover the Q1 tax payment and spring tuition — this rebuilds your two-month expense buffer of $41,878.\n\n• A smaller draw of $6,126 will follow in April to cover that month's operating shortfall.\n\n• Separately, your 3-Month Treasury Bill matures on March 31st — those $41,877 in proceeds will stay in your Reserve Money Market as a liquidity buffer, keeping it ready to fund operations through the spring.\n\n• Your Build Account is holding flat at approximately $194,000, earning around 4.75% passively. No changes are planned — this account remains earmarked as long-term savings toward the home upgrade when you are ready to move forward.`,
       );
     if (paras.length === 0)
       paras.push("We wanted to check in and share a few items we've been working through on your behalf.");
@@ -6398,149 +6398,98 @@ function AdvisorBriefView({
           </div>
         </div>
 
-        {/* ── Card 4: GURU Cash Movements — Next 60 Days ── */}
+        {/* ── Card 4: Account Cash Movements ── */}
         {(() => {
-          const OPS_MARCH  = 47126;   // Reserve → Ops (Q1 tax + tuition month)
-          const OPS_APRIL  =  6126;   // Reserve → Ops (April shortfall)
-          const TBILL_MAT  = 41877;   // 3-mo T-bill matures end of March → stays in JPM MMF
-          const OPS_TARGET = 41878;   // 2 months × $20,939 recurring expenses
-          const BUILD_BAL  = 194384;  // Build account balance (flat)
-          const RSV_AFTER  = 109323 - OPS_MARCH + TBILL_MAT - OPS_APRIL; // ~96,948 end of April
-
-          const buckets = [
+          const moves = [
             {
-              key:       "op",
-              label:     "Operating",
-              color:     "#d97706",
-              iconBg:    "bg-amber-100",
-              icon:      Wallet,
-              narrative: "GURU draws from Reserve to rebuild 2-month expense coverage after Q1 tax & tuition",
-              moves: [
-                { month: "Mar", label: "Reserve → Ops Checking", detail: "Q1 tax + spring tuition month", amount: OPS_MARCH, dir: "in"  as const },
-                { month: "Apr", label: "Reserve → Ops Checking", detail: "April operating shortfall",      amount: OPS_APRIL,  dir: "in"  as const },
-              ],
-              footer:    `2-month ops target: ${fmt(OPS_TARGET)}`,
-              footerSub: "Citizens Private Banking Checking",
-              noChange:  false,
+              when:   "March 31",
+              from:   "Treasury Bill (maturing)",
+              to:     "Reserve Money Market",
+              amount: 41877,
+              note:   "Bill matures — proceeds held as liquid reserve",
+              color:  "sky" as const,
             },
             {
-              key:       "rsv",
-              label:     "Reserve",
-              color:     "#0ea5e9",
-              iconBg:    "bg-sky-100",
-              icon:      Database,
-              narrative: "3-mo T-bill matures late March — proceeds stay in JPM MMF as liquidity buffer to keep funding Operating draws",
-              moves: [
-                { month: "Mar 31", label: "T-Bill matures → JPM MMF",  detail: "3-mo T-bill ****3MO → held in Reserve MMF", amount: TBILL_MAT, dir: "in"  as const },
-                { month: "Mar",    label: "JPM MMF → Ops Checking",     detail: "Funding March operating deficit",           amount: OPS_MARCH, dir: "out" as const },
-                { month: "Apr",    label: "JPM MMF → Ops Checking",     detail: "Funding April operating deficit",           amount: OPS_APRIL, dir: "out" as const },
-              ],
-              footer:    `~${fmt(RSV_AFTER)} projected end of April`,
-              footerSub: "JPMorgan MMF · Citizens MM · CapOne 360",
-              noChange:  false,
+              when:   "March",
+              from:   "Reserve Money Market",
+              to:     "Operating Checking",
+              amount: 47126,
+              note:   "Rebuilding 2-month expense cushion after Q1 tax and tuition",
+              color:  "amber" as const,
             },
             {
-              key:       "bld",
-              label:     "Build",
-              color:     "#7c3aed",
-              iconBg:    "bg-violet-100",
-              icon:      Lock,
-              narrative: "Holding flat — earmarked as long-term savings toward home upgrade. Earning passively, no changes planned.",
-              moves:     [] as Array<{ month: string; label: string; detail: string; amount: number; dir: "in" | "out" }>,
-              footer:    `${fmt(BUILD_BAL)} balance · earning ~4.75%`,
-              footerSub: "Earmarked: home upgrade · no changes planned",
-              noChange:  true,
+              when:   "April",
+              from:   "Reserve Money Market",
+              to:     "Operating Checking",
+              amount: 6126,
+              note:   "Covering April shortfall",
+              color:  "amber" as const,
             },
           ];
-
+          const colorMap = {
+            sky:   { row: "bg-sky-50",   dot: "bg-sky-400",   amt: "text-sky-700"   },
+            amber: { row: "bg-amber-50", dot: "bg-amber-400", amt: "text-amber-700" },
+          };
           return (
             <div
               className={`rounded-2xl border bg-card shadow-sm overflow-hidden col-span-2 transition-all ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
               style={{ borderTop: "4px solid #0ea5e9" }}
               data-testid="advisor-brief-money-flow-card"
             >
-              {/* Card checkbox header */}
+              {/* Checkbox header */}
               <div className="px-6 pt-5 pb-4 border-b border-border">
                 <CardCheckHeader
                   cardKey="cashflow"
                   color="#0ea5e9"
                   icon={CalendarClock}
                   badge="Cash Management"
-                  priority="Next 60 Days"
-                  title="GURU Cash Movements — March & April"
-                  subtitle="Inter-account movements only · Reserve → Operating → Build"
+                  priority="March · April"
+                  title="Account Cash Movements"
+                  subtitle="What moves between accounts over the next 60 days"
                 />
               </div>
 
-              {/* 3-bucket panels */}
-              <div className="grid grid-cols-3 divide-x divide-border">
-                {buckets.map((b) => {
-                  const Icon = b.icon;
+              {/* Movement rows */}
+              <div className="divide-y divide-border">
+                {moves.map((m, i) => {
+                  const c = colorMap[m.color];
                   return (
-                    <div key={b.key} className="flex flex-col">
-                      {/* Bucket label */}
-                      <div className="px-5 py-3 flex items-center gap-2.5 border-b border-border bg-slate-50/40">
-                        <div className={`w-7 h-7 rounded-lg ${b.iconBg} flex items-center justify-center flex-shrink-0`}>
-                          <Icon className="w-3.5 h-3.5" style={{ color: b.color }} />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: b.color }}>{b.label}</span>
+                    <div key={i} className={`flex items-center gap-5 px-6 py-4 ${c.row}`} data-testid={`flow-row-${i}`}>
+                      <div className="w-16 flex-shrink-0">
+                        <p className="text-[11px] font-black text-foreground">{m.when}</p>
                       </div>
-
-                      {/* Narrative */}
-                      <div className="px-5 py-3 border-b border-border bg-slate-50/20">
-                        <p className="text-[11px] text-muted-foreground leading-relaxed italic">{b.narrative}</p>
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground">
+                          {m.from} <span className="text-muted-foreground font-normal">→</span> {m.to}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{m.note}</p>
                       </div>
-
-                      {/* Movement rows */}
-                      <div className="px-5 py-3 space-y-2 flex-1">
-                        {b.noChange ? (
-                          <div className="flex items-center gap-2 py-3">
-                            <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                              <Check className="w-3 h-3 text-slate-400" />
-                            </div>
-                            <span className="text-[11px] text-muted-foreground">No movements this period</span>
-                          </div>
-                        ) : (
-                          b.moves.map((m, i) => (
-                            <div
-                              key={i}
-                              className={`rounded-lg border px-3 py-2.5 flex items-start gap-2.5 ${m.dir === "in" ? "bg-emerald-50/60 border-emerald-200" : "bg-amber-50/60 border-amber-200"}`}
-                              data-testid={`flow-move-${b.key}-${i}`}
-                            >
-                              <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${m.dir === "in" ? "bg-emerald-200" : "bg-amber-200"}`}>
-                                <ArrowLeftRight className="w-2.5 h-2.5" style={{ color: m.dir === "in" ? "#059669" : "#d97706" }} />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">{m.month}</span>
-                                  <span className={`text-[11px] font-black tabular-nums ${m.dir === "in" ? "text-emerald-700" : "text-amber-700"}`}>
-                                    {m.dir === "in" ? "+" : "−"}{fmt(m.amount)}
-                                  </span>
-                                </div>
-                                <p className="text-[10px] font-semibold text-foreground mt-0.5 leading-snug">{m.label}</p>
-                                <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">{m.detail}</p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      {/* Balance footer */}
-                      <div className="px-5 py-3 border-t border-border bg-slate-50/40">
-                        <p className="text-[10px] font-black text-foreground tabular-nums">{b.footer}</p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5">{b.footerSub}</p>
-                      </div>
+                      <p className={`text-base font-black tabular-nums flex-shrink-0 ${c.amt}`}>{fmt(m.amount)}</p>
                     </div>
                   );
                 })}
+
+                {/* Build Account — no movement */}
+                <div className="flex items-center gap-5 px-6 py-4 bg-slate-50" data-testid="flow-row-build">
+                  <div className="w-16 flex-shrink-0">
+                    <p className="text-[11px] font-black text-foreground">Ongoing</p>
+                  </div>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0 bg-violet-300" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">Build Account — no movement</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Holding $194,384 as savings toward home upgrade · earning ~4.75%</p>
+                  </div>
+                  <p className="text-base font-black tabular-nums flex-shrink-0 text-violet-600">$194,384</p>
+                </div>
               </div>
 
-              {/* Footer CTA */}
+              {/* Footer */}
               <div
-                className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-sky-50/40 cursor-pointer hover:bg-sky-50 transition-colors"
+                className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-slate-50/60 cursor-pointer hover:bg-slate-100 transition-colors"
                 onClick={() => onNavigate("moneymovement")}
               >
-                <span className="text-[10px] text-muted-foreground">View full GURU allocation model and money movement waterfall</span>
+                <span className="text-[10px] text-muted-foreground">View full money movement detail</span>
                 <span className="text-[11px] font-bold text-sky-700 flex items-center gap-1">Open Money Movement <ArrowUpRight className="w-3.5 h-3.5" /></span>
               </div>
             </div>
@@ -7116,112 +7065,73 @@ export default function ClientDashboard() {
             <LiabilitiesPanel liabilities={liabilities} />
           </div>
 
-          {/* ── Money Flow: Next Month Outlook + Incoming Revenue ──────────── */}
+          {/* ── Upcoming Cash Movements strip ──────────────────────────────── */}
           {(() => {
-            // April outlook numbers
-            const aprInflows  = 18814 + 22500 + 621;   // salary + RSU vest + muni interest
-            const aprOutflows = 15000 + 30000 + 20939;  // tuition + Q1 tax + regular ops
-            const aprNet      = aprInflows - aprOutflows;
-            const typicalNet  = 18814 - 20939;           // normal month: salary minus ops
-            const aprVsTypical = aprNet - typicalNet;    // how much worse/better vs average
-
-            // Upcoming income-generating events (next 4 months)
-            const INCOME_EVENTS = [
-              { date: new Date(2026, 3,  8), label: "Salary Allocation",       detail: "Cresset Capital → Checking",         amount:  18814, type: "income"   as const, icon: Wallet    },
-              { date: new Date(2026, 3, 12), label: "RSU Vesting",             detail: "Cresset Equity Plan → Brokerage",    amount:  22500, type: "capital"  as const, icon: BadgeCheck },
-              { date: new Date(2026, 3, 18), label: "Muni Bond Interest",      detail: "Build Account — semi-annual coupon", amount:    621, type: "interest" as const, icon: Activity  },
-              { date: new Date(2026, 4, 20), label: "Portfolio Dividends",     detail: "Schwab · E*Trade → Brokerage",       amount:   2847, type: "capital"  as const, icon: TrendingUp },
-              { date: new Date(2026, 5, 22), label: "Capital Distribution",    detail: "Cresset Multi-Strategy → Reserve",   amount:  28400, type: "capital"  as const, icon: TrendingUp },
-              { date: new Date(2026, 6, 15), label: "T-Bill Matures (Jul)",    detail: "3-mo T-Bill $65K @ 4.95% → Reserve", amount:  65000, type: "tbill"   as const, icon: BarChart2  },
+            const FLOW_EVENTS = [
+              { date: new Date(2026, 3,  1), label: "Spring Tuition",            detail: "Chase → Dalton School",          amount: -15000, type: "obligation" as const, icon: GraduationCap },
+              { date: new Date(2026, 3,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
+              { date: new Date(2026, 3, 15), label: "Q1 Estimated Tax",          detail: "Citizens → IRS (EFTPS)",         amount: -30000, type: "obligation" as const, icon: Building2     },
+              { date: new Date(2026, 3, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -6126, type: "transfer"   as const, icon: Repeat2       },
+              { date: new Date(2026, 4,  8), label: "Income Allocation",         detail: "Cresset → Citizens Checking",    amount:  18814, type: "income"     as const, icon: Wallet        },
+              { date: new Date(2026, 4, 15), label: "GURU Reserve Draw",         detail: "Citizens MM → Operating",        amount:  -3126, type: "transfer"   as const, icon: Repeat2       },
             ];
-
-            const typeStyle = (type: string) => {
-              if (type === "capital")  return { clr: "#10b981", amtCls: "text-emerald-700", iconBg: "bg-emerald-100", badge: "bg-emerald-50 border-emerald-200 text-emerald-700" };
-              if (type === "tbill")    return { clr: "#0ea5e9", amtCls: "text-sky-700",     iconBg: "bg-sky-100",     badge: "bg-sky-50 border-sky-200 text-sky-700" };
-              if (type === "interest") return { clr: "#8b5cf6", amtCls: "text-violet-700",  iconBg: "bg-violet-100",  badge: "bg-violet-50 border-violet-200 text-violet-700" };
-              return { clr: "#6366f1", amtCls: "text-indigo-600", iconBg: "bg-indigo-100", badge: "bg-indigo-50 border-indigo-200 text-indigo-600" };
-            };
-
+            const next45 = FLOW_EVENTS.filter(f => f.date >= DEMO_NOW && f.date <= new Date(DEMO_NOW.getTime() + 45 * 86400000));
+            const totalNetFlow = next45.reduce((s, f) => s + f.amount, 0);
             return (
               <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid="dashboard-money-flow-panel">
-                {/* Card header */}
-                <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+                <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
                       <CalendarClock className="w-3.5 h-3.5 text-sky-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-black text-foreground leading-none">Income &amp; Cash Flow</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Next month outlook · Upcoming revenue sources</p>
+                      <p className="text-sm font-black text-foreground leading-none">Upcoming Cash Movements</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Next 45 days · GURU managed</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setActiveView("moneymovement")}
-                    className="text-[10px] font-bold text-sky-600 hover:text-sky-500 flex items-center gap-1 transition-colors"
-                    data-testid="dashboard-money-flow-link"
-                  >
-                    Full view <ArrowUpRight className="w-3 h-3" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-[5fr_7fr] divide-x divide-border">
-                  {/* LEFT: April Outlook scorecard */}
-                  <div className="px-5 py-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">April Outlook</p>
-                      <span className="text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-rose-50 border-rose-200 text-rose-700">
-                        Heavy Month
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">Total inflows</span>
-                        <span className="text-[12px] font-black tabular-nums text-emerald-600">+{fmt(aprInflows)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">Total outflows</span>
-                        <span className="text-[12px] font-black tabular-nums text-rose-600">−{fmt(aprOutflows)}</span>
-                      </div>
-                      <div className="border-t border-border pt-2 flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-foreground">Net</span>
-                        <span className={`text-[13px] font-black tabular-nums ${aprNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                          {aprNet >= 0 ? "+" : "−"}{fmt(Math.abs(aprNet))}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="rounded-lg bg-rose-50 border border-rose-100 px-3 py-2">
-                      <p className="text-[10px] text-rose-700 leading-snug">
-                        Q1 tax + spring tuition make April{" "}
-                        <span className="font-black">{fmt(Math.abs(aprVsTypical))} worse</span>{" "}
-                        than a typical month. RSU vest partially offsets.
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className={`text-xs font-black tabular-nums ${totalNetFlow >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {totalNetFlow >= 0 ? "+" : "−"}{fmt(Math.abs(totalNetFlow))}
                       </p>
+                      <p className="text-[9px] text-muted-foreground">45-day net</p>
                     </div>
+                    <button
+                      onClick={() => setActiveView("moneymovement")}
+                      className="text-[10px] font-bold text-sky-600 hover:text-sky-500 flex items-center gap-1 transition-colors"
+                      data-testid="dashboard-money-flow-link"
+                    >
+                      Full view <ArrowUpRight className="w-3 h-3" />
+                    </button>
                   </div>
-
-                  {/* RIGHT: Upcoming income sources */}
-                  <div className="divide-y divide-border">
-                    <div className="px-4 py-2 bg-slate-50/60">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Upcoming Revenue Sources · Apr–Jul</p>
-                    </div>
-                    {INCOME_EVENTS.map((ev, i) => {
-                      const Icon = ev.icon;
-                      const s = typeStyle(ev.type);
-                      const monthLabel = format(ev.date, "MMM d");
-                      return (
-                        <div key={i} className="flex items-center gap-3 px-4 py-2.5" data-testid={`dash-income-event-${i}`}>
-                          <span className="text-[9px] font-black text-muted-foreground tabular-nums w-9 flex-shrink-0">{monthLabel}</span>
-                          <div className={`w-5 h-5 rounded-md ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
-                            <Icon className="w-2.5 h-2.5" style={{ color: s.clr }} />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border">
+                  {next45.map((ev, i) => {
+                    const Icon = ev.icon;
+                    const isIn  = ev.amount > 0;
+                    const isTx  = ev.type === "transfer";
+                    const clr   = isIn ? "#10b981" : isTx ? "#d97706" : "#f43f5e";
+                    const amtCls = isIn ? "text-emerald-600" : isTx ? "text-amber-600" : "text-rose-600";
+                    const bgCls  = isIn ? "bg-emerald-50/50" : isTx ? "bg-amber-50/50" : "bg-rose-50/50";
+                    const iconBg = isIn ? "bg-emerald-100" : isTx ? "bg-amber-100" : "bg-rose-100";
+                    return (
+                      <div key={i} className={`px-4 py-3.5 flex flex-col gap-2 ${bgCls}`} data-testid={`dash-flow-event-${i}`}>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{format(ev.date, "MMM d")}</span>
+                          <div className={`w-5 h-5 rounded-md ${iconBg} flex items-center justify-center flex-shrink-0`}>
+                            <Icon className="w-2.5 h-2.5" style={{ color: clr }} />
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-bold text-foreground leading-none truncate">{ev.label}</p>
-                            <p className="text-[9px] text-muted-foreground mt-0.5 truncate">{ev.detail}</p>
-                          </div>
-                          <span className={`text-[11px] font-black tabular-nums flex-shrink-0 ${s.amtCls}`}>+{fmt(ev.amount)}</span>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div>
+                          <p className="text-[11px] font-bold text-foreground leading-snug">{ev.label}</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 leading-snug">{ev.detail}</p>
+                        </div>
+                        <p className={`text-sm font-black tabular-nums ${amtCls}`}>
+                          {isIn ? "+" : "−"}{fmt(Math.abs(ev.amount))}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
