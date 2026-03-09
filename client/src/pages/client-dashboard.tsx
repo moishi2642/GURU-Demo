@@ -6740,33 +6740,6 @@ function AdvisorBriefView({
                     </div>
                   </div>
 
-                  {/* ── Connector: Reserve autodraw → Ops ── */}
-                  <div className="flex items-center gap-3 py-1">
-                    <div className="w-36 flex-shrink-0 flex flex-col items-center justify-center gap-0.5">
-                      <div className="relative overflow-hidden rounded-full" style={{ width: 2, height: 10, backgroundColor: "rgba(217,119,6,0.25)" }}>
-                        <motion.div
-                          className="absolute left-1/2 -translate-x-1/2 rounded-full"
-                          style={{ width: 7, height: 7, marginLeft: -2.5, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
-                          animate={{ top: ["100%", "-8px"] }}
-                          transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-                        />
-                      </div>
-                      <div className="rounded-lg px-2.5 py-1.5 flex flex-col items-center gap-0.5" style={{ background: "#d97706" }}>
-                        <span className="text-[15px] font-black tabular-nums text-white leading-none" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>$5,816</span>
-                        <span className="text-[7px] font-bold text-amber-100 uppercase tracking-wider leading-none">/ mo</span>
-                      </div>
-                      <div className="relative overflow-hidden rounded-full" style={{ width: 2, height: 10, backgroundColor: "rgba(217,119,6,0.25)" }}>
-                        <motion.div
-                          className="absolute left-1/2 -translate-x-1/2 rounded-full"
-                          style={{ width: 7, height: 7, marginLeft: -2.5, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
-                          animate={{ top: ["100%", "-8px"] }}
-                          transition={{ duration: 2.5, repeat: Infinity, ease: "linear", delay: 1.25 }}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1" />
-                  </div>
-
                   {/* ── Reserve row ── */}
                   <div className="flex items-stretch gap-3" data-testid="flow-col-reserve">
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-2 py-4" style={{ background: "#d97706" }}>
