@@ -6728,7 +6728,7 @@ function AdvisorBriefView({
                   <div className="flex items-stretch gap-3" data-testid="flow-col-ops">
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#1d4ed8" }}>
                       <Wallet className="w-3.5 h-3.5 text-white/80" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Operating Cash</span>
+                      <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Operating Cash</span>
                       <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">90,879</span>
                     </div>
                     <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
