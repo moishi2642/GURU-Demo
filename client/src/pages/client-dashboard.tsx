@@ -6667,30 +6667,28 @@ function AdvisorBriefView({
 
               {/* ── Org-chart flow diagram ── */}
               <div className="px-6 py-5 bg-slate-50/40">
-                <div className="relative" style={{ height: 248 }}>
-                  {/* SVG connector lines — viewBox 0 0 100 100 maps to container size */}
+                <div className="relative" style={{ height: 320 }}>
+                  {/* SVG connector lines — viewBox 0 0 100 100, container 320px tall */}
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <defs>
                       <marker id="flow-arr" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto">
                         <path d="M0,0 L0,5 L5,2.5 z" fill="#6366f1" />
                       </marker>
                     </defs>
-                    {/* Horizontal spine: Ops right edge → Reserve left edge */}
-                    <line x1="31" y1="16" x2="35" y2="16" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Horizontal spine: Reserve right edge → Build left edge */}
-                    <line x1="65" y1="16" x2="69" y2="16" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Horizontal spine: Ops right → Reserve left */}
+                    <line x1="31" y1="9" x2="35" y2="9" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Horizontal spine: Reserve right → Build left */}
+                    <line x1="65" y1="9" x2="69" y2="9" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Flow arrow: Reserve → Ops (autodraw), dashed indigo */}
-                    <path d="M 35,13 L 31.5,13" stroke="#6366f1" strokeWidth="0.9" strokeDasharray="1.5,1" fill="none" markerEnd="url(#flow-arr)" />
+                    <path d="M 35,7 L 31.5,7" stroke="#6366f1" strokeWidth="0.9" strokeDasharray="1.5,1" fill="none" markerEnd="url(#flow-arr)" />
                     {/* Vertical drop: Ops bucket → Ops account */}
-                    <line x1="16" y1="32" x2="16" y2="56" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Vertical drop: Reserve → branch point */}
-                    <line x1="50" y1="32" x2="50" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Branch left → JPMorgan */}
-                    <polyline points="50,44 40,44 40,56" stroke="#cbd5e1" strokeWidth="0.7" fill="none" />
-                    {/* Branch right → T-Bill */}
-                    <polyline points="50,44 60,44 60,56" stroke="#cbd5e1" strokeWidth="0.7" fill="none" />
+                    <line x1="16" y1="18" x2="16" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Vertical drop: Reserve bucket → JPMorgan */}
+                    <line x1="50" y1="18" x2="50" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* JPMorgan → T-Bill (stacked) */}
+                    <line x1="50" y1="68" x2="50" y2="71" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Vertical drop: Build bucket → Build account */}
-                    <line x1="84" y1="32" x2="84" y2="56" stroke="#cbd5e1" strokeWidth="0.7" />
+                    <line x1="84" y1="18" x2="84" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
                   </svg>
 
                   {/* ── ROW 1: Bucket nodes ── */}
@@ -6744,22 +6742,22 @@ function AdvisorBriefView({
                   </div>
 
                   {/* Under Reserve: JPMorgan MMF */}
-                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 140, width: "14%" }} data-testid="flow-row-reserve-autodraw">
+                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 140, width: "29%" }} data-testid="flow-row-reserve-autodraw">
                     <div className="px-2.5 py-2.5">
-                      <p className="text-[9px] font-bold text-amber-900 leading-tight">JPMorgan MMF</p>
-                      <p className="text-[8px] text-amber-700">****2847</p>
+                      <p className="text-[10px] font-bold text-amber-900 leading-tight">JPMorgan 100% Treasury MMF</p>
+                      <p className="text-[9px] text-amber-700">****2847</p>
                       <p className="text-[12px] font-black text-rose-700 mt-1.5 tabular-nums">−$47,126</p>
-                      <p className="text-[8px] text-muted-foreground">autodraw out</p>
+                      <p className="text-[9px] text-muted-foreground">autodraw out · March</p>
                     </div>
                   </div>
 
-                  {/* Under Reserve: T-Bill Ladder */}
-                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "51%", top: 140, width: "14%" }} data-testid="flow-row-reserve-tbill">
+                  {/* Under Reserve: T-Bill Ladder (stacked below JPMorgan) */}
+                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 228, width: "29%" }} data-testid="flow-row-reserve-tbill">
                     <div className="px-2.5 py-2.5">
-                      <p className="text-[9px] font-bold text-amber-900 leading-tight">T-Bill Ladder</p>
-                      <p className="text-[8px] text-amber-700">matures 3/31</p>
+                      <p className="text-[10px] font-bold text-amber-900 leading-tight">T-Bill Ladder</p>
+                      <p className="text-[9px] text-amber-700">matures 3/31</p>
                       <p className="text-[12px] font-black text-slate-700 mt-1.5 tabular-nums">$41,877</p>
-                      <p className="text-[8px] text-muted-foreground">→ stays in MMF</p>
+                      <p className="text-[9px] text-muted-foreground">→ stays in MMF</p>
                     </div>
                   </div>
 
