@@ -4371,7 +4371,7 @@ function MoneyMovementView({
                         <div style={{ position: 'absolute', right: -44, top: '50%', width: 44, height: 2, backgroundColor: 'rgba(217,119,6,0.6)', transform: 'translateY(-50%)' }} />
                         {/* Amount label on the branch connector */}
                         <div style={{ position: 'absolute', right: -42, top: '50%', transform: 'translateY(-120%)', background: '#d97706', borderRadius: 5, padding: '2px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, zIndex: 10 }}>
-                          <span style={{ fontSize: 12, fontWeight: 900, color: 'white', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, textShadow: '0 1px 3px rgba(0,0,0,0.25)', whiteSpace: 'nowrap' }}>$7,478</span>
+                          <span style={{ fontSize: 12, fontWeight: 900, color: 'white', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, textShadow: '0 1px 3px rgba(0,0,0,0.25)', whiteSpace: 'nowrap' }}>{fmtBal(t.balances[sm - 1] ?? 0)}</span>
                           <span style={{ fontSize: 7, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1 }}>proceeds</span>
                         </div>
                         <LedgerCard
