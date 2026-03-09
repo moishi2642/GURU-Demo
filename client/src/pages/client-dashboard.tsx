@@ -4384,12 +4384,21 @@ function MoneyMovementView({
                     {/* Maturing T-bills — each has a branch to the spine */}
                     {maturingTbills.map(t => (
                       <div key={t.label} className="relative mb-2">
-                        {/* Branch from card right edge to spine */}
-                        <div style={{ position: 'absolute', right: -44, top: '50%', width: 44, height: 2, backgroundColor: 'rgba(217,119,6,0.6)', transform: 'translateY(-50%)' }} />
-                        {/* Amount label on the branch connector */}
-                        <div style={{ position: 'absolute', right: -42, top: '50%', transform: 'translateY(-120%)', background: '#d97706', borderRadius: 5, padding: '2px 6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, zIndex: 10 }}>
-                          <span style={{ fontSize: 12, fontWeight: 900, color: 'white', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, textShadow: '0 1px 3px rgba(0,0,0,0.25)', whiteSpace: 'nowrap' }}>{fmtBal(t.balances[sm - 1] ?? 0)}</span>
-                          <span style={{ fontSize: 7, fontWeight: 700, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1 }}>proceeds</span>
+                        {/* Branch from card right edge to spine — animated dot + plain label */}
+                        <div style={{ position: 'absolute', right: -44, top: '50%', width: 44, transform: 'translateY(-50%)', zIndex: 10 }}>
+                          <span style={{ position: 'absolute', top: -16, right: 2, fontSize: 9, fontWeight: 900, color: '#d97706', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                            {fmtBal(t.balances[sm - 1] ?? 0)}
+                          </span>
+                          <span style={{ position: 'absolute', top: -6, right: 2, fontSize: 7, fontWeight: 700, color: '#d97706', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1, opacity: 0.75, whiteSpace: 'nowrap' }}>
+                            proceeds
+                          </span>
+                          <div style={{ position: 'relative', width: '100%', height: 2, overflow: 'hidden', backgroundColor: 'rgba(217,119,6,0.3)' }}>
+                            <motion.div
+                              style={{ position: 'absolute', top: '50%', marginTop: -3, width: 7, height: 7, borderRadius: '50%', backgroundColor: '#d97706', boxShadow: '0 0 5px #d97706' }}
+                              animate={{ left: ['100%', '-8px'] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                            />
+                          </div>
                         </div>
                         <LedgerCard
                           title={`${t.label} — Matured`}
