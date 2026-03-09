@@ -5367,9 +5367,9 @@ function GuruAllocationView({
           ),
           mkRow(
             GURU_BUCKETS_DEF[1],
-            flowCurrent,
+            flowAccts.reduce((s, a) => s + a.value, 0),
             flowTarget,
-            flowDelta,
+            flowTarget - flowAccts.reduce((s, a) => s + a.value, 0),
             "12 months of total anticipated outflows",
             flowAccts,
             2.80, // JPMorgan 100% Treasuries MMF: 4.30% × 65% (federal only)
