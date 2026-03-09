@@ -6717,16 +6717,15 @@ function AdvisorBriefView({
                   <div className="divide-y divide-border/60" style={{ background: "#fffbeb" }}>
                     <FlowRow
                       date="March 31"
-                      label="Proceeds from T-Bill Maturity"
+                      label="T-Bill Maturity — Internal Transfer"
                       amount={41877}
-                      amtColor="text-emerald-700"
+                      amtColor="text-slate-600"
                       from="US Treasury Bill (maturing)"
                       to="JPMorgan 100% Treasury Money Market Fund ****2847"
-                      icon={ArrowUp}
-                      iconBg="bg-emerald-100"
-                      iconColor="text-emerald-600"
+                      icon={ArrowLeftRight}
+                      iconBg="bg-slate-100"
+                      iconColor="text-slate-500"
                       testId="flow-row-reserve-tbill"
-                      sign="+"
                     />
                     <FlowRow
                       date="March"
