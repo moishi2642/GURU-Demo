@@ -6730,30 +6730,37 @@ function AdvisorBriefView({
                       <ShieldCheck className="w-3.5 h-3.5 text-white/80" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Reserve</span>
                     </div>
-                    <div className="flex-1 border border-amber-200 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60 border-b border-amber-100" data-testid="flow-row-reserve-jpm">
-                        <div className="min-w-0 mr-2">
-                          <p className="text-[11px] font-semibold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
-                          <p className="text-[9px] text-amber-600 mt-0.5">Autodraw to Operating</p>
+                    <div className="flex-1 flex items-center gap-0">
+                      {/* T-Bill Ladder card */}
+                      <div className="flex-1 border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-tbill">
+                        <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60">
+                          <div className="min-w-0 mr-2">
+                            <p className="text-[11px] font-semibold text-amber-900 leading-tight">T-Bill Ladder</p>
+                            <p className="text-[9px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo</p>
+                          </div>
+                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$101,458</span>
                         </div>
                       </div>
-                      <div className="relative flex items-center justify-center bg-amber-50/60 border-b border-amber-100 py-1.5 gap-2">
-                        <div className="relative overflow-hidden rounded-full" style={{ width: 2, height: 28, backgroundColor: "rgba(217,119,6,0.25)" }}>
+                      {/* Horizontal animated connector */}
+                      <div className="flex-shrink-0 flex flex-col items-center justify-center px-2" style={{ width: 80 }}>
+                        <span className="text-[8px] font-bold text-amber-600 whitespace-nowrap mb-1">matures →</span>
+                        <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: "rgba(217,119,6,0.25)" }}>
                           <motion.div
-                            className="absolute left-1/2 -translate-x-1/2 rounded-full"
-                            style={{ width: 7, height: 7, marginLeft: -2.5, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
-                            animate={{ top: ["100%", "-8px"] }}
+                            className="absolute top-1/2 -translate-y-1/2 rounded-full"
+                            style={{ width: 7, height: 7, marginTop: -2.5, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
+                            animate={{ left: ["-8px", "100%"] }}
                             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                           />
                         </div>
-                        <span className="text-[8px] font-bold text-amber-600 whitespace-nowrap">matures → JPMorgan</span>
                       </div>
-                      <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60" data-testid="flow-row-reserve-tbill">
-                        <div className="min-w-0 mr-2">
-                          <p className="text-[11px] font-semibold text-amber-900 leading-tight">T-Bill Ladder</p>
-                          <p className="text-[9px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo</p>
+                      {/* JPMorgan card */}
+                      <div className="flex-1 border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-jpm">
+                        <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60">
+                          <div className="min-w-0 mr-2">
+                            <p className="text-[11px] font-semibold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
+                            <p className="text-[9px] text-amber-600 mt-0.5">Autodraw to Operating</p>
+                          </div>
                         </div>
-                        <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$101,458</span>
                       </div>
                     </div>
                   </div>
