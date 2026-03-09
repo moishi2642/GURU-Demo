@@ -6743,8 +6743,21 @@ function AdvisorBriefView({
                       <ShieldCheck className="w-3.5 h-3.5 text-white/80" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Reserve</span>
                     </div>
-                    <div className="flex-1 flex items-center gap-0">
-                      {/* JPMorgan card */}
+                    {/* Branch connector from pill to both stacked cards */}
+                    <div className="flex-shrink-0 relative" style={{ width: 28, alignSelf: 'stretch' }}>
+                      <svg
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                        viewBox="0 0 28 100"
+                        preserveAspectRatio="none"
+                      >
+                        <line x1="0" y1="50" x2="14" y2="50" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
+                        <line x1="14" y1="25" x2="14" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
+                        <line x1="14" y1="25" x2="28" y2="25" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
+                        <line x1="14" y1="75" x2="28" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
+                      </svg>
+                    </div>
+                    {/* Stacked sub-account cards */}
+                    <div className="flex-1 flex flex-col gap-3">
                       <div className="flex-1 border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-jpm">
                         <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60">
                           <div className="min-w-0 mr-2">
@@ -6753,24 +6766,11 @@ function AdvisorBriefView({
                           </div>
                         </div>
                       </div>
-                      {/* Horizontal animated connector — dot flows right→left (T-Bill matures into JPMorgan) */}
-                      <div className="flex-shrink-0 flex flex-col items-center justify-center px-2" style={{ width: 80 }}>
-                        <span className="text-[8px] font-bold text-amber-600 whitespace-nowrap mb-1">+$7,478 Maturing ←</span>
-                        <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: "rgba(217,119,6,0.25)" }}>
-                          <motion.div
-                            className="absolute top-1/2 -translate-y-1/2 rounded-full"
-                            style={{ width: 7, height: 7, marginTop: -2.5, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
-                            animate={{ left: ["100%", "-8px"] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                          />
-                        </div>
-                      </div>
-                      {/* T-Bill Ladder card */}
                       <div className="flex-1 border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-tbill">
                         <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60">
                           <div className="min-w-0 mr-2">
                             <p className="text-[11px] font-semibold text-amber-900 leading-tight">T-Bill Ladder</p>
-                            <p className="text-[9px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo</p>
+                            <p className="text-[9px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</p>
                           </div>
                           <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$101,458</span>
                         </div>
