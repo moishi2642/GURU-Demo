@@ -79,6 +79,8 @@ import {
   Building2,
   CheckSquare,
   Lock,
+  ArrowUp,
+  Minus,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ResponsiveSankey } from "@nivo/sankey";
@@ -6581,65 +6583,42 @@ function AdvisorBriefView({
 
         {/* ── Card 4: Account Cash Movements ── */}
         {(() => {
-          type MoveColor = "sky" | "amber" | "violet";
-          type Move = { when: string; from: string; to: string; amount: number; note: string; color: MoveColor };
-          const groups: { label: string; labelColor: string; moves: Move[] }[] = [
-            {
-              label: "Creating Liquidity Within Reserve",
-              labelColor: "#0ea5e9",
-              moves: [
-                {
-                  when:   "March 31",
-                  from:   "Treasury Bill (maturing)",
-                  to:     "Reserve Money Market",
-                  amount: 41877,
-                  note:   "Bill matures — proceeds held as liquid reserve",
-                  color:  "sky",
-                },
-              ],
-            },
-            {
-              label: "Into Operating Account",
-              labelColor: "#d97706",
-              moves: [
-                {
-                  when:   "March",
-                  from:   "Reserve Money Market",
-                  to:     "Operating Checking",
-                  amount: 47126,
-                  note:   "Rebuilding 2-month expense cushion after Q1 tax and tuition",
-                  color:  "amber",
-                },
-                {
-                  when:   "April",
-                  from:   "Reserve Money Market",
-                  to:     "Operating Checking",
-                  amount: 6126,
-                  note:   "Covering April shortfall",
-                  color:  "amber",
-                },
-              ],
-            },
-            {
-              label: "Build Account",
-              labelColor: "#7c3aed",
-              moves: [
-                {
-                  when:   "Ongoing",
-                  from:   "Build Account",
-                  to:     "No movement",
-                  amount: 194384,
-                  note:   "Holding as savings toward home upgrade · earning ~4.75%",
-                  color:  "violet",
-                },
-              ],
-            },
-          ];
-          const colorMap: Record<MoveColor, { row: string; dot: string; amt: string }> = {
-            sky:    { row: "bg-sky-50",    dot: "bg-sky-400",    amt: "text-sky-700"    },
-            amber:  { row: "bg-amber-50",  dot: "bg-amber-400",  amt: "text-amber-700"  },
-            violet: { row: "bg-slate-50",  dot: "bg-violet-300", amt: "text-violet-600" },
-          };
+          // Shared row renderer
+          const FlowRow = ({
+            date, label, amount, amtColor, from, to, icon: Icon, iconBg, iconColor, testId,
+          }: {
+            date: string; label: string; amount: number | null; amtColor: string;
+            from: string; to: string;
+            icon: React.ElementType; iconBg: string; iconColor: string; testId: string;
+          }) => (
+            <div className="px-6 py-4" data-testid={testId}>
+              <div className="flex items-start gap-3">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${iconBg}`}>
+                  <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <div className="flex items-baseline gap-2 min-w-0">
+                      <p className="text-sm font-bold text-foreground leading-tight">{label}</p>
+                      <span className="text-[10px] font-semibold text-muted-foreground shrink-0">{date}</span>
+                    </div>
+                    {amount !== null && (
+                      <p className={`text-sm font-black tabular-nums shrink-0 ${amtColor}`}>{fmt(amount)}</p>
+                    )}
+                  </div>
+                  <div className="mt-1.5 space-y-0.5">
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="font-semibold text-foreground/70">From:</span> {from}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="font-semibold text-foreground/70">To:</span> {to}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+
           return (
             <div
               className={`rounded-2xl border bg-card shadow-sm overflow-hidden col-span-2 transition-all ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
@@ -6659,43 +6638,94 @@ function AdvisorBriefView({
                 />
               </div>
 
-              {/* Grouped movement rows */}
-              <div>
-                {groups.map((g, gi) => (
-                  <div key={gi} className={gi > 0 ? "border-t border-border" : ""}>
-                    {/* Group label */}
-                    <div className="px-6 py-2 bg-slate-50/80 border-b border-border/60 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: g.labelColor }} />
-                      <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: g.labelColor }}>{g.label}</span>
-                    </div>
-                    {/* Rows */}
-                    <div className="divide-y divide-border">
-                      {g.moves.map((m, i) => {
-                        const c = colorMap[m.color];
-                        const isNoMove = m.to === "No movement";
-                        return (
-                          <div key={i} className={`flex items-center gap-5 px-6 py-4 ${c.row}`} data-testid={`flow-row-${gi}-${i}`}>
-                            <div className="w-16 flex-shrink-0">
-                              <p className="text-[11px] font-black text-foreground">{m.when}</p>
-                            </div>
-                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
-                            <div className="flex-1 min-w-0">
-                              {isNoMove ? (
-                                <p className="text-sm font-semibold text-foreground">{m.from} — no movement</p>
-                              ) : (
-                                <p className="text-sm font-semibold text-foreground">
-                                  {m.from} <span className="text-muted-foreground font-normal">→</span> {m.to}
-                                </p>
-                              )}
-                              <p className="text-[11px] text-muted-foreground mt-0.5">{m.note}</p>
-                            </div>
-                            <p className={`text-base font-black tabular-nums flex-shrink-0 ${c.amt}`}>{fmt(m.amount)}</p>
-                          </div>
-                        );
-                      })}
+              {/* ── Bucket sections ── */}
+              <div className="divide-y divide-border">
+
+                {/* ── Operating Cash ── */}
+                <div>
+                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#d97706" }}>
+                    <Wallet className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-white">Operating Cash</span>
+                  </div>
+                  <div className="divide-y divide-border/60">
+                    <FlowRow
+                      date="March"
+                      label="Inflow to Primary Account"
+                      amount={47126}
+                      amtColor="text-emerald-700"
+                      from="Autodraw from Reserve — JPMorgan 100% Treasury Money Market Fund ****2847"
+                      to="Citizens Private Banking Checking ****7291"
+                      icon={ArrowUp}
+                      iconBg="bg-emerald-100"
+                      iconColor="text-emerald-600"
+                      testId="flow-row-ops-march"
+                    />
+                    <FlowRow
+                      date="April"
+                      label="Inflow to Primary Account"
+                      amount={6126}
+                      amtColor="text-emerald-700"
+                      from="Autodraw from Reserve — JPMorgan 100% Treasury Money Market Fund ****2847"
+                      to="Citizens Private Banking Checking ****7291"
+                      icon={ArrowUp}
+                      iconBg="bg-emerald-100"
+                      iconColor="text-emerald-600"
+                      testId="flow-row-ops-april"
+                    />
+                  </div>
+                </div>
+
+                {/* ── Reserve ── */}
+                <div>
+                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#4f46e5" }}>
+                    <ShieldCheck className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-white">Reserve</span>
+                  </div>
+                  <div>
+                    <FlowRow
+                      date="March 31"
+                      label="Proceeds from T-Bill Maturity"
+                      amount={41877}
+                      amtColor="text-sky-700"
+                      from="US Treasury Bill (maturing)"
+                      to="JPMorgan 100% Treasury Money Market Fund ****2847"
+                      icon={ArrowUp}
+                      iconBg="bg-sky-100"
+                      iconColor="text-sky-600"
+                      testId="flow-row-reserve"
+                    />
+                  </div>
+                </div>
+
+                {/* ── Build ── */}
+                <div>
+                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#7c3aed" }}>
+                    <Home className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-white">Build</span>
+                  </div>
+                  <div className="px-6 py-4" data-testid="flow-row-build">
+                    <div className="flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-violet-100">
+                        <Minus className="w-3.5 h-3.5 text-violet-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline justify-between gap-4">
+                          <p className="text-sm font-bold text-foreground">No movement this period</p>
+                          <p className="text-sm font-black tabular-nums text-violet-700 shrink-0">{fmt(194384)}</p>
+                        </div>
+                        <div className="mt-1.5 space-y-0.5">
+                          <p className="text-[11px] text-muted-foreground">
+                            <span className="font-semibold text-foreground/70">Holding:</span> Savings toward home upgrade · earning ~4.75%
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            <span className="font-semibold text-foreground/70">Account:</span> Citizens Private Bank Money Market ****4192
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ))}
+                </div>
+
               </div>
 
               {/* Footer */}
