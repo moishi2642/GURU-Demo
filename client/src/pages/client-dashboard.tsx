@@ -6849,8 +6849,8 @@ function AdvisorBriefView({
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="bg-slate-800 text-slate-300">
-                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Due Date</th>
-                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Category</th>
+                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px] w-32">Due Date</th>
+                    <th className="px-2 py-2.5 text-left font-black uppercase tracking-widest text-[9px] w-20">Category</th>
                     <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Description</th>
                     <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Payee</th>
                     <th className="px-4 py-2.5 text-right font-black uppercase tracking-widest text-[9px]">Amount</th>
@@ -6872,7 +6872,7 @@ function AdvisorBriefView({
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-2 py-3">
                           <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${oblCatStyle(obl.category)}`}>
                             {obl.category === "tax" ? "Tax" : "Education"}
                           </span>
