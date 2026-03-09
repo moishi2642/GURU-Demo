@@ -2794,103 +2794,142 @@ function CashFlowForecastView({
         </div>
       </div>
 
-      {/* Cumulative Cash Flow Area Chart */}
+      {/* Cash Balance Walk — waterfall bridge chart */}
       {(() => {
-        const aData = buildForecast(cashFlows);
-        const aMin = Math.min(...aData.map((d) => d.cumulative));
-        const aMax = Math.max(...aData.map((d) => d.cumulative));
-        const aTroughIdx = aData.findIndex((d) => d.cumulative === aMin);
-        const aTroughMonth = aData[aTroughIdx]?.month ?? "";
-        const aHasTrough = aMin < 0;
-        const aRange = aMax - aMin || 1;
-        const aZeroOffset = `${Math.max(0, Math.min(100, (aMax / aRange) * 100)).toFixed(1)}%`;
-        const aFinal = aData[aData.length - 1]?.cumulative ?? 0;
-        const aIsPos = annualNet >= 0;
+        const Q_DEFS = [
+          { qLabel: "First Quarter 2026",  months: [0, 1, 2],  endName: "Mar 31" },
+          { qLabel: "Second Quarter 2026", months: [3, 4, 5],  endName: "Jun 30" },
+          { qLabel: "Third Quarter 2026",  months: [6, 7, 8],  endName: "Sep 30" },
+          { qLabel: "Fourth Quarter 2026", months: [9, 10, 11], endName: "Dec 31" },
+        ];
+
+        interface WFEntry {
+          name: string;
+          offset: number;
+          value: number;
+          actual: number;
+          type: "balance" | "income" | "expense";
+          qLabel: string;
+        }
+
+        const bars: WFEntry[] = [];
+        let running = totalLiquid;
+
+        bars.push({ name: "Opening", offset: 0, value: running, actual: running, type: "balance", qLabel: "" });
+
+        Q_DEFS.forEach((q, qi) => {
+          const qIncome = q.months.reduce((s, mi) => s + (inflowByMonth[mi] ?? 0), 0);
+          const qExpAbs = q.months.reduce((s, mi) => s + Math.abs(outflowByMonth[mi] ?? 0), 0);
+
+          bars.push({ name: `Q${qi + 1} Income`, offset: running, value: qIncome, actual: qIncome, type: "income", qLabel: q.qLabel });
+          running += qIncome;
+
+          bars.push({ name: `Q${qi + 1} Expenses`, offset: running - qExpAbs, value: qExpAbs, actual: -qExpAbs, type: "expense", qLabel: q.qLabel });
+          running -= qExpAbs;
+
+          bars.push({ name: q.endName, offset: 0, value: Math.max(0, running), actual: running, type: "balance", qLabel: q.qLabel });
+        });
+
+        const BLUE = "#1d4ed8";
+        const GREEN_BAR = "#16a34a";
+        const RED_BAR = "#dc2626";
+
+        const CustomLabel = (props: any) => {
+          const { x, y, width, index } = props;
+          const entry = bars[index] as WFEntry;
+          if (!entry) return null;
+          const cx = x + width / 2;
+          let text = "";
+          let color = "";
+          if (entry.type === "balance") {
+            text = fmt(entry.actual, true);
+            color = "#1e40af";
+          } else if (entry.type === "income") {
+            text = `+${fmtK(entry.actual)}`;
+            color = "#15803d";
+          } else {
+            text = fmtK(entry.actual);
+            color = "#b91c1c";
+          }
+          return (
+            <text x={cx} y={y - 5} textAnchor="middle" fill={color} fontSize={9} fontWeight="800">
+              {text}
+            </text>
+          );
+        };
+
+        const CustomTick = (props: any) => {
+          const { x, y, payload, index } = props;
+          const entry = bars[index] as WFEntry;
+          const isBalance = entry?.type === "balance";
+          return (
+            <g transform={`translate(${x},${y})`}>
+              <text
+                x={0} y={0} dy={12}
+                textAnchor="middle"
+                fill={isBalance ? "#1e40af" : "hsl(var(--muted-foreground))"}
+                fontSize={isBalance ? 10 : 9}
+                fontWeight={isBalance ? 800 : 500}
+              >
+                {payload.value}
+              </text>
+            </g>
+          );
+        };
+
         return (
           <div className="border border-border rounded-xl overflow-hidden">
             <div className="px-5 pt-4 pb-2 border-b border-border flex items-start justify-between">
               <div>
-                <p className="font-display font-bold text-base text-foreground">Cumulative Cash Flow · 2026</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Rolling 12-month net · Trough marked in red</p>
+                <p className="font-display font-bold text-base text-foreground">Cash Balance Walk · 2026</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Operating &amp; Reserve accounts · quarterly movements</p>
               </div>
-              <div className={`text-2xl font-black tabular-nums pt-0.5 ${aIsPos ? "text-emerald-600" : "text-rose-600"}`}>
-                {aIsPos ? "+" : ""}{fmt(annualNet, true)}
+              <div className={`text-2xl font-black tabular-nums pt-0.5 ${annualNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                {annualNet >= 0 ? "+" : ""}{fmt(annualNet, true)}
               </div>
             </div>
-            <div className="px-3 pb-2 bg-card">
+            <div className="px-3 pb-3 bg-card">
+              {/* Quarter bracket labels */}
+              <div className="flex text-[8px] font-bold uppercase tracking-widest text-slate-400 pt-2 pb-1" style={{ paddingLeft: 70 }}>
+                {Q_DEFS.map((q, qi) => (
+                  <div key={qi} className="flex-1 text-center border-l border-t border-slate-200 pt-1">
+                    {q.qLabel.replace(" 2026", "")}
+                  </div>
+                ))}
+              </div>
               <div style={{ height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={aData} margin={{ top: 48, right: 52, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="cfTabGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset={aZeroOffset} stopColor={GREEN} stopOpacity={0.28} />
-                        <stop offset={aZeroOffset} stopColor={RED} stopOpacity={0.20} />
-                      </linearGradient>
-                    </defs>
+                  <BarChart data={bars} margin={{ top: 24, right: 16, left: 8, bottom: 0 }} barCategoryGap="18%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={fmtK} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} width={48} domain={[-150000, 150000]} />
-                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={1.5} />
-                    {aHasTrough && (
-                      <ReferenceLine
-                        x={aTroughMonth}
-                        stroke="hsl(0,72%,65%)"
-                        strokeDasharray="5 3"
-                        strokeWidth={2}
-                        label={(props: any) => {
-                          const vb = props?.viewBox;
-                          if (!vb) return null;
-                          const { x, y } = vb;
-                          return (
-                            <g>
-                              <rect x={x - 46} y={y - 48} width={92} height={40} rx={5} fill="hsl(0,80%,97%)" stroke="hsl(0,72%,65%)" strokeWidth={1.5} />
-                              <text x={x} y={y - 32} textAnchor="middle" fill="hsl(0,72%,45%)" fontSize={11} fontWeight="800" letterSpacing="1">TROUGH</text>
-                              <text x={x} y={y - 16} textAnchor="middle" fill="hsl(0,72%,40%)" fontSize={13} fontWeight="900">{fmt(aMin, true)}</text>
-                              <polygon points={`${x - 6},${y - 8} ${x + 6},${y - 8} ${x},${y}`} fill="hsl(0,72%,65%)" />
-                            </g>
-                          );
-                        }}
-                      />
-                    )}
-                    <RechartsTooltip formatter={(v: number) => [fmt(v), "Cumulative Net"]} contentStyle={{ fontSize: 11 }} />
-                    <Area
-                      type="monotone"
-                      dataKey="cumulative"
-                      stroke={aIsPos ? GREEN : RED}
-                      strokeWidth={2.5}
-                      fill="url(#cfTabGrad)"
-                      activeDot={{ r: 4, stroke: "white", strokeWidth: 2 }}
-                      isAnimationActive={true}
-                      animationDuration={900}
-                      animationEasing="ease-out"
-                      dot={(props: any) => {
-                        const { cx, cy, index } = props;
-                        if (index === 0) {
-                          const liveCol = aIsPos ? GREEN : RED;
-                          return (
-                            <g key="cf-tab-live">
-                              <circle cx={cx} cy={cy} r={10} fill={liveCol} opacity={0.12} style={{ animation: "live-pulse 2s ease-in-out infinite", transformOrigin: `${cx}px ${cy}px` }} />
-                              <circle cx={cx} cy={cy} r={4} fill={liveCol} stroke="white" strokeWidth={1.5} />
-                              <text x={cx} y={cy - 12} textAnchor="middle" fill={liveCol} fontSize={10} fontWeight="800">NOW</text>
-                            </g>
-                          );
-                        }
-                        if (index === aData.length - 1) {
-                          const col = aIsPos ? "hsl(142,71%,35%)" : "hsl(0,72%,50%)";
-                          return (
-                            <g key="cf-tab-end">
-                              <circle cx={cx} cy={cy} r={4.5} fill={aIsPos ? GREEN : RED} stroke="white" strokeWidth={2} />
-                              <text x={cx + 8} y={cy + 4} fill={col} fontSize={11} fontWeight="800">
-                                {aIsPos ? "▲" : "▼"} {fmtK(aFinal)}
-                              </text>
-                            </g>
-                          );
-                        }
-                        return <g key={index} />;
+                    <XAxis dataKey="name" tick={<CustomTick />} axisLine={false} tickLine={false} height={28} />
+                    <YAxis tickFormatter={fmtK} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
+                    <RechartsTooltip
+                      formatter={(v: number, _name: string, props: any) => {
+                        const e = props.payload as WFEntry;
+                        if (_name === "offset") return [null, null];
+                        return [fmt(Math.abs(e.actual), true), e.type === "income" ? "Income" : e.type === "expense" ? "Expenses" : "Balance"];
                       }}
+                      contentStyle={{ fontSize: 11 }}
                     />
-                  </AreaChart>
+                    {/* Transparent spacer — positions each visible bar correctly */}
+                    <Bar dataKey="offset" stackId="wf" fill="transparent" isAnimationActive={false} />
+                    {/* Visible bar — colored by type using Cell */}
+                    <Bar dataKey="value" stackId="wf" radius={[3, 3, 0, 0]} isAnimationActive animationDuration={900} label={<CustomLabel />}>
+                      {bars.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={entry.type === "income" ? GREEN_BAR : entry.type === "expense" ? RED_BAR : BLUE}
+                          fillOpacity={entry.type === "balance" ? 0.82 : 0.88}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
+              </div>
+              <div className="flex items-center gap-5 px-14 pb-1 text-[9px] text-muted-foreground">
+                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: BLUE, opacity: 0.82 }} />Balance</span>
+                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: GREEN_BAR }} />Income</span>
+                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: RED_BAR }} />Expenses</span>
               </div>
             </div>
           </div>
