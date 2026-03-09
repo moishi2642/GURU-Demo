@@ -2571,6 +2571,7 @@ function CashFlowForecastView({
     }
     return init;
   });
+  const [hoveredQuarter, setHoveredQuarter] = React.useState<number | null>(null);
 
   function monthVal(descs: string[], year: number, month: number): number {
     return cashFlows
@@ -2617,6 +2618,16 @@ function CashFlowForecastView({
       (s, r) => s + Math.min(0, vals[r.key]?.[mi] ?? 0),
       0,
     ),
+  );
+  const CORE_EXPENSE_KEYS = ["trib_exp", "nyc_tax", "sara_exp", "fl_tax", "childcare", "phone_util", "cc_pay", "memberships", "golf", "insurance", "pe_loan", "student"];
+  const coreOutflowByMonth = CF_MONTHS.map((_, mi) =>
+    CORE_EXPENSE_KEYS.reduce((s, k) => {
+      const v = vals[k]?.[mi] ?? 0;
+      return v < 0 ? s + Math.abs(v) : s;
+    }, 0)
+  );
+  const onetimeOutflowByMonth = CF_MONTHS.map((_, mi) =>
+    Math.max(0, Math.abs(outflowByMonth[mi] ?? 0) - (coreOutflowByMonth[mi] ?? 0))
   );
   const netByMonth = CF_MONTHS.map((_, mi) =>
     CF_PL_ROWS.filter((r) => r.kind === "item").reduce(
@@ -2793,47 +2804,52 @@ function CashFlowForecastView({
       {/* Cash Balance Walk — waterfall bridge chart */}
       {(() => {
         const Q_DEFS = [
-          { qLabel: "First Quarter 2026",  months: [0, 1, 2],  endName: "Mar 31" },
-          { qLabel: "Second Quarter 2026", months: [3, 4, 5],  endName: "Jun 30" },
-          { qLabel: "Third Quarter 2026",  months: [6, 7, 8],  endName: "Sep 30" },
-          { qLabel: "Fourth Quarter 2026", months: [9, 10, 11], endName: "Dec 31" },
+          { qLabel: "First Quarter",  months: [0, 1, 2],  endName: "Mar 31", qIndex: 0 },
+          { qLabel: "Second Quarter", months: [3, 4, 5],  endName: "Jun 30", qIndex: 1 },
+          { qLabel: "Third Quarter",  months: [6, 7, 8],  endName: "Sep 30", qIndex: 2 },
+          { qLabel: "Fourth Quarter", months: [9, 10, 11], endName: "Dec 31", qIndex: 3 },
         ];
 
         interface WFEntry {
           name: string;
-          offset: number;
-          value: number;
+          type: "balance" | "income" | "core" | "onetime";
+          invisible: number;
+          incomeBar: number;
+          coreBar: number;
+          onetimeBar: number;
+          balanceBar: number;
           actual: number;
-          type: "balance" | "income" | "expense";
-          qLabel: string;
+          qIndex: number;
         }
+
+        const BLUE = "#1d4ed8";
+        const GREEN_BAR = "#16a34a";
+        const CORE_RED = "#dc2626";
+        const ONE_TIME_RED = "#ea580c";
 
         const bars: WFEntry[] = [];
         let running = totalLiquid;
 
-        bars.push({ name: "Opening", offset: 0, value: running, actual: running, type: "balance", qLabel: "" });
+        bars.push({ name: "Opening", type: "balance", invisible: 0, incomeBar: 0, coreBar: 0, onetimeBar: 0, balanceBar: running, actual: running, qIndex: -1 });
 
-        Q_DEFS.forEach((q, qi) => {
-          const qIncome = q.months.reduce((s, mi) => s + (inflowByMonth[mi] ?? 0), 0);
-          const qExpAbs = q.months.reduce((s, mi) => s + Math.abs(outflowByMonth[mi] ?? 0), 0);
+        Q_DEFS.forEach((q) => {
+          const qIncome   = q.months.reduce((s, mi) => s + (inflowByMonth[mi] ?? 0), 0);
+          const qCore     = q.months.reduce((s, mi) => s + (coreOutflowByMonth[mi] ?? 0), 0);
+          const qOnetime  = q.months.reduce((s, mi) => s + (onetimeOutflowByMonth[mi] ?? 0), 0);
+          const prevRun   = running;
 
-          bars.push({ name: `Q${qi + 1} Income`, offset: running, value: qIncome, actual: qIncome, type: "income", qLabel: q.qLabel });
-          running += qIncome;
+          bars.push({ name: `Q${q.qIndex + 1} Income`, type: "income", invisible: prevRun, incomeBar: qIncome, coreBar: 0, onetimeBar: 0, balanceBar: 0, actual: qIncome, qIndex: q.qIndex });
+          bars.push({ name: `Q${q.qIndex + 1} Core`, type: "core", invisible: prevRun + qIncome - qCore, incomeBar: 0, coreBar: qCore, onetimeBar: 0, balanceBar: 0, actual: -qCore, qIndex: q.qIndex });
+          bars.push({ name: `Q${q.qIndex + 1} One-Time`, type: "onetime", invisible: prevRun + qIncome - qCore - qOnetime, incomeBar: 0, coreBar: 0, onetimeBar: qOnetime, balanceBar: 0, actual: -qOnetime, qIndex: q.qIndex });
 
-          bars.push({ name: `Q${qi + 1} Expenses`, offset: running - qExpAbs, value: qExpAbs, actual: -qExpAbs, type: "expense", qLabel: q.qLabel });
-          running -= qExpAbs;
-
-          bars.push({ name: q.endName, offset: 0, value: Math.max(0, running), actual: running, type: "balance", qLabel: q.qLabel });
+          running = prevRun + qIncome - qCore - qOnetime;
+          bars.push({ name: q.endName, type: "balance", invisible: 0, incomeBar: 0, coreBar: 0, onetimeBar: 0, balanceBar: Math.max(0, running), actual: running, qIndex: q.qIndex });
         });
 
-        const BLUE = "#1d4ed8";
-        const GREEN_BAR = "#16a34a";
-        const RED_BAR = "#dc2626";
-
         const CustomLabel = (props: any) => {
-          const { x, y, width, index } = props;
+          const { x, y, width, value, index } = props;
           const entry = bars[index] as WFEntry;
-          if (!entry) return null;
+          if (!entry || !value || value === 0) return null;
           const cx = x + width / 2;
           let text = "";
           let color = "";
@@ -2843,9 +2859,12 @@ function CashFlowForecastView({
           } else if (entry.type === "income") {
             text = `+${fmtK(entry.actual)}`;
             color = "#15803d";
+          } else if (entry.type === "core") {
+            text = fmtK(entry.actual);
+            color = "#991b1b";
           } else {
             text = fmtK(entry.actual);
-            color = "#b91c1c";
+            color = "#c2410c";
           }
           return (
             <text x={cx} y={y - 5} textAnchor="middle" fill={color} fontSize={9} fontWeight="800">
@@ -2860,15 +2879,25 @@ function CashFlowForecastView({
           const isBalance = entry?.type === "balance";
           return (
             <g transform={`translate(${x},${y})`}>
-              <text
-                x={0} y={0} dy={12}
-                textAnchor="middle"
+              <text x={0} y={0} dy={12} textAnchor="middle"
                 fill={isBalance ? "#1e40af" : "hsl(var(--muted-foreground))"}
                 fontSize={isBalance ? 10 : 9}
                 fontWeight={isBalance ? 800 : 500}
               >
                 {payload.value}
               </text>
+            </g>
+          );
+        };
+
+        const Sep30CalloutLabel = (props: any) => {
+          const { viewBox } = props;
+          if (!viewBox) return null;
+          const { x } = viewBox;
+          return (
+            <g>
+              <rect x={x - 54} y={4} width={108} height={18} rx={4} fill="#fef3c7" stroke="#f59e0b" strokeWidth={1} />
+              <text x={x} y={16} textAnchor="middle" fill="#92400e" fontSize={9} fontWeight="800">⚠ Holding too much cash</text>
             </g>
           );
         };
@@ -2888,44 +2917,59 @@ function CashFlowForecastView({
               {/* Quarter bracket labels */}
               <div className="flex text-[8px] font-bold uppercase tracking-widest text-slate-400 pt-2 pb-1" style={{ paddingLeft: 70 }}>
                 {Q_DEFS.map((q, qi) => (
-                  <div key={qi} className="flex-1 text-center border-l border-t border-slate-200 pt-1">
-                    {q.qLabel.replace(" 2026", "")}
+                  <div key={qi} className={`flex-1 text-center border-l border-t pt-1 transition-colors ${hoveredQuarter === qi ? "border-blue-400 text-blue-600 bg-blue-50/40" : "border-slate-200"}`}>
+                    {q.qLabel}
                   </div>
                 ))}
               </div>
-              <div style={{ height: 260 }}>
+              <div style={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={bars} margin={{ top: 24, right: 16, left: 8, bottom: 0 }} barCategoryGap="18%">
+                  <BarChart
+                    data={bars}
+                    margin={{ top: 32, right: 16, left: 8, bottom: 0 }}
+                    barCategoryGap="18%"
+                    onMouseMove={(data: any) => {
+                      if (data?.activePayload?.length) {
+                        const entry = data.activePayload[0].payload as WFEntry;
+                        setHoveredQuarter(entry.qIndex >= 0 ? entry.qIndex : null);
+                      }
+                    }}
+                    onMouseLeave={() => setHoveredQuarter(null)}
+                  >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" tick={<CustomTick />} axisLine={false} tickLine={false} height={28} />
                     <YAxis tickFormatter={fmtK} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
                     <RechartsTooltip
                       formatter={(v: number, _name: string, props: any) => {
                         const e = props.payload as WFEntry;
-                        if (_name === "offset") return [null, null];
-                        return [fmt(Math.abs(e.actual), true), e.type === "income" ? "Income" : e.type === "expense" ? "Expenses" : "Balance"];
+                        if (_name === "invisible") return [null, null];
+                        if (e.type === "income") return [fmt(e.actual, true), "Income"];
+                        if (e.type === "core") return [fmt(Math.abs(e.actual), true), "Core Expenses"];
+                        if (e.type === "onetime") return [fmt(Math.abs(e.actual), true), "One-Time Expenses"];
+                        return [fmt(Math.abs(e.actual), true), "Balance"];
                       }}
                       contentStyle={{ fontSize: 11 }}
                     />
-                    {/* Transparent spacer — positions each visible bar correctly */}
-                    <Bar dataKey="offset" stackId="wf" fill="transparent" isAnimationActive={false} />
-                    {/* Visible bar — colored by type using Cell */}
-                    <Bar dataKey="value" stackId="wf" radius={[3, 3, 0, 0]} isAnimationActive animationDuration={900} label={<CustomLabel />}>
-                      {bars.map((entry, i) => (
-                        <Cell
-                          key={i}
-                          fill={entry.type === "income" ? GREEN_BAR : entry.type === "expense" ? RED_BAR : BLUE}
-                          fillOpacity={entry.type === "balance" ? 0.82 : 0.88}
-                        />
-                      ))}
-                    </Bar>
+                    {/* Sep 30 callout */}
+                    <ReferenceLine x="Sep 30" stroke="transparent" label={<Sep30CalloutLabel />} />
+                    {/* Invisible spacer */}
+                    <Bar dataKey="invisible" stackId="wf" fill="transparent" isAnimationActive={false} />
+                    {/* Income — green */}
+                    <Bar dataKey="incomeBar" stackId="wf" fill={GREEN_BAR} fillOpacity={0.88} isAnimationActive={false} label={<CustomLabel />} />
+                    {/* Core expenses — dark red */}
+                    <Bar dataKey="coreBar" stackId="wf" fill={CORE_RED} fillOpacity={0.88} isAnimationActive={false} label={<CustomLabel />} />
+                    {/* One-time expenses — orange-red */}
+                    <Bar dataKey="onetimeBar" stackId="wf" fill={ONE_TIME_RED} fillOpacity={0.88} isAnimationActive={false} label={<CustomLabel />} />
+                    {/* Balance — blue */}
+                    <Bar dataKey="balanceBar" stackId="wf" fill={BLUE} fillOpacity={0.82} radius={[3, 3, 0, 0]} isAnimationActive animationDuration={900} label={<CustomLabel />} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
               <div className="flex items-center gap-5 px-14 pb-1 text-[9px] text-muted-foreground">
                 <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: BLUE, opacity: 0.82 }} />Balance</span>
                 <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: GREEN_BAR }} />Income</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: RED_BAR }} />Expenses</span>
+                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: CORE_RED }} />Core Expenses</span>
+                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: ONE_TIME_RED }} />One-Time</span>
               </div>
             </div>
           </div>
@@ -2944,7 +2988,12 @@ function CashFlowForecastView({
 
         const toggle = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
 
-        const thCls = "text-right px-1.5 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap bg-muted/80 border-b border-border";
+        const colHl = (mi: number) => hoveredQuarter !== null && Math.floor(mi / 3) === hoveredQuarter;
+        const thCls = (mi: number) =>
+          `text-right px-1.5 py-2.5 text-[9px] font-black uppercase tracking-widest whitespace-nowrap border-b border-border transition-colors ${
+            colHl(mi) ? "bg-blue-200/80 text-blue-800" : "bg-muted/80 text-muted-foreground"
+          }`;
+        const tdHl = (mi: number) => colHl(mi) ? "bg-blue-50/60" : "";
 
         return (
           <div className="border border-border rounded-xl overflow-hidden">
@@ -2958,10 +3007,10 @@ function CashFlowForecastView({
                     >
                       Cash Flow P&L · Jan – Dec 2026
                     </th>
-                    {CF_MONTHS.map((m) => (
-                      <th key={m.label} className={thCls} style={{ minWidth: 50 }}>{m.label}</th>
+                    {CF_MONTHS.map((m, mi) => (
+                      <th key={m.label} className={thCls(mi)} style={{ minWidth: 50 }}>{m.label}</th>
                     ))}
-                    <th className={`${thCls} px-4`} style={{ minWidth: 70 }}>Annual</th>
+                    <th className="text-right px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap bg-muted/80 border-b border-border" style={{ minWidth: 70 }}>Annual</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2985,11 +3034,11 @@ function CashFlowForecastView({
                           </td>
                           {!isOpen && subKey
                             ? subVals.map((v, i) => (
-                                <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[9px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}>
+                                <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[9px] transition-colors ${tdHl(i)} ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}>
                                   {fmtCell(v)}
                                 </td>
                               ))
-                            : CF_MONTHS.map((_, i) => <td key={i} />)
+                            : CF_MONTHS.map((_, i) => <td key={i} className={`transition-colors ${tdHl(i)}`} />)
                           }
                           {!isOpen && subKey
                             ? <td className={`text-right px-4 py-1.5 tabular-nums font-bold text-[9px] ${subAnnual >= 0 ? "text-emerald-700" : "text-rose-600"}`}>{fmtCell(subAnnual)}</td>
@@ -3010,7 +3059,7 @@ function CashFlowForecastView({
                         <tr key={row.key} className="border-t border-border/40 hover:bg-secondary/30 transition-colors bg-card">
                           <td className="px-4 py-1.5 pl-8 text-foreground/75 text-[10px]">{row.label}</td>
                           {rowVals.map((v, i) => (
-                            <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums text-[10px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}>
+                            <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums text-[10px] transition-colors ${tdHl(i)} ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}>
                               {fmtCell(v)}
                             </td>
                           ))}
@@ -3026,7 +3075,7 @@ function CashFlowForecastView({
                         <tr key={row.key} className="border-t border-slate-200 bg-slate-100">
                           <td className="px-4 py-1.5 pl-8 font-bold text-[10px] text-slate-700">{row.label}</td>
                           {rowVals.map((v, i) => (
-                            <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[10px] ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}>
+                            <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[10px] transition-colors ${tdHl(i)} ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}>
                               {fmtCell(v)}
                             </td>
                           ))}
@@ -3040,45 +3089,33 @@ function CashFlowForecastView({
                   })}
                   {/* TOTAL CASH INFLOW */}
                   <tr className="border-t-2 border-slate-300 bg-emerald-50">
-                    <td className="px-4 py-2 font-black text-[10px] uppercase tracking-wider text-emerald-800">
-                      Total Cash Inflow
-                    </td>
+                    <td className="px-4 py-2 font-black text-[10px] uppercase tracking-wider text-emerald-800">Total Cash Inflow</td>
                     {inflowByMonth.map((v, i) => (
-                      <td key={i} className="text-right px-1.5 py-2 tabular-nums font-bold text-[10px] text-emerald-700">
+                      <td key={i} className={`text-right px-1.5 py-2 tabular-nums font-bold text-[10px] text-emerald-700 transition-colors ${tdHl(i)}`}>
                         {fmtCell(v)}
                       </td>
                     ))}
-                    <td className="text-right px-4 py-2 tabular-nums font-black text-[10px] text-emerald-700">
-                      {fmtCell(inflowByMonth.reduce((s, v) => s + v, 0))}
-                    </td>
+                    <td className="text-right px-4 py-2 tabular-nums font-black text-[10px] text-emerald-700">{fmtCell(inflowByMonth.reduce((s, v) => s + v, 0))}</td>
                   </tr>
                   {/* TOTAL CASH EXPENSES */}
                   <tr className="border-t border-rose-200 bg-rose-50">
-                    <td className="px-4 py-2 font-black text-[10px] uppercase tracking-wider text-rose-800">
-                      Total Cash Expenses
-                    </td>
+                    <td className="px-4 py-2 font-black text-[10px] uppercase tracking-wider text-rose-800">Total Cash Expenses</td>
                     {outflowByMonth.map((v, i) => (
-                      <td key={i} className="text-right px-1.5 py-2 tabular-nums font-bold text-[10px] text-rose-600">
+                      <td key={i} className={`text-right px-1.5 py-2 tabular-nums font-bold text-[10px] text-rose-600 transition-colors ${tdHl(i)}`}>
                         {fmtCell(v)}
                       </td>
                     ))}
-                    <td className="text-right px-4 py-2 tabular-nums font-black text-[10px] text-rose-600">
-                      {fmtCell(outflowByMonth.reduce((s, v) => s + v, 0))}
-                    </td>
+                    <td className="text-right px-4 py-2 tabular-nums font-black text-[10px] text-rose-600">{fmtCell(outflowByMonth.reduce((s, v) => s + v, 0))}</td>
                   </tr>
                   {/* NET CASH FLOW */}
                   <tr className={`border-t-2 border-border ${annualNet >= 0 ? "bg-emerald-50" : "bg-rose-50"}`}>
-                    <td className={`px-4 py-2.5 font-black text-[11px] uppercase tracking-wider ${annualNet >= 0 ? "text-emerald-800" : "text-rose-800"}`}>
-                      Net Cash Flow
-                    </td>
+                    <td className={`px-4 py-2.5 font-black text-[11px] uppercase tracking-wider ${annualNet >= 0 ? "text-emerald-800" : "text-rose-800"}`}>Net Cash Flow</td>
                     {netByMonth.map((v, i) => (
-                      <td key={i} className={`text-right px-1.5 py-2.5 tabular-nums font-bold text-[10px] ${v >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                      <td key={i} className={`text-right px-1.5 py-2.5 tabular-nums font-bold text-[10px] transition-colors ${tdHl(i)} ${v >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
                         {fmtCell(v)}
                       </td>
                     ))}
-                    <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
-                      {fmtCell(annualNet)}
-                    </td>
+                    <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>{fmtCell(annualNet)}</td>
                   </tr>
                   {/* CUMULATIVE NET */}
                   <tr className="border-t-2 border-blue-300 bg-blue-100">
@@ -3091,7 +3128,7 @@ function CashFlowForecastView({
                     {cumulativeByMonth.map((v, i) => {
                       const isTrough = i === troughIdx;
                       return (
-                        <td key={i} className="text-right px-1.5 py-2.5 tabular-nums text-[10px]">
+                        <td key={i} className={`text-right px-1.5 py-2.5 tabular-nums text-[10px] transition-colors ${tdHl(i)}`}>
                           <span className={`relative inline-flex items-center justify-end ${isTrough ? "font-black" : "font-semibold"} ${v >= 0 ? "text-blue-700" : "text-rose-600"}`}>
                             {isTrough && <span className="absolute inset-[-4px] rounded-full border-2 border-rose-500 pointer-events-none" />}
                             {fmtCell(v)}
