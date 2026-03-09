@@ -7741,31 +7741,6 @@ export default function ClientDashboard() {
       {/* ── Advisor Brief View ───────────────────────────────────────────────── */}
       {activeView === "advisorbrief" && (
         <div className="space-y-4">
-          <div className="rounded-xl overflow-hidden border border-violet-200 shadow-sm" data-testid="advisor-brief-ai-banner">
-            <div className="bg-gradient-to-r from-violet-700 via-indigo-700 to-blue-700 px-6 py-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
-                  <BrainCircuit className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-black text-white tracking-wide leading-none">Personalized GURU AI</p>
-                  <p className="text-[10px] text-violet-200 mt-0.5 leading-none">Intelligent advisor briefing · Kessler household profile</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-5">
-                {[
-                  { label: "Model", value: "GPT-5" },
-                  { label: "Last Run", value: "Mar 6, 2026" },
-                  { label: "Confidence", value: "94%" },
-                ].map((s) => (
-                  <div key={s.label} className="text-right">
-                    <p className="text-[9px] font-bold text-violet-300 uppercase tracking-widest leading-none">{s.label}</p>
-                    <p className="text-[12px] font-black text-white leading-tight mt-0.5">{s.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
           <AdvisorBriefView
             assets={assets}
             cashFlows={cashFlows}
@@ -7813,31 +7788,6 @@ export default function ClientDashboard() {
       {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
       {activeView === "guru" && (
         <div className="space-y-4">
-          <div className="rounded-xl overflow-hidden border border-violet-200 shadow-sm" data-testid="guru-ai-banner">
-            <div className="bg-gradient-to-r from-violet-700 via-indigo-700 to-blue-700 px-6 py-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
-                  <BrainCircuit className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-black text-white tracking-wide leading-none">Personalized GURU AI</p>
-                  <p className="text-[10px] text-violet-200 mt-0.5 leading-none">Intelligent cash allocation engine · Kessler household profile</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-5">
-                {[
-                  { label: "Model", value: "GPT-5" },
-                  { label: "Last Run", value: "Mar 6, 2026" },
-                  { label: "Confidence", value: "94%" },
-                ].map((s) => (
-                  <div key={s.label} className="text-right">
-                    <p className="text-[9px] font-bold text-violet-300 uppercase tracking-widest leading-none">{s.label}</p>
-                    <p className="text-[12px] font-black text-white leading-tight mt-0.5">{s.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
           <GuruAllocationView
           assets={assets}
           cashFlows={cashFlows}
@@ -7853,31 +7803,6 @@ export default function ClientDashboard() {
       {/* ── Money Movement View ─────────────────────────────────────────────────── */}
       {activeView === "moneymovement" && (
         <div className="space-y-4">
-          <div className="rounded-xl overflow-hidden border border-violet-200 shadow-sm" data-testid="money-movement-ai-banner">
-            <div className="bg-gradient-to-r from-violet-700 via-indigo-700 to-blue-700 px-6 py-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
-                  <BrainCircuit className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-black text-white tracking-wide leading-none">Personalized GURU AI</p>
-                  <p className="text-[10px] text-violet-200 mt-0.5 leading-none">Intelligent cash movement engine · Kessler household profile</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-5">
-                {[
-                  { label: "Model", value: "GPT-5" },
-                  { label: "Last Run", value: "Mar 6, 2026" },
-                  { label: "Confidence", value: "94%" },
-                ].map((s) => (
-                  <div key={s.label} className="text-right">
-                    <p className="text-[9px] font-bold text-violet-300 uppercase tracking-widest leading-none">{s.label}</p>
-                    <p className="text-[12px] font-black text-white leading-tight mt-0.5">{s.value}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
           <MoneyMovementView
             assets={assets}
             cashFlows={cashFlows}
