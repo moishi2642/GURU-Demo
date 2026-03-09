@@ -6723,10 +6723,10 @@ function AdvisorBriefView({
                   <div className="absolute rounded-lg border border-blue-200 bg-blue-50/60 shadow-sm" style={{ left: "1%", top: 90, width: "29%" }} data-testid="flow-row-ops-march">
                     <div className="px-2.5 py-2.5">
                       <div className="flex items-center gap-1 mb-0.5">
-                        <p className="text-[10px] font-bold text-blue-900 leading-tight">CIT Money Market Bank Acct</p>
+                        <p className="text-[10px] font-bold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
-                      <p className="text-[9px] text-blue-700">Primary ops · 4.65%</p>
+                      <p className="text-[9px] text-blue-700">Primary operating · 4.65%</p>
                     </div>
                   </div>
 
@@ -6734,7 +6734,7 @@ function AdvisorBriefView({
                   <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 90, width: "29%" }} data-testid="flow-row-reserve-autodraw">
                     <div className="px-2.5 py-2.5">
                       <div className="flex items-center gap-1 mb-0.5">
-                        <p className="text-[10px] font-bold text-amber-900 leading-tight">JPMorgan 100% Treasuries MMF</p>
+                        <p className="text-[10px] font-bold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
                       <p className="text-[9px] text-amber-700">Reserve buffer · ~5.00%</p>
@@ -6763,7 +6763,7 @@ function AdvisorBriefView({
                         <p className="text-[10px] font-bold text-amber-900 leading-tight">T-Bill Ladder</p>
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
-                      <p className="text-[9px] text-amber-700">3-Mo / 6-Mo / 9-Mo · 4.65–4.95%</p>
+                      <p className="text-[9px] text-amber-700">3-Month / 6-Month / 9-Month · 4.65–4.95%</p>
                     </div>
                   </div>
 
@@ -6771,7 +6771,7 @@ function AdvisorBriefView({
                   <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 90, width: "29%" }} data-testid="flow-row-build">
                     <div className="px-2.5 py-2.5">
                       <div className="flex items-center gap-1 mb-0.5">
-                        <p className="text-[10px] font-bold text-emerald-900 leading-tight">Muni Bonds + S&P Low Vol</p>
+                        <p className="text-[10px] font-bold text-emerald-900 leading-tight">Municipal Bonds + S&P Low Volatility</p>
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
                       <p className="text-[9px] text-emerald-700">2-position Build ladder · ~3.85%</p>
