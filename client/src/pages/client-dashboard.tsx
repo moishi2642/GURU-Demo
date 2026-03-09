@@ -1090,32 +1090,34 @@ function CashManagementPanel({
               </div>
             </div>
 
-            {/* ── Bucket dropdown + sub-items ── */}
-            <div className="px-4 pb-4 pt-1">
-              <div className="relative">
-                <select
-                  className="w-full appearance-none rounded-t text-sm font-semibold text-white px-3 py-2 pr-8 cursor-pointer border-0 outline-none"
-                  style={{ backgroundColor: GURU_BUCKETS[BUCKETS.find(b => b.label === openBucket)?.key ?? BUCKETS[0].key].color }}
-                  value={openBucket ?? BUCKETS[0].label}
-                  onChange={e => setOpenBucket(e.target.value)}
-                >
-                  {BUCKETS.map(b => (
-                    <option key={b.key} value={b.label}>{b.label} — {fmt(b.value, true)}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
-              </div>
-              <div className="border border-t-0 border-border rounded-b overflow-hidden">
-                {(bucketSubItems[openBucket ?? BUCKETS[0].label] ?? []).map((item, i) => (
-                  <div key={i} className="flex items-center justify-between px-3 py-2 text-xs border-t border-border first:border-t-0 hover:bg-muted/40 transition-colors">
-                    <span className="text-foreground">{item.label}</span>
-                    <span className="tabular-nums font-semibold text-foreground">{fmt(item.value, true)}</span>
+            {/* ── Bucket sections ── */}
+            <div className="border-t border-border divide-y divide-border">
+              {([
+                { key: "reserve"  as GuroBucket, label: "Operating Cash", value: reserve,     bg: "#1d4ed8", rowBg: "#eff6ff", Icon: Wallet },
+                { key: "yield"    as GuroBucket, label: "Reserve",        value: yieldBucket, bg: "#d97706", rowBg: "#fffbeb", Icon: ShieldCheck },
+                { key: "tactical" as GuroBucket, label: "Build",          value: tactical,    bg: "#16a34a", rowBg: "#f0fdf4", Icon: Home },
+              ] as const).map(({ key, label, value, bg, rowBg, Icon }) => (
+                <div key={key}>
+                  <div className="px-3 py-2 flex items-center justify-between" style={{ background: bg }}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-3 h-3 text-white/80 flex-shrink-0" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white">{label}</span>
+                    </div>
+                    <span className="text-[11px] font-black tabular-nums text-white">{fmt(value, true)}</span>
                   </div>
-                ))}
-                {(bucketSubItems[openBucket ?? BUCKETS[0].label] ?? []).length === 0 && (
-                  <div className="px-3 py-2 text-xs text-muted-foreground italic">No accounts mapped</div>
-                )}
-              </div>
+                  <div style={{ background: rowBg }}>
+                    {(bucketSubItems[label] ?? []).map((item, i) => (
+                      <div key={i} className="flex items-center justify-between px-3 py-2 text-[11px] border-t border-black/5 first:border-t-0">
+                        <span className="text-foreground/80 truncate pr-2">{item.label}</span>
+                        <span className="tabular-nums font-semibold text-foreground shrink-0">{fmt(item.value, true)}</span>
+                      </div>
+                    ))}
+                    {(bucketSubItems[label] ?? []).length === 0 && (
+                      <div className="px-3 py-2 text-[11px] text-muted-foreground italic">No accounts mapped</div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         );
