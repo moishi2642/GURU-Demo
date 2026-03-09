@@ -6672,8 +6672,10 @@ function AdvisorBriefView({
                     <line x1="16" y1="13" x2="16" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Vertical drop: Reserve bucket → JPMorgan */}
                     <line x1="50" y1="13" x2="50" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Vertical drop: Build bucket → Build account */}
+                    {/* Vertical drop: Build bucket → first Build account */}
                     <line x1="84" y1="13" x2="84" y2="37" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Vertical drop: between the two Build accounts */}
+                    <line x1="84" y1="55" x2="84" y2="70" stroke="#cbd5e1" strokeWidth="0.7" />
                   </svg>
 
                   {/* Animated connector: JPMorgan MMF → CIT MM (amber, matching Money Movement tab) */}
@@ -6718,64 +6720,45 @@ function AdvisorBriefView({
                     </div>
                   </div>
 
-                  {/* ── ROW 2: Account nodes (name + rate only) ── */}
+                  {/* ── ROW 2: Account nodes ── */}
 
                   {/* Under Ops: CIT Money Market Bank Account */}
                   <div className="absolute rounded-lg border border-blue-200 bg-blue-50/60 shadow-sm" style={{ left: "1%", top: 90, width: "29%" }} data-testid="flow-row-ops-march">
                     <div className="px-2.5 py-2.5">
-                      <div className="flex items-center gap-1 mb-0.5">
+                      <div className="flex items-center gap-1">
                         <p className="text-[10px] font-bold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
-                      <p className="text-[9px] text-blue-700">Primary operating · 4.65%</p>
                     </div>
                   </div>
 
                   {/* Under Reserve: JPMorgan 100% Treasuries MMF */}
                   <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 90, width: "29%" }} data-testid="flow-row-reserve-autodraw">
                     <div className="px-2.5 py-2.5">
-                      <div className="flex items-center gap-1 mb-0.5">
+                      <div className="flex items-center gap-1">
                         <p className="text-[10px] font-bold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
-                      <p className="text-[9px] text-amber-700">Reserve buffer · ~5.00%</p>
                     </div>
                   </div>
 
-                  {/* Animated connector: T-Bill Ladder → JPMorgan MMF (upward, maturity reinvestment) */}
-                  <div
-                    className="absolute flex items-center justify-center"
-                    style={{ left: "48.5%", top: 142, width: 14, height: 26 }}
-                  >
-                    <div className="relative overflow-hidden" style={{ width: 2, height: "100%", backgroundColor: "rgba(217,119,6,0.25)", borderRadius: 2 }}>
-                      <motion.div
-                        className="absolute left-1/2 -translate-x-1/2 rounded-full"
-                        style={{ width: 8, height: 8, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
-                        animate={{ top: ["100%", "-8px"] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Under Reserve: T-Bill Ladder */}
-                  <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 168, width: "29%" }} data-testid="flow-row-reserve-tbill">
+                  {/* Under Build: Municipal Bonds */}
+                  <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 90, width: "29%" }} data-testid="flow-row-build-munis">
                     <div className="px-2.5 py-2.5">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <p className="text-[10px] font-bold text-amber-900 leading-tight">T-Bill Ladder</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-[10px] font-bold text-emerald-900 leading-tight">Municipal Bonds</p>
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
-                      <p className="text-[9px] text-amber-700">3-Month / 6-Month / 9-Month · 4.65–4.95%</p>
                     </div>
                   </div>
 
-                  {/* Under Build: Muni Bonds + S&P Low Vol ETF */}
-                  <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 90, width: "29%" }} data-testid="flow-row-build">
+                  {/* Under Build: T-Bill Ladder */}
+                  <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 168, width: "29%" }} data-testid="flow-row-build-tbill">
                     <div className="px-2.5 py-2.5">
-                      <div className="flex items-center gap-1 mb-0.5">
-                        <p className="text-[10px] font-bold text-emerald-900 leading-tight">Municipal Bonds + S&P Low Volatility</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-[10px] font-bold text-emerald-900 leading-tight">T-Bill Ladder</p>
                         <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
                       </div>
-                      <p className="text-[9px] text-emerald-700">2-position Build ladder · ~3.85%</p>
                     </div>
                   </div>
 
