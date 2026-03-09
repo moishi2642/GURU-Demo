@@ -2638,6 +2638,7 @@ function CashFlowForecastView({
     return init;
   });
   const [hoveredQuarter, setHoveredQuarter] = React.useState<number | null>(null);
+  const [calloutHovered, setCalloutHovered] = React.useState(false);
 
   function monthVal(descs: string[], year: number, month: number): number {
     return cashFlows
@@ -2965,14 +2966,43 @@ function CashFlowForecastView({
           );
         };
 
+        const sep30Bar = bars.find((b) => b.name === "Sep 30");
+        const sep30Balance = sep30Bar?.actual ?? 0;
+
         const Sep30CalloutLabel = (props: any) => {
           const { viewBox } = props;
           if (!viewBox) return null;
           const { x } = viewBox;
+          const W = 174;
+          const H = 36;
+          const lx = x - W / 2;
           return (
-            <g>
-              <rect x={x - 54} y={4} width={108} height={18} rx={4} fill="#fef3c7" stroke="#f59e0b" strokeWidth={1} />
-              <text x={x} y={16} textAnchor="middle" fill="#92400e" fontSize={9} fontWeight="800">⚠ Holding too much cash</text>
+            <g style={{ cursor: "default" }}>
+              {/* Pill sticker */}
+              <rect
+                x={lx} y={2} width={W} height={H} rx={7}
+                fill="#fef3c7" stroke="#f59e0b" strokeWidth={1.5}
+                onMouseEnter={() => setCalloutHovered(true)}
+                onMouseLeave={() => setCalloutHovered(false)}
+              />
+              <text x={x} y={16} textAnchor="middle" fill="#92400e" fontSize={10.5} fontWeight="900" style={{ pointerEvents: "none" }}>
+                ⚠ Holding too much cash
+              </text>
+              <text x={x} y={30} textAnchor="middle" fill="#b45309" fontSize={9} fontWeight="700" style={{ pointerEvents: "none" }}>
+                {fmt(sep30Balance, true)} at September trough
+              </text>
+              {/* Hover tooltip */}
+              {calloutHovered && (
+                <g>
+                  <rect x={x - 128} y={H + 6} width={256} height={42} rx={7} fill="#1e293b" />
+                  <text x={x} y={H + 22} textAnchor="middle" fill="rgba(255,255,255,0.75)" fontSize={9} fontWeight="600">
+                    Even at trough, expected to hold
+                  </text>
+                  <text x={x} y={H + 38} textAnchor="middle" fill="#fbbf24" fontSize={11} fontWeight="900">
+                    {fmt(sep30Balance, true)} of cash
+                  </text>
+                </g>
+              )}
             </g>
           );
         };
@@ -3001,7 +3031,7 @@ function CashFlowForecastView({
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={bars}
-                    margin={{ top: 32, right: 16, left: 4, bottom: 0 }}
+                    margin={{ top: 50, right: 16, left: 4, bottom: 0 }}
                     barCategoryGap="18%"
                     onMouseMove={(data: any) => {
                       if (data?.activePayload?.length) {
