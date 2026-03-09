@@ -6632,7 +6632,7 @@ function AdvisorBriefView({
                   color="#0ea5e9"
                   icon={CalendarClock}
                   badge="Cash Management"
-                  priority="March · April"
+                  priority="March"
                   title="Scheduled Cash Movements for Next Month (March)"
                   subtitle="What moves between accounts over the next 60 days"
                 />
@@ -6647,7 +6647,7 @@ function AdvisorBriefView({
                     <Wallet className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
                     <span className="text-[11px] font-black uppercase tracking-widest text-white">Operating Cash</span>
                   </div>
-                  <div className="divide-y divide-border/60">
+                  <div>
                     <FlowRow
                       date="March"
                       label="Inflow to Primary Account"
@@ -6659,18 +6659,6 @@ function AdvisorBriefView({
                       iconBg="bg-emerald-100"
                       iconColor="text-emerald-600"
                       testId="flow-row-ops-march"
-                    />
-                    <FlowRow
-                      date="April"
-                      label="Inflow to Primary Account"
-                      amount={6126}
-                      amtColor="text-emerald-700"
-                      from="Autodraw from Reserve — JPMorgan 100% Treasury Money Market Fund ****2847"
-                      to="Citizens Private Banking Checking ****7291"
-                      icon={ArrowUp}
-                      iconBg="bg-emerald-100"
-                      iconColor="text-emerald-600"
-                      testId="flow-row-ops-april"
                     />
                   </div>
                 </div>
