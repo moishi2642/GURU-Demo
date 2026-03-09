@@ -6581,35 +6581,64 @@ function AdvisorBriefView({
 
         {/* ── Card 4: Account Cash Movements ── */}
         {(() => {
-          const moves = [
+          type MoveColor = "sky" | "amber" | "violet";
+          type Move = { when: string; from: string; to: string; amount: number; note: string; color: MoveColor };
+          const groups: { label: string; labelColor: string; moves: Move[] }[] = [
             {
-              when:   "March 31",
-              from:   "Treasury Bill (maturing)",
-              to:     "Reserve Money Market",
-              amount: 41877,
-              note:   "Bill matures — proceeds held as liquid reserve",
-              color:  "sky" as const,
+              label: "Creating Liquidity Within Reserve",
+              labelColor: "#0ea5e9",
+              moves: [
+                {
+                  when:   "March 31",
+                  from:   "Treasury Bill (maturing)",
+                  to:     "Reserve Money Market",
+                  amount: 41877,
+                  note:   "Bill matures — proceeds held as liquid reserve",
+                  color:  "sky",
+                },
+              ],
             },
             {
-              when:   "March",
-              from:   "Reserve Money Market",
-              to:     "Operating Checking",
-              amount: 47126,
-              note:   "Rebuilding 2-month expense cushion after Q1 tax and tuition",
-              color:  "amber" as const,
+              label: "Into Operating Account",
+              labelColor: "#d97706",
+              moves: [
+                {
+                  when:   "March",
+                  from:   "Reserve Money Market",
+                  to:     "Operating Checking",
+                  amount: 47126,
+                  note:   "Rebuilding 2-month expense cushion after Q1 tax and tuition",
+                  color:  "amber",
+                },
+                {
+                  when:   "April",
+                  from:   "Reserve Money Market",
+                  to:     "Operating Checking",
+                  amount: 6126,
+                  note:   "Covering April shortfall",
+                  color:  "amber",
+                },
+              ],
             },
             {
-              when:   "April",
-              from:   "Reserve Money Market",
-              to:     "Operating Checking",
-              amount: 6126,
-              note:   "Covering April shortfall",
-              color:  "amber" as const,
+              label: "Build Account",
+              labelColor: "#7c3aed",
+              moves: [
+                {
+                  when:   "Ongoing",
+                  from:   "Build Account",
+                  to:     "No movement",
+                  amount: 194384,
+                  note:   "Holding as savings toward home upgrade · earning ~4.75%",
+                  color:  "violet",
+                },
+              ],
             },
           ];
-          const colorMap = {
-            sky:   { row: "bg-sky-50",   dot: "bg-sky-400",   amt: "text-sky-700"   },
-            amber: { row: "bg-amber-50", dot: "bg-amber-400", amt: "text-amber-700" },
+          const colorMap: Record<MoveColor, { row: string; dot: string; amt: string }> = {
+            sky:    { row: "bg-sky-50",    dot: "bg-sky-400",    amt: "text-sky-700"    },
+            amber:  { row: "bg-amber-50",  dot: "bg-amber-400",  amt: "text-amber-700"  },
+            violet: { row: "bg-slate-50",  dot: "bg-violet-300", amt: "text-violet-600" },
           };
           return (
             <div
@@ -6630,39 +6659,43 @@ function AdvisorBriefView({
                 />
               </div>
 
-              {/* Movement rows */}
-              <div className="divide-y divide-border">
-                {moves.map((m, i) => {
-                  const c = colorMap[m.color];
-                  return (
-                    <div key={i} className={`flex items-center gap-5 px-6 py-4 ${c.row}`} data-testid={`flow-row-${i}`}>
-                      <div className="w-16 flex-shrink-0">
-                        <p className="text-[11px] font-black text-foreground">{m.when}</p>
-                      </div>
-                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground">
-                          {m.from} <span className="text-muted-foreground font-normal">→</span> {m.to}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{m.note}</p>
-                      </div>
-                      <p className={`text-base font-black tabular-nums flex-shrink-0 ${c.amt}`}>{fmt(m.amount)}</p>
+              {/* Grouped movement rows */}
+              <div>
+                {groups.map((g, gi) => (
+                  <div key={gi} className={gi > 0 ? "border-t border-border" : ""}>
+                    {/* Group label */}
+                    <div className="px-6 py-2 bg-slate-50/80 border-b border-border/60 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: g.labelColor }} />
+                      <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: g.labelColor }}>{g.label}</span>
                     </div>
-                  );
-                })}
-
-                {/* Build Account — no movement */}
-                <div className="flex items-center gap-5 px-6 py-4 bg-slate-50" data-testid="flow-row-build">
-                  <div className="w-16 flex-shrink-0">
-                    <p className="text-[11px] font-black text-foreground">Ongoing</p>
+                    {/* Rows */}
+                    <div className="divide-y divide-border">
+                      {g.moves.map((m, i) => {
+                        const c = colorMap[m.color];
+                        const isNoMove = m.to === "No movement";
+                        return (
+                          <div key={i} className={`flex items-center gap-5 px-6 py-4 ${c.row}`} data-testid={`flow-row-${gi}-${i}`}>
+                            <div className="w-16 flex-shrink-0">
+                              <p className="text-[11px] font-black text-foreground">{m.when}</p>
+                            </div>
+                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
+                            <div className="flex-1 min-w-0">
+                              {isNoMove ? (
+                                <p className="text-sm font-semibold text-foreground">{m.from} — no movement</p>
+                              ) : (
+                                <p className="text-sm font-semibold text-foreground">
+                                  {m.from} <span className="text-muted-foreground font-normal">→</span> {m.to}
+                                </p>
+                              )}
+                              <p className="text-[11px] text-muted-foreground mt-0.5">{m.note}</p>
+                            </div>
+                            <p className={`text-base font-black tabular-nums flex-shrink-0 ${c.amt}`}>{fmt(m.amount)}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="w-2 h-2 rounded-full flex-shrink-0 bg-violet-300" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">Build Account — no movement</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Holding $194,384 as savings toward home upgrade · earning ~4.75%</p>
-                  </div>
-                  <p className="text-base font-black tabular-nums flex-shrink-0 text-violet-600">$194,384</p>
-                </div>
+                ))}
               </div>
 
               {/* Footer */}
