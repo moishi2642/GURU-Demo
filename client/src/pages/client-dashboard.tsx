@@ -4428,9 +4428,6 @@ function MoneyMovementView({
                               className="text-[12px]">
                               {fmtBal(t.balances[sm - 1] ?? 0)}
                             </span>
-                            <span style={{ position: 'absolute', top: -6, right: 2, fontSize: 7, fontWeight: 700, color: '#d97706', letterSpacing: '0.07em', textTransform: 'uppercase', lineHeight: 1, opacity: 0.75, whiteSpace: 'nowrap' }}>
-                              proceeds
-                            </span>
                             <div style={{ position: 'relative', width: '100%', height: 2, overflow: 'hidden', backgroundColor: 'rgba(217,119,6,0.3)' }}>
                               <motion.div
                                 style={{ position: 'absolute', top: '50%', marginTop: -3, width: 7, height: 7, borderRadius: '50%', backgroundColor: '#d97706', boxShadow: '0 0 5px #d97706' }}
