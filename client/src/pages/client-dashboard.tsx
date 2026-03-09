@@ -6299,6 +6299,12 @@ function AdvisorBriefView({
   const _yieldPickupAnnual = Math.round(liquidHero * ((_guruLiquidYield - _currentLiquidYield) / 100));
   const bpsPickup = Math.round((_guruLiquidYield - _currentLiquidYield) * 100);
 
+  // ── Fed rate cut lock-in scenario ──
+  // $247K = excess cash not already in treasuries, excluding Fidelity
+  const _fedCutBps = 50;
+  const _excessNotTreasuries = 247000;
+  const _fedLockInSavings = Math.round(_excessNotTreasuries * (_fedCutBps / 10000));
+
   // ── Single-stock risk ──
   const singleStockVal = assets
     .filter((a) => (a.description ?? "").toLowerCase().match(/meta|bank of america|bofA|single/i))
@@ -6406,7 +6412,7 @@ function AdvisorBriefView({
       );
     if (checked.has("yield"))
       paras.push(
-        `On the fixed-income side, there's an opportunity to improve what your reserve accounts are earning. We've identified products that could add roughly +${bpsPickup} basis points in after-tax yield — that translates to approximately ${fmt(_yieldPickupAnnual)} per year in incremental income at essentially the same risk profile. With the Fed cutting rates, we think this window is time-sensitive.`,
+        `On the fixed-income side, the Fed is expected to cut rates by another 50 bps. We have ${fmt(_excessNotTreasuries)} of excess cash sitting outside of treasuries that we can lock in at today's rates before that cut happens. Acting now preserves roughly ${fmt(_fedLockInSavings)} per year in yield — at no added risk. We think this window is time-sensitive.`,
       );
     if (checked.has("cashflow"))
       paras.push(
@@ -6452,7 +6458,7 @@ function AdvisorBriefView({
       );
     if (checked.has("yield"))
       blocks.push(
-        <p key="yld" className="font-serif">On the fixed-income side, there's an opportunity to improve what your reserve accounts are earning. We've identified products that could add roughly +{bpsPickup} basis points in after-tax yield — that translates to approximately {fmt(_yieldPickupAnnual)} per year in incremental income at essentially the same risk profile. With the Fed cutting rates, we think this window is time-sensitive.</p>
+        <p key="yld" className="font-serif">On the fixed-income side, the Fed is expected to cut rates by another 50 bps. We have {fmt(_excessNotTreasuries)} of excess cash sitting outside of treasuries that we can lock in at today's rates before that cut happens. Acting now preserves roughly {fmt(_fedLockInSavings)} per year in yield — at no added risk. We think this window is time-sensitive.</p>
       );
     if (checked.has("cashflow"))
       blocks.push(
@@ -6717,28 +6723,28 @@ function AdvisorBriefView({
               icon={SlidersHorizontal}
               badge="Fixed Income"
               priority="Time Sensitive"
-              title="Repositioning for Fed Rate Cuts"
-              subtitle={<>Lock-in short term rates in the <em>Reserve</em> and <em>Build</em> accounts</>}
+              title="Lock In Rates Before Fed Cuts"
+              subtitle={<>Lock in T-bill yields on <em>{fmt(_excessNotTreasuries)}</em> of cash before the next Fed rate cut</>}
             />
             {/* Headline stats */}
             <div className="flex items-center gap-5 py-1">
               <div>
-                <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{bpsPickup} bps</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">yield pickup available</p>
+                <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">−{_fedCutBps} bps</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">expected Fed cut · lock in now</p>
               </div>
               <div className="w-px h-8 bg-border flex-shrink-0" />
               <div>
-                <p className="text-xl font-black tabular-nums text-amber-700 leading-none">{fmt(_yieldPickupAnnual)}<span className="text-sm font-semibold">/yr</span></p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">incremental after-tax income</p>
+                <p className="text-xl font-black tabular-nums text-amber-700 leading-none">{fmt(_fedLockInSavings)}<span className="text-sm font-semibold">/yr</span></p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">saved vs. waiting for cut</p>
               </div>
             </div>
             {/* Comparison table */}
             <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Current vs GURU Recommended</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Lock In Now vs. Post-Cut Rate</p>
               {[
-                { label: "Idle bank accounts", current: "~0.50%", note: "→ Move to MMF" },
-                { label: "Reserve MMF", current: `${_currentLiquidYield.toFixed(1)}% AT`, note: `→ ${_guruLiquidYield.toFixed(1)}% AT · JPMorgan` },
-                { label: "Build Ladder", current: "2.50% AT", note: "→ 2.74% AT · T-Bills" },
+                { label: fmt(_excessNotTreasuries) + " excess cash (ex-Fidelity)", current: "Today's rate", note: `−${_fedCutBps} bps after cut` },
+                { label: "Checking / Savings (idle)", current: "~0.01%", note: "→ T-Bills at 4.3%" },
+                { label: "CIT Money Market", current: "4.30% gross", note: `−${_fedCutBps} bps if you wait` },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2">
                   <span className="text-[10px] text-muted-foreground truncate">{row.label}</span>
@@ -6753,7 +6759,7 @@ function AdvisorBriefView({
                 <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">Talking Point</span>
               </div>
               <p className="text-[11px] text-amber-800 leading-relaxed italic">
-                "The Fed has been cutting rates — this is the window to lock in short-term T-bills before yields compress further. Shifting reserve cash now captures an additional {fmt(_yieldPickupAnnual)}/year at no added risk."
+                "The Fed is expected to cut rates by another 50 bps. On the {fmt(_excessNotTreasuries)} of excess cash not yet in treasuries, locking in today's T-bill rate before that cut is worth roughly {fmt(_fedLockInSavings)}/year — at no added risk. The window is now."
               </p>
             </div>
           </div>
