@@ -6296,10 +6296,14 @@ function AdvisorBriefView({
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
   // ── Liquidity calcs — aligned with GURU tab ──
-  const { totalLiquid: _abvTotalLiquid } = cashBuckets(assets);
+  const { totalLiquid: _abvTotalLiquid, reserve: _abvReserve, yieldBucket: _abvYieldBucket } = cashBuckets(assets);
   const _abvForecast = buildForecast(cashFlows);
-  const cashTroughAbv = computeTrough(_abvForecast);
-  const cashExcess = Math.max(0, _abvTotalLiquid - cashTroughAbv);
+  // Use the actual minimum cumulative net flow as the trough buffer to keep
+  // (computeTrough only returns >0 when cumulative dips negative, which it doesn't here)
+  const cashTroughAbv = Math.min(..._abvForecast.map((d) => d.cumulative));
+  // Non-treasury cash only (checking + money market, excludes T-bills/treasuries)
+  const _nonTreasuryCash = _abvReserve + _abvYieldBucket;
+  const cashExcess = Math.max(0, _nonTreasuryCash - cashTroughAbv);
   const guruReserveTarget = cashTroughAbv;
   const reserveItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().match(/checking|savings|money market|mm|sweep/) && !(a.description ?? "").toLowerCase().includes("fidelity"),
