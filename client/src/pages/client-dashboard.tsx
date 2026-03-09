@@ -6586,11 +6586,12 @@ function AdvisorBriefView({
         {(() => {
           // Shared row renderer
           const FlowRow = ({
-            date, label, amount, amtColor, from, to, icon: Icon, iconBg, iconColor, testId,
+            date, label, amount, amtColor, from, to, icon: Icon, iconBg, iconColor, testId, sign,
           }: {
             date: string; label: string; amount: number | null; amtColor: string;
             from: string; to: string;
             icon: React.ElementType; iconBg: string; iconColor: string; testId: string;
+            sign?: "+" | "-";
           }) => (
             <div className="px-6 py-4" data-testid={testId}>
               <div className="flex items-start gap-3">
@@ -6604,7 +6605,7 @@ function AdvisorBriefView({
                       <span className="text-[10px] font-semibold text-muted-foreground shrink-0">{date}</span>
                     </div>
                     {amount !== null && (
-                      <p className={`text-sm font-black tabular-nums shrink-0 ${amtColor}`}>{fmt(amount)}</p>
+                      <p className={`text-sm font-black tabular-nums shrink-0 ${amtColor}`}>{sign ?? ""}{fmt(amount)}</p>
                     )}
                   </div>
                   <div className="mt-1.5 space-y-0.5">
@@ -6660,6 +6661,7 @@ function AdvisorBriefView({
                       iconBg="bg-emerald-100"
                       iconColor="text-emerald-600"
                       testId="flow-row-ops-march"
+                      sign="+"
                     />
                   </div>
                 </div>
@@ -6675,13 +6677,14 @@ function AdvisorBriefView({
                       date="March 31"
                       label="Proceeds from T-Bill Maturity"
                       amount={41877}
-                      amtColor="text-sky-700"
+                      amtColor="text-emerald-700"
                       from="US Treasury Bill (maturing)"
                       to="JPMorgan 100% Treasury Money Market Fund ****2847"
                       icon={ArrowUp}
-                      iconBg="bg-sky-100"
-                      iconColor="text-sky-600"
+                      iconBg="bg-emerald-100"
+                      iconColor="text-emerald-600"
                       testId="flow-row-reserve-tbill"
+                      sign="+"
                     />
                     <FlowRow
                       date="March"
@@ -6694,6 +6697,7 @@ function AdvisorBriefView({
                       iconBg="bg-rose-100"
                       iconColor="text-rose-600"
                       testId="flow-row-reserve-autodraw"
+                      sign="-"
                     />
                   </div>
                 </div>
