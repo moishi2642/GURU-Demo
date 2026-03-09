@@ -5155,7 +5155,10 @@ function GuruAllocationView({
           value: number;
           yield_: string;
           yieldAT: string;
+          acctNum?: string;
         };
+        const acctHash = (s: string) =>
+          String(Math.abs(s.split("").reduce((a, c) => ((a * 31 + c.charCodeAt(0)) | 0), 0)) % 9000 + 1000);
         const shortName = (desc: string | null | undefined) =>
           (desc ?? "").split("(")[0].split("—")[0].split("–")[0].trim();
         const parseYieldNum = (y: string): number => {
@@ -5191,11 +5194,13 @@ function GuruAllocationView({
             const y = extractRate(a.description)
               ? extractRate(a.description) + "%"
               : "0.01%";
+            const n = shortName(a.description);
             return {
-              name: shortName(a.description),
+              name: n,
               value: Number(a.value),
               yield_: y,
-              yieldAT: toATFull(y), // bank checking: fully taxed (fed+state+city)
+              yieldAT: toATFull(y),
+              acctNum: acctHash(n),
             };
           });
 
@@ -5212,12 +5217,13 @@ function GuruAllocationView({
             const y = extractRate(a.description)
               ? extractRate(a.description) + "%"
               : "0.01%";
+            const n = shortName(a.description);
             return {
-              name: shortName(a.description),
+              name: n,
               value: Number(a.value),
               yield_: y,
-              // MM funds / sweep in treasuries: federal only; bank savings: fully taxed
               yieldAT: isTreasuryMM(a.description) ? toATFed(y) : toATFull(y),
+              acctNum: acctHash(n),
             };
           });
 
@@ -5232,11 +5238,13 @@ function GuruAllocationView({
             const y = extractRate(a.description)
               ? extractRate(a.description) + "%"
               : "—";
+            const n = shortName(a.description);
             return {
-              name: shortName(a.description),
+              name: n,
               value: Number(a.value),
               yield_: y,
-              yieldAT: toATFed(y), // US Treasuries: federal only
+              yieldAT: toATFed(y),
+              acctNum: acctHash(n),
             };
           });
 
@@ -5245,15 +5253,15 @@ function GuruAllocationView({
         // Grow sub-accounts: detailed breakdown per prototype model
         // yieldAT field repurposed as 5yr historical return for display
         const growAccts: Acct[] = [
-          { name: "Cash — Brokerage Sweep",  value: 222965, yield_: "—", yieldAT: "2.5%" },
-          { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%" },
-          { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%" },
-          { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%" },
-          { name: "US Small Cap",             value: 323582, yield_: "—", yieldAT: "9.1%" },
-          { name: "US Dividend / Value",      value: 94369,  yield_: "—", yieldAT: "10.3%" },
-          { name: "Single Stock",             value: 238311, yield_: "—", yieldAT: "~20%+" },
-          { name: "Bonds",                    value: 61210,  yield_: "—", yieldAT: "0.2%" },
-          { name: "Crypto",                   value: 9500,   yield_: "—", yieldAT: "~30%+" },
+          { name: "Cash — Brokerage Sweep",  value: 222965, yield_: "—", yieldAT: "2.5%",  acctNum: acctHash("Cash — Brokerage Sweep") },
+          { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%",  acctNum: acctHash("International") },
+          { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%", acctNum: acctHash("US Total Market") },
+          { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%", acctNum: acctHash("US Large Cap") },
+          { name: "US Small Cap",             value: 323582, yield_: "—", yieldAT: "9.1%",  acctNum: acctHash("US Small Cap") },
+          { name: "US Dividend / Value",      value: 94369,  yield_: "—", yieldAT: "10.3%", acctNum: acctHash("US Dividend / Value") },
+          { name: "Single Stock",             value: 238311, yield_: "—", yieldAT: "~20%+", acctNum: acctHash("Single Stock") },
+          { name: "Bonds",                    value: 61210,  yield_: "—", yieldAT: "0.2%",  acctNum: acctHash("Bonds") },
+          { name: "Crypto",                   value: 9500,   yield_: "—", yieldAT: "~30%+", acctNum: acctHash("Crypto") },
         ];
         const otherAccts: Acct[] = [
           ...(altVal > 0
@@ -5819,6 +5827,7 @@ function GuruAllocationView({
                                       <span className="flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden text-muted-foreground">
                                         <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
                                         <span className="truncate">{acct.name}</span>
+                                        {acct.acctNum && <span className="flex-shrink-0 text-[9px] tabular-nums text-muted-foreground/60">···{acct.acctNum}</span>}
                                       </span>
                                       <span className="text-[10px] font-semibold text-right tabular-nums text-foreground">{fmt(acct.value)}</span>
                                       <span className="text-[10px] text-right tabular-nums text-muted-foreground">{acct.yieldAT}</span>
@@ -5832,6 +5841,7 @@ function GuruAllocationView({
                               <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden text-muted-foreground">
                                 <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
                                 <span className="truncate">{acct.name}</span>
+                                {acct.acctNum && <span className="flex-shrink-0 text-[9px] tabular-nums text-muted-foreground/60">···{acct.acctNum}</span>}
                               </span>
                               <span className="text-[11px] font-semibold text-right tabular-nums text-foreground">{fmt(acct.value)}</span>
                               <span className="text-[10px] font-semibold text-right tabular-nums text-foreground">{acct.yield_}</span>
