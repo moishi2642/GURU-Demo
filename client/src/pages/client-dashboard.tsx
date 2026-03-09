@@ -5859,7 +5859,7 @@ function GuruAllocationView({
                     className="rounded-xl overflow-hidden flex shadow-sm border border-border"
                   >
                     {/* ── LEFT: Header + Accounts ── */}
-                    <div className="w-[210px] flex-shrink-0 flex flex-col border-r border-border">
+                    <div className="w-[300px] flex-shrink-0 flex flex-col border-r border-border">
                       <div
                         className="px-4 py-3 flex items-center gap-2.5"
                         style={{ background: r.def.bg }}
@@ -5887,13 +5887,14 @@ function GuruAllocationView({
                         {/* Column headers */}
                         {(() => {
                           const isG = r.def.name === "Grow";
-                          const colTpl = isG ? "1fr 76px 60px" : "1fr 76px 52px 60px";
                           return (
-                            <div className="grid mb-2 gap-2" style={{ gridTemplateColumns: colTpl }}>
+                            <div className="flex items-center justify-between mb-2">
                               <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Account</span>
-                              <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Balance</span>
-                              {!isG && <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">Yield</span>}
-                              <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground text-right">{isG ? "5yr Return" : "Tax-Eff Yld"}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Balance</span>
+                                {!isG && <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Yld</span>}
+                                <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">{isG ? "5yr" : "AT"}</span>
+                              </div>
                             </div>
                           );
                         })()}
@@ -5901,14 +5902,7 @@ function GuruAllocationView({
                           const activeSels = bucketProductSelections[r.def.name] ?? [];
                           const hasNewAlloc = activeSels.length > 0;
                           const isGrow = r.def.name === "Grow";
-                          const colTpl = isGrow ? "1fr 76px 60px" : "1fr 76px 52px 60px";
-                          const rowStyle = (indent = false) => ({
-                            gridTemplateColumns: colTpl,
-                            opacity: hasNewAlloc ? 0.35 : 1,
-                            textDecorationLine: hasNewAlloc ? "line-through" : "none",
-                            textDecorationColor: hasNewAlloc ? "#94a3b8" : undefined,
-                            paddingLeft: indent ? "14px" : undefined,
-                          });
+                          const strikeCls = hasNewAlloc ? "opacity-35 line-through decoration-slate-400" : "";
 
                           const equityNames = ["International", "US Total Market", "US Large Cap", "US Small Cap", "US Dividend / Value", "Single Stock"];
                           const growGroups = isGrow ? [
@@ -5918,44 +5912,46 @@ function GuruAllocationView({
                             { label: "Alternatives", items: r.subAccounts.filter(a => a.name === "Crypto") },
                           ].filter(g => g.items.length > 0) : [];
 
+                          const StatsRow = ({ bal, yld, at }: { bal: React.ReactNode; yld?: React.ReactNode; at: React.ReactNode }) => (
+                            <div className="flex items-center gap-3 pl-3 mt-0.5">
+                              <span className="text-[10px] font-semibold tabular-nums text-foreground">{bal}</span>
+                              {yld !== undefined && <span className="text-[10px] font-semibold tabular-nums text-foreground">{yld}</span>}
+                              <span className="text-[10px] tabular-nums text-muted-foreground">{at}</span>
+                            </div>
+                          );
+
                           return (
-                        <div className="space-y-1.5 flex-1">
+                        <div className="space-y-2 flex-1">
                           {isGrow ? (
                             growGroups.map((group) => {
                               const groupTotal = group.items.reduce((s, a) => s + a.value, 0);
                               return (
-                                <div key={group.label} className="space-y-1">
-                                  {/* Group header row — 3 cols for Grow */}
-                                  <div className="grid items-center gap-2" style={{ gridTemplateColumns: colTpl, opacity: hasNewAlloc ? 0.35 : 1 }}>
+                                <div key={group.label} className={`space-y-1.5 ${strikeCls}`}>
+                                  <div className="flex items-center justify-between">
                                     <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{group.label}</span>
-                                    <span className="text-[10px] font-black text-right tabular-nums text-foreground">{fmt(groupTotal)}</span>
-                                    <span />
+                                    <span className="text-[10px] font-black tabular-nums text-foreground">{fmt(groupTotal)}</span>
                                   </div>
-                                  {/* Sub-rows — 3 cols: name | balance | 5yr return */}
                                   {group.items.map((acct) => (
-                                    <div key={acct.name} className="grid items-center gap-2" style={rowStyle(true)}>
-                                      <span className="flex items-center gap-1.5 text-[10px] min-w-0 overflow-hidden text-muted-foreground">
+                                    <div key={acct.name} className="pl-2">
+                                      <div className="flex items-center gap-1.5 min-w-0">
                                         <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
-                                        <span className="truncate">{acct.name}</span>
+                                        <span className="text-[10px] text-muted-foreground leading-tight">{acct.name}</span>
                                         {acct.acctNum && <span className="flex-shrink-0 text-[9px] tabular-nums text-muted-foreground/60">···{acct.acctNum}</span>}
-                                      </span>
-                                      <span className="text-[10px] font-semibold text-right tabular-nums text-foreground">{fmt(acct.value)}</span>
-                                      <span className="text-[10px] text-right tabular-nums text-muted-foreground">{acct.yieldAT}</span>
+                                      </div>
+                                      <StatsRow bal={fmt(acct.value)} at={acct.yieldAT} />
                                     </div>
                                   ))}
                                 </div>
                               );
                             })
                           ) : r.subAccounts.map((acct) => (
-                            <div key={acct.name} className="grid items-center gap-2" style={rowStyle()}>
-                              <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden text-muted-foreground">
-                                <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
-                                <span className="truncate">{acct.name}</span>
+                            <div key={acct.name} className={strikeCls}>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: hasNewAlloc ? "#94a3b8" : r.def.accent }} />
+                                <span className="text-[11px] text-muted-foreground leading-tight">{acct.name}</span>
                                 {acct.acctNum && <span className="flex-shrink-0 text-[9px] tabular-nums text-muted-foreground/60">···{acct.acctNum}</span>}
-                              </span>
-                              <span className="text-[11px] font-semibold text-right tabular-nums text-foreground">{fmt(acct.value)}</span>
-                              <span className="text-[10px] font-semibold text-right tabular-nums text-foreground">{acct.yield_}</span>
-                              <span className="text-[10px] text-right tabular-nums text-muted-foreground">{acct.yieldAT}</span>
+                              </div>
+                              <StatsRow bal={fmt(acct.value)} yld={acct.yield_} at={acct.yieldAT} />
                             </div>
                           ))}
                           {/* New amber rows for selected products */}
@@ -5964,70 +5960,46 @@ function GuruAllocationView({
                             const _outAmt = pendingTransfers.filter((t) => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
                             const allocBal = (r.current + _inAmt - _outAmt) * (sel.alloc / 100);
                             return (
-                              <div
-                                key={sel.product.name}
-                                className="grid items-center gap-2 rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50"
-                                style={{ gridTemplateColumns: colTpl }}
-                              >
-                                <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden">
+                              <div key={sel.product.name} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50">
+                                <div className="flex items-center gap-1.5 min-w-0">
                                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500" />
-                                  <span className="truncate font-semibold text-amber-800">{sel.product.name}</span>
-                                </span>
-                                <span className="text-[11px] font-bold text-amber-700 text-right tabular-nums">
-                                  {fmt(allocBal)}
-                                </span>
-                                {!isGrow && (
-                                  <span className="text-[10px] font-semibold text-amber-600 text-right tabular-nums">
-                                    {sel.product.grossYield}
-                                  </span>
-                                )}
-                                <span className="text-[10px] text-amber-600 text-right tabular-nums">
-                                  {sel.product.atYield}
-                                </span>
+                                  <span className="text-[11px] font-semibold text-amber-800 leading-tight">{sel.product.name}</span>
+                                </div>
+                                <div className="flex items-center gap-3 pl-3 mt-0.5">
+                                  <span className="text-[10px] font-bold text-amber-700 tabular-nums">{fmt(allocBal)}</span>
+                                  {!isGrow && <span className="text-[10px] font-semibold text-amber-600 tabular-nums">{sel.product.grossYield}</span>}
+                                  <span className="text-[10px] text-amber-600 tabular-nums">{sel.product.atYield}</span>
+                                </div>
                               </div>
                             );
                           })}
                           {r.subAccounts.length === 0 && (
-                            <p className="text-xs text-muted-foreground italic">
-                              No accounts mapped
-                            </p>
+                            <p className="text-xs text-muted-foreground italic">No accounts mapped</p>
                           )}
-                          {/* Pending outbound transfers (source bucket) */}
-                          {pendingTransfers
-                            .filter((t) => t.from === r.def.name)
-                            .map((pt) => (
-                              <div
-                                key={`outbound-${pt.to}`}
-                                className="grid items-center gap-2 rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50"
-                                style={{ gridTemplateColumns: colTpl }}
-                              >
-                                <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden">
-                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
-                                  <span className="truncate font-semibold text-amber-800">Transfer out → {pt.to}</span>
-                                </span>
-                                <span className="text-[11px] font-bold text-red-600 text-right tabular-nums">−{fmt(pt.amount)}</span>
-                                {!isGrow && <span className="text-[10px] text-amber-500 text-right">—</span>}
-                                <span className="text-[10px] text-amber-500 text-right">—</span>
+                          {/* Pending outbound transfers */}
+                          {pendingTransfers.filter((t) => t.from === r.def.name).map((pt) => (
+                            <div key={`outbound-${pt.to}`} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
+                                <span className="text-[11px] font-semibold text-amber-800 leading-tight">Transfer out → {pt.to}</span>
                               </div>
-                            ))}
-                          {/* Pending inbound transfers (destination bucket) */}
-                          {pendingTransfers
-                            .filter((t) => t.to === r.def.name)
-                            .map((pt) => (
-                              <div
-                                key={`inbound-${pt.from}`}
-                                className="grid items-center gap-2 rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50"
-                                style={{ gridTemplateColumns: colTpl }}
-                              >
-                                <span className="flex items-center gap-1.5 text-[11px] min-w-0 overflow-hidden">
-                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
-                                  <span className="truncate font-semibold text-amber-800">Transfer from {pt.from}</span>
-                                </span>
-                                <span className="text-[11px] font-bold text-amber-700 text-right tabular-nums">+{fmt(pt.amount)}</span>
-                                {!isGrow && <span className="text-[10px] text-amber-500 text-right">—</span>}
-                                <span className="text-[10px] text-amber-500 text-right">—</span>
+                              <div className="pl-3 mt-0.5">
+                                <span className="text-[10px] font-bold text-red-600 tabular-nums">−{fmt(pt.amount)}</span>
                               </div>
-                            ))}
+                            </div>
+                          ))}
+                          {/* Pending inbound transfers */}
+                          {pendingTransfers.filter((t) => t.to === r.def.name).map((pt) => (
+                            <div key={`inbound-${pt.from}`} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
+                                <span className="text-[11px] font-semibold text-amber-800 leading-tight">Transfer from {pt.from}</span>
+                              </div>
+                              <div className="pl-3 mt-0.5">
+                                <span className="text-[10px] font-bold text-amber-700 tabular-nums">+{fmt(pt.amount)}</span>
+                              </div>
+                            </div>
+                          ))}
                           {pendingTransfers.filter((t) => t.to === r.def.name).length > 0 && (
                             <div className="flex items-center gap-1 mt-1 text-[9px] font-black uppercase tracking-wider text-amber-600">
                               <AlertCircle className="w-3 h-3 flex-shrink-0" />
@@ -6037,39 +6009,34 @@ function GuruAllocationView({
                         </div>
                           );
                         })()}
-                        {/* Weighted avg yield + totals footer */}
+                        {/* Totals footer */}
                         {(() => {
-                          const outAmt = pendingTransfers
-                            .filter((t) => t.from === r.def.name)
-                            .reduce((s, t) => s + t.amount, 0);
-                          const inAmt = pendingTransfers
-                            .filter((t) => t.to === r.def.name)
-                            .reduce((s, t) => s + t.amount, 0);
+                          const outAmt = pendingTransfers.filter((t) => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
+                          const inAmt = pendingTransfers.filter((t) => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
                           const netDelta = inAmt - outAmt;
                           const hasPending = netDelta !== 0;
                           const adjTotal = r.current + netDelta;
                           const ftIsGrow = r.def.name === "Grow";
-                          const ftColTpl = ftIsGrow ? "1fr 76px 60px" : "1fr 76px 52px 60px";
                           return (
-                            <div className="mt-2.5 pt-2 border-t border-border">
-                              <div className="grid items-center gap-2" style={{ gridTemplateColumns: ftColTpl }}>
-                                <span className="text-[9px] text-muted-foreground italic">
-                                  {r.subAccounts.length} position{r.subAccounts.length !== 1 ? "s" : ""}
-                                </span>
+                            <div className="mt-2.5 pt-2 border-t border-border flex items-center justify-between">
+                              <span className="text-[9px] text-muted-foreground italic">
+                                {r.subAccounts.length} position{r.subAccounts.length !== 1 ? "s" : ""}
+                              </span>
+                              <div className="flex items-center gap-3">
                                 {hasPending ? (
-                                  <span className="text-xs font-bold tabular-nums text-right flex flex-col items-end leading-tight">
+                                  <span className="text-xs font-bold tabular-nums flex flex-col items-end leading-tight">
                                     <span className="text-muted-foreground line-through text-[10px]">{fmt(r.current)}</span>
                                     <span className="text-amber-600">{fmt(adjTotal)}</span>
                                   </span>
                                 ) : (
-                                  <span className="text-xs font-bold tabular-nums text-foreground text-right">{fmt(r.current)}</span>
+                                  <span className="text-xs font-bold tabular-nums text-foreground">{fmt(r.current)}</span>
                                 )}
                                 {!ftIsGrow && (
-                                  <span className="text-[10px] font-bold tabular-nums text-right" style={{ color: r.def.bg }}>
+                                  <span className="text-[10px] font-bold tabular-nums" style={{ color: r.def.bg }}>
                                     {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
                                   </span>
                                 )}
-                                <span className="text-[9px] text-muted-foreground tabular-nums text-right">
+                                <span className="text-[9px] text-muted-foreground tabular-nums">
                                   {r.current > 0 ? `${weightedATYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
                                 </span>
                               </div>
@@ -6533,7 +6500,6 @@ function AdvisorBriefView({
           </button>
         </div>
       </div>
-
       {/* ── Priority cards ── */}
       <div className="grid grid-cols-2 gap-5">
 
@@ -6754,7 +6720,6 @@ function AdvisorBriefView({
                   subtitle="What moves between accounts over the next 60 days"
                 />
               </div>
-
               {/* ── Bucket tables ── */}
               <div className="px-6 py-5 bg-slate-50/40">
                 <div className="flex flex-col gap-0">
@@ -6802,7 +6767,7 @@ function AdvisorBriefView({
                   <div className="flex items-stretch gap-3" data-testid="flow-col-reserve">
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#d97706" }}>
                       <ShieldCheck className="w-3.5 h-3.5 text-white/80" />
-                      <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Reserve</span>
+                      <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Reserve</span>
                       <span className="text-[13px] font-black tabular-nums text-white/90 mt-0.5">129,385</span>
                     </div>
                     {/* Branch connector from pill to both stacked cards */}
@@ -6901,7 +6866,6 @@ function AdvisorBriefView({
 
                 </div>
               </div>
-
               {/* Footer */}
               <div
                 className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-slate-50/60 cursor-pointer hover:bg-slate-100 transition-colors"
@@ -7146,7 +7110,6 @@ function AdvisorBriefView({
         })()}
 
       </div>
-
       {/* ── Email Modal ── */}
       <Dialog open={showEmail} onOpenChange={setShowEmail}>
         <DialogContent className="max-w-2xl">
