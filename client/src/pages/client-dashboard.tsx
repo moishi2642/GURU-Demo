@@ -6774,19 +6774,30 @@ function AdvisorBriefView({
                       <Home className="w-3.5 h-3.5 text-white/80" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Build</span>
                     </div>
-                    <div className="flex-1 border border-emerald-200 rounded-lg overflow-hidden">
-                      {[
-                        { name: "2028 Municipal Bonds", sub: "Tax-advantaged income", amount: null },
-                        { name: "S&P Low Volatility Index", sub: "Short-duration ladder", amount: "$194,384" },
-                      ].map((row, i) => (
-                        <div key={i} className="flex items-center justify-between px-4 py-4 bg-emerald-50/60 border-b border-emerald-100 last:border-0" data-testid={i === 0 ? "flow-row-build-munis" : "flow-row-build-tbill"}>
+                    <div className="flex-1 flex items-center gap-0">
+                      {/* Municipal Bonds card */}
+                      <div className="flex-1 border border-emerald-200 rounded-lg overflow-hidden" data-testid="flow-row-build-munis">
+                        <div className="flex items-center justify-between px-4 py-4 bg-emerald-50/60">
                           <div className="min-w-0 mr-2">
-                            <p className="text-[11px] font-semibold text-emerald-900 leading-tight">{row.name}</p>
-                            <p className="text-[9px] text-emerald-600 mt-0.5">{row.sub}</p>
+                            <p className="text-[11px] font-semibold text-emerald-900 leading-tight">2028 Municipal Bonds</p>
+                            <p className="text-[9px] text-emerald-600 mt-0.5">Tax-advantaged income</p>
                           </div>
-                          {row.amount && <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">{row.amount}</span>}
                         </div>
-                      ))}
+                      </div>
+                      {/* Neutral spacer — same width as Reserve connector to keep cards equal */}
+                      <div className="flex-shrink-0 flex flex-col items-center justify-center px-2" style={{ width: 80 }}>
+                        <div className="w-full" style={{ height: 2, backgroundColor: "rgba(22,163,74,0.2)" }} />
+                      </div>
+                      {/* S&P Low Volatility card */}
+                      <div className="flex-1 border border-emerald-200 rounded-lg overflow-hidden" data-testid="flow-row-build-tbill">
+                        <div className="flex items-center justify-between px-4 py-4 bg-emerald-50/60">
+                          <div className="min-w-0 mr-2">
+                            <p className="text-[11px] font-semibold text-emerald-900 leading-tight">S&amp;P Low Volatility Index</p>
+                            <p className="text-[9px] text-emerald-600 mt-0.5">Short-duration ladder</p>
+                          </div>
+                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">$194,384</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
