@@ -6725,14 +6725,18 @@ function AdvisorBriefView({
                       <Wallet className="w-3.5 h-3.5 text-white/80" />
                       <span className="text-[8px] font-black uppercase tracking-widest text-white text-center leading-tight px-2">Operating Cash</span>
                     </div>
-                    <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-4 bg-blue-50/60" data-testid="flow-row-ops-march">
-                        <div className="min-w-0 mr-2">
-                          <p className="text-[11px] font-semibold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
-                          <p className="text-[9px] text-blue-600 mt-0.5">Primary operating</p>
+                    <div className="flex-1 flex items-stretch gap-0">
+                      <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-4 bg-blue-50/60" data-testid="flow-row-ops-march">
+                          <div className="min-w-0 mr-2">
+                            <p className="text-[11px] font-semibold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
+                            <p className="text-[9px] text-blue-600 mt-0.5">Primary operating</p>
+                          </div>
+                          <span className="text-[11px] font-black text-blue-700 tabular-nums flex-shrink-0">$90,879</span>
                         </div>
-                        <span className="text-[11px] font-black text-blue-700 tabular-nums flex-shrink-0">$90,879</span>
                       </div>
+                      <div className="flex-shrink-0" style={{ width: 80 }} />
+                      <div className="flex-1" />
                     </div>
                   </div>
 
