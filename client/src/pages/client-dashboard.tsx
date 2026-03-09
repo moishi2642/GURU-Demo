@@ -6737,7 +6737,7 @@ function AdvisorBriefView({
                           <p className="text-[11px] font-semibold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
                           <p className="text-[9px] text-blue-600 mt-0.5">Primary operating · Jan ending</p>
                         </div>
-                        <span className="text-[11px] font-black text-blue-700 tabular-nums flex-shrink-0">90,879</span>
+                        <span className="text-[11px] font-black text-blue-700 tabular-nums flex-shrink-0">$90,879</span>
                       </div>
                     </div>
                   </div>
@@ -6787,7 +6787,7 @@ function AdvisorBriefView({
                             <p className="text-[11px] font-semibold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
                             <p className="text-[9px] text-amber-600 mt-0.5">Autodraw to Operating</p>
                           </div>
-                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">27,927</span>
+                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$27,927</span>
                         </div>
                       </div>
 
@@ -6816,7 +6816,7 @@ function AdvisorBriefView({
                             <p className="text-[11px] font-semibold text-amber-900 leading-tight">T-Bill Ladder</p>
                             <p className="text-[9px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</p>
                           </div>
-                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">101,458</span>
+                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$101,458</span>
                         </div>
                       </div>
                     </div>
@@ -6849,7 +6849,7 @@ function AdvisorBriefView({
                             <p className="text-[11px] font-semibold text-emerald-900 leading-tight">2028 Municipal Bonds</p>
                             <p className="text-[9px] text-emerald-600 mt-0.5">Tax-advantaged income</p>
                           </div>
-                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">32,161</span>
+                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">$32,161</span>
                         </div>
                       </div>
                       <div className="border border-emerald-200 rounded-lg overflow-hidden" data-testid="flow-row-build-tbill">
@@ -6858,7 +6858,7 @@ function AdvisorBriefView({
                             <p className="text-[11px] font-semibold text-emerald-900 leading-tight">S&amp;P Low Volatility Index</p>
                             <p className="text-[9px] text-emerald-600 mt-0.5">Short-duration ladder</p>
                           </div>
-                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">194,384</span>
+                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">$194,384</span>
                         </div>
                       </div>
                     </div>
