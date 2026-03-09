@@ -6599,29 +6599,29 @@ function AdvisorBriefView({
             <div className="relative flex" data-testid={testId}>
               {/* ── Org-chart left connector (only when this row is linked) ── */}
               {linkedTag && (
-                <div className="flex-shrink-0 relative" style={{ width: 28 }}>
+                <div className="flex-shrink-0 relative" style={{ width: 48, marginLeft: -48 }}>
                   {/* Vertical spine — full height */}
                   <div className="absolute" style={{
-                    left: 13, top: 0, bottom: 0, width: 2,
+                    left: 24, top: 0, bottom: 0, width: 2,
                     background: `linear-gradient(to bottom, transparent 0%, ${LINK_COLOR} 18%, ${LINK_COLOR} 82%, transparent 100%)`,
                     opacity: 0.55,
                   }} />
                   {/* Horizontal branch → toward content */}
                   <div className="absolute" style={{
-                    left: 13, top: "50%", width: 15, height: 2,
+                    left: 24, top: "50%", width: 24, height: 2,
                     background: LINK_COLOR, opacity: 0.7,
                     transform: "translateY(-50%)",
                   }} />
                   {/* Dot at branch tip */}
                   <div className="absolute rounded-full" style={{
-                    left: 8, top: "50%", width: 10, height: 10,
+                    left: 19, top: "50%", width: 10, height: 10,
                     background: LINK_COLOR,
                     transform: "translateY(-50%)",
                     boxShadow: `0 0 0 2px white`,
                   }} />
                   {/* Rotated label */}
                   <div className="absolute flex items-center justify-center" style={{
-                    left: -18, top: "50%", width: 40, height: 14,
+                    left: 2, top: "50%", width: 40, height: 14,
                     transform: "translateY(-50%) rotate(-90deg)",
                     transformOrigin: "center center",
                   }}>
@@ -6632,7 +6632,7 @@ function AdvisorBriefView({
                 </div>
               )}
               {/* ── Row content ── */}
-              <div className={`flex-1 py-4 ${linkedTag ? "pr-6 pl-2" : "px-6"}`}>
+              <div className="flex-1 py-4 px-6">
                 <div className="flex items-start gap-3">
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${iconBg}`}>
                     <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
@@ -6669,8 +6669,9 @@ function AdvisorBriefView({
           );
 
           return (
+            <div className="col-span-2 pl-12">
             <div
-              className={`rounded-2xl border bg-card shadow-sm overflow-hidden col-span-2 transition-all ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
+              className={`rounded-2xl border bg-card shadow-sm transition-all ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
               style={{ borderTop: "4px solid #0ea5e9" }}
               data-testid="advisor-brief-money-flow-card"
             >
@@ -6790,6 +6791,7 @@ function AdvisorBriefView({
                 <span className="text-[10px] text-muted-foreground">View full money movement detail</span>
                 <span className="text-[11px] font-bold text-sky-700 flex items-center gap-1">Open Money Movement <ArrowUpRight className="w-3.5 h-3.5" /></span>
               </div>
+            </div>
             </div>
           );
         })()}
