@@ -2867,7 +2867,16 @@ function CashFlowForecastView({
             color = "#c2410c";
           }
           return (
-            <text x={cx} y={y - 5} textAnchor="middle" fill={color} fontSize={9} fontWeight="800">
+            <text
+              x={cx} y={y - 6}
+              textAnchor="middle"
+              fill={color}
+              fontSize={10}
+              fontWeight="800"
+              stroke="white"
+              strokeWidth={3}
+              paintOrder="stroke"
+            >
               {text}
             </text>
           );
@@ -2939,17 +2948,7 @@ function CashFlowForecastView({
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" tick={<CustomTick />} axisLine={false} tickLine={false} height={28} />
                     <YAxis tickFormatter={fmtK} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
-                    <RechartsTooltip
-                      formatter={(v: number, _name: string, props: any) => {
-                        const e = props.payload as WFEntry;
-                        if (_name === "invisible") return [null, null];
-                        if (e.type === "income") return [fmt(e.actual, true), "Income"];
-                        if (e.type === "core") return [fmt(Math.abs(e.actual), true), "Core Expenses"];
-                        if (e.type === "onetime") return [fmt(Math.abs(e.actual), true), "One-Time Expenses"];
-                        return [fmt(Math.abs(e.actual), true), "Balance"];
-                      }}
-                      contentStyle={{ fontSize: 11 }}
-                    />
+                    <RechartsTooltip content={() => null} />
                     {/* Sep 30 callout */}
                     <ReferenceLine x="Sep 30" stroke="transparent" label={<Sep30CalloutLabel />} />
                     {/* Invisible spacer */}
