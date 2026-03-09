@@ -6633,7 +6633,7 @@ function AdvisorBriefView({
                   icon={CalendarClock}
                   badge="Cash Management"
                   priority="March · April"
-                  title="GURU Scheduled Cash Movements"
+                  title="Scheduled Cash Movements for Next Month (March)"
                   subtitle="What moves between accounts over the next 60 days"
                 />
               </div>
