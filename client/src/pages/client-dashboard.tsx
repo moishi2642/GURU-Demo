@@ -7274,7 +7274,7 @@ export default function ClientDashboard() {
     inactiveCls?: string;
   }[] = [
     { key: "advisorbrief", label: "Advisor Brief", icon: ClipboardList, activeCls: "bg-rose-600 text-white shadow-sm", inactiveCls: "text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200" },
-    { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { key: "dashboard", label: "Kessler Dashboard", icon: LayoutDashboard },
     { key: "financials", label: "Client Financials & Forecast", icon: FileText },
     { key: "guru", label: "GURU Allocation", icon: PieChartIcon },
     { key: "moneymovement", label: "Money Movement", icon: ArrowLeftRight },
