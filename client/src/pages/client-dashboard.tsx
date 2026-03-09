@@ -6674,13 +6674,18 @@ function AdvisorBriefView({
                       <marker id="flow-arr" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto">
                         <path d="M0,0 L0,5 L5,2.5 z" fill="#6366f1" />
                       </marker>
+                      <style>{`
+                        @keyframes marchLeft {
+                          from { stroke-dashoffset: 0; }
+                          to   { stroke-dashoffset: 3.5; }
+                        }
+                        .flow-march { animation: marchLeft 0.55s linear infinite; }
+                      `}</style>
                     </defs>
                     {/* Horizontal spine: Ops right → Reserve left */}
                     <line x1="31" y1="9" x2="35" y2="9" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Horizontal spine: Reserve right → Build left */}
                     <line x1="65" y1="9" x2="69" y2="9" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Flow arrow: Reserve → Ops (autodraw), dashed indigo */}
-                    <path d="M 35,7 L 31.5,7" stroke="#6366f1" strokeWidth="0.9" strokeDasharray="1.5,1" fill="none" markerEnd="url(#flow-arr)" />
                     {/* Vertical drop: Ops bucket → Ops account */}
                     <line x1="16" y1="18" x2="16" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Vertical drop: Reserve bucket → JPMorgan */}
@@ -6689,6 +6694,16 @@ function AdvisorBriefView({
                     <line x1="50" y1="68" x2="50" y2="71" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Vertical drop: Build bucket → Build account */}
                     <line x1="84" y1="18" x2="84" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
+                    {/* Animated flow: JPMorgan MMF → Citizens Checking (account level, right→left) */}
+                    <path
+                      d="M 35,56 L 30,56"
+                      stroke="#6366f1"
+                      strokeWidth="1.3"
+                      strokeDasharray="2,1.5"
+                      fill="none"
+                      markerEnd="url(#flow-arr)"
+                      className="flow-march"
+                    />
                   </svg>
 
                   {/* ── ROW 1: Bucket nodes ── */}
