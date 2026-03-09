@@ -6634,18 +6634,6 @@ function AdvisorBriefView({
                 <div className="relative" style={{ height: 320 }}>
                   {/* SVG connector lines — viewBox 0 0 100 100, container 320px tall */}
                   <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <defs>
-                      <marker id="flow-arr" markerWidth="5" markerHeight="5" refX="4.5" refY="2.5" orient="auto">
-                        <path d="M0,0 L0,5 L5,2.5 z" fill="#6366f1" />
-                      </marker>
-                      <style>{`
-                        @keyframes marchLeft {
-                          from { stroke-dashoffset: 0; }
-                          to   { stroke-dashoffset: 3.5; }
-                        }
-                        .flow-march { animation: marchLeft 0.55s linear infinite; }
-                      `}</style>
-                    </defs>
                     {/* Horizontal spine: Ops right → Reserve left */}
                     <line x1="31" y1="9" x2="35" y2="9" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Horizontal spine: Reserve right → Build left */}
@@ -6658,17 +6646,23 @@ function AdvisorBriefView({
                     <line x1="50" y1="68" x2="50" y2="71" stroke="#cbd5e1" strokeWidth="0.7" />
                     {/* Vertical drop: Build bucket → Build account */}
                     <line x1="84" y1="18" x2="84" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
-                    {/* Animated flow: JPMorgan MMF → Citizens Checking (account level, right→left) */}
-                    <path
-                      d="M 35,56 L 30,56"
-                      stroke="#6366f1"
-                      strokeWidth="1.3"
-                      strokeDasharray="2,1.5"
-                      fill="none"
-                      markerEnd="url(#flow-arr)"
-                      className="flow-march"
-                    />
                   </svg>
+
+                  {/* Animated connector: JPMorgan MMF → Citizens Checking */}
+                  <div
+                    className="absolute flex flex-col items-center gap-0.5"
+                    style={{ left: "30%", top: 163, width: "5%" }}
+                  >
+                    <span className="text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: "#6366f1" }}>$47,126</span>
+                    <div className="relative w-full overflow-hidden rounded-full" style={{ height: 2, backgroundColor: "#6366f130" }}>
+                      <motion.div
+                        className="absolute top-1/2 -translate-y-1/2 rounded-full"
+                        style={{ width: 10, height: 10, marginTop: -4, backgroundColor: "#6366f1", boxShadow: "0 0 6px #6366f1" }}
+                        animate={{ left: ["100%", "-10px"] }}
+                        transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                      />
+                    </div>
+                  </div>
 
                   {/* ── ROW 1: Bucket nodes ── */}
 
