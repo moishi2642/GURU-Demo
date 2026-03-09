@@ -6307,29 +6307,25 @@ function AdvisorBriefView({
 }) {
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
-  // ── Liquidity calcs — aligned with GURU tab ──
+  // ── Liquidity calcs — mirrors GURU hero bar exactly ──
   const { totalLiquid: _abvTotalLiquid } = cashBuckets(assets);
   const _abvForecast = buildForecast(cashFlows);
-  // trough is the minimum cumulative net cash flow (usually negative, meaning cash goes into deficit)
-  const cashTroughAbv = Math.min(..._abvForecast.map((d) => d.cumulative));
-  // buffer = how much cash you need to hold to cover the worst cumulative shortfall
-  const cashTroughBuffer = Math.max(0, -cashTroughAbv);
+  const cashTroughBuffer = computeTrough(_abvForecast);
   const guruReserveTarget = cashTroughBuffer;
+  // cashExcess uses the same formula as the GURU hero bar: totalLiquid − trough
+  const cashExcess = Math.max(0, _abvTotalLiquid - cashTroughBuffer);
   // reserveItems = idle bank cash (checking + savings + MM), excluding Fidelity brokerage sweep
   const reserveItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().match(/checking|savings|money market|mm|sweep/) && !(a.description ?? "").toLowerCase().includes("fidelity"),
   );
-  // Non-treasury cash = sum of idle bank accounts (no T-bills/Fidelity)
-  // Deduped by taking the most recent asset per description prefix to avoid double-counting from multi-seeding
+  // Non-treasury cash = used for the yield/Fed-cut card only (non-Fidelity bank accounts)
   const _seenDescs = new Set<string>();
-  const _dedupedReserveItems = reserveItems.filter((a) => {
+  const _nonTreasuryCash = reserveItems.filter((a) => {
     const key = (a.description ?? "").slice(0, 30).toLowerCase();
     if (_seenDescs.has(key)) return false;
     _seenDescs.add(key);
     return true;
-  });
-  const _nonTreasuryCash = _dedupedReserveItems.reduce((s, a) => s + Number(a.value), 0);
-  const cashExcess = Math.max(0, _nonTreasuryCash - cashTroughBuffer);
+  }).reduce((s, a) => s + Number(a.value), 0);
   const brokerageCashItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"),
   );
@@ -6344,9 +6340,9 @@ function AdvisorBriefView({
   const bpsPickup = Math.round((_guruLiquidYield - _currentLiquidYield) * 100);
 
   // ── Fed rate cut lock-in scenario ──
-  // excess = totalLiquid − forecasted trough (the cash above minimum needed reserve)
+  // non-treasury exposure = idle bank cash minus the reserve buffer
   const _fedCutBps = 50;
-  const _excessNotTreasuries = cashExcess; // $372K total liquid − $125K trough
+  const _excessNotTreasuries = Math.max(0, _nonTreasuryCash - cashTroughBuffer);
   const _fedLockInSavings = Math.round(_excessNotTreasuries * (_fedCutBps / 10000));
 
   // ── Single-stock risk ──
