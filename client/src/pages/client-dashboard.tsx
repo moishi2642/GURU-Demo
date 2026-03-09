@@ -6671,12 +6671,15 @@ function AdvisorBriefView({
                   </div>
 
                   {/* ── Connector: Reserve autodraw → Ops ── */}
-                  <div className="flex flex-col items-center justify-start pt-7 px-1.5 flex-shrink-0">
-                    <span className="text-[8px] font-black tabular-nums whitespace-nowrap mb-1" style={{ color: "#d97706" }}>$5,816</span>
-                    <div className="relative overflow-hidden rounded-full" style={{ width: 32, height: 2, backgroundColor: "rgba(217,119,6,0.25)" }}>
+                  <div className="flex flex-col items-center justify-start pt-6 px-2 flex-shrink-0 gap-1.5">
+                    <div className="rounded-lg px-2.5 py-1.5 flex flex-col items-center gap-0.5" style={{ background: "#d97706" }}>
+                      <span className="text-[15px] font-black tabular-nums text-white leading-none" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.25)" }}>$5,816</span>
+                      <span className="text-[7px] font-bold text-amber-100 uppercase tracking-wider leading-none">/ mo</span>
+                    </div>
+                    <div className="relative overflow-hidden rounded-full" style={{ width: 40, height: 2, backgroundColor: "rgba(217,119,6,0.25)" }}>
                       <motion.div
                         className="absolute top-1/2 -translate-y-1/2 rounded-full"
-                        style={{ width: 8, height: 8, marginTop: -3, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
+                        style={{ width: 8, height: 8, marginTop: -3, backgroundColor: "#d97706", boxShadow: "0 0 6px #d97706" }}
                         animate={{ left: ["100%", "-8px"] }}
                         transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
                       />
