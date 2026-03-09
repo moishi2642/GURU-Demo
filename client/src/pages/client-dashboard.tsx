@@ -6768,7 +6768,7 @@ function AdvisorBriefView({
                     <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#d97706" }}>
                       <ShieldCheck className="w-3.5 h-3.5 text-white/80" />
                       <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Reserve</span>
-                      <span className="text-[13px] font-black tabular-nums text-white/90 mt-0.5">129,385</span>
+                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">129,385</span>
                     </div>
                     {/* Branch connector from pill to both stacked cards */}
                     <div className="flex-shrink-0 relative" style={{ width: 28, alignSelf: 'stretch' }}>
