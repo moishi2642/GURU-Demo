@@ -6717,7 +6717,7 @@ function AdvisorBriefView({
                     <div className="border border-t-0 border-emerald-200 rounded-b-lg overflow-hidden">
                       {[
                         { name: "2028 Municipal Bonds", sub: "Tax-advantaged income", amount: null },
-                        { name: "1-Year Treasury Bills", sub: "Short-duration ladder", amount: "$194,384" },
+                        { name: "S&P Low Volatility Index", sub: "Short-duration ladder", amount: "$194,384" },
                       ].map((row, i) => (
                         <div key={i} className="flex items-center justify-between px-3 py-4 bg-emerald-50/60 border-b border-emerald-100 last:border-0" data-testid={i === 0 ? "flow-row-build-munis" : "flow-row-build-tbill"}>
                           <div className="min-w-0 mr-2">
