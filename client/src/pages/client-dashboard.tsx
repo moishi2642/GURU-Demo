@@ -5249,7 +5249,9 @@ function GuruAllocationView({
             (a) =>
               a.type === "cash" &&
               !(a.description ?? "").toLowerCase().includes("checking") &&
-              !(a.description ?? "").toLowerCase().includes("brokerage"),
+              !(a.description ?? "").toLowerCase().includes("brokerage") &&
+              !(a.description ?? "").toLowerCase().includes("fidelity") &&
+              !(a.description ?? "").toLowerCase().includes("sweep"),
           )
           .map((a) => {
             const y = extractRate(a.description)
