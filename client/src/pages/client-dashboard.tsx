@@ -6648,16 +6648,16 @@ function AdvisorBriefView({
                     <line x1="84" y1="18" x2="84" y2="44" stroke="#cbd5e1" strokeWidth="0.7" />
                   </svg>
 
-                  {/* Animated connector: JPMorgan MMF → Citizens Checking */}
+                  {/* Animated connector: JPMorgan MMF → CIT MM (amber, matching Money Movement tab) */}
                   <div
                     className="absolute flex flex-col items-center gap-0.5"
                     style={{ left: "30%", top: 163, width: "5%" }}
                   >
-                    <span className="text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: "#6366f1" }}>$47,126</span>
-                    <div className="relative w-full overflow-hidden rounded-full" style={{ height: 2, backgroundColor: "#6366f130" }}>
+                    <span className="text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: "#d97706" }}>$5,816</span>
+                    <div className="relative w-full overflow-hidden rounded-full" style={{ height: 2, backgroundColor: "rgba(217,119,6,0.25)" }}>
                       <motion.div
                         className="absolute top-1/2 -translate-y-1/2 rounded-full"
-                        style={{ width: 10, height: 10, marginTop: -4, backgroundColor: "#6366f1", boxShadow: "0 0 6px #6366f1" }}
+                        style={{ width: 10, height: 10, marginTop: -4, backgroundColor: "#d97706", boxShadow: "0 0 6px #d97706" }}
                         animate={{ left: ["100%", "-10px"] }}
                         transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
                       />
@@ -6673,8 +6673,8 @@ function AdvisorBriefView({
                       <span className="text-[9px] font-black uppercase tracking-widest text-white">Operating Cash</span>
                     </div>
                     <div className="px-3 py-2 bg-blue-50">
-                      <p className="text-[10px] font-bold text-blue-900 tabular-nums">+$47,126 inbound</p>
-                      <p className="text-[9px] text-blue-600 mt-0.5">from Reserve · March</p>
+                      <p className="text-[10px] font-bold text-blue-900 tabular-nums">+$5,816 autodraw in</p>
+                      <p className="text-[9px] text-blue-600 mt-0.5">from Reserve buffer · March</p>
                     </div>
                   </div>
 
@@ -6685,8 +6685,8 @@ function AdvisorBriefView({
                       <span className="text-[9px] font-black uppercase tracking-widest text-white">Reserve</span>
                     </div>
                     <div className="px-3 py-2 bg-amber-50">
-                      <p className="text-[10px] font-bold text-amber-900 tabular-nums">−$47,126 autodraw</p>
-                      <p className="text-[9px] text-amber-700 mt-0.5">→ Operating Cash · March</p>
+                      <p className="text-[10px] font-bold text-amber-900 tabular-nums">−$5,816 autodraw</p>
+                      <p className="text-[9px] text-amber-700 mt-0.5">→ CIT Money Market · March</p>
                     </div>
                   </div>
 
@@ -6698,49 +6698,61 @@ function AdvisorBriefView({
                     </div>
                     <div className="px-3 py-2 bg-green-50">
                       <p className="text-[10px] font-bold text-green-900">No movement</p>
-                      <p className="text-[9px] text-green-700 mt-0.5">holding · ~4.75%</p>
+                      <p className="text-[9px] text-green-700 mt-0.5">compounding · ~3.85%</p>
                     </div>
                   </div>
 
                   {/* ── ROW 2: Account nodes ── */}
 
-                  {/* Under Ops: Citizens Checking */}
-                  <div className="absolute rounded-lg border border-slate-200 bg-white shadow-sm" style={{ left: "1%", top: 140, width: "29%" }} data-testid="flow-row-ops-march">
+                  {/* Under Ops: CIT Money Market Bank Account (pro-forma primary ops) */}
+                  <div className="absolute rounded-lg border border-blue-200 bg-blue-50/60 shadow-sm" style={{ left: "1%", top: 140, width: "29%" }} data-testid="flow-row-ops-march">
                     <div className="px-2.5 py-2.5">
-                      <p className="text-[10px] font-bold text-foreground leading-tight">Citizens Private Banking</p>
-                      <p className="text-[9px] text-muted-foreground">Checking ****7291</p>
-                      <p className="text-[12px] font-black text-emerald-700 mt-1.5 tabular-nums">+$47,126</p>
-                      <p className="text-[9px] text-muted-foreground">inflow · March</p>
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <p className="text-[10px] font-bold text-blue-900 leading-tight">CIT Money Market Bank Acct</p>
+                        <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
+                      </div>
+                      <p className="text-[9px] text-blue-700">Primary ops · 4.65%</p>
+                      <p className="text-[12px] font-black text-emerald-700 mt-1.5 tabular-nums">$90,879</p>
+                      <p className="text-[9px] text-muted-foreground">end of March balance</p>
                     </div>
                   </div>
 
-                  {/* Under Reserve: JPMorgan MMF */}
+                  {/* Under Reserve: JPMorgan 100% Treasuries MMF */}
                   <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 140, width: "29%" }} data-testid="flow-row-reserve-autodraw">
                     <div className="px-2.5 py-2.5">
-                      <p className="text-[10px] font-bold text-amber-900 leading-tight">JPMorgan 100% Treasury MMF</p>
-                      <p className="text-[9px] text-amber-700">****2847</p>
-                      <p className="text-[12px] font-black text-rose-700 mt-1.5 tabular-nums">−$47,126</p>
-                      <p className="text-[9px] text-muted-foreground">autodraw out · March</p>
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <p className="text-[10px] font-bold text-amber-900 leading-tight">JPMorgan 100% Treasuries MMF</p>
+                        <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
+                      </div>
+                      <p className="text-[9px] text-amber-700">Reserve buffer · ~5.00%</p>
+                      <p className="text-[12px] font-black text-rose-700 mt-1.5 tabular-nums">−$5,816</p>
+                      <p className="text-[9px] text-muted-foreground">autodraw → CIT MM · March</p>
                     </div>
                   </div>
 
-                  {/* Under Reserve: T-Bill Ladder (stacked below JPMorgan) */}
+                  {/* Under Reserve: T-Bill Ladder (3 active bills) */}
                   <div className="absolute rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm" style={{ left: "35%", top: 228, width: "29%" }} data-testid="flow-row-reserve-tbill">
                     <div className="px-2.5 py-2.5">
-                      <p className="text-[10px] font-bold text-amber-900 leading-tight">T-Bill Ladder</p>
-                      <p className="text-[9px] text-amber-700">matures 3/31</p>
-                      <p className="text-[12px] font-black text-slate-700 mt-1.5 tabular-nums">$41,877</p>
-                      <p className="text-[9px] text-muted-foreground">→ stays in MMF</p>
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <p className="text-[10px] font-bold text-amber-900 leading-tight">T-Bill Ladder</p>
+                        <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
+                      </div>
+                      <p className="text-[9px] text-amber-700">3-Mo / 6-Mo / 9-Mo active</p>
+                      <p className="text-[12px] font-black text-slate-700 mt-1.5 tabular-nums">$101,458</p>
+                      <p className="text-[9px] text-muted-foreground">held to maturity · 4.65–4.95%</p>
                     </div>
                   </div>
 
-                  {/* Under Build: Citizens MM */}
-                  <div className="absolute rounded-lg border border-slate-200 bg-white shadow-sm" style={{ left: "70%", top: 140, width: "29%" }} data-testid="flow-row-build">
+                  {/* Under Build: Muni Bonds + S&P Low Vol ETF */}
+                  <div className="absolute rounded-lg border border-emerald-200 bg-emerald-50/60 shadow-sm" style={{ left: "70%", top: 140, width: "29%" }} data-testid="flow-row-build">
                     <div className="px-2.5 py-2.5">
-                      <p className="text-[10px] font-bold text-foreground leading-tight">Citizens Private Bank</p>
-                      <p className="text-[9px] text-muted-foreground">Money Market ****4192</p>
-                      <p className="text-[12px] font-black text-muted-foreground mt-1.5 tabular-nums">$0 movement</p>
-                      <p className="text-[9px] text-muted-foreground">earning ~4.75%</p>
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <p className="text-[10px] font-bold text-emerald-900 leading-tight">Muni Bonds + S&P Low Vol</p>
+                        <span className="text-[7px] font-black uppercase bg-emerald-500 text-white px-1 py-0.5 rounded leading-none flex-shrink-0">NEW</span>
+                      </div>
+                      <p className="text-[9px] text-emerald-700">2-position Build ladder</p>
+                      <p className="text-[12px] font-black text-emerald-800 mt-1.5 tabular-nums">$194,384</p>
+                      <p className="text-[9px] text-muted-foreground">compounding · ~3.85%</p>
                     </div>
                   </div>
 
