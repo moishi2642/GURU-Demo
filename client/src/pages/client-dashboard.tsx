@@ -6862,7 +6862,6 @@ function AdvisorBriefView({
                     <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Description</th>
                     <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Payee</th>
                     <th className="px-4 py-2.5 text-right font-black uppercase tracking-widest text-[9px]">Amount</th>
-                    <th className="px-4 py-2.5 text-center font-black uppercase tracking-widest text-[9px]">Method</th>
                     <th className="px-4 py-2.5 text-center font-black uppercase tracking-widest text-[9px]">Status</th>
                   </tr>
                 </thead>
@@ -6892,11 +6891,6 @@ function AdvisorBriefView({
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{obl.payee}</td>
                         <td className="px-4 py-3 text-right tabular-nums font-black text-rose-700 whitespace-nowrap">{fmt(obl.amount)}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${obl.method === "Wire" ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-sky-50 text-sky-700 border-sky-200"}`}>
-                            {obl.method}
-                          </span>
-                        </td>
                         <td className="px-4 py-3 text-center">
                           {isScheduled ? (
                             <div className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
