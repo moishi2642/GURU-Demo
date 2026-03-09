@@ -83,6 +83,9 @@ import {
   ArrowDown,
   Minus,
   Link2,
+  Search,
+  BookOpen,
+  Users2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ResponsiveSankey } from "@nivo/sankey";
@@ -341,6 +344,32 @@ const HERO_COLORS: Record<string, { bg: string; accent: string; dot: string }> =
   "Alternative Assets": { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
   "529 Plans":          { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
 };
+
+// ─── Book of Business — flag metadata & client data ───────────────────────────
+type FlagKey = "excess_cash" | "cash_deficit" | "product_needed" | "follow_up" | "autobill_approval" | "money_movement";
+const FLAG_META: Record<FlagKey, { label: string; short: string; color: string; bg: string; text: string; border: string }> = {
+  excess_cash:       { label: "Excess Cash",      short: "Excess Cash",  color: "#f59e0b", bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-200" },
+  cash_deficit:      { label: "Cash Deficit",      short: "Deficit",      color: "#ef4444", bg: "bg-rose-50",   text: "text-rose-700",   border: "border-rose-200" },
+  product_needed:    { label: "Product Selection", short: "Product",      color: "#3b82f6", bg: "bg-blue-50",   text: "text-blue-700",   border: "border-blue-200" },
+  follow_up:         { label: "Follow Up",         short: "Follow Up",    color: "#8b5cf6", bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
+  autobill_approval: { label: "Autobill Approval", short: "Autobill",     color: "#ec4899", bg: "bg-pink-50",   text: "text-pink-700",   border: "border-pink-200" },
+  money_movement:    { label: "Money Movement",    short: "Movement",     color: "#06b6d4", bg: "bg-cyan-50",   text: "text-cyan-700",   border: "border-cyan-200" },
+};
+interface BobClient { id: number; name: string; initials: string; aum: number; liquidCash: number; cashPct: number; flags: FlagKey[]; advisor: string; lastContact: string; }
+const BOB_CLIENTS: BobClient[] = (() => {
+  const LN = ["Adams","Allen","Anderson","Baker","Barnes","Bell","Bennett","Brooks","Brown","Campbell","Carter","Clark","Collins","Cook","Cooper","Cox","Davis","Evans","Fisher","Foster","Garcia","Gonzalez","Gray","Green","Hall","Harris","Harrison","Hayes","Hill","Howard","Hughes","Jackson","James","Jenkins","Johnson","Jones","Kelly","King","Lee","Lewis","Long","Martin","Martinez","Mason","Miller","Mitchell","Moore","Morgan","Morris","Murphy","Nelson","Parker","Patterson","Perry","Peterson","Phillips","Powell","Price","Reed","Richardson","Rivera","Roberts","Robinson","Rogers","Ross","Russell","Sanders","Scott","Shaw","Simpson","Smith","Stewart","Sullivan","Taylor","Thomas","Thompson","Torres","Turner","Walker","Ward","Watson","White","Williams","Wilson","Wood","Wright","Young"];
+  const FN = ["James","Mary","Robert","Patricia","John","Jennifer","Michael","Linda","William","Barbara","David","Susan","Richard","Jessica","Joseph","Karen","Charles","Sarah","Thomas","Lisa","Daniel","Nancy","Anthony","Betty","Donald","Margaret","Mark","Sandra","Paul","Ashley","Steven","Dorothy","Andrew","Kimberly","Kenneth","Emily","Joshua","Donna","Kevin","Michelle"];
+  const ADV = ["Sarah Chen","Marcus Webb","Priya Patel","James Harlow","Emma Laurent"];
+  const FS: FlagKey[][] = [["excess_cash"],["excess_cash","product_needed"],["cash_deficit"],["cash_deficit","follow_up"],["product_needed"],["product_needed","follow_up"],["follow_up"],["autobill_approval"],["autobill_approval","money_movement"],["money_movement"],["money_movement","excess_cash"],[],[],["excess_cash","autobill_approval"],["cash_deficit","money_movement"],["follow_up","autobill_approval"]];
+  const AUML = [750_000,1_500_000,3_200_000,7_800_000,14_500_000,28_000_000,42_000_000];
+  const CTACT = ["Today","Yesterday","2d ago","1 wk ago","2 wk ago","1 mo ago","3 mo ago"];
+  return Array.from({length:100},(_,i)=>{
+    const flags = FS[i % FS.length];
+    const aum = Math.round(AUML[i % AUML.length] * (1 + (i * 0.17) % 0.85));
+    const cpct = flags.includes("excess_cash") ? 12+(i%18) : flags.includes("cash_deficit") ? 0.4+(i%2)*0.8 : 2.5+(i%7);
+    return { id:i+1, name:`${LN[i%LN.length]}, ${FN[i%FN.length]}`, initials:`${FN[i%FN.length][0]}${LN[i%LN.length][0]}`, aum, liquidCash:Math.round(aum*cpct/100), cashPct:Math.round(cpct*10)/10, flags, advisor:ADV[i%ADV.length], lastContact:CTACT[i%CTACT.length] };
+  });
+})();
 
 // ─── Formatting Helpers ────────────────────────────────────────────────────────
 const fmt = (v: number, compact = false) => {
@@ -7111,13 +7140,192 @@ function AdvisorBriefView({
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Book of Business View ─────────────────────────────────────────────────────
+function BookOfBusinessView() {
+  const [search, setSearch] = useState("");
+  const [activeFlag, setActiveFlag] = useState<FlagKey | "all">("all");
+  const [doneActions, setDoneActions] = useState<Set<string>>(new Set());
+  const markDone = (id: number, act: string) => setDoneActions(s => new Set([...s, `${id}-${act}`]));
+  const isDone = (id: number, act: string) => doneActions.has(`${id}-${act}`);
+
+  const filtered = BOB_CLIENTS.filter(c => {
+    const ms = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.advisor.toLowerCase().includes(search.toLowerCase());
+    const mf = activeFlag === "all" || c.flags.includes(activeFlag);
+    return ms && mf;
+  });
+
+  const totalAUM = BOB_CLIENTS.reduce((s, c) => s + c.aum, 0);
+  const flagCounts = (Object.keys(FLAG_META) as FlagKey[]).reduce((acc, k) => {
+    acc[k] = BOB_CLIENTS.filter(c => c.flags.includes(k)).length;
+    return acc;
+  }, {} as Record<FlagKey, number>);
+  const healthyCount = BOB_CLIENTS.filter(c => c.flags.length === 0).length;
+  const needsActionCount = BOB_CLIENTS.filter(c => c.flags.length > 0).length;
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-foreground leading-none">Book of Business</h2>
+          <p className="text-[11px] text-muted-foreground mt-1">{BOB_CLIENTS.length} accounts · {fmt(totalAUM, true)} total AUM · <span className="text-rose-600 font-semibold">{needsActionCount} need action</span> · <span className="text-emerald-600 font-semibold">{healthyCount} healthy</span></p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 transition-colors"
+            data-testid="button-send-all-emails"
+          >
+            <Mail className="w-3 h-3" /> Send Bulk Emails
+          </button>
+        </div>
+      </div>
+
+      {/* Flag stats strip */}
+      <div className="grid grid-cols-7 gap-2.5">
+        <button
+          onClick={() => setActiveFlag("all")}
+          className={`rounded-xl border p-3 text-center transition-all hover:shadow-sm ${activeFlag === "all" ? "bg-slate-800 border-slate-700" : "bg-card border-border"}`}
+        >
+          <p className={`text-xl font-black ${activeFlag === "all" ? "text-white" : "text-foreground"}`}>{BOB_CLIENTS.length}</p>
+          <p className={`text-[9px] uppercase tracking-widest mt-0.5 ${activeFlag === "all" ? "text-white/70" : "text-muted-foreground"}`}>All</p>
+        </button>
+        {(Object.entries(FLAG_META) as [FlagKey, typeof FLAG_META[FlagKey]][]).map(([key, meta]) => (
+          <button
+            key={key}
+            onClick={() => setActiveFlag(f => f === key ? "all" : key)}
+            className={`rounded-xl border p-3 text-center transition-all hover:shadow-sm ${activeFlag === key ? `${meta.bg} border ${meta.border}` : "bg-card border-border"}`}
+            data-testid={`flag-filter-${key}`}
+          >
+            <p className={`text-xl font-black ${activeFlag === key ? meta.text : "text-foreground"}`}>{flagCounts[key]}</p>
+            <p className={`text-[9px] uppercase tracking-widest mt-0.5 ${activeFlag === key ? meta.text : "text-muted-foreground"}`}>{meta.short}</p>
+          </button>
+        ))}
+      </div>
+
+      {/* Search bar */}
+      <div className="flex items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search by client name or advisor…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-2 text-[13px] border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            data-testid="input-bob-search"
+          />
+        </div>
+        <span className="text-[11px] text-muted-foreground">{filtered.length} {filtered.length === 1 ? "client" : "clients"} shown</span>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+        {/* Header */}
+        <div
+          className="grid px-4 py-2.5 border-b bg-muted/30 text-[9px] font-black uppercase tracking-widest text-muted-foreground"
+          style={{ gridTemplateColumns: "2fr 90px 65px 1fr 120px 185px" }}
+        >
+          <span>Client</span>
+          <span className="text-right">AUM</span>
+          <span className="text-right">Cash %</span>
+          <span>Flags</span>
+          <span>Advisor</span>
+          <span>Actions</span>
+        </div>
+
+        {/* Rows */}
+        <div className="divide-y divide-border/50">
+          {filtered.map(client => {
+            const cashCls = client.cashPct > 10 ? "text-amber-600" : client.cashPct < 2 ? "text-rose-600" : "text-emerald-600";
+            const allActsDone =
+              (!client.flags.includes("excess_cash") || isDone(client.id, "review")) &&
+              (!client.flags.includes("autobill_approval") || isDone(client.id, "autobill")) &&
+              (!(client.flags.includes("money_movement") || client.flags.includes("cash_deficit") || client.flags.includes("follow_up")) || isDone(client.id, "email")) &&
+              (!client.flags.includes("product_needed") || isDone(client.id, "product"));
+            return (
+              <div
+                key={client.id}
+                className={`grid px-4 py-2.5 items-center transition-colors hover:bg-muted/20 ${allActsDone && client.flags.length > 0 ? "opacity-50" : ""}`}
+                style={{ gridTemplateColumns: "2fr 90px 65px 1fr 120px 185px" }}
+                data-testid={`bob-row-${client.id}`}
+              >
+                {/* Client */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-black text-slate-600 flex-shrink-0">{client.initials}</div>
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-semibold text-foreground leading-none truncate">{client.name}</p>
+                    <p className="text-[9px] text-muted-foreground mt-0.5">{client.lastContact}</p>
+                  </div>
+                </div>
+                {/* AUM */}
+                <span className="text-[12px] font-semibold tabular-nums text-right">{fmt(client.aum, true)}</span>
+                {/* Cash % */}
+                <span className={`text-[12px] font-black tabular-nums text-right ${cashCls}`}>{client.cashPct}%</span>
+                {/* Flags */}
+                <div className="flex flex-wrap gap-1 min-w-0">
+                  {client.flags.map(f => (
+                    <span
+                      key={f}
+                      className={`text-[8px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full border whitespace-nowrap ${FLAG_META[f].bg} ${FLAG_META[f].text} ${FLAG_META[f].border}`}
+                    >
+                      {FLAG_META[f].short}
+                    </span>
+                  ))}
+                  {client.flags.length === 0 && (
+                    <span className="text-[9px] text-emerald-600 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Healthy
+                    </span>
+                  )}
+                </div>
+                {/* Advisor */}
+                <span className="text-[11px] text-muted-foreground truncate">{client.advisor}</span>
+                {/* Actions */}
+                <div className="flex items-center gap-1 flex-wrap">
+                  {client.flags.includes("excess_cash") && (
+                    isDone(client.id, "review")
+                      ? <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />Reviewed</span>
+                      : <button onClick={() => markDone(client.id, "review")} className="flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 whitespace-nowrap transition-colors" data-testid={`action-review-${client.id}`}>
+                          <Lightbulb className="w-2.5 h-2.5" /> Review
+                        </button>
+                  )}
+                  {client.flags.includes("product_needed") && (
+                    isDone(client.id, "product")
+                      ? <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />Assigned</span>
+                      : <button onClick={() => markDone(client.id, "product")} className="flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 whitespace-nowrap transition-colors" data-testid={`action-product-${client.id}`}>
+                          <Target className="w-2.5 h-2.5" /> Assign
+                        </button>
+                  )}
+                  {client.flags.includes("autobill_approval") && (
+                    isDone(client.id, "autobill")
+                      ? <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />Approved</span>
+                      : <button onClick={() => markDone(client.id, "autobill")} className="flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 whitespace-nowrap transition-colors" data-testid={`action-autobill-${client.id}`}>
+                          <CheckSquare className="w-2.5 h-2.5" /> Approve
+                        </button>
+                  )}
+                  {(client.flags.includes("money_movement") || client.flags.includes("cash_deficit") || client.flags.includes("follow_up")) && (
+                    isDone(client.id, "email")
+                      ? <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />Sent</span>
+                      : <button onClick={() => markDone(client.id, "email")} className="flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100 whitespace-nowrap transition-colors" data-testid={`action-email-${client.id}`}>
+                          <Mail className="w-2.5 h-2.5" /> Email
+                        </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type ActiveView =
   | "dashboard"
   | "advisorbrief"
   | "financials"
   | "guru"
-  | "moneymovement";
+  | "moneymovement"
+  | "bookofbusiness";
 
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
@@ -7278,6 +7486,7 @@ export default function ClientDashboard() {
     { key: "financials", label: "Client Financials & Forecast", icon: FileText },
     { key: "guru", label: "GURU Allocation", icon: PieChartIcon },
     { key: "moneymovement", label: "Money Movement", icon: ArrowLeftRight },
+    { key: "bookofbusiness", label: "Book of Business", icon: Users2, activeCls: "bg-slate-800 text-white shadow-sm", inactiveCls: "text-slate-600 hover:text-foreground hover:bg-secondary/60" },
   ];
 
   return (
@@ -7471,6 +7680,8 @@ export default function ClientDashboard() {
           bucketProductSelections={bucketProductSelections}
         />
       )}
+      {/* ── Book of Business View ────────────────────────────────────────────────── */}
+      {activeView === "bookofbusiness" && <BookOfBusinessView />}
     </Layout>
   );
 }
