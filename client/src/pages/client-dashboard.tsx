@@ -6690,18 +6690,33 @@ function AdvisorBriefView({
                       <span className="text-[9px] font-black uppercase tracking-widest text-white">Reserve</span>
                     </div>
                     <div className="border border-t-0 border-amber-200 rounded-b-lg overflow-hidden">
-                      {[
-                        { name: "JPMorgan 100% Treasuries Money Market Fund", sub: "Autodraw to Operating", amount: null },
-                        { name: "T-Bill Ladder", sub: "3-Mo / 6-Mo / 9-Mo · matures → JPMorgan", amount: "$101,458" },
-                      ].map((row, i) => (
-                        <div key={i} className="flex items-center justify-between px-3 py-4 bg-amber-50/60 border-b border-amber-100 last:border-0" data-testid={i === 0 ? "flow-row-reserve-jpm" : "flow-row-reserve-tbill"}>
-                          <div className="min-w-0 mr-2">
-                            <p className="text-[11px] font-semibold text-amber-900 leading-tight">{row.name}</p>
-                            <p className="text-[9px] text-amber-600 mt-0.5">{row.sub}</p>
-                          </div>
-                          {row.amount && <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">{row.amount}</span>}
+                      {/* JPMorgan — top row */}
+                      <div className="flex items-center justify-between px-3 py-4 bg-amber-50/60 border-b border-amber-100" data-testid="flow-row-reserve-jpm">
+                        <div className="min-w-0 mr-2">
+                          <p className="text-[11px] font-semibold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
+                          <p className="text-[9px] text-amber-600 mt-0.5">Autodraw to Operating</p>
                         </div>
-                      ))}
+                      </div>
+                      {/* ── Vertical connector: T-Bill matures → JPMorgan ── */}
+                      <div className="relative flex items-center justify-center bg-amber-50/60 border-b border-amber-100 py-1.5 gap-2">
+                        <div className="relative overflow-hidden rounded-full" style={{ width: 2, height: 28, backgroundColor: "rgba(217,119,6,0.25)" }}>
+                          <motion.div
+                            className="absolute left-1/2 -translate-x-1/2 rounded-full"
+                            style={{ width: 7, height: 7, marginLeft: -2.5, backgroundColor: "#d97706", boxShadow: "0 0 5px #d97706" }}
+                            animate={{ top: ["100%", "-8px"] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          />
+                        </div>
+                        <span className="text-[8px] font-bold text-amber-600 whitespace-nowrap">matures → JPMorgan</span>
+                      </div>
+                      {/* T-Bill Ladder — bottom row */}
+                      <div className="flex items-center justify-between px-3 py-4 bg-amber-50/60" data-testid="flow-row-reserve-tbill">
+                        <div className="min-w-0 mr-2">
+                          <p className="text-[11px] font-semibold text-amber-900 leading-tight">T-Bill Ladder</p>
+                          <p className="text-[9px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo</p>
+                        </div>
+                        <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$101,458</span>
+                      </div>
                     </div>
                   </div>
 
