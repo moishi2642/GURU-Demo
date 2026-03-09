@@ -969,8 +969,6 @@ function CashManagementPanel({
   cashFlows: CashFlow[];
 }) {
   const { reserve, yieldBucket, tactical, totalLiquid, reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
-  const [openBucket, setOpenBucket] = useState<string | null>(null);
-
   const forecastData = buildForecast(cashFlows);
   const annualOutflows = forecastData.reduce((s, d) => s + d.outflow, 0);
   const monthlyBurn = annualOutflows / 12;
@@ -979,16 +977,6 @@ function CashManagementPanel({
   const trendUp = endCumulative >= 0;
   const coveragePct = monthlyBurn > 0 ? (totalLiquid / (annualOutflows)) * 100 : 999;
   const coverageOk = coveragePct >= 100;
-  const BUCKETS = [
-    { key: "reserve"  as GuroBucket, label: "Operating Cash", value: reserve     },
-    { key: "yield"    as GuroBucket, label: "Reserve",        value: yieldBucket },
-    { key: "tactical" as GuroBucket, label: "Build",          value: tactical    },
-  ];
-
-  const donutData = BUCKETS.filter(b => b.value > 0).map(b => ({
-    name: b.label, value: b.value, color: GURU_BUCKETS[b.key].color,
-  }));
-
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
 
@@ -1040,88 +1028,44 @@ function CashManagementPanel({
         </div>
       </div>
 
-      {/* ── Pie (centered, large, $ labels) ── */}
-      {(() => {
-        const RADIAN = Math.PI / 180;
-        const renderLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }: any) => {
-          const r = innerRadius + (outerRadius - innerRadius) * 0.55;
-          const x = cx + r * Math.cos(-midAngle * RADIAN);
-          const y = cy + r * Math.sin(-midAngle * RADIAN);
-          const pct = totalLiquid > 0 ? (value / totalLiquid) * 100 : 0;
-          if (pct < 8) return null;
+      {/* ── Bucket Cards ── */}
+      <div className="px-4 py-4 grid grid-cols-3 gap-3">
+        {([
+          { label: "Operating Cash", value: reserve,     items: reserveItems  ?? [], bg: "#1d4ed8", border: "#1d4ed844", rowBg: "#eff6ff", Icon: Wallet },
+          { label: "Reserve",        value: yieldBucket, items: yieldItems    ?? [], bg: "#d97706", border: "#d9770644", rowBg: "#fffbeb", Icon: ShieldCheck },
+          { label: "Build",          value: tactical,    items: tacticalItems ?? [], bg: "#16a34a", border: "#16a34a44", rowBg: "#f0fdf4", Icon: Home },
+        ] as const).map(({ label, value, items, bg, border, rowBg, Icon }) => {
+          const pct = totalLiquid > 0 ? Math.round((value / totalLiquid) * 100) : 0;
           return (
-            <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight="700">
-              {fmt(value, true)}
-            </text>
-          );
-        };
-        const bucketSubItems: Record<string, { label: string; value: number }[]> = {
-          "Operating Cash": reserveItems ?? [],
-          "Reserve":        yieldItems  ?? [],
-          "Build":          tacticalItems ?? [],
-        };
-        return (
-          <>
-            <div className="px-4 pt-3 pb-2 flex items-center gap-4">
-              <div style={{ width: 180, height: 180, flexShrink: 0 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={donutData}
-                      cx="50%" cy="50%"
-                      innerRadius={50} outerRadius={86}
-                      dataKey="value" paddingAngle={3}
-                      label={renderLabel}
-                      labelLine={false}
-                    >
-                      {donutData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                    </Pie>
-                    <RechartsTooltip formatter={(v: number, n: string) => [fmt(v as number, true), n]} contentStyle={{ fontSize: 10 }} />
-                  </PieChart>
-                </ResponsiveContainer>
+            <div key={label} className="rounded-xl overflow-hidden border-2 shadow-sm flex flex-col" style={{ borderColor: border }}>
+              {/* Bucket header */}
+              <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: bg }}>
+                <div className="flex items-center gap-1.5">
+                  <Icon className="w-3 h-3 text-white/80 flex-shrink-0" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white leading-none">{label}</span>
+                </div>
+                <span className="text-[9px] font-bold text-white/70">{pct}%</span>
               </div>
-              <div className="flex flex-col gap-2">
-                {donutData.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="text-[11px] text-muted-foreground">{d.name}</span>
+              {/* Big value */}
+              <div className="px-3 pt-2.5 pb-1.5" style={{ background: rowBg }}>
+                <p className="text-[20px] font-black tabular-nums leading-none" style={{ color: bg }}>{fmt(value, true)}</p>
+              </div>
+              {/* Account rows */}
+              <div className="flex-1 divide-y divide-black/5" style={{ background: rowBg }}>
+                {items.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between px-3 py-1.5 text-[10px]">
+                    <span className="text-foreground/75 truncate pr-1 leading-tight">{item.label}</span>
+                    <span className="tabular-nums font-bold text-foreground shrink-0">{fmt(item.value, true)}</span>
                   </div>
                 ))}
+                {items.length === 0 && (
+                  <div className="px-3 py-2 text-[10px] text-muted-foreground italic">No accounts</div>
+                )}
               </div>
             </div>
-
-            {/* ── Bucket sections ── */}
-            <div className="border-t border-border divide-y divide-border">
-              {([
-                { key: "reserve"  as GuroBucket, label: "Operating Cash", value: reserve,     bg: "#1d4ed8", rowBg: "#eff6ff", Icon: Wallet },
-                { key: "yield"    as GuroBucket, label: "Reserve",        value: yieldBucket, bg: "#d97706", rowBg: "#fffbeb", Icon: ShieldCheck },
-                { key: "tactical" as GuroBucket, label: "Build",          value: tactical,    bg: "#16a34a", rowBg: "#f0fdf4", Icon: Home },
-              ] as const).map(({ key, label, value, bg, rowBg, Icon }) => (
-                <div key={key}>
-                  <div className="px-3 py-2 flex items-center justify-between" style={{ background: bg }}>
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-3 h-3 text-white/80 flex-shrink-0" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white">{label}</span>
-                    </div>
-                    <span className="text-[11px] font-black tabular-nums text-white">{fmt(value, true)}</span>
-                  </div>
-                  <div style={{ background: rowBg }}>
-                    {(bucketSubItems[label] ?? []).map((item, i) => (
-                      <div key={i} className="flex items-center justify-between px-3 py-2 text-[11px] border-t border-black/5 first:border-t-0">
-                        <span className="text-foreground/80 truncate pr-2">{item.label}</span>
-                        <span className="tabular-nums font-semibold text-foreground shrink-0">{fmt(item.value, true)}</span>
-                      </div>
-                    ))}
-                    {(bucketSubItems[label] ?? []).length === 0 && (
-                      <div className="px-3 py-2 text-[11px] text-muted-foreground italic">No accounts mapped</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        );
-      })()}
+          );
+        })}
+      </div>
 
     </div>
   );
