@@ -1058,7 +1058,7 @@ function CashManagementPanel({
                       </div>
                       {/* Centered pct label */}
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 16, fontWeight: 900, color: b.color, textShadow: '0 0 8px white, 0 0 8px white', lineHeight: 1 }}>{pct}%</span>
+                        <span style={{ fontSize: 16, fontWeight: 900, color: b.color, textShadow: '0 0 8px white, 0 0 8px white', lineHeight: 1 }}>{fmt(b.value, true)}</span>
                       </div>
                     </div>
                     <div className="px-3 py-2 flex items-center justify-between" style={{ background: b.color }}>
