@@ -6586,6 +6586,7 @@ function AdvisorBriefView({
         {/* ── Card 4: Account Cash Movements ── */}
         {(() => {
           // Shared row renderer
+          const LINK_COLOR = "#6366f1";
           const FlowRow = ({
             date, label, amount, amtColor, from, to, icon: Icon, iconBg, iconColor, testId, sign, linkedTag,
           }: {
@@ -6595,37 +6596,73 @@ function AdvisorBriefView({
             sign?: "+" | "-";
             linkedTag?: string;
           }) => (
-            <div className="px-6 py-4" data-testid={testId}>
-              <div className="flex items-start gap-3">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${iconBg}`}>
-                  <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+            <div className="relative flex" data-testid={testId}>
+              {/* ── Org-chart left connector (only when this row is linked) ── */}
+              {linkedTag && (
+                <div className="flex-shrink-0 relative" style={{ width: 28 }}>
+                  {/* Vertical spine — full height */}
+                  <div className="absolute" style={{
+                    left: 13, top: 0, bottom: 0, width: 2,
+                    background: `linear-gradient(to bottom, transparent 0%, ${LINK_COLOR} 18%, ${LINK_COLOR} 82%, transparent 100%)`,
+                    opacity: 0.55,
+                  }} />
+                  {/* Horizontal branch → toward content */}
+                  <div className="absolute" style={{
+                    left: 13, top: "50%", width: 15, height: 2,
+                    background: LINK_COLOR, opacity: 0.7,
+                    transform: "translateY(-50%)",
+                  }} />
+                  {/* Dot at branch tip */}
+                  <div className="absolute rounded-full" style={{
+                    left: 8, top: "50%", width: 10, height: 10,
+                    background: LINK_COLOR,
+                    transform: "translateY(-50%)",
+                    boxShadow: `0 0 0 2px white`,
+                  }} />
+                  {/* Rotated label */}
+                  <div className="absolute flex items-center justify-center" style={{
+                    left: -18, top: "50%", width: 40, height: 14,
+                    transform: "translateY(-50%) rotate(-90deg)",
+                    transformOrigin: "center center",
+                  }}>
+                    <span className="text-[8px] font-black uppercase tracking-widest whitespace-nowrap" style={{ color: LINK_COLOR, opacity: 0.8 }}>
+                      Linked
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-4">
-                    <div className="flex items-baseline gap-2 min-w-0">
-                      <p className="text-sm font-bold text-foreground leading-tight">{label}</p>
-                      <span className="text-[10px] font-semibold text-muted-foreground shrink-0">{date}</span>
+              )}
+              {/* ── Row content ── */}
+              <div className={`flex-1 py-4 ${linkedTag ? "pr-6 pl-2" : "px-6"}`}>
+                <div className="flex items-start gap-3">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${iconBg}`}>
+                    <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <div className="flex items-baseline gap-2 min-w-0">
+                        <p className="text-sm font-bold text-foreground leading-tight">{label}</p>
+                        <span className="text-[10px] font-semibold text-muted-foreground shrink-0">{date}</span>
+                      </div>
+                      {amount !== null && (
+                        <p className={`text-sm font-black tabular-nums shrink-0 ${amtColor}`}>{sign ?? ""}{fmt(amount)}</p>
+                      )}
                     </div>
-                    {amount !== null && (
-                      <p className={`text-sm font-black tabular-nums shrink-0 ${amtColor}`}>{sign ?? ""}{fmt(amount)}</p>
+                    <div className="mt-1.5 space-y-0.5">
+                      <p className="text-[11px] text-muted-foreground">
+                        <span className="font-semibold text-foreground/70">From:</span> {from}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        <span className="font-semibold text-foreground/70">To:</span> {to}
+                      </p>
+                    </div>
+                    {linkedTag && (
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <div className="h-px flex-shrink-0 w-4" style={{ background: LINK_COLOR, opacity: 0.5 }} />
+                        <Link2 className="w-3 h-3 flex-shrink-0" style={{ color: LINK_COLOR, opacity: 0.75 }} />
+                        <span className="text-[10px] font-bold" style={{ color: LINK_COLOR }}>{linkedTag}</span>
+                      </div>
                     )}
                   </div>
-                  <div className="mt-1.5 space-y-0.5">
-                    <p className="text-[11px] text-muted-foreground">
-                      <span className="font-semibold text-foreground/70">From:</span> {from}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      <span className="font-semibold text-foreground/70">To:</span> {to}
-                    </p>
-                  </div>
-                  {linkedTag && (
-                    <div className="mt-2">
-                      <span className="inline-flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                        <Link2 className="w-2.5 h-2.5" />
-                        {linkedTag}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -6655,11 +6692,11 @@ function AdvisorBriefView({
 
                 {/* ── Operating Cash ── */}
                 <div>
-                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#d97706" }}>
+                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#1d4ed8" }}>
                     <Wallet className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
                     <span className="text-[11px] font-black uppercase tracking-widest text-white">Operating Cash</span>
                   </div>
-                  <div>
+                  <div style={{ background: "#eff6ff" }}>
                     <FlowRow
                       date="March"
                       label="Inflow to Primary Account"
@@ -6679,11 +6716,11 @@ function AdvisorBriefView({
 
                 {/* ── Reserve ── */}
                 <div>
-                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#4f46e5" }}>
+                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#d97706" }}>
                     <ShieldCheck className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
                     <span className="text-[11px] font-black uppercase tracking-widest text-white">Reserve</span>
                   </div>
-                  <div className="divide-y divide-border/60">
+                  <div className="divide-y divide-border/60" style={{ background: "#fffbeb" }}>
                     <FlowRow
                       date="March 31"
                       label="Proceeds from T-Bill Maturity"
@@ -6716,14 +6753,14 @@ function AdvisorBriefView({
 
                 {/* ── Build ── */}
                 <div>
-                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#7c3aed" }}>
+                  <div className="px-6 py-2.5 flex items-center gap-2.5" style={{ background: "#16a34a" }}>
                     <Home className="w-3.5 h-3.5 text-white/80 flex-shrink-0" />
                     <span className="text-[11px] font-black uppercase tracking-widest text-white">Build</span>
                   </div>
-                  <div className="px-6 py-4" data-testid="flow-row-build">
+                  <div className="px-6 py-4" data-testid="flow-row-build" style={{ background: "#f0fdf4" }}>
                     <div className="flex items-start gap-3">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-violet-100">
-                        <Minus className="w-3.5 h-3.5 text-violet-500" />
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-green-100">
+                        <Minus className="w-3.5 h-3.5 text-green-600" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline justify-between gap-4">
