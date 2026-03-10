@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateAsset, useCreateLiability, useCreateCashFlow } from "@/hooks/use-financials";
+import { Plus } from "lucide-react";
 
 export function AddAssetModal({ clientId }: { clientId: number }) {
   const [open, setOpen] = useState(false);
@@ -26,8 +27,9 @@ export function AddAssetModal({ clientId }: { clientId: number }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full justify-start hover-lift">
-          + Add Asset
+        <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 h-7 rounded-md shadow-none">
+          <Plus className="w-3 h-3" />
+          Add Asset
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -88,8 +90,9 @@ export function AddLiabilityModal({ clientId }: { clientId: number }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full justify-start hover-lift">
-          + Add Liability
+        <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 h-7 rounded-md shadow-none">
+          <Plus className="w-3 h-3" />
+          Add Liability
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -154,8 +157,9 @@ export function AddCashFlowModal({ clientId }: { clientId: number }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full justify-start hover-lift">
-          + Log Cash Flow
+        <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 h-7 rounded-md shadow-none">
+          <Plus className="w-3 h-3" />
+          Log Cash Flow
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
