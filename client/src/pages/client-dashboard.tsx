@@ -2828,7 +2828,7 @@ function CashFlowForecastView({
           {/* Coverage */}
           <div className="px-4 py-3 flex flex-col gap-0.5">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Coverage</p>
-            <p className="text-xl font-extrabold tabular-nums leading-none text-[#e11d48]">
+            <p className={`text-xl font-extrabold tabular-nums leading-none ${heroCoverageOk ? "text-emerald-600" : "text-rose-600"}`}>
               {heroCoveragePct > 999 ? "—" : `${heroCoveragePct.toFixed(0)}%`}
             </p>
             <div className="flex items-center gap-1 mt-0.5">
