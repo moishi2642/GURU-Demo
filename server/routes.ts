@@ -301,7 +301,7 @@ async function seedDatabase() {
     storage.createAsset({ clientId: c1.id, type: "cash", value: "225000",    description: "Citizens Private Bank Money Market — 3.65% yield" }),
     storage.createAsset({ clientId: c1.id, type: "cash", value: "15000",     description: "CapitalOne 360 Performance Savings — 3.78% yield" }),
     // Brokerage Cash (Idle) — A in GURU Optimizer
-    storage.createAsset({ clientId: c1.id, type: "cash", value: "186586",    description: "Fidelity Taxable Brokerage — Cash Sweep (Idle)" }),
+    storage.createAsset({ clientId: c1.id, type: "cash", value: "186586",    description: "Fidelity — Cash Sweep / Money Market (Idle) — 2.50% yield" }),
     // Investments — $1,509,500 liquid + $186,586 cash
     storage.createAsset({ clientId: c1.id, type: "fixed_income", value: "135000",  description: "US Treasuries — 3.95% yield" }),
     storage.createAsset({ clientId: c1.id, type: "equity",       value: "814877",  description: "Cresset Capital (advisor-managed, US ETFs & Mutual Funds)" }),

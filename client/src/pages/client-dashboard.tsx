@@ -5448,10 +5448,7 @@ function GuruAllocationView({
           .filter(
             (a) =>
               a.type === "cash" &&
-              !(a.description ?? "").toLowerCase().includes("checking") &&
-              !(a.description ?? "").toLowerCase().includes("brokerage") &&
-              !(a.description ?? "").toLowerCase().includes("fidelity") &&
-              !(a.description ?? "").toLowerCase().includes("sweep"),
+              !(a.description ?? "").toLowerCase().includes("checking"),
           )
           .map((a) => {
             const y = extractRate(a.description)
@@ -5493,7 +5490,6 @@ function GuruAllocationView({
         // Grow sub-accounts: detailed breakdown per prototype model
         // yieldAT field repurposed as 5yr historical return for display
         const growAccts: Acct[] = [
-          { name: "Cash — Brokerage Sweep",  value: 222965, yield_: "—", yieldAT: "2.5%",  acctNum: acctHash("Cash — Brokerage Sweep") },
           { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%",  acctNum: acctHash("International") },
           { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%", acctNum: acctHash("US Total Market") },
           { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%", acctNum: acctHash("US Large Cap") },
