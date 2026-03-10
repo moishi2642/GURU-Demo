@@ -2806,16 +2806,7 @@ function CashFlowForecastView({
         </div>
 
         {/* KPI tiles row */}
-        <div className="grid grid-cols-6 divide-x divide-border/60">
-          {/* Annual Outflows */}
-          <div className="px-4 py-3 flex flex-col gap-0.5" data-testid="stat-avg-outflow">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Outflows</p>
-            <p className="text-xl font-extrabold tabular-nums leading-none text-rose-600">
-              ({fmt(totalOut, true)})
-            </p>
-            <p className="text-[9px] text-muted-foreground">med. {fmt(medianOut, true)}/mo</p>
-          </div>
-
+        <div className="grid grid-cols-5 divide-x divide-border/60">
           {/* Monthly Burn */}
           <div className="px-4 py-3 flex flex-col gap-0.5">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly Burn</p>
