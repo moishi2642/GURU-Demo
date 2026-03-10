@@ -564,9 +564,6 @@ function cashBuckets(assets: Asset[]) {
       if (desc.includes("checking")) {
         reserve += val;
         reserveItems.push({ label: lbl, value: val });
-      } else if (desc.includes("brokerage")) {
-        growth += val;
-        growthItems.push({ label: lbl, value: val });
       } else {
         yieldBucket += val;
         yieldItems.push({ label: lbl, value: val });
