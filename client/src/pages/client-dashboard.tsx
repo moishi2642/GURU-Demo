@@ -335,13 +335,13 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
 const DEMO_NOW = new Date(2026, 2, 6); // March 6, 2026
 
 const HERO_COLORS: Record<string, { bg: string; accent: string; dot: string }> = {
-  "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd", dot: "#60a5fa" },
-  Reserve:          { bg: "#d97706", accent: "#fde68a", dot: "#fbbf24" },
-  Build:            { bg: "#16a34a", accent: "#86efac", dot: "#4ade80" },
-  Grow:             { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
-  "Real Estate":        { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
-  "Alternative Assets": { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
-  "529 Plans":          { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
+  "Operating Cash": { bg: "#0f2441", accent: "#7aafd4", dot: "#6ba3c8" },
+  Reserve:          { bg: "#4a2900", accent: "#c99040", dot: "#c99040" },
+  Build:            { bg: "#0d2e1b", accent: "#4ba872", dot: "#4ba872" },
+  Grow:             { bg: "#1a1245", accent: "#8468c9", dot: "#8468c9" },
+  "Real Estate":        { bg: "#1e2330", accent: "#94a3b8", dot: "#94a3b8" },
+  "Alternative Assets": { bg: "#1e2330", accent: "#94a3b8", dot: "#94a3b8" },
+  "529 Plans":          { bg: "#1e2330", accent: "#94a3b8", dot: "#94a3b8" },
 };
 
 // ─── Book of Business — flag metadata & client data ───────────────────────────
@@ -5030,33 +5030,33 @@ const GURU_BUCKETS_DEF = [
     name: "Operating Cash",
     tagline: "Cash for upcoming expenditures",
     rule: "2-3 months of cash",
-    bg: "#1d4ed8",
-    dark: "#1e40af",
-    accent: "#93c5fd",
+    bg: "#0f2441",
+    dark: "#0a1a30",
+    accent: "#7aafd4",
   },
   {
     name: "Reserve",
     tagline: "Active cash management for what's next",
     rule: "12 months of cash for anticipated outflow",
-    bg: "#d97706",
-    dark: "#b45309",
-    accent: "#fcd34d",
+    bg: "#4a2900",
+    dark: "#361e00",
+    accent: "#c99040",
   },
   {
     name: "Build",
     tagline: "Disciplined saving for big goals on the horizon",
     rule: "Large expenditure in next 3 years",
-    bg: "#16a34a",
-    dark: "#15803d",
-    accent: "#4ade80",
+    bg: "#0d2e1b",
+    dark: "#091e11",
+    accent: "#4ba872",
   },
   {
     name: "Grow",
     tagline: "Long-term compounded investing",
     rule: "5 years + aggressive investment portfolio",
-    bg: "#5b21b6",
-    dark: "#4c1d95",
-    accent: "#c084fc",
+    bg: "#1a1245",
+    dark: "#110b30",
+    accent: "#8468c9",
   },
 ] as const;
 
@@ -5622,34 +5622,34 @@ function GuruAllocationView({
             {(() => {
               const heroCardTotal = assets.reduce((s, a) => s + Number(a.value), 0);
               return (
-                <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
+                <div className="rounded-xl border border-slate-800 px-6 py-5" style={{ background: "linear-gradient(135deg, #0c1829 0%, #0f2441 60%, #0d2e1b 100%)" }}>
                   <div className="flex flex-col sm:flex-row gap-6 items-center">
                     {/* Total Assets headline */}
                     <div className="flex-shrink-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="rounded-lg p-1.5 bg-emerald-100">
-                          <TrendingUp className="w-4 h-4 text-emerald-600" />
+                        <div className="rounded-lg p-1.5" style={{ background: "rgba(122,175,212,0.15)" }}>
+                          <TrendingUp className="w-4 h-4" style={{ color: "#7aafd4" }} />
                         </div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#7aafd4" }}>
                           Total Assets
                         </p>
                       </div>
-                      <p className="text-4xl font-extrabold leading-tight tabular-nums text-emerald-700">
+                      <p className="text-4xl font-extrabold leading-tight tabular-nums text-white">
                         {fmt(heroCardTotal)}
                       </p>
-                      <p className="text-[10px] text-emerald-600/70 mt-1">
+                      <p className="text-[10px] mt-1" style={{ color: "rgba(122,175,212,0.6)" }}>
                         GURU Allocation View · {assets.length} accounts
                       </p>
                     </div>
 
                     {/* DIVIDER */}
-                    <div className="hidden sm:block w-px self-stretch bg-emerald-200" />
+                    <div className="hidden sm:block w-px self-stretch" style={{ background: "rgba(255,255,255,0.1)" }} />
 
                     {/* Potential Excess Cash — static metric */}
                     <div className="flex-shrink-0">
-                      <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Potential Excess Cash</p>
-                      <p className="text-2xl font-black tabular-nums text-emerald-700">{fmt(excessCash)}</p>
-                      <p className="text-[9px] text-emerald-600/60 mt-0.5">available to redeploy</p>
+                      <p className="text-[9px] uppercase tracking-widest font-bold mb-0.5" style={{ color: "rgba(201,144,64,0.8)" }}>Potential Excess Cash</p>
+                      <p className="text-2xl font-black tabular-nums" style={{ color: "#c99040" }}>{fmt(excessCash)}</p>
+                      <p className="text-[9px] mt-0.5" style={{ color: "rgba(201,144,64,0.5)" }}>available to redeploy</p>
                     </div>
 
                     {/* Spacer */}
@@ -5694,26 +5694,26 @@ function GuruAllocationView({
                               left: "50%",
                               marginTop: -diag / 2,
                               marginLeft: -diag / 2,
-                              background: "conic-gradient(from 0deg at 50% 50%, #f59e0b 0deg, #fcd34d 40deg, #fef3c7 80deg, transparent 140deg, transparent 300deg, #f59e0b 360deg)",
+                              background: "conic-gradient(from 0deg at 50% 50%, #c99040 0deg, #e8b86d 40deg, #f5dba8 80deg, transparent 140deg, transparent 300deg, #c99040 360deg)",
                             }}
                             animate={{ rotate: 360 }}
                             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                           />
-                          {/* Amber panel — 2px inset exposes the rotating border */}
-                          <div className="absolute rounded-[10px] bg-amber-50 px-4 py-3 flex flex-col justify-between" style={{ inset: "2px" }}>
+                          {/* Dark panel — 2px inset exposes the rotating border */}
+                          <div className="absolute rounded-[10px] px-4 py-3 flex flex-col justify-between" style={{ inset: "2px", background: "#0f1e33" }}>
                             <div className="flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-                              <p className="uppercase tracking-widest font-black text-amber-700 text-[11px]">Impact from Selection</p>
+                              <span className="w-1.5 h-1.5 rounded-full animate-pulse flex-shrink-0" style={{ background: "#c99040" }} />
+                              <p className="uppercase tracking-widest font-black text-[11px]" style={{ color: "#c99040" }}>Impact from Selection</p>
                             </div>
                             <div className="grid grid-cols-2 gap-3 mt-1">
                               <div>
-                                <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">After Tax Income / Year</p>
+                                <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: "rgba(201,144,64,0.55)" }}>After Tax Income / Year</p>
                                 <p className="text-xl font-black tabular-nums leading-none" style={{ color: valCol }}>
                                   {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">Income Δ</p>
+                                <p className="text-[8px] uppercase tracking-widest font-bold mb-0.5" style={{ color: "rgba(201,144,64,0.55)" }}>Income Δ</p>
                                 <p className="text-xl font-black tabular-nums leading-none" style={{ color: valCol }}>
                                   {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
                                 </p>
@@ -5794,14 +5794,14 @@ function GuruAllocationView({
                         <div key={`${r.def.name}-${proforma ? "pro" : "cur"}`} className="flex flex-col">
                           <div className="mb-1 h-5 flex items-center justify-center">
                             {!proforma && yieldChanged && (
-                              <span className="text-[8px] font-black px-2 py-0.5 rounded-full border bg-violet-50 border-violet-300 text-violet-700">
+                              <span className="text-[8px] font-black px-2 py-0.5 rounded-full border" style={{ background: "rgba(132,104,201,0.12)", borderColor: "rgba(132,104,201,0.4)", color: "#8468c9" }}>
                                 ~ yield change
                               </span>
                             )}
                           </div>
                           <div
-                            className={`rounded-xl p-4 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
-                            style={{ background: hc.bg }}
+                            className={`rounded-xl p-4 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "scale-[1.02]" : ""}`}
+                            style={{ background: hc.bg, ...(!proforma && isDragTarget ? { outline: "2px solid #c99040", outlineOffset: "2px" } : {}) }}
                             onDragOver={!proforma && isDragTarget ? (e) => e.preventDefault() : undefined}
                             onDrop={!proforma && isDragTarget ? (e) => {
                               e.preventDefault();
@@ -5847,9 +5847,9 @@ function GuruAllocationView({
                       return (
                         <div className="flex flex-col">
                           <div className="h-5 mb-1" />
-                          <div className="rounded-xl p-4 flex-1 bg-slate-500">
+                          <div className="rounded-xl p-4 flex-1" style={{ background: "#1e2330" }}>
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-slate-300" />
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#94a3b8" }} />
                               <span className="text-[11px] font-black uppercase text-white leading-tight truncate">Grow (Other)</span>
                             </div>
                             <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">Real estate · alternatives · 529 plans</p>
