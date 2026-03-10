@@ -3348,7 +3348,7 @@ function BucketExecutionPanel({
   const SVG_CHEVRON = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")";
 
   return (
-    <div className="w-[18rem] flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
+    <div className="w-[16rem] flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
       <div className="flex-1 px-5 py-5 flex flex-col gap-4">
 
         {/* Months stepper — only for Operating Cash / Reserve */}
@@ -3581,7 +3581,7 @@ function BucketProductPanel({
   const multiSelect = selected.size > 1;
 
   return (
-    <div className="w-[26rem] flex-shrink-0 flex flex-col border-l border-border bg-card">
+    <div className="w-[23rem] flex-shrink-0 flex flex-col border-l border-border bg-card">
       <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
         <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
           Recommended Products
