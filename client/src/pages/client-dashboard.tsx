@@ -6262,25 +6262,28 @@ function GuruAllocationView({
         if (!anyChanges) return null;
         const currentPickup = lastPickupRef.current ?? 0;
         const isGain = currentPickup >= 0;
-        const valCol = isGain ? "#4ade80" : "#f87171";
+        const valCol = isGain ? "#15803d" : "#dc2626";
         return (
           <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 pointer-events-none">
-            <div className="bg-black rounded-2xl px-3 py-4 shadow-2xl border border-white/10 flex flex-col items-center gap-1.5" style={{ minWidth: 92 }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <p className="text-[7px] font-black uppercase tracking-widest text-white/50 text-center leading-tight">Running<br/>Impact</p>
-              <p className="text-base font-black tabular-nums leading-none text-center" style={{ color: valCol }}>
-                {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(currentPickup)))}
-              </p>
-              <p className="text-[8px] text-white/40 leading-none">AT / yr</p>
+            <div className="rounded-2xl shadow-2xl border-2 border-amber-400 bg-amber-50 px-4 py-4 flex flex-col gap-1.5" style={{ minWidth: 148 }}>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 leading-tight">Running Impact</p>
+              </div>
               {impactHistory.length > 0 && (
-                <div className="mt-1 pt-1.5 border-t border-white/10 w-full flex flex-col items-center gap-0.5">
-                  {impactHistory.map((h, i) => (
-                    <p key={i} className="text-[7px] tabular-nums text-white/25 line-through leading-none">
-                      {h >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(h)))}
-                    </p>
-                  ))}
+                <div className="flex items-baseline gap-2 opacity-40 line-through decoration-amber-600/60">
+                  <p className="text-sm font-black tabular-nums leading-none" style={{ color: impactHistory[0] >= 0 ? "#15803d" : "#dc2626" }}>
+                    {impactHistory[0] >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(impactHistory[0])))}
+                  </p>
+                  <p className="text-[9px] font-semibold text-amber-700/60">AT / yr</p>
                 </div>
               )}
+              <div>
+                <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">After Tax / Year</p>
+                <p className="text-xl font-black tabular-nums leading-none" style={{ color: valCol }}>
+                  {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(currentPickup)))}
+                </p>
+              </div>
             </div>
           </div>
         );
