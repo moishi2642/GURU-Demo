@@ -2628,7 +2628,7 @@ function CashFlowForecastView({
   cashFlows: CashFlow[];
   clientId: number;
 }) {
-  const { reserve, totalLiquid } = cashBuckets(assets);
+  const { reserve, yieldBucket, tactical, totalLiquid, reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
   const startBalance = reserve;
 
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>(() => {
@@ -3035,7 +3035,43 @@ function CashFlowForecastView({
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" tick={<CustomTick />} axisLine={false} tickLine={false} height={28} />
                     <YAxis hide={true} domain={[100000, 'auto']} />
-                    <RechartsTooltip content={() => null} />
+                    <RechartsTooltip
+                      cursor={{ fill: "rgba(99,102,241,0.06)" }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const entry = payload[0]?.payload as WFEntry;
+                        if (entry?.name !== "Opening") return null;
+                        const groups = [
+                          { label: "Operating Cash", color: "#1d4ed8", items: reserveItems, total: reserve },
+                          { label: "Reserve / Savings", color: "#d97706", items: yieldItems, total: yieldBucket },
+                          { label: "T-Bills / Short Duration", color: "#0891b2", items: tacticalItems, total: tactical },
+                        ].filter(g => g.total > 0);
+                        return (
+                          <div className="bg-white border border-slate-200 rounded-xl shadow-xl p-3 min-w-[220px] text-xs">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Opening Cash Balance</p>
+                            {groups.map((g) => (
+                              <div key={g.label} className="mb-2 last:mb-0">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: g.color }} />
+                                  <span className="font-bold text-slate-600 text-[10px]">{g.label}</span>
+                                  <span className="ml-auto font-black tabular-nums text-slate-800">{fmt(g.total, true)}</span>
+                                </div>
+                                {g.items.map((item, i) => (
+                                  <div key={i} className="flex items-center justify-between pl-3.5 py-0.5 text-[9px] text-slate-500">
+                                    <span className="truncate max-w-[130px]">{item.label}</span>
+                                    <span className="tabular-nums ml-2 flex-shrink-0">{fmt(item.value, true)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
+                            <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between font-black text-[10px] text-slate-800">
+                              <span>Total Liquid</span>
+                              <span className="tabular-nums text-blue-700">{fmt(totalLiquid, true)}</span>
+                            </div>
+                          </div>
+                        );
+                      }}
+                    />
                     {/* Sep 30 callout */}
                     <ReferenceLine x="Sep 30" stroke="transparent" label={<Sep30CalloutLabel />} />
                     {/* Invisible spacer */}
