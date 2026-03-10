@@ -3348,7 +3348,7 @@ function BucketExecutionPanel({
   const SVG_CHEVRON = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")";
 
   return (
-    <div className="w-[19rem] flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
+    <div className="w-[17rem] flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
       <div className="flex-1 px-5 py-5 flex flex-col gap-4">
 
         {/* Months stepper — only for Operating Cash / Reserve */}
@@ -3629,7 +3629,7 @@ function BucketProductPanel({
                         ▲ Highest Yield
                       </span>
                     )}
-                    <p className="text-[11px] font-semibold text-foreground leading-snug">
+                    <p className="text-[13px] font-semibold text-foreground leading-snug">
                       {p.name}
                     </p>
                   </div>
