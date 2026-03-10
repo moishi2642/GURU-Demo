@@ -5267,23 +5267,11 @@ function GuruAllocationView({
   const forecastData = buildForecast(cashFlows);
   const cashTrough = computeTrough(forecastData);
   const cashExcess = totalLiquid - cashTrough;
-  const brokerageCash = assets
-    .filter(
-      (a) =>
-        a.type === "cash" &&
-        (a.description ?? "").toLowerCase().includes("brokerage"),
-    )
-    .reduce((s, a) => s + Number(a.value), 0);
-  const totalToInvest = Math.round(brokerageCash + Math.max(0, cashExcess));
+  const totalToInvest = Math.round(Math.max(0, cashExcess));
 
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
   const growth = assets
-    .filter(
-      (a) =>
-        a.type === "equity" ||
-        (a.type === "cash" &&
-          (a.description ?? "").toLowerCase().includes("brokerage")),
-    )
+    .filter((a) => a.type === "equity")
     .reduce((s, a) => s + Number(a.value), 0);
   const alts = assets
     .filter((a) => a.type === "alternative" || a.type === "real_estate")
@@ -5325,7 +5313,7 @@ function GuruAllocationView({
       {/* ── Rebalancing Recommendation ───────────────────────────────────── */}
       {(() => {
         const reserveCurrent = reserve;
-        const flowCurrent = yieldBucket; // brokerageCash now classified in Grow
+        const flowCurrent = yieldBucket;
         const buildCurrent = tactical;
         const equityValEarly = assets
           .filter(
@@ -6335,15 +6323,15 @@ function AdvisorBriefView({
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
   // ── Liquidity calcs — mirrors GURU hero bar exactly ──
-  const { totalLiquid: _abvTotalLiquid } = cashBuckets(assets);
+  const { totalLiquid: _abvTotalLiquid, yieldItems: _abvYieldItems } = cashBuckets(assets);
   const _abvForecast = buildForecast(cashFlows);
   const cashTroughBuffer = computeTrough(_abvForecast);
   const guruReserveTarget = cashTroughBuffer;
   // cashExcess uses the same formula as the GURU hero bar: totalLiquid − trough
   const cashExcess = Math.max(0, _abvTotalLiquid - cashTroughBuffer);
-  // reserveItems = idle bank cash (checking + savings + MM), excluding Fidelity brokerage sweep
+  // reserveItems = all non-checking cash (savings, MM, Fidelity Cash)
   const reserveItems = assets.filter(
-    (a) => a.type === "cash" && (a.description ?? "").toLowerCase().match(/checking|savings|money market|mm|sweep/) && !(a.description ?? "").toLowerCase().includes("fidelity"),
+    (a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"),
   );
   // Non-treasury cash = used for the yield/Fed-cut card only (non-Fidelity bank accounts)
   const _seenDescs = new Set<string>();
@@ -6356,13 +6344,12 @@ function AdvisorBriefView({
   const brokerageCashItems = assets.filter(
     (a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"),
   );
-  const brokerageCashTotal = brokerageCashItems.reduce((s, a) => s + Number(a.value), 0);
-  const totalToDeploy = Math.round(brokerageCashTotal + cashExcess);
+  const totalToDeploy = Math.round(cashExcess);
 
   // ── Yield calcs ──
   const _currentLiquidYield = 1.4;
   const _guruLiquidYield = 2.7;
-  const liquidHero = _abvTotalLiquid + brokerageCashTotal;
+  const liquidHero = _abvTotalLiquid;
   const _yieldPickupAnnual = Math.round(liquidHero * ((_guruLiquidYield - _currentLiquidYield) / 100));
   const bpsPickup = Math.round((_guruLiquidYield - _currentLiquidYield) * 100);
 
@@ -6683,7 +6670,7 @@ function AdvisorBriefView({
             </div>
             <div className="space-y-1.5">
               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Where it's sitting</p>
-              {[...reserveItems, ...brokerageCashItems.filter(a => !(a.description ?? "").toLowerCase().includes("fidelity"))].slice(0, 5).map((a) => (
+              {reserveItems.slice(0, 5).map((a) => (
                 <div key={a.id} className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
@@ -7585,16 +7572,7 @@ export default function ClientDashboard() {
     _forecastData.find((d) => d.cumulative === minCumTop)?.month ?? "";
 
   // GURU Optimizer "Total Cash to Invest" = A (idle acct cash) + B (liquid surplus) — mirrors G29
-  const brokerageCashTop = assets
-    .filter(
-      (a) =>
-        a.type === "cash" &&
-        (a.description ?? "").toLowerCase().includes("brokerage"),
-    )
-    .reduce((s, a) => s + Number(a.value), 0);
-  const totalToInvestTop = Math.round(
-    brokerageCashTop + Math.max(0, cashExcessTop),
-  );
+  const totalToInvestTop = Math.round(Math.max(0, cashExcessTop));
 
   // Cash where it sits — for hero card 1 line items
   const _brokerageCashItems = assets
