@@ -3612,7 +3612,7 @@ function BucketProductPanel({
               }}
             >
               {/* Top row: checkbox + name + % input */}
-              <div className="w-full p-3 pb-2 text-left">
+              <div className="w-full p-3 pb-2 text-left text-[13px]">
                 <div className="flex items-start gap-2.5">
                   <div
                     className="w-4 h-4 rounded flex-shrink-0 mt-0.5 flex items-center justify-center border-2 transition-colors"
