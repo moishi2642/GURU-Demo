@@ -2773,7 +2773,6 @@ function CashFlowForecastView({
 
   return (
     <div className="space-y-5">
-
       {/* ── CFO Hero Bar ─────────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
         {/* Header row */}
@@ -2811,7 +2810,7 @@ function CashFlowForecastView({
           {/* Monthly Burn */}
           <div className="px-4 py-3 flex flex-col gap-0.5">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly Burn</p>
-            <p className="text-xl font-extrabold tabular-nums leading-none text-foreground">
+            <p className="text-xl font-extrabold tabular-nums leading-none text-[#e11d48]">
               {fmt(heroMonthlyBurn, true)}
             </p>
             <p className="text-[9px] text-muted-foreground">avg outflows / mo</p>
@@ -2829,7 +2828,7 @@ function CashFlowForecastView({
           {/* Coverage */}
           <div className="px-4 py-3 flex flex-col gap-0.5">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Coverage</p>
-            <p className={`text-xl font-extrabold tabular-nums leading-none ${heroCoverageOk ? "text-emerald-600" : "text-rose-600"}`}>
+            <p className="text-xl font-extrabold tabular-nums leading-none text-[#e11d48]">
               {heroCoveragePct > 999 ? "—" : `${heroCoveragePct.toFixed(0)}%`}
             </p>
             <div className="flex items-center gap-1 mt-0.5">
@@ -2868,7 +2867,6 @@ function CashFlowForecastView({
           </div>
         </div>
       </div>
-
       {/* Cash Balance Walk — waterfall bridge chart */}
       {(() => {
         const Q_DEFS = [
@@ -3071,7 +3069,6 @@ function CashFlowForecastView({
           </div>
         );
       })()}
-
       {/* P&L Detail Table — collapsible groups, sticky header */}
       {(() => {
         const groupOf: Record<string, string> = {};
