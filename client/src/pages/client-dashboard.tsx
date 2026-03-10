@@ -3413,15 +3413,18 @@ function BucketExecutionPanel({
               <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>
                 Transfer Amount
               </p>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={fmtInput(rawAmt)}
-                onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
-                placeholder="0"
-                className="w-full text-base font-black tabular-nums focus:outline-none bg-transparent"
-                style={{ color: AMBER }}
-              />
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-[13px] font-black tabular-nums" style={{ color: AMBER }}>$</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={fmtInput(rawAmt)}
+                  onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
+                  placeholder="0"
+                  className="w-full text-[13px] font-black tabular-nums focus:outline-none bg-transparent"
+                  style={{ color: AMBER }}
+                />
+              </div>
             </div>
 
             {/* Route */}
