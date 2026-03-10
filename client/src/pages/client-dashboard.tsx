@@ -5224,6 +5224,8 @@ function GuruAllocationView({
 }) {
 
   const [dragItem, setDragItem] = useState<string | null>(null);
+  const [impactHistory, setImpactHistory] = useState<number[]>([]);
+  const lastPickupRef = useRef<number | null>(null);
 
   function handleExecute(from: string, to: string, amount: number) {
     setPendingTransfers((prev) => {
@@ -5692,15 +5694,28 @@ function GuruAllocationView({
                         }
                       });
                       const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
+                      // Track history: when totalPickup changes meaningfully, push the old value
+                      {
+                        const prev = lastPickupRef.current;
+                        if (prev !== null && Math.abs(prev - totalPickup) > 0.5) {
+                          const snapshot = prev;
+                          setTimeout(() => setImpactHistory(h => {
+                            const last = h[h.length - 1];
+                            return (last === undefined || Math.abs(last - snapshot) > 0.5) ? [...h, snapshot] : h;
+                          }), 0);
+                        }
+                        lastPickupRef.current = totalPickup;
+                      }
                       const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
                       const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
                       const isGain = totalPickup >= 0;
                       const valCol = isGain ? "#15803d" : "#dc2626";
-                      /* Box ~360px wide × 100px tall — rotating border effect */
-                      const BW = 360; const BH = 100;
+                      /* Box ~360px wide, height grows with history */
+                      const BW = 360;
+                      const BH = 100 + impactHistory.length * 20;
                       const diag = Math.ceil(Math.sqrt(BW * BW + BH * BH)) + 20;
                       return (
-                        <div className="relative flex-shrink-0 rounded-xl overflow-hidden flex-shrink-0" style={{ width: BW, height: BH }}>
+                        <div className="relative flex-shrink-0 rounded-xl overflow-hidden" style={{ width: BW, height: BH }}>
                           {/* Rotating conic gradient — sweeping border */}
                           <motion.div
                             style={{
@@ -5717,12 +5732,27 @@ function GuruAllocationView({
                             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                           />
                           {/* Amber panel — 2px inset exposes the rotating border */}
-                          <div className="absolute rounded-[10px] bg-amber-50 px-4 py-3 flex flex-col justify-between" style={{ inset: "2px" }}>
+                          <div className="absolute rounded-[10px] bg-amber-50 px-4 py-3 flex flex-col gap-1" style={{ inset: "2px" }}>
                             <div className="flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
                               <p className="uppercase tracking-widest font-black text-amber-700 text-[11px]">Impact from Selection</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-3 mt-1">
+                            {/* Prior values — crossed out running history */}
+                            {impactHistory.map((prev, i) => {
+                              const prevGain = prev >= 0;
+                              return (
+                                <div key={i} className="flex items-baseline gap-3 opacity-40 line-through decoration-amber-600/60">
+                                  <p className="text-sm font-black tabular-nums leading-none" style={{ color: prevGain ? "#15803d" : "#dc2626" }}>
+                                    {prevGain ? "+" : "−"}{fmt(Math.abs(Math.round(prev)))}
+                                  </p>
+                                  <p className="text-[10px] font-semibold tabular-nums" style={{ color: prevGain ? "#15803d" : "#dc2626" }}>
+                                    AT / yr
+                                  </p>
+                                </div>
+                              );
+                            })}
+                            {/* Current live value */}
+                            <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">After Tax Income / Year</p>
                                 <p className="text-xl font-black tabular-nums leading-none" style={{ color: valCol }}>
@@ -6251,6 +6281,35 @@ function GuruAllocationView({
                   </div>
                 );
               })}
+            </div>
+          </div>
+        );
+      })()}
+      {/* ── Sticky left-margin impact bubble — follows the user as they scroll ── */}
+      {(() => {
+        const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(s => s.length > 0);
+        if (!anyChanges) return null;
+        const currentPickup = lastPickupRef.current ?? 0;
+        const isGain = currentPickup >= 0;
+        const valCol = isGain ? "#4ade80" : "#f87171";
+        return (
+          <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 pointer-events-none">
+            <div className="bg-black rounded-2xl px-3 py-4 shadow-2xl border border-white/10 flex flex-col items-center gap-1.5" style={{ minWidth: 92 }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <p className="text-[7px] font-black uppercase tracking-widest text-white/50 text-center leading-tight">Running<br/>Impact</p>
+              <p className="text-base font-black tabular-nums leading-none text-center" style={{ color: valCol }}>
+                {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(currentPickup)))}
+              </p>
+              <p className="text-[8px] text-white/40 leading-none">AT / yr</p>
+              {impactHistory.length > 0 && (
+                <div className="mt-1 pt-1.5 border-t border-white/10 w-full flex flex-col items-center gap-0.5">
+                  {impactHistory.map((h, i) => (
+                    <p key={i} className="text-[7px] tabular-nums text-white/25 line-through leading-none">
+                      {h >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(h)))}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
