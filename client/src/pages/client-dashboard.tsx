@@ -1878,9 +1878,28 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
     ((a.description ?? "").toLowerCase().includes("fidelity") ||
      (a.description ?? "").toLowerCase().includes("sweep") ||
      (a.description ?? "").toLowerCase().includes("brokerage cash"));
-  const checking    = assets.filter((a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"));
-  const savingsMM   = assets.filter((a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking") && !isBrokerageCash(a));
-  const brokerage   = assets.filter((a) => isBrokerage(a) || isBrokerageCash(a));
+  const checking      = assets.filter((a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"));
+  const savingsMM     = assets.filter((a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking") && !isBrokerageCash(a));
+  const brokerageCash = assets.filter((a) => isBrokerageCash(a));
+  const brokerage     = assets.filter((a) => isBrokerage(a));
+
+  const mkBrokerageCashGroup = (): BsGroup => ({
+    category: "Brokerage Cash",
+    items: brokerageCash.map((a) => {
+      const desc = a.description ?? "";
+      const isFidelity = desc.toLowerCase().includes("fidelity");
+      return {
+        label: isFidelity ? "Fidelity (Cash)" : desc.split("(")[0].split("—")[0].split("–")[0].trim(),
+        subtitle: lookupBsSubtitle(desc, BS_ASSET_SUBTITLES),
+        value: Number(a.value),
+        rate: extractRate(desc),
+        ret: lookupReturn(desc),
+        comment: assetComment(a),
+      };
+    }),
+    subtotal: brokerageCash.reduce((s, a) => s + Number(a.value), 0),
+    avgRate: wavgRate(brokerageCash),
+  });
 
   // Extract the broker/institution name from an asset description.
   // "Cresset Capital Mgmt — Portfolio"  →  "Cresset Capital Mgmt"
@@ -1990,7 +2009,8 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
   const cashGroups: BsGroup[] = [];
   if (checking.length) cashGroups.push(mkGroup("Checking Bank Accounts", checking));
   if (savingsMM.length) cashGroups.push(mkGroup("Savings & Money Market Bank Accounts", savingsMM));
-  if (cashGroups.length) sections.push({ label: "Cash", groups: cashGroups, total: subtot([...checking, ...savingsMM]) });
+  if (brokerageCash.length) cashGroups.push(mkBrokerageCashGroup());
+  if (cashGroups.length) sections.push({ label: "Cash", groups: cashGroups, total: subtot([...checking, ...savingsMM, ...brokerageCash]) });
 
   // ── Investments ───────────────────────────────────────────────────────────
   const investGroups: BsGroup[] = [];
