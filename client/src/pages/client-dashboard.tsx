@@ -3554,16 +3554,9 @@ function BucketProductPanel({
 }) {
   const top3 = products.slice(0, 3);
   const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
-  const maxAT = top3.length ? Math.max(...top3.map((p) => parseAT(p.atYield))) : 0;
-  const highestYieldIdx = top3.findIndex((p) => parseAT(p.atYield) === maxAT && maxAT > 0);
-  const initialIdx = highestYieldIdx >= 0 ? highestYieldIdx : top3.length > 0 ? 0 : -1;
 
-  const [selected, setSelected] = useState<Set<number>>(
-    new Set(initialIdx >= 0 ? [initialIdx] : []),
-  );
-  const [allocations, setAllocations] = useState<Record<number, number>>(
-    initialIdx >= 0 ? { [initialIdx]: 100 } : {},
-  );
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [allocations, setAllocations] = useState<Record<number, number>>({});
   const [staged, setStaged] = useState(false);
 
   function evenSplit(indices: number[]): Record<number, number> {
