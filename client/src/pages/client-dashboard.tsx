@@ -5151,24 +5151,25 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: false,
     },
   ],
-  // Grow: equities/PE use federal cap gains only (20%) → keep 80%
-  // Private credit is interest income (ordinary) → keep 53%
+  // Grow: equities/PE use 20% cap gains tax only → keep 80%
+  // 10% gross for S&P 500 / MSCI World → 8.0% AT
+  // 15% gross for PE Co-Invest → 12.0% AT
   Grow: [
     {
       name: "S&P 500 / Total Market ETF (VOO/VTI)",
       institution: "Vanguard",
       type: "Index ETF",
-      grossYield: "[7.5%]",
-      atYield: "[6.0%]",
-      pickup: "20% fed cap gains",
+      grossYield: "10.0%",
+      atYield: "8.0%",
+      pickup: "20% cap gains tax",
       isGuru: true,
     },
     {
       name: "MSCI World ETF (VT)",
       institution: "Vanguard",
       type: "Index ETF",
-      grossYield: "[7.0%]",
-      atYield: "[5.6%]",
+      grossYield: "10.0%",
+      atYield: "8.0%",
       pickup: "Global diversification",
       isGuru: false,
     },
@@ -5176,8 +5177,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       name: "PE Co-Investment",
       institution: "Advisor Sourced",
       type: "Private Equity",
-      grossYield: "[15%+]",
-      atYield: "[12.0%+]",
+      grossYield: "15.0%",
+      atYield: "12.0%",
       pickup: "Illiquidity premium",
       isGuru: false,
     },
@@ -5380,6 +5381,7 @@ function GuruAllocationView({
           value: number;
           yield_: string;
           yieldAT: string;
+          incomeAT?: string; // AT yield used for income impact calc (separate from display yieldAT)
           acctNum?: string;
         };
         const acctHash = (s: string) =>
@@ -5476,17 +5478,20 @@ function GuruAllocationView({
         const altVal = altValEarly;
         const reVal = reValEarly;
         // Grow sub-accounts: detailed breakdown per prototype model
-        // yieldAT field repurposed as 5yr historical return for display
+        // yieldAT = 5yr historical return for display in the "5yr Return" column
+        // incomeAT = after-tax yield used for income impact calculations:
+        //   Equities (S&P 500 / MSCI World basis): 10% gross × (1 − 20% cap gains) = 8.0% AT
+        //   PE Co-Invest: 15% gross × 80% = 12.0% AT
         const growAccts: Acct[] = [
-          { name: "Cash — Brokerage Sweep",  value: 222965, yield_: "—", yieldAT: "2.5%",  acctNum: acctHash("Cash — Brokerage Sweep") },
-          { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%",  acctNum: acctHash("International") },
-          { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%", acctNum: acctHash("US Total Market") },
-          { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%", acctNum: acctHash("US Large Cap") },
-          { name: "US Small Cap",             value: 323582, yield_: "—", yieldAT: "9.1%",  acctNum: acctHash("US Small Cap") },
-          { name: "US Dividend / Value",      value: 94369,  yield_: "—", yieldAT: "10.3%", acctNum: acctHash("US Dividend / Value") },
-          { name: "Single Stock",             value: 238311, yield_: "—", yieldAT: "~20%+", acctNum: acctHash("Single Stock") },
-          { name: "Bonds",                    value: 61210,  yield_: "—", yieldAT: "0.2%",  acctNum: acctHash("Bonds") },
-          { name: "Crypto",                   value: 9500,   yield_: "—", yieldAT: "~30%+", acctNum: acctHash("Crypto") },
+          { name: "Cash — Brokerage Sweep",  value: 222965, yield_: "—", yieldAT: "2.5%",  incomeAT: "2.5%",  acctNum: acctHash("Cash — Brokerage Sweep") },
+          { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%",  incomeAT: "8.0%",  acctNum: acctHash("International") },
+          { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%", incomeAT: "8.0%",  acctNum: acctHash("US Total Market") },
+          { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%", incomeAT: "8.0%",  acctNum: acctHash("US Large Cap") },
+          { name: "US Small Cap",             value: 323582, yield_: "—", yieldAT: "9.1%",  incomeAT: "8.0%",  acctNum: acctHash("US Small Cap") },
+          { name: "US Dividend / Value",      value: 94369,  yield_: "—", yieldAT: "10.3%", incomeAT: "8.0%",  acctNum: acctHash("US Dividend / Value") },
+          { name: "Single Stock",             value: 238311, yield_: "—", yieldAT: "~20%+", incomeAT: "8.0%",  acctNum: acctHash("Single Stock") },
+          { name: "Bonds",                    value: 61210,  yield_: "—", yieldAT: "0.2%",  incomeAT: "0.2%",  acctNum: acctHash("Bonds") },
+          { name: "Crypto",                   value: 9500,   yield_: "—", yieldAT: "~30%+", incomeAT: "8.0%",  acctNum: acctHash("Crypto") },
         ];
         const otherAccts: Acct[] = [
           ...(altVal > 0
@@ -5494,8 +5499,9 @@ function GuruAllocationView({
                 {
                   name: "Private Equity & Alternatives",
                   value: altVal,
-                  yield_: "[15%+]",
+                  yield_: "[15%]",
                   yieldAT: toATCapG("15%"), // cap gains rate → 10.20%
+                  incomeAT: "12.0%", // 15% gross × (1 − 20% cap gains) = 12% AT
                 },
               ]
             : []),
@@ -5517,12 +5523,14 @@ function GuruAllocationView({
             total
           );
         };
-        // Weights AT yields (excludes "Tax-def." and "—" entries)
+        // Weights AT yields for income impact calculations.
+        // Uses incomeAT when present (Grow bucket equities/PE), otherwise falls back to yieldAT.
+        // Excludes "Tax-def." and "—" display-only entries.
         const weightedATYield = (accts: Acct[], total: number): number => {
           if (total === 0 || accts.length === 0) return 0;
           let weightedSum = 0, weightedTotal = 0;
           for (const a of accts) {
-            const n = parseYieldNum(a.yieldAT);
+            const n = parseYieldNum(a.incomeAT ?? a.yieldAT);
             if (n > 0) { weightedSum += n * a.value; weightedTotal += a.value; }
           }
           return weightedTotal > 0 ? weightedSum / weightedTotal : 0;
@@ -5593,7 +5601,7 @@ function GuruAllocationView({
             growDelta,
             "Remaining assets — long-term compounding",
             growAccts,
-            6.00, // S&P 500 / Total Market ETF: 7.5% × 80% (fed cap gains 20% only)
+            8.00, // S&P 500 / Total Market ETF: 10% gross × (1 − 20% cap gains) = 8% AT
           ),
         ];
 
@@ -5648,20 +5656,29 @@ function GuruAllocationView({
                     {(() => {
                       const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(sels => sels.length > 0);
                       if (!anyChanges) return null;
-                      const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+                      const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.\[\]]/g, "").replace(/[\[\]]/g, "")) || 0;
                       const impacts = rows.map((r) => {
                         const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
                         const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
                         const newBalance = r.current + inAmt - outAmt;
                         const curATYield = weightedATYield(r.subAccounts, r.current);
                         const sels = bucketProductSelections[r.def.name] ?? [];
-                        const newATYield = sels.length > 0
-                          ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
-                          : curATYield;
-                        return {
-                          pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
-                          curIncome: r.current * curATYield / 100,
-                        };
+
+                        if (sels.length > 0) {
+                          // Product selected: full impact — yield change on the whole new balance
+                          const newATYield = sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0);
+                          return {
+                            pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
+                            curIncome: r.current * curATYield / 100,
+                          };
+                        } else {
+                          // No product selected: only count income loss from outbound transfers.
+                          // Inbound cash earns $0 additional income until a product is chosen.
+                          return {
+                            pickup: -(outAmt * curATYield / 100),
+                            curIncome: r.current * curATYield / 100,
+                          };
+                        }
                       });
                       const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
                       const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
