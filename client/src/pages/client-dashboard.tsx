@@ -6149,6 +6149,19 @@ function GuruAllocationView({
                           const hasPending = netDelta !== 0;
                           const adjTotal = r.current + netDelta;
                           const ftIsGrow = r.def.name === "Grow";
+                          const ftSels = bucketProductSelections[r.def.name] ?? [];
+                          const _parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+                          const _parseGross = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+                          const curATYield = weightedATYield(r.subAccounts, r.current);
+                          const curGrossYield = weightedGrossYield(r.subAccounts, r.current);
+                          const newATYield = ftSels.length > 0
+                            ? ftSels.reduce((s, sel) => s + _parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+                            : null;
+                          const newGrossYield = ftSels.length > 0
+                            ? ftSels.reduce((s, sel) => s + _parseGross(sel.product.grossYield) * (sel.alloc / 100), 0)
+                            : null;
+                          const hasYieldChange = newATYield !== null && Math.abs(newATYield - curATYield) > 0.001;
+                          const hasGrossChange = newGrossYield !== null && !ftIsGrow && Math.abs(newGrossYield - curGrossYield) > 0.001;
                           return (
                             <div className="mt-2.5 pt-2 border-t border-border flex items-center justify-between">
                               <span className="text-[9px] text-muted-foreground italic">
@@ -6164,13 +6177,27 @@ function GuruAllocationView({
                                   <span className="text-xs font-bold tabular-nums text-foreground w-20 text-right">{fmt(r.current)}</span>
                                 )}
                                 {!ftIsGrow && (
-                                  <span className="text-[10px] font-bold tabular-nums w-10 text-right" style={{ color: r.def.bg }}>
-                                    {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
+                                  hasGrossChange ? (
+                                    <span className="flex flex-col items-end leading-tight w-10">
+                                      <span className="text-[9px] tabular-nums text-muted-foreground line-through">{curGrossYield.toFixed(2)}%</span>
+                                      <span className="text-[9px] font-bold tabular-nums" style={{ color: r.def.bg }}>{newGrossYield!.toFixed(2)}%</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] font-bold tabular-nums w-10 text-right" style={{ color: r.def.bg }}>
+                                      {r.current > 0 ? `${curGrossYield.toFixed(2)}%` : "—"}
+                                    </span>
+                                  )
+                                )}
+                                {hasYieldChange ? (
+                                  <span className="flex flex-col items-end leading-tight w-24">
+                                    <span className="text-[9px] tabular-nums text-muted-foreground line-through">{curATYield.toFixed(2)}%</span>
+                                    <span className="text-[9px] font-bold tabular-nums text-violet-600">{newATYield!.toFixed(2)}%</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] text-muted-foreground tabular-nums w-24 text-right">
+                                    {r.current > 0 ? `${curATYield.toFixed(2)}%` : "—"}
                                   </span>
                                 )}
-                                <span className="text-[9px] text-muted-foreground tabular-nums w-24 text-right">
-                                  {r.current > 0 ? `${weightedATYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
-                                </span>
                               </div>
                             </div>
                           );
