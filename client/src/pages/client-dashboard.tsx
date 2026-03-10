@@ -5665,12 +5665,23 @@ function GuruAllocationView({
                         const sels = bucketProductSelections[r.def.name] ?? [];
 
                         if (sels.length > 0) {
-                          // Product selected: full impact — yield change on the whole new balance
                           const newATYield = sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0);
-                          return {
-                            pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
-                            curIncome: r.current * curATYield / 100,
-                          };
+                          const isGrowBucket = r.def.name === "Grow";
+                          if (isGrowBucket && (inAmt > 0 || outAmt > 0)) {
+                            // Grow + transfer: new product yield applies only to incremental cash coming in.
+                            // Existing Grow positions are unchanged. Outbound loses its current yield.
+                            return {
+                              pickup: (inAmt * newATYield / 100) - (outAmt * curATYield / 100),
+                              curIncome: r.current * curATYield / 100,
+                            };
+                          } else {
+                            // All other buckets (or pure product swap with no transfer):
+                            // reprice the full new balance at the selected product yield.
+                            return {
+                              pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
+                              curIncome: r.current * curATYield / 100,
+                            };
+                          }
                         } else {
                           // No product selected: only count income loss from outbound transfers.
                           // Inbound cash earns $0 additional income until a product is chosen.
