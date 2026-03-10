@@ -2773,6 +2773,7 @@ function CashFlowForecastView({
 
   return (
     <div className="space-y-5">
+
       {/* ── CFO Hero Bar ─────────────────────────────────────────────────────── */}
       <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
         {/* Header row */}
@@ -2806,20 +2807,29 @@ function CashFlowForecastView({
         </div>
 
         {/* KPI tiles row */}
-        <div className="grid grid-cols-5 divide-x divide-border/60">
-          {/* Avg Monthly Net */}
-          <div className="px-4 py-3 flex flex-col gap-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Avg Monthly Net</p>
-            <p className={`text-xl font-extrabold tabular-nums leading-none ${annualNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {annualNet >= 0 ? "+" : ""}{fmt(Math.round(annualNet / 12), true)}
+        <div className="grid grid-cols-8 divide-x divide-border/60">
+          {/* Annual Inflows */}
+          <div className="px-4 py-3 flex flex-col gap-0.5" data-testid="stat-avg-inflow">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Inflows</p>
+            <p className="text-xl font-extrabold tabular-nums leading-none text-emerald-600">
+              +{fmt(totalIn, true)}
             </p>
-            <p className="text-[9px] text-muted-foreground">net cash flow / mo</p>
+            <p className="text-[9px] text-muted-foreground">med. {fmt(medianIn, true)}/mo</p>
+          </div>
+
+          {/* Annual Outflows */}
+          <div className="px-4 py-3 flex flex-col gap-0.5" data-testid="stat-avg-outflow">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Annual Outflows</p>
+            <p className="text-xl font-extrabold tabular-nums leading-none text-rose-600">
+              ({fmt(totalOut, true)})
+            </p>
+            <p className="text-[9px] text-muted-foreground">med. {fmt(medianOut, true)}/mo</p>
           </div>
 
           {/* Monthly Burn */}
           <div className="px-4 py-3 flex flex-col gap-0.5">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly Burn</p>
-            <p className="text-xl font-extrabold tabular-nums leading-none text-[#e11d48]">
+            <p className="text-xl font-extrabold tabular-nums leading-none text-foreground">
               {fmt(heroMonthlyBurn, true)}
             </p>
             <p className="text-[9px] text-muted-foreground">avg outflows / mo</p>
@@ -2857,8 +2867,26 @@ function CashFlowForecastView({
             <p className="text-[9px] text-muted-foreground">lowest point · {heroTroughLabel}</p>
           </div>
 
+          {/* Avg Monthly Net */}
+          <div className="px-4 py-3 flex flex-col gap-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Avg Monthly Net</p>
+            <p className={`text-xl font-extrabold tabular-nums leading-none ${annualNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {annualNet >= 0 ? "+" : ""}{fmt(Math.round(annualNet / 12), true)}
+            </p>
+            <p className="text-[9px] text-muted-foreground">net cash flow / mo</p>
+          </div>
+
+          {/* Avg Monthly Expenses */}
+          <div className="px-4 py-3 flex flex-col gap-0.5">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Avg Monthly Exp.</p>
+            <p className="text-xl font-extrabold tabular-nums leading-none text-rose-600">
+              ({fmt(Math.round(totalOut / 12), true)})
+            </p>
+            <p className="text-[9px] text-muted-foreground">avg expenses / mo</p>
+          </div>
         </div>
       </div>
+
       {/* Cash Balance Walk — waterfall bridge chart */}
       {(() => {
         const Q_DEFS = [
@@ -3061,6 +3089,7 @@ function CashFlowForecastView({
           </div>
         );
       })()}
+
       {/* P&L Detail Table — collapsible groups, sticky header */}
       {(() => {
         const groupOf: Record<string, string> = {};
@@ -3319,7 +3348,7 @@ function BucketExecutionPanel({
   const SVG_CHEVRON = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")";
 
   return (
-    <div className="w-[17rem] flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
+    <div className="w-[22rem] flex-shrink-0 border-l border-r border-border bg-card flex flex-col">
       <div className="flex-1 px-5 py-5 flex flex-col gap-4">
 
         {/* Months stepper — only for Operating Cash / Reserve */}
@@ -3336,7 +3365,7 @@ function BucketExecutionPanel({
                   className="w-7 h-7 rounded-full bg-background border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-muted transition-colors select-none"
                 >−</button>
                 <div className="flex-1 text-center">
-                  <span className="font-black tabular-nums text-foreground text-[24px]">
+                  <span className="text-3xl font-black tabular-nums leading-none text-foreground">
                     {months}
                   </span>
                   <span className="text-[10px] font-semibold text-muted-foreground ml-1.5 leading-none">
@@ -3373,11 +3402,11 @@ function BucketExecutionPanel({
             <div className="flex gap-2">
               <div className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5">
                 <p className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
-                <p className="font-black tabular-nums text-foreground text-[13px]">{fmtD(current)}</p>
+                <p className="text-base font-black tabular-nums text-foreground">{fmtD(current)}</p>
               </div>
               <div className="flex-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
                 <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
-                <p className="font-black tabular-nums text-[13px]" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
+                <p className="text-base font-black tabular-nums" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
               </div>
             </div>
             <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
@@ -3390,7 +3419,7 @@ function BucketExecutionPanel({
                 value={fmtInput(rawAmt)}
                 onChange={(e) => { setRawAmt(e.target.value.replace(/,/g, "")); setExecuted(false); }}
                 placeholder="0"
-                className="w-full text-[13px] font-black tabular-nums focus:outline-none bg-transparent"
+                className="w-full text-base font-black tabular-nums focus:outline-none bg-transparent"
                 style={{ color: AMBER }}
               />
             </div>
@@ -3549,8 +3578,8 @@ function BucketProductPanel({
   const multiSelect = selected.size > 1;
 
   return (
-    <div className="w-[20rem] flex-shrink-0 flex flex-col border-l border-border bg-card">
-      <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+    <div className="w-[24rem] flex-shrink-0 flex flex-col border-l border-border bg-card">
+      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
         <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
           Recommended Products
         </p>
@@ -3565,7 +3594,7 @@ function BucketProductPanel({
           </span>
         </div>
       </div>
-      <div className="flex-1 px-2.5 py-2.5 flex flex-col gap-1.5">
+      <div className="flex-1 px-3 py-3 flex flex-col gap-2">
         {top3.map((p, i) => {
           const checked = selected.has(i);
           const productAT = parseFloat(p.atYield.replace(/[^0-9.]/g, ""));
@@ -3583,16 +3612,16 @@ function BucketProductPanel({
               }}
             >
               {/* Top row: checkbox + name + % input */}
-              <div className="w-full p-2.5 pb-1.5 text-left">
-                <div className="flex items-start gap-2">
+              <div className="w-full p-3 pb-2 text-left">
+                <div className="flex items-start gap-2.5">
                   <div
-                    className="w-3.5 h-3.5 rounded flex-shrink-0 mt-0.5 flex items-center justify-center border-2 transition-colors"
+                    className="w-4 h-4 rounded flex-shrink-0 mt-0.5 flex items-center justify-center border-2 transition-colors"
                     style={{
                       background: checked ? bgColor : "transparent",
                       borderColor: checked ? bgColor : "#94a3b8",
                     }}
                   >
-                    {checked && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
+                    {checked && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                   </div>
                   <div className="flex-1 min-w-0">
                     {highestYieldIdx === i && (
@@ -3600,7 +3629,7 @@ function BucketProductPanel({
                         ▲ Highest Yield
                       </span>
                     )}
-                    <p className="text-[13px] font-semibold text-foreground leading-snug">
+                    <p className="text-[14px] font-semibold text-foreground leading-snug">
                       {p.name}
                     </p>
                   </div>
@@ -3613,27 +3642,27 @@ function BucketProductPanel({
                         max={100}
                         value={allocations[i] ?? 0}
                         onChange={e => setAlloc(i, e.target.value)}
-                        className="w-12 text-right text-[11px] font-black tabular-nums rounded border px-1 py-0.5 focus:outline-none focus:ring-1 bg-background"
+                        className="w-14 text-right text-[12px] font-black tabular-nums rounded border px-1.5 py-1 focus:outline-none focus:ring-1 bg-background"
                         style={{ color: bgColor, borderColor: bgColor + "80" }}
                       />
-                      <span className="text-[10px] font-bold" style={{ color: bgColor }}>%</span>
+                      <span className="text-[11px] font-bold" style={{ color: bgColor }}>%</span>
                     </div>
                   )}
                 </div>
               </div>
               {/* Yield metrics row — hidden for Grow bucket */}
               {bucketName !== "Grow" && (
-                <div className="px-2.5 pb-2 flex items-center gap-3 ml-5">
+                <div className="px-3 pb-2.5 flex items-center gap-3 ml-6">
                   <div>
-                    <div className="text-[7px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Yield</div>
-                    <div className="text-[9px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
+                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Yield</div>
+                    <div className="text-[10px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
                   </div>
                   <div>
-                    <div className="text-[7px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Tax-Eff</div>
-                    <div className="text-[9px] font-bold text-foreground tabular-nums">{p.atYield}</div>
+                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Tax-Eff</div>
+                    <div className="text-[10px] font-bold text-foreground tabular-nums">{p.atYield}</div>
                   </div>
                   <div className="ml-auto text-right">
-                    <div className="text-[7px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
+                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
                     <div className="text-[9px] font-bold tabular-nums" style={{ color: isNaN(pickupVal) ? "#94a3b8" : pickupVal > 0 ? "#16a34a" : "#e11d48" }}>
                       {pickupStr}
                     </div>
@@ -5122,25 +5151,24 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       isGuru: false,
     },
   ],
-  // Grow: equities/PE use 20% cap gains tax only → keep 80%
-  // 10% gross for S&P 500 / MSCI World → 8.0% AT
-  // 15% gross for PE Co-Invest → 12.0% AT
+  // Grow: equities/PE use federal cap gains only (20%) → keep 80%
+  // Private credit is interest income (ordinary) → keep 53%
   Grow: [
     {
       name: "S&P 500 / Total Market ETF (VOO/VTI)",
       institution: "Vanguard",
       type: "Index ETF",
-      grossYield: "10.0%",
-      atYield: "8.0%",
-      pickup: "20% cap gains tax",
+      grossYield: "[7.5%]",
+      atYield: "[6.0%]",
+      pickup: "20% fed cap gains",
       isGuru: true,
     },
     {
       name: "MSCI World ETF (VT)",
       institution: "Vanguard",
       type: "Index ETF",
-      grossYield: "10.0%",
-      atYield: "8.0%",
+      grossYield: "[7.0%]",
+      atYield: "[5.6%]",
       pickup: "Global diversification",
       isGuru: false,
     },
@@ -5148,8 +5176,8 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       name: "PE Co-Investment",
       institution: "Advisor Sourced",
       type: "Private Equity",
-      grossYield: "15.0%",
-      atYield: "12.0%",
+      grossYield: "[15%+]",
+      atYield: "[12.0%+]",
       pickup: "Illiquidity premium",
       isGuru: false,
     },
@@ -5195,8 +5223,6 @@ function GuruAllocationView({
 }) {
 
   const [dragItem, setDragItem] = useState<string | null>(null);
-  const [impactHistory, setImpactHistory] = useState<number[]>([]);
-  const lastPickupRef = useRef<number | null>(null);
 
   function handleExecute(from: string, to: string, amount: number) {
     setPendingTransfers((prev) => {
@@ -5354,7 +5380,6 @@ function GuruAllocationView({
           value: number;
           yield_: string;
           yieldAT: string;
-          incomeAT?: string; // AT yield used for income impact calc (separate from display yieldAT)
           acctNum?: string;
         };
         const acctHash = (s: string) =>
@@ -5451,20 +5476,17 @@ function GuruAllocationView({
         const altVal = altValEarly;
         const reVal = reValEarly;
         // Grow sub-accounts: detailed breakdown per prototype model
-        // yieldAT = 5yr historical return for display in the "5yr Return" column
-        // incomeAT = after-tax yield used for income impact calculations:
-        //   Equities (S&P 500 / MSCI World basis): 10% gross × (1 − 20% cap gains) = 8.0% AT
-        //   PE Co-Invest: 15% gross × 80% = 12.0% AT
+        // yieldAT field repurposed as 5yr historical return for display
         const growAccts: Acct[] = [
-          { name: "Cash — Brokerage Sweep",  value: 222965, yield_: "—", yieldAT: "2.5%",  incomeAT: "2.5%",  acctNum: acctHash("Cash — Brokerage Sweep") },
-          { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%",  incomeAT: "8.0%",  acctNum: acctHash("International") },
-          { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%", incomeAT: "8.0%",  acctNum: acctHash("US Total Market") },
-          { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%", incomeAT: "8.0%",  acctNum: acctHash("US Large Cap") },
-          { name: "US Small Cap",             value: 323582, yield_: "—", yieldAT: "9.1%",  incomeAT: "8.0%",  acctNum: acctHash("US Small Cap") },
-          { name: "US Dividend / Value",      value: 94369,  yield_: "—", yieldAT: "10.3%", incomeAT: "8.0%",  acctNum: acctHash("US Dividend / Value") },
-          { name: "Single Stock",             value: 238311, yield_: "—", yieldAT: "~20%+", incomeAT: "8.0%",  acctNum: acctHash("Single Stock") },
-          { name: "Bonds",                    value: 61210,  yield_: "—", yieldAT: "0.2%",  incomeAT: "0.2%",  acctNum: acctHash("Bonds") },
-          { name: "Crypto",                   value: 9500,   yield_: "—", yieldAT: "~30%+", incomeAT: "8.0%",  acctNum: acctHash("Crypto") },
+          { name: "Cash — Brokerage Sweep",  value: 222965, yield_: "—", yieldAT: "2.5%",  acctNum: acctHash("Cash — Brokerage Sweep") },
+          { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%",  acctNum: acctHash("International") },
+          { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%", acctNum: acctHash("US Total Market") },
+          { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%", acctNum: acctHash("US Large Cap") },
+          { name: "US Small Cap",             value: 323582, yield_: "—", yieldAT: "9.1%",  acctNum: acctHash("US Small Cap") },
+          { name: "US Dividend / Value",      value: 94369,  yield_: "—", yieldAT: "10.3%", acctNum: acctHash("US Dividend / Value") },
+          { name: "Single Stock",             value: 238311, yield_: "—", yieldAT: "~20%+", acctNum: acctHash("Single Stock") },
+          { name: "Bonds",                    value: 61210,  yield_: "—", yieldAT: "0.2%",  acctNum: acctHash("Bonds") },
+          { name: "Crypto",                   value: 9500,   yield_: "—", yieldAT: "~30%+", acctNum: acctHash("Crypto") },
         ];
         const otherAccts: Acct[] = [
           ...(altVal > 0
@@ -5472,9 +5494,8 @@ function GuruAllocationView({
                 {
                   name: "Private Equity & Alternatives",
                   value: altVal,
-                  yield_: "[15%]",
+                  yield_: "[15%+]",
                   yieldAT: toATCapG("15%"), // cap gains rate → 10.20%
-                  incomeAT: "12.0%", // 15% gross × (1 − 20% cap gains) = 12% AT
                 },
               ]
             : []),
@@ -5496,14 +5517,12 @@ function GuruAllocationView({
             total
           );
         };
-        // Weights AT yields for income impact calculations.
-        // Uses incomeAT when present (Grow bucket equities/PE), otherwise falls back to yieldAT.
-        // Excludes "Tax-def." and "—" display-only entries.
+        // Weights AT yields (excludes "Tax-def." and "—" entries)
         const weightedATYield = (accts: Acct[], total: number): number => {
           if (total === 0 || accts.length === 0) return 0;
           let weightedSum = 0, weightedTotal = 0;
           for (const a of accts) {
-            const n = parseYieldNum(a.incomeAT ?? a.yieldAT);
+            const n = parseYieldNum(a.yieldAT);
             if (n > 0) { weightedSum += n * a.value; weightedTotal += a.value; }
           }
           return weightedTotal > 0 ? weightedSum / weightedTotal : 0;
@@ -5574,7 +5593,7 @@ function GuruAllocationView({
             growDelta,
             "Remaining assets — long-term compounding",
             growAccts,
-            8.00, // S&P 500 / Total Market ETF: 10% gross × (1 − 20% cap gains) = 8% AT
+            6.00, // S&P 500 / Total Market ETF: 7.5% × 80% (fed cap gains 20% only)
           ),
         ];
 
@@ -5629,64 +5648,31 @@ function GuruAllocationView({
                     {(() => {
                       const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(sels => sels.length > 0);
                       if (!anyChanges) return null;
-                      const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.\[\]]/g, "").replace(/[\[\]]/g, "")) || 0;
+                      const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
                       const impacts = rows.map((r) => {
                         const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
                         const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
                         const newBalance = r.current + inAmt - outAmt;
                         const curATYield = weightedATYield(r.subAccounts, r.current);
                         const sels = bucketProductSelections[r.def.name] ?? [];
-
-                        if (sels.length > 0) {
-                          const newATYield = sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0);
-                          const isGrowBucket = r.def.name === "Grow";
-                          if (isGrowBucket && (inAmt > 0 || outAmt > 0)) {
-                            // Grow + transfer: new product yield applies only to incremental cash coming in.
-                            // Existing Grow positions are unchanged. Outbound loses its current yield.
-                            return {
-                              pickup: (inAmt * newATYield / 100) - (outAmt * curATYield / 100),
-                              curIncome: r.current * curATYield / 100,
-                            };
-                          } else {
-                            // All other buckets (or pure product swap with no transfer):
-                            // reprice the full new balance at the selected product yield.
-                            return {
-                              pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
-                              curIncome: r.current * curATYield / 100,
-                            };
-                          }
-                        } else {
-                          // No product selected: only count income loss from outbound transfers.
-                          // Inbound cash earns $0 additional income until a product is chosen.
-                          return {
-                            pickup: -(outAmt * curATYield / 100),
-                            curIncome: r.current * curATYield / 100,
-                          };
-                        }
+                        const newATYield = sels.length > 0
+                          ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+                          : curATYield;
+                        return {
+                          pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
+                          curIncome: r.current * curATYield / 100,
+                        };
                       });
                       const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
-                      // Track history: when totalPickup changes meaningfully, push the old value
-                      {
-                        const prev = lastPickupRef.current;
-                        if (prev !== null && Math.abs(prev - totalPickup) > 0.5) {
-                          const snapshot = prev;
-                          setTimeout(() => setImpactHistory(h => {
-                            const last = h[h.length - 1];
-                            return (last === undefined || Math.abs(last - snapshot) > 0.5) ? [snapshot] : h;
-                          }), 0);
-                        }
-                        lastPickupRef.current = totalPickup;
-                      }
                       const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
                       const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
                       const isGain = totalPickup >= 0;
                       const valCol = isGain ? "#15803d" : "#dc2626";
-                      /* Box ~360px wide, height grows with history */
-                      const BW = 360;
-                      const BH = 100 + impactHistory.length * 20;
+                      /* Box ~360px wide × 100px tall — rotating border effect */
+                      const BW = 360; const BH = 100;
                       const diag = Math.ceil(Math.sqrt(BW * BW + BH * BH)) + 20;
                       return (
-                        <div className="relative flex-shrink-0 rounded-xl overflow-hidden" style={{ width: BW, height: BH }}>
+                        <div className="relative flex-shrink-0 rounded-xl overflow-hidden flex-shrink-0" style={{ width: BW, height: BH }}>
                           {/* Rotating conic gradient — sweeping border */}
                           <motion.div
                             style={{
@@ -5703,27 +5689,12 @@ function GuruAllocationView({
                             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                           />
                           {/* Amber panel — 2px inset exposes the rotating border */}
-                          <div className="absolute rounded-[10px] bg-amber-50 px-4 py-3 flex flex-col gap-1" style={{ inset: "2px" }}>
+                          <div className="absolute rounded-[10px] bg-amber-50 px-4 py-3 flex flex-col justify-between" style={{ inset: "2px" }}>
                             <div className="flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
                               <p className="uppercase tracking-widest font-black text-amber-700 text-[11px]">Impact from Selection</p>
                             </div>
-                            {/* Prior values — crossed out running history */}
-                            {impactHistory.map((prev, i) => {
-                              const prevGain = prev >= 0;
-                              return (
-                                <div key={i} className="flex items-baseline gap-3 opacity-40 line-through decoration-amber-600/60">
-                                  <p className="text-sm font-black tabular-nums leading-none" style={{ color: prevGain ? "#15803d" : "#dc2626" }}>
-                                    {prevGain ? "+" : "−"}{fmt(Math.abs(Math.round(prev)))}
-                                  </p>
-                                  <p className="text-[10px] font-semibold tabular-nums" style={{ color: prevGain ? "#15803d" : "#dc2626" }}>
-                                    AT / yr
-                                  </p>
-                                </div>
-                              );
-                            })}
-                            {/* Current live value */}
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-3 mt-1">
                               <div>
                                 <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">After Tax Income / Year</p>
                                 <p className="text-xl font-black tabular-nums leading-none" style={{ color: valCol }}>
@@ -5810,7 +5781,13 @@ function GuruAllocationView({
 
                       return (
                         <div key={`${r.def.name}-${proforma ? "pro" : "cur"}`} className="flex flex-col">
-                          <div className="mb-1 h-5" />
+                          <div className="mb-1 h-5 flex items-center justify-center">
+                            {!proforma && yieldChanged && (
+                              <span className="text-[8px] font-black px-2 py-0.5 rounded-full border bg-violet-50 border-violet-300 text-violet-700">
+                                ~ yield change
+                              </span>
+                            )}
+                          </div>
                           <div
                             className={`rounded-xl p-4 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
                             style={{ background: hc.bg }}
@@ -6155,19 +6132,6 @@ function GuruAllocationView({
                           const hasPending = netDelta !== 0;
                           const adjTotal = r.current + netDelta;
                           const ftIsGrow = r.def.name === "Grow";
-                          const ftSels = bucketProductSelections[r.def.name] ?? [];
-                          const _parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
-                          const _parseGross = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
-                          const curATYield = weightedATYield(r.subAccounts, r.current);
-                          const curGrossYield = weightedGrossYield(r.subAccounts, r.current);
-                          const newATYield = ftSels.length > 0
-                            ? ftSels.reduce((s, sel) => s + _parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
-                            : null;
-                          const newGrossYield = ftSels.length > 0
-                            ? ftSels.reduce((s, sel) => s + _parseGross(sel.product.grossYield) * (sel.alloc / 100), 0)
-                            : null;
-                          const hasYieldChange = newATYield !== null && Math.abs(newATYield - curATYield) > 0.001;
-                          const hasGrossChange = newGrossYield !== null && !ftIsGrow && Math.abs(newGrossYield - curGrossYield) > 0.001;
                           return (
                             <div className="mt-2.5 pt-2 border-t border-border flex items-center justify-between">
                               <span className="text-[9px] text-muted-foreground italic">
@@ -6183,27 +6147,13 @@ function GuruAllocationView({
                                   <span className="text-xs font-bold tabular-nums text-foreground w-20 text-right">{fmt(r.current)}</span>
                                 )}
                                 {!ftIsGrow && (
-                                  hasGrossChange ? (
-                                    <span className="flex flex-col items-end leading-tight w-10">
-                                      <span className="text-[9px] tabular-nums text-muted-foreground line-through">{curGrossYield.toFixed(2)}%</span>
-                                      <span className="text-[9px] font-bold tabular-nums" style={{ color: r.def.bg }}>{newGrossYield!.toFixed(2)}%</span>
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] font-bold tabular-nums w-10 text-right" style={{ color: r.def.bg }}>
-                                      {r.current > 0 ? `${curGrossYield.toFixed(2)}%` : "—"}
-                                    </span>
-                                  )
-                                )}
-                                {hasYieldChange ? (
-                                  <span className="flex flex-col items-end leading-tight w-24">
-                                    <span className="text-[9px] tabular-nums text-muted-foreground line-through">{curATYield.toFixed(2)}%</span>
-                                    <span className="text-[9px] font-bold tabular-nums text-violet-600">{newATYield!.toFixed(2)}%</span>
-                                  </span>
-                                ) : (
-                                  <span className="text-[9px] text-muted-foreground tabular-nums w-24 text-right">
-                                    {r.current > 0 ? `${curATYield.toFixed(2)}%` : "—"}
+                                  <span className="text-[10px] font-bold tabular-nums w-10 text-right" style={{ color: r.def.bg }}>
+                                    {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
                                   </span>
                                 )}
+                                <span className="text-[9px] text-muted-foreground tabular-nums w-24 text-right">
+                                  {r.current > 0 ? `${weightedATYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
+                                </span>
                               </div>
                             </div>
                           );
@@ -6252,38 +6202,6 @@ function GuruAllocationView({
                   </div>
                 );
               })}
-            </div>
-          </div>
-        );
-      })()}
-      {/* ── Sticky left-margin impact bubble — follows the user as they scroll ── */}
-      {(() => {
-        const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(s => s.length > 0);
-        if (!anyChanges) return null;
-        const currentPickup = lastPickupRef.current ?? 0;
-        const isGain = currentPickup >= 0;
-        const valCol = isGain ? "#15803d" : "#dc2626";
-        return (
-          <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 pointer-events-none">
-            <div className="rounded-2xl shadow-2xl border-2 border-amber-400 bg-amber-50 px-4 py-4 flex flex-col gap-1.5" style={{ minWidth: 148 }}>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-                <p className="text-[9px] font-black uppercase tracking-widest text-amber-700 leading-tight">Running Impact</p>
-              </div>
-              {impactHistory.length > 0 && (
-                <div className="flex items-baseline gap-2 opacity-40 line-through decoration-amber-600/60">
-                  <p className="text-sm font-black tabular-nums leading-none" style={{ color: impactHistory[0] >= 0 ? "#15803d" : "#dc2626" }}>
-                    {impactHistory[0] >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(impactHistory[0])))}
-                  </p>
-                  <p className="text-[9px] font-semibold text-amber-700/60">AT / yr</p>
-                </div>
-              )}
-              <div>
-                <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">After Tax / Year</p>
-                <p className="text-xl font-black tabular-nums leading-none" style={{ color: valCol }}>
-                  {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(currentPickup)))}
-                </p>
-              </div>
             </div>
           </div>
         );
