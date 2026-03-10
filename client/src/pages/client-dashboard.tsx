@@ -3642,7 +3642,7 @@ function BucketProductPanel({
                         max={100}
                         value={allocations[i] ?? 0}
                         onChange={e => setAlloc(i, e.target.value)}
-                        className="w-10 text-right text-[11px] font-black tabular-nums rounded border px-1 py-0.5 focus:outline-none focus:ring-1 bg-background"
+                        className="w-12 text-right text-[11px] font-black tabular-nums rounded border px-1 py-0.5 focus:outline-none focus:ring-1 bg-background"
                         style={{ color: bgColor, borderColor: bgColor + "80" }}
                       />
                       <span className="text-[10px] font-bold" style={{ color: bgColor }}>%</span>
