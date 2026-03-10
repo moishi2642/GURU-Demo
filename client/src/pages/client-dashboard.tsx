@@ -3554,6 +3554,8 @@ function BucketProductPanel({
 }) {
   const top3 = products.slice(0, 3);
   const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+  const maxAT = top3.length ? Math.max(...top3.map((p) => parseAT(p.atYield))) : 0;
+  const highestYieldIdx = top3.findIndex((p) => parseAT(p.atYield) === maxAT && maxAT > 0);
 
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [allocations, setAllocations] = useState<Record<number, number>>({});
@@ -5610,8 +5612,9 @@ function GuruAllocationView({
               : "bg-secondary/30 text-muted-foreground border-border";
 
         return (
-          <div className="space-y-5">
-            {/* ── Portfolio Overview Hero ── */}
+          <div>
+            {/* ── Portfolio Overview Hero — sticky ── */}
+            <div className="sticky top-0 z-20 bg-background pb-3">
             {(() => {
               const heroCardTotal = assets.reduce((s, a) => s + Number(a.value), 0);
               return (
@@ -5955,6 +5958,7 @@ function GuruAllocationView({
                 </div>
               );
             })()}
+            </div>{/* end sticky hero wrapper */}
             {/* 4 bucket cards — 2×2 grid */}
             <div className="space-y-3">
               {rows.map((r) => {
