@@ -5809,13 +5809,7 @@ function GuruAllocationView({
 
                       return (
                         <div key={`${r.def.name}-${proforma ? "pro" : "cur"}`} className="flex flex-col">
-                          <div className="mb-1 h-5 flex items-center justify-center">
-                            {!proforma && yieldChanged && (
-                              <span className="text-[8px] font-black px-2 py-0.5 rounded-full border bg-violet-50 border-violet-300 text-violet-700">
-                                ~ yield change
-                              </span>
-                            )}
-                          </div>
+                          <div className="mb-1 h-5" />
                           <div
                             className={`rounded-xl p-4 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
                             style={{ background: hc.bg }}
