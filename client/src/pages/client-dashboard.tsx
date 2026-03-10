@@ -5672,7 +5672,7 @@ function GuruAllocationView({
                           const snapshot = prev;
                           setTimeout(() => setImpactHistory(h => {
                             const last = h[h.length - 1];
-                            return (last === undefined || Math.abs(last - snapshot) > 0.5) ? [...h, snapshot] : h;
+                            return (last === undefined || Math.abs(last - snapshot) > 0.5) ? [snapshot] : h;
                           }), 0);
                         }
                         lastPickupRef.current = totalPickup;
