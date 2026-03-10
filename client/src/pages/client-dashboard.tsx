@@ -7787,7 +7787,7 @@ export default function ClientDashboard() {
                   className={`px-6 py-2.5 text-sm font-bold tracking-wide rounded-lg transition-colors ${
                     isActive
                       ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-transparent text-muted-foreground hover:bg-slate-100 hover:text-foreground"
+                      : "bg-blue-100 text-blue-400 hover:bg-blue-200 hover:text-blue-600"
                   }`}
                 >
                   {label}
