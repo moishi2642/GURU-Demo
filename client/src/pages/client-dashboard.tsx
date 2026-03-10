@@ -2806,7 +2806,7 @@ function CashFlowForecastView({
         </div>
 
         {/* KPI tiles row */}
-        <div className="grid grid-cols-5 divide-x divide-border/60">
+        <div className="grid grid-cols-4 divide-x divide-border/60">
           {/* Monthly Burn */}
           <div className="px-4 py-3 flex flex-col gap-0.5">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly Burn</p>
@@ -2857,14 +2857,6 @@ function CashFlowForecastView({
             <p className="text-[9px] text-muted-foreground">net cash flow / mo</p>
           </div>
 
-          {/* Avg Monthly Expenses */}
-          <div className="px-4 py-3 flex flex-col gap-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Avg Monthly Exp.</p>
-            <p className="text-xl font-extrabold tabular-nums leading-none text-rose-600">
-              ({fmt(Math.round(totalOut / 12), true)})
-            </p>
-            <p className="text-[9px] text-muted-foreground">avg expenses / mo</p>
-          </div>
         </div>
       </div>
       {/* Cash Balance Walk — waterfall bridge chart */}
