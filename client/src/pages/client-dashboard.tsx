@@ -3365,7 +3365,7 @@ function BucketExecutionPanel({
                   className="w-7 h-7 rounded-full bg-background border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-muted transition-colors select-none"
                 >−</button>
                 <div className="flex-1 text-center">
-                  <span className="text-3xl font-black tabular-nums leading-none text-foreground">
+                  <span className="font-black tabular-nums text-foreground text-[24px]">
                     {months}
                   </span>
                   <span className="text-[10px] font-semibold text-muted-foreground ml-1.5 leading-none">
@@ -3402,11 +3402,11 @@ function BucketExecutionPanel({
             <div className="flex gap-2">
               <div className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5">
                 <p className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
-                <p className="text-base font-black tabular-nums text-foreground">{fmtD(current)}</p>
+                <p className="font-black tabular-nums text-foreground text-[13px]">{fmtD(current)}</p>
               </div>
               <div className="flex-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
                 <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
-                <p className="text-base font-black tabular-nums" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
+                <p className="font-black tabular-nums text-[13px]" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
               </div>
             </div>
             <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
@@ -3578,8 +3578,8 @@ function BucketProductPanel({
   const multiSelect = selected.size > 1;
 
   return (
-    <div className="w-[24rem] flex-shrink-0 flex flex-col border-l border-border bg-card">
-      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
+    <div className="w-[20rem] flex-shrink-0 flex flex-col border-l border-border bg-card">
+      <div className="px-3 py-2 border-b border-border flex items-center justify-between">
         <p className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
           Recommended Products
         </p>
@@ -3594,7 +3594,7 @@ function BucketProductPanel({
           </span>
         </div>
       </div>
-      <div className="flex-1 px-3 py-3 flex flex-col gap-2">
+      <div className="flex-1 px-2.5 py-2.5 flex flex-col gap-1.5">
         {top3.map((p, i) => {
           const checked = selected.has(i);
           const productAT = parseFloat(p.atYield.replace(/[^0-9.]/g, ""));
@@ -3612,16 +3612,16 @@ function BucketProductPanel({
               }}
             >
               {/* Top row: checkbox + name + % input */}
-              <div className="w-full p-3 pb-2 text-left text-[13px]">
-                <div className="flex items-start gap-2.5">
+              <div className="w-full p-2.5 pb-1.5 text-left">
+                <div className="flex items-start gap-2">
                   <div
-                    className="w-4 h-4 rounded flex-shrink-0 mt-0.5 flex items-center justify-center border-2 transition-colors"
+                    className="w-3.5 h-3.5 rounded flex-shrink-0 mt-0.5 flex items-center justify-center border-2 transition-colors"
                     style={{
                       background: checked ? bgColor : "transparent",
                       borderColor: checked ? bgColor : "#94a3b8",
                     }}
                   >
-                    {checked && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                    {checked && <Check className="w-2 h-2 text-white" strokeWidth={3} />}
                   </div>
                   <div className="flex-1 min-w-0">
                     {highestYieldIdx === i && (
@@ -3629,7 +3629,7 @@ function BucketProductPanel({
                         ▲ Highest Yield
                       </span>
                     )}
-                    <p className="text-[14px] font-semibold text-foreground leading-snug">
+                    <p className="text-[11px] font-semibold text-foreground leading-snug">
                       {p.name}
                     </p>
                   </div>
@@ -3642,27 +3642,27 @@ function BucketProductPanel({
                         max={100}
                         value={allocations[i] ?? 0}
                         onChange={e => setAlloc(i, e.target.value)}
-                        className="w-14 text-right text-[12px] font-black tabular-nums rounded border px-1.5 py-1 focus:outline-none focus:ring-1 bg-background"
+                        className="w-10 text-right text-[11px] font-black tabular-nums rounded border px-1 py-0.5 focus:outline-none focus:ring-1 bg-background"
                         style={{ color: bgColor, borderColor: bgColor + "80" }}
                       />
-                      <span className="text-[11px] font-bold" style={{ color: bgColor }}>%</span>
+                      <span className="text-[10px] font-bold" style={{ color: bgColor }}>%</span>
                     </div>
                   )}
                 </div>
               </div>
               {/* Yield metrics row — hidden for Grow bucket */}
               {bucketName !== "Grow" && (
-                <div className="px-3 pb-2.5 flex items-center gap-3 ml-6">
+                <div className="px-2.5 pb-2 flex items-center gap-3 ml-5">
                   <div>
-                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Yield</div>
-                    <div className="text-[10px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
+                    <div className="text-[7px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Yield</div>
+                    <div className="text-[9px] font-bold text-foreground tabular-nums">{p.grossYield}</div>
                   </div>
                   <div>
-                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Tax-Eff</div>
-                    <div className="text-[10px] font-bold text-foreground tabular-nums">{p.atYield}</div>
+                    <div className="text-[7px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Tax-Eff</div>
+                    <div className="text-[9px] font-bold text-foreground tabular-nums">{p.atYield}</div>
                   </div>
                   <div className="ml-auto text-right">
-                    <div className="text-[8px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
+                    <div className="text-[7px] uppercase tracking-wider text-muted-foreground leading-none mb-0.5">Pickup</div>
                     <div className="text-[9px] font-bold tabular-nums" style={{ color: isNaN(pickupVal) ? "#94a3b8" : pickupVal > 0 ? "#16a34a" : "#e11d48" }}>
                       {pickupStr}
                     </div>
