@@ -5889,23 +5889,18 @@ function GuruAllocationView({
             </div>{/* end sticky hero wrapper */}
             {/* ── Income Calculator — portal into dark sidebar ── */}
             {(() => {
-              const anyChanges = Object.values(bucketProductSelections).some(sels => sels.length > 0);
+              const anyChanges = pendingTransfers.length > 0;
               if (!anyChanges) return null;
               const slot = typeof document !== "undefined" ? document.getElementById("guru-calc-slot") : null;
               if (!slot) return null;
-              const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
               const impacts = rows.map((r) => {
                 const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
                 const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
                 const newBalance = r.current + inAmt - outAmt;
                 const curATYield = weightedATYield(r.subAccounts, r.current);
-                const sels = bucketProductSelections[r.def.name] ?? [];
-                const newATYield = sels.length > 0
-                  ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
-                  : curATYield;
                 return {
                   name: r.def.name,
-                  pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
+                  pickup: (newBalance * curATYield / 100) - (r.current * curATYield / 100),
                   curIncome: r.current * curATYield / 100,
                 };
               });
