@@ -5889,7 +5889,7 @@ function GuruAllocationView({
             </div>{/* end sticky hero wrapper */}
             {/* ── Income Calculator — portal into dark sidebar ── */}
             {(() => {
-              const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(sels => sels.length > 0);
+              const anyChanges = Object.values(bucketProductSelections).some(sels => sels.length > 0);
               if (!anyChanges) return null;
               const slot = typeof document !== "undefined" ? document.getElementById("guru-calc-slot") : null;
               if (!slot) return null;
@@ -5912,8 +5912,7 @@ function GuruAllocationView({
               const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
               const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
               const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
-              const growImpact = impacts.find(i => i.name === "Grow");
-              const investIncrease = growImpact ? growImpact.pickup : 0;
+              const investIncrease = pendingTransfers.filter(t => t.to === "Grow").reduce((s, t) => s + t.amount, 0);
               const isGain = totalPickup >= 0;
               return createPortal(
                 <div className="mx-3 mt-2 mb-3 rounded-xl overflow-hidden shadow-lg">
@@ -5940,9 +5939,9 @@ function GuruAllocationView({
                         </p>
                       </div>
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">Invest Incr</p>
-                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: investIncrease >= 0 ? "#15803d" : "#dc2626" }}>
-                          {investIncrease >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(investIncrease)))}
+                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">Cash → Grow</p>
+                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: "#15803d" }}>
+                          {investIncrease > 0 ? "+" : ""}{fmt(Math.round(investIncrease))}
                         </p>
                       </div>
                     </div>
