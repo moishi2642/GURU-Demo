@@ -5737,7 +5737,6 @@ function GuruAllocationView({
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot }} />
                               <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                             </div>
-                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
                             {yieldChanged && !proforma ? (
                               <>
                                 {/* Before row — faded + crossed out */}
@@ -5755,7 +5754,7 @@ function GuruAllocationView({
                               </>
                             ) : (
                               <div className="flex items-baseline justify-between mt-1 gap-1">
-                                <p className={`${fmtK(balance).length > 9 ? "text-sm" : fmtK(balance).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums`}>
+                                <p className="font-black text-white tabular-nums text-[14px]">
                                   {fmtK(balance)}
                                 </p>
                                 {!isGrowCard && <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>}
