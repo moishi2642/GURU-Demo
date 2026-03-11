@@ -49,6 +49,9 @@ export function Layout({ children }: { children: ReactNode }) {
           })}
         </nav>
 
+        {/* Income Calculator slot — populated via portal from GURU tab */}
+        <div id="guru-calc-slot" className="flex-shrink-0" />
+
         {/* Advisor footer */}
         <div className="px-3 pb-4 border-t border-white/8 pt-3 flex-shrink-0">
           <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-white/5">

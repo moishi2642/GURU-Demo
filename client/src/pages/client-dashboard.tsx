@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
@@ -5613,38 +5614,33 @@ function GuruAllocationView({
 
         return (
           <>
-            {/* ── Portfolio Overview Hero — sticky ── */}
+            {/* ── Portfolio Overview Hero — sticky, tightened ── */}
             <div className="sticky top-0 z-20 bg-background pb-3">
             {(() => {
               const heroCardTotal = assets.reduce((s, a) => s + Number(a.value), 0);
               return (
-                <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-6 py-5">
-                  <div className="flex flex-col sm:flex-row gap-6 items-center">
+                <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-4 py-3 mb-3">
+                  <div className="flex flex-row gap-4 items-center">
                     {/* Total Assets headline */}
-                    <div className="flex-shrink-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="rounded-lg p-1.5 bg-emerald-100">
-                          <TrendingUp className="w-4 h-4 text-emerald-600" />
-                        </div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
-                          Total Assets
+                    <div className="flex-shrink-0 flex items-center gap-3">
+                      <div className="rounded-lg p-1.5 bg-emerald-100">
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-700">Total Assets</p>
+                        <p className="text-2xl font-extrabold leading-tight tabular-nums text-emerald-700">
+                          {fmt(heroCardTotal)}
                         </p>
                       </div>
-                      <p className="text-4xl font-extrabold leading-tight tabular-nums text-emerald-700">
-                        {fmt(heroCardTotal)}
-                      </p>
-                      <p className="text-[10px] text-emerald-600/70 mt-1">
-                        GURU Allocation View · {assets.length} accounts
-                      </p>
                     </div>
 
                     {/* DIVIDER */}
-                    <div className="hidden sm:block w-px self-stretch bg-emerald-200" />
+                    <div className="w-px self-stretch bg-emerald-200 mx-1" />
 
                     {/* Potential Excess Cash — static metric */}
                     <div className="flex-shrink-0">
                       <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Potential Excess Cash</p>
-                      <p className="text-2xl font-black tabular-nums text-emerald-700">{fmt(excessCash)}</p>
+                      <p className="text-xl font-black tabular-nums text-emerald-700">{fmt(excessCash)}</p>
                       <p className="text-[9px] text-emerald-600/60 mt-0.5">available to redeploy</p>
                     </div>
 
@@ -5890,65 +5886,69 @@ function GuruAllocationView({
                 </div>
               );
             })()}
-              {/* ── Income Calculator From Selection banner ── */}
-              {(() => {
-                const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(sels => sels.length > 0);
-                if (!anyChanges) return null;
-                const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
-                const impacts = rows.map((r) => {
-                  const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
-                  const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
-                  const newBalance = r.current + inAmt - outAmt;
-                  const curATYield = weightedATYield(r.subAccounts, r.current);
-                  const sels = bucketProductSelections[r.def.name] ?? [];
-                  const newATYield = sels.length > 0
-                    ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
-                    : curATYield;
-                  return {
-                    name: r.def.name,
-                    pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
-                    curIncome: r.current * curATYield / 100,
-                  };
-                });
-                const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
-                const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
-                const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
-                const growImpact = impacts.find(i => i.name === "Grow");
-                const investIncrease = growImpact ? growImpact.pickup : 0;
-                const isGain = totalPickup >= 0;
-                const valCol = isGain ? "#15803d" : "#dc2626";
-                return (
-                  <div className="rounded-xl border border-amber-300 bg-amber-50 px-6 py-4 flex items-center gap-8 mt-3">
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-                      <p className="text-[11px] font-black uppercase tracking-widest text-amber-800 whitespace-nowrap">Income Calculator From Selection</p>
+            </div>{/* end sticky hero wrapper */}
+            {/* ── Income Calculator — portal into dark sidebar ── */}
+            {(() => {
+              const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(sels => sels.length > 0);
+              if (!anyChanges) return null;
+              const slot = typeof document !== "undefined" ? document.getElementById("guru-calc-slot") : null;
+              if (!slot) return null;
+              const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+              const impacts = rows.map((r) => {
+                const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
+                const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
+                const newBalance = r.current + inAmt - outAmt;
+                const curATYield = weightedATYield(r.subAccounts, r.current);
+                const sels = bucketProductSelections[r.def.name] ?? [];
+                const newATYield = sels.length > 0
+                  ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+                  : curATYield;
+                return {
+                  name: r.def.name,
+                  pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
+                  curIncome: r.current * curATYield / 100,
+                };
+              });
+              const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
+              const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
+              const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
+              const growImpact = impacts.find(i => i.name === "Grow");
+              const investIncrease = growImpact ? growImpact.pickup : 0;
+              const isGain = totalPickup >= 0;
+              const gainCol = isGain ? "#34d399" : "#f87171";
+              return createPortal(
+                <div className="mx-3 mt-2 mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Income Impact</p>
+                  </div>
+                  <div className="space-y-2.5">
+                    <div>
+                      <p className="text-[8px] uppercase tracking-widest text-white/30 font-semibold mb-0.5">After-Tax / Year</p>
+                      <p className="text-lg font-black tabular-nums leading-none" style={{ color: gainCol }}>
+                        {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
+                      </p>
                     </div>
-                    <div className="w-px self-stretch bg-amber-200 flex-shrink-0" />
-                    <div className="flex flex-1 gap-10">
+                    <div className="flex gap-4">
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">After-Tax Income / Year</p>
-                        <p className="text-2xl font-black tabular-nums leading-none" style={{ color: valCol }}>
-                          {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">Income Δ</p>
-                        <p className="text-2xl font-black tabular-nums leading-none" style={{ color: valCol }}>
+                        <p className="text-[8px] uppercase tracking-widest text-white/30 font-semibold mb-0.5">Income Δ</p>
+                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: gainCol }}>
                           {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
                         </p>
                       </div>
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">Increase to Investments $</p>
-                        <p className="text-2xl font-black tabular-nums leading-none" style={{ color: investIncrease >= 0 ? "#15803d" : "#dc2626" }}>
+                        <p className="text-[8px] uppercase tracking-widest text-white/30 font-semibold mb-0.5">Invest Incr</p>
+                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: investIncrease >= 0 ? "#34d399" : "#f87171" }}>
                           {investIncrease >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(investIncrease)))}
                         </p>
                       </div>
                     </div>
-                    <p className="text-[9px] text-amber-600/60 font-medium flex-shrink-0">Live preview · after-tax</p>
+                    <p className="text-[8px] text-white/20 font-medium">Live preview · after-tax</p>
                   </div>
-                );
-              })()}
-            </div>{/* end sticky hero wrapper */}
+                </div>,
+                slot
+              );
+            })()}
             {/* 4 bucket cards — 2×2 grid */}
             <div className="space-y-3">
               {rows.map((r) => {
