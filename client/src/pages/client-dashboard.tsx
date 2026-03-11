@@ -5890,66 +5890,65 @@ function GuruAllocationView({
                 </div>
               );
             })()}
+              {/* ── Income Calculator From Selection banner ── */}
+              {(() => {
+                const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(sels => sels.length > 0);
+                if (!anyChanges) return null;
+                const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+                const impacts = rows.map((r) => {
+                  const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
+                  const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
+                  const newBalance = r.current + inAmt - outAmt;
+                  const curATYield = weightedATYield(r.subAccounts, r.current);
+                  const sels = bucketProductSelections[r.def.name] ?? [];
+                  const newATYield = sels.length > 0
+                    ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
+                    : curATYield;
+                  return {
+                    name: r.def.name,
+                    pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
+                    curIncome: r.current * curATYield / 100,
+                  };
+                });
+                const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
+                const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
+                const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
+                const growImpact = impacts.find(i => i.name === "Grow");
+                const investIncrease = growImpact ? growImpact.pickup : 0;
+                const isGain = totalPickup >= 0;
+                const valCol = isGain ? "#15803d" : "#dc2626";
+                return (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 px-6 py-4 flex items-center gap-8 mt-3">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                      <p className="text-[11px] font-black uppercase tracking-widest text-amber-800 whitespace-nowrap">Income Calculator From Selection</p>
+                    </div>
+                    <div className="w-px self-stretch bg-amber-200 flex-shrink-0" />
+                    <div className="flex flex-1 gap-10">
+                      <div>
+                        <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">After-Tax Income / Year</p>
+                        <p className="text-2xl font-black tabular-nums leading-none" style={{ color: valCol }}>
+                          {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">Income Δ</p>
+                        <p className="text-2xl font-black tabular-nums leading-none" style={{ color: valCol }}>
+                          {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">Increase to Investments $</p>
+                        <p className="text-2xl font-black tabular-nums leading-none" style={{ color: investIncrease >= 0 ? "#15803d" : "#dc2626" }}>
+                          {investIncrease >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(investIncrease)))}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-amber-600/60 font-medium flex-shrink-0">Live preview · after-tax</p>
+                  </div>
+                );
+              })()}
             </div>{/* end sticky hero wrapper */}
-
-            {/* ── Income Calculator From Selection banner ── */}
-            {(() => {
-              const anyChanges = pendingTransfers.length > 0 || Object.values(bucketProductSelections).some(sels => sels.length > 0);
-              if (!anyChanges) return null;
-              const parseAT = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
-              const impacts = rows.map((r) => {
-                const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
-                const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
-                const newBalance = r.current + inAmt - outAmt;
-                const curATYield = weightedATYield(r.subAccounts, r.current);
-                const sels = bucketProductSelections[r.def.name] ?? [];
-                const newATYield = sels.length > 0
-                  ? sels.reduce((s, sel) => s + parseAT(sel.product.atYield) * (sel.alloc / 100), 0)
-                  : curATYield;
-                return {
-                  name: r.def.name,
-                  pickup: (newBalance * newATYield / 100) - (r.current * curATYield / 100),
-                  curIncome: r.current * curATYield / 100,
-                };
-              });
-              const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
-              const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
-              const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
-              const growImpact = impacts.find(i => i.name === "Grow");
-              const investIncrease = growImpact ? growImpact.pickup : 0;
-              const isGain = totalPickup >= 0;
-              const valCol = isGain ? "#15803d" : "#dc2626";
-              return (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 px-6 py-4 flex items-center gap-8">
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-                    <p className="text-[11px] font-black uppercase tracking-widest text-amber-800 whitespace-nowrap">Income Calculator From Selection</p>
-                  </div>
-                  <div className="w-px self-stretch bg-amber-200 flex-shrink-0" />
-                  <div className="flex flex-1 gap-10">
-                    <div>
-                      <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">After-Tax Income / Year</p>
-                      <p className="text-2xl font-black tabular-nums leading-none" style={{ color: valCol }}>
-                        {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">Income Δ</p>
-                      <p className="text-2xl font-black tabular-nums leading-none" style={{ color: valCol }}>
-                        {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[8px] uppercase tracking-widest text-amber-700/70 font-bold mb-0.5">Investment Return Δ / Year</p>
-                      <p className="text-2xl font-black tabular-nums leading-none" style={{ color: investIncrease >= 0 ? "#15803d" : "#dc2626" }}>
-                        {investIncrease >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(investIncrease)))}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-[9px] text-amber-600/60 font-medium flex-shrink-0">Live preview · after-tax</p>
-                </div>
-              );
-            })()}
 
             {/* 4 bucket cards — 2×2 grid */}
             <div className="space-y-3">

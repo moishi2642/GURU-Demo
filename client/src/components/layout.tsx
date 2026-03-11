@@ -64,7 +64,7 @@ export function Layout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Main Content ─────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <main className="flex-1 flex flex-col min-h-0 min-w-0">
         {/* Top Bar — dark navy matching sidebar */}
         <header className="border-b border-white/10 flex-shrink-0 flex items-center justify-between px-6 py-3" style={{ background: "hsl(222,47%,13%)" }}>
           <div className="flex items-center gap-2 text-[13px] text-white/50">
