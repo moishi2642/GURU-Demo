@@ -6797,7 +6797,7 @@ function AdvisorBriefView({
           return (
             <div
               className={`rounded-2xl border bg-card shadow-sm transition-all flex flex-col ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
-              style={{ borderTop: "4px solid #0ea5e9" }}
+              style={{ borderTop: "4px solid #0ea5e9", order: -1 }}
               data-testid="advisor-brief-money-flow-card"
             >
               {/* Checkbox header */}
