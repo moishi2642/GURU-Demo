@@ -182,32 +182,29 @@ export default function ClientsPage() {
 
           {/* ── Placeholder client cards ── */}
           {PLACEHOLDER_CLIENTS.map((ph) => (
-            <div key={ph.name} className="block opacity-50 cursor-not-allowed select-none">
-              <Card className="h-full border-border/40 border-dashed bg-secondary/20">
+            <div key={ph.name} className="block cursor-not-allowed">
+              <Card className="h-full border-border/60">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-muted/60 to-muted flex items-center justify-center font-bold text-lg text-muted-foreground">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/20 to-indigo-500/20 flex items-center justify-center font-bold text-lg text-primary">
                       {ph.initials}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={`${ph.tag} capitalize text-xs font-semibold border-0`}>
-                        {ph.risk}
-                      </Badge>
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-secondary rounded-full px-2 py-0.5">
-                        <Lock className="w-2.5 h-2.5" /> Demo
-                      </span>
-                    </div>
+                    <Badge className={`${ph.tag} capitalize text-xs font-semibold border-0`}>
+                      {ph.risk}
+                    </Badge>
                   </div>
 
                   <h3 className="font-bold text-base text-foreground mb-0.5">{ph.name}</h3>
 
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                    <span className="flex items-center gap-1">
+                      <Mail className="w-3 h-3" /> {ph.aum} AUM
+                    </span>
                     <span>Age {ph.age}</span>
-                    <span className="font-semibold text-foreground/60">{ph.aum} AUM</span>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-border/30">
-                    <span className="text-xs text-muted-foreground/60 flex items-center gap-1">
+                  <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Not yet onboarded
                     </span>
                   </div>
