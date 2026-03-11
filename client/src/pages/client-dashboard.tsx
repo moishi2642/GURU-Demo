@@ -6488,7 +6488,7 @@ function AdvisorBriefView({
     );
     if (checked.has("liquidity"))
       blocks.push(
-        <p key="liq" className="font-serif">As we approach the new year, your December bonus has created a meaningful liquidity surplus — roughly {fmt(totalToDeploy)} above your 3-month reserve target. Rather than letting that sit idle, we'd like to put it to work for you across the Build and Grow allocations we've modeled. The opportunity cost of leaving it in cash is real, and we think the timing is right to act.</p>
+        <p key="liq" className="font-serif">Congrats on a great end of year! Your December bonus has come in and created a meaningful liquidity surplus. We calculate you are holding up to {fmt(Math.max(0, _abvTotalLiquid - 194196))} in excess liquidity given your cash flow forecast for the next 12 months. The opportunity cost of leaving it in cash is real and could be up to $10,000 or more of after tax annual returns.</p>
       );
     if (checked.has("rebalance"))
       blocks.push(
