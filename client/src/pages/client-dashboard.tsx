@@ -5934,7 +5934,7 @@ function GuruAllocationView({
                         </p>
                       </div>
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">Cash → Grow</p>
+                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">AUM Increase</p>
                         <p className="text-sm font-black tabular-nums leading-none" style={{ color: "#15803d" }}>
                           {investIncrease > 0 ? "+" : ""}{fmt(Math.round(investIncrease))}
                         </p>
