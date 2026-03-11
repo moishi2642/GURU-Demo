@@ -5949,7 +5949,6 @@ function GuruAllocationView({
                 );
               })()}
             </div>{/* end sticky hero wrapper */}
-
             {/* 4 bucket cards — 2×2 grid */}
             <div className="space-y-3">
               {rows.map((r) => {
@@ -6526,7 +6525,7 @@ function AdvisorBriefView({
     if (blocks.length === 2)
       blocks.push(<p key="fallback" className="font-serif">We wanted to check in and share a few items we've been working through on your behalf.</p>);
     blocks.push(
-      <p key="close1" className="font-serif">None of this requires any immediate action on your part — I just want to make sure you have the full picture so we can decide together what makes the most sense. Happy to set up a quick call whenever works for you.</p>,
+      <p key="close1" className="font-serif">Happy to set up a quick call whenever works for you.</p>,
       <p key="close2" className="font-serif">As always, please don't hesitate to reach out with any questions.</p>,
       <p key="sig1" className="font-serif">Best,</p>,
       <p key="sig2" className="font-serif">Your Advisor</p>,
