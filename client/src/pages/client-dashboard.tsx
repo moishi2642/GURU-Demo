@@ -7427,7 +7427,7 @@ type ActiveView =
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
-  const [activeView, setActiveView] = useState<ActiveView>("dashboard");
+  const [activeView, setActiveView] = useState<ActiveView>("advisorbrief");
   const [financialsTab, setFinancialsTab] = useState<"balancesheet" | "cashflow">("balancesheet");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
   const [pendingTransfers, setPendingTransfers] = useState<
