@@ -6728,7 +6728,7 @@ function AdvisorBriefView({
               cardKey="yield"
               color="#d97706"
               icon={SlidersHorizontal}
-              badge="Fixed Income"
+              badge="Cash Optimization"
               priority="Time Sensitive"
               title="Lock In Rates Before Fed Cuts"
               subtitle={<>Lock in T-bill yields on <em>{fmt(_excessNotTreasuries)}</em> before the next cut</>}
