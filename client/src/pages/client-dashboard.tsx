@@ -5680,12 +5680,11 @@ function GuruAllocationView({
                         return (
                           <div key={`${r.def.name}-optB`} className="flex flex-col">
                             <div className="mb-1 h-5" />
-                            <div className="rounded-xl p-4 flex-1" style={{ background: hc.bg }}>
+                            <div className="rounded-xl p-3 flex-1" style={{ background: hc.bg }}>
                               <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
                                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot ?? hc.accent }} />
                                 <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
                               </div>
-                              <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">{r.def.rule}</p>
                               {/* Before row — balance + yield crossed out */}
                               <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
                                 <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(r.current)}</p>
@@ -5724,7 +5723,7 @@ function GuruAllocationView({
                             )}
                           </div>
                           <div
-                            className={`rounded-xl p-4 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
+                            className={`rounded-xl p-3 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
                             style={{ background: hc.bg }}
                             onDragOver={!proforma && isDragTarget ? (e) => e.preventDefault() : undefined}
                             onDrop={!proforma && isDragTarget ? (e) => {
@@ -5770,12 +5769,11 @@ function GuruAllocationView({
                       return (
                         <div className="flex flex-col">
                           <div className="h-5 mb-1" />
-                          <div className="rounded-xl p-4 flex-1 bg-slate-500">
+                          <div className="rounded-xl p-3 flex-1 bg-slate-500">
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
                               <span className="w-2 h-2 rounded-full flex-shrink-0 bg-slate-300" />
                               <span className="text-[11px] font-black uppercase text-white leading-tight truncate">Grow (Other)</span>
                             </div>
-                            <p className="text-[9px] italic text-white/50 leading-snug h-8 line-clamp-2">Real estate · alternatives · 529 plans</p>
                             <p className={`${fmtK(totalOther).length > 9 ? "text-sm" : fmtK(totalOther).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums mt-1`}>
                               {fmtK(totalOther)}
                             </p>
