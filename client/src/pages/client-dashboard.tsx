@@ -6761,29 +6761,21 @@ function AdvisorBriefView({
               </div>
             </div>
             {/* Fed rate path strip */}
-            <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700">Fed Funds Path · 2026</p>
-                <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5 py-0.5">−{_fedCutBps} bps expected</span>
+            <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5 flex items-center gap-3">
+              <div className="flex-1 text-center">
+                <p className="text-[9px] font-black uppercase tracking-wider text-amber-600 mb-0.5">Now</p>
+                <p className="text-[15px] font-black tabular-nums text-amber-800 leading-none">3.625%</p>
+                <p className="text-[9px] text-amber-600 mt-0.5">3.50–3.75% target</p>
               </div>
-              <div className="flex items-center gap-1">
-                {[
-                  { q: "Now", range: "3.50–3.75%", rate: "3.625%", current: true },
-                  { q: "Q2 '26", range: "3.50–3.75%", rate: "Hold", current: false },
-                  { q: "Q3 '26", range: "3.25–3.50%", rate: "−25 bps", cut: true },
-                  { q: "Q4 '26", range: "3.00–3.25%", rate: "−25 bps", cut: true },
-                ].map((step, i, arr) => (
-                  <div key={i} className="flex items-center gap-1 flex-1 min-w-0">
-                    <div className={`flex-1 min-w-0 rounded px-1.5 py-1 text-center border ${
-                      step.current ? "bg-amber-100 border-amber-300" : step.cut ? "bg-rose-50 border-rose-200" : "bg-white border-amber-200"
-                    }`}>
-                      <p className={`text-[8px] font-black uppercase tracking-wider ${step.current ? "text-amber-700" : step.cut ? "text-rose-600" : "text-amber-600"}`}>{step.q}</p>
-                      <p className={`text-[9px] font-black tabular-nums leading-tight ${step.current ? "text-amber-800" : step.cut ? "text-rose-700" : "text-amber-700"}`}>{step.range}</p>
-                      <p className={`text-[8px] font-semibold ${step.cut ? "text-rose-500" : "text-amber-500"}`}>{step.rate}</p>
-                    </div>
-                    {i < arr.length - 1 && <span className="text-amber-400 text-[10px] flex-shrink-0">›</span>}
-                  </div>
-                ))}
+              <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                <span className="text-[11px] font-black text-rose-600 bg-rose-50 border border-rose-300 rounded-full px-2 py-0.5 whitespace-nowrap">−{_fedCutBps} bps</span>
+                <span className="text-amber-400 text-base leading-none">→</span>
+                <span className="text-[8px] text-muted-foreground">expected</span>
+              </div>
+              <div className="flex-1 text-center">
+                <p className="text-[9px] font-black uppercase tracking-wider text-rose-500 mb-0.5">Dec 31, 2026</p>
+                <p className="text-[15px] font-black tabular-nums text-rose-700 leading-none">3.125%</p>
+                <p className="text-[9px] text-rose-500 mt-0.5">3.00–3.25% target</p>
               </div>
             </div>
             <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
