@@ -5928,7 +5928,7 @@ function GuruAllocationView({
                     <div className="h-px bg-amber-200" />
                     <div className="flex gap-4">
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">Income Δ</p>
+                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">A-T Income Δ</p>
                         <p className="text-sm font-black tabular-nums leading-none" style={{ color: isGain ? "#b45309" : "#dc2626" }}>
                           {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
                         </p>
