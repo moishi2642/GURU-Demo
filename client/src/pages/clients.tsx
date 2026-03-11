@@ -163,7 +163,7 @@ export default function ClientsPage() {
 
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
                       <span className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" /> {client.email}
+                        <TrendingUp className="w-3 h-3 text-emerald-500" /> $5.9M AUM
                       </span>
                       <span>Age {client.age}</span>
                     </div>
