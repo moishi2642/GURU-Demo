@@ -5615,11 +5615,11 @@ function GuruAllocationView({
         return (
           <>
             {/* ── Portfolio Overview Hero — sticky, tightened ── */}
-            <div className="sticky top-0 z-20 bg-background pb-3">
+            <div className="sticky top-0 z-20 bg-background pb-2 -mt-5 md:-mt-7 -mx-5 md:-mx-7 px-5 md:px-7 pt-3">
             {(() => {
               const heroCardTotal = assets.reduce((s, a) => s + Number(a.value), 0);
               return (
-                <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-4 py-3 mb-3">
+                <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-4 py-1.5 mb-2">
                   <div className="flex flex-row gap-4 items-center">
                     {/* Total Assets headline */}
                     <div className="flex-shrink-0 flex items-center gap-3">

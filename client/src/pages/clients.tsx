@@ -9,7 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Users, Plus, ChevronRight, Mail, TrendingUp, Zap } from "lucide-react";
+import { Users, Plus, ChevronRight, Mail, TrendingUp, Zap, Lock } from "lucide-react";
+
+const PLACEHOLDER_CLIENTS = [
+  { name: "James & Patricia Harrington", initials: "JH", risk: "conservative", age: 67, aum: "$8.4M", tag: "bg-blue-50 text-blue-700" },
+  { name: "Olivia Chen", initials: "OC", risk: "aggressive", age: 38, aum: "$3.1M", tag: "bg-rose-50 text-rose-700" },
+  { name: "Robert & Susan Delacroix", initials: "RD", risk: "moderate", age: 55, aum: "$12.7M", tag: "bg-amber-50 text-amber-700" },
+  { name: "Marcus Thornton", initials: "MT", risk: "aggressive", age: 42, aum: "$5.9M", tag: "bg-rose-50 text-rose-700" },
+];
 
 const riskColors: Record<string, { bg: string; text: string }> = {
   conservative: { bg: "bg-blue-50", text: "text-blue-700" },
@@ -92,13 +99,10 @@ export default function ClientsPage() {
             <Zap className="w-5 h-5 text-indigo-500" />
             <h1 className="text-2xl font-display font-bold text-foreground">Client Portfolios</h1>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Manage wealth profiles, run AI strategy analysis, and track balance sheet health.
-          </p>
+          <p className="text-sm text-muted-foreground">See financial forecasts for clients + manage capital allocation + execute money movement</p>
         </div>
         <CreateClientModal />
       </div>
-
       {/* Summary bar */}
       {!isLoading && clients && clients.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-8 p-4 bg-secondary/40 rounded-xl border border-border/50">
@@ -116,7 +120,6 @@ export default function ClientsPage() {
           </div>
         </div>
       )}
-
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {[1, 2, 3].map(i => (
@@ -176,6 +179,42 @@ export default function ClientsPage() {
               </Link>
             );
           })}
+
+          {/* ── Placeholder client cards ── */}
+          {PLACEHOLDER_CLIENTS.map((ph) => (
+            <div key={ph.name} className="block opacity-50 cursor-not-allowed select-none">
+              <Card className="h-full border-border/40 border-dashed bg-secondary/20">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-muted/60 to-muted flex items-center justify-center font-bold text-lg text-muted-foreground">
+                      {ph.initials}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${ph.tag} capitalize text-xs font-semibold border-0`}>
+                        {ph.risk}
+                      </Badge>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-secondary rounded-full px-2 py-0.5">
+                        <Lock className="w-2.5 h-2.5" /> Demo
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="font-bold text-base text-foreground mb-0.5">{ph.name}</h3>
+
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-4">
+                    <span>Age {ph.age}</span>
+                    <span className="font-semibold text-foreground/60">{ph.aum} AUM</span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-border/30">
+                    <span className="text-xs text-muted-foreground/60 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Not yet onboarded
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
         </div>
       )}
     </Layout>
