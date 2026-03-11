@@ -6656,9 +6656,15 @@ function AdvisorBriefView({
                   <span className="text-[10px] font-bold tabular-nums text-foreground flex-shrink-0">{fmt(Number(a.value))}</span>
                 </div>
               ))}
-              <div className="flex items-center justify-between gap-2 border-t border-border pt-1 mt-1">
-                <span className="text-[9px] font-black text-muted-foreground">GURU Reserve Target (3 mo.)</span>
-                <span className="text-[10px] font-black tabular-nums text-emerald-700">{fmt(guruReserveTarget)}</span>
+              <div className="border-t border-border pt-1 mt-1 flex flex-col gap-0.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-black text-muted-foreground">Total Cash Balance</span>
+                  <span className="text-[10px] font-black tabular-nums text-emerald-700">{fmt(_abvTotalLiquid)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-black text-muted-foreground">Trough</span>
+                  <span className="text-[10px] font-black tabular-nums text-rose-600">{fmt(cashTroughBuffer)}</span>
+                </div>
               </div>
             </div>
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
