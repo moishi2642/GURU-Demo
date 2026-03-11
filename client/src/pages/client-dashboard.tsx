@@ -6700,8 +6700,8 @@ function AdvisorBriefView({
             <div className="space-y-1.5">
               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Ideas to explore</p>
               {[
-                { label: "Trim concentrated single-stock positions", detail: `${singleStockPct}% of portfolio — target under 5%` },
-                { label: "Add Sector Rotation Fund to Grow bucket", detail: "Reduces correlation to broad market" },
+                { label: "Add CIO flagship sector rotation fund", detail: "Reduces correlation to broad market" },
+                { label: "Add Small Cap Mutual Fund", detail: "Increases exposure to high-growth segment" },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-2 rounded-lg border border-border bg-background px-3 py-2">
                   <div className="w-3.5 h-3.5 rounded flex-shrink-0 mt-0.5 border-2 border-slate-200 bg-background" />
