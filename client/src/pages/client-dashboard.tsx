@@ -6639,31 +6639,17 @@ function AdvisorBriefView({
               subtitle="Opportunity to increase investment portfolio"
             />
             <div className="flex items-baseline gap-3">
-              <p className="text-2xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToDeploy, true)}</p>
+              <p className="text-2xl font-black tabular-nums text-emerald-600 leading-none">{fmt(Math.max(0, _abvTotalLiquid - 194196), true)}</p>
               <p className="text-[10px] text-muted-foreground">available to deploy</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Where it's sitting</p>
-              {reserveItems.slice(0, 4).map((a) => (
-                <div key={a.id} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                    <span className="text-[10px] text-muted-foreground truncate">
-                      {(a.description ?? "").split("—")[0].split("(")[0].trim()}
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-bold tabular-nums text-foreground flex-shrink-0">{fmt(Number(a.value))}</span>
-                </div>
-              ))}
-              <div className="border-t border-border pt-1 mt-1 flex flex-col gap-0.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[9px] font-black text-muted-foreground">Total Cash Balance</span>
-                  <span className="text-[10px] font-black tabular-nums text-emerald-700">{fmt(_abvTotalLiquid)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[9px] font-black text-muted-foreground">Trough</span>
-                  <span className="text-[10px] font-black tabular-nums text-rose-600">{fmt(cashTroughBuffer)}</span>
-                </div>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px] font-black text-muted-foreground">Total Cash</span>
+                <span className="text-[10px] font-black tabular-nums text-emerald-700">{fmt(_abvTotalLiquid)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px] font-black text-muted-foreground">Cash Needed for 12 Months</span>
+                <span className="text-[10px] font-black tabular-nums text-rose-600">{fmt(194196)}</span>
               </div>
             </div>
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
