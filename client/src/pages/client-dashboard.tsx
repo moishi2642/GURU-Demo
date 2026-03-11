@@ -5793,8 +5793,9 @@ function GuruAllocationView({
                       </div>
                     );
                   })()}
-                  {/* ── Org-chart flow lines — appear only when transfers are pending ── */}
+                  {/* ── Org-chart flow lines — hidden for now ── */}
                   {(() => {
+                    return null;
                     if (pendingTransfers.length === 0) return null;
                     const H = 72;
                     const dropY = 36;
