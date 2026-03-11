@@ -6624,138 +6624,12 @@ function AdvisorBriefView({
       {/* ── Priority cards ── */}
       <div className="grid grid-cols-2 gap-5">
 
-        {/* ── Section Header: Investments & Liquidity ── */}
-        <div className="col-span-2 flex items-center gap-4 py-2">
-          <div className="flex items-center gap-3">
-            <div className="w-1.5 h-7 rounded-full bg-emerald-500 flex-shrink-0" />
-            <p className="text-sm font-black uppercase tracking-widest text-foreground">Investments &amp; Liquidity Positioning</p>
-          </div>
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-[11px] text-muted-foreground font-semibold flex-shrink-0">3 items</span>
-        </div>
-
-        {/* ── Card 1: Deploy Excess Liquidity ── */}
-        <div
-          className={`rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("liquidity") ? "border-emerald-400 shadow-emerald-100" : "border-border"}`}
-          style={{ borderTop: `4px solid #10b981` }}
-        >
-          <div className="px-6 pt-6 pb-5 flex flex-col gap-4 flex-1">
-            <CardCheckHeader
-              cardKey="liquidity"
-              color="#10b981"
-              icon={Wallet}
-              badge="Liquidity"
-              priority="High Priority"
-              title="Harvest Excess Liquidity From Bonus"
-              subtitle="Opportunity to increase investment portfolio"
-            />
-            <div>
-              <p className="text-3xl font-black tabular-nums text-emerald-600 leading-none">{fmt(totalToDeploy, true)}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">available to deploy based on GURU estimates</p>
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Where it's sitting</p>
-              {reserveItems.slice(0, 5).map((a) => (
-                <div key={a.id} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      {(a.description ?? "").split("—")[0].split("(")[0].trim()}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-bold tabular-nums text-foreground flex-shrink-0">{fmt(Number(a.value))}</span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between gap-2 border-t border-border pt-1.5 mt-1.5">
-                <span className="text-[10px] font-black text-muted-foreground">GURU Reserve Target (3 mo.)</span>
-                <span className="text-[11px] font-black tabular-nums text-emerald-700">{fmt(guruReserveTarget)}</span>
-              </div>
-            </div>
-            <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Lightbulb className="w-3 h-3 text-emerald-600" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-700">Talking Point</span>
-              </div>
-              <p className="text-[11px] text-emerald-800 leading-relaxed italic">
-                "The year-end bonus has created a meaningful surplus above the 3-month reserve target. Deploying the excess into Build and Grow puts it to work — GURU shows exactly how."
-              </p>
-            </div>
-          </div>
-          <div
-            className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-emerald-50/40 cursor-pointer hover:bg-emerald-50 transition-colors"
-            onClick={() => onNavigate("guru")}
-          >
-            <span className="text-[10px] text-muted-foreground">Open GURU Allocation</span>
-            <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">View now <ArrowUpRight className="w-3.5 h-3.5" /></span>
-          </div>
-        </div>
-
-        {/* ── Card 2: Portfolio Rebalancing ── */}
-        <div
-          className={`rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("rebalance") ? "border-blue-400 shadow-blue-100" : "border-border"}`}
-          style={{ borderTop: `4px solid #3b82f6` }}
-        >
-          <div className="px-6 pt-6 pb-5 flex flex-col gap-4 flex-1">
-            <CardCheckHeader
-              cardKey="rebalance"
-              color="#3b82f6"
-              icon={RefreshCw}
-              badge="Investments"
-              priority="Medium Priority"
-              title="Rebalance Portfolio with Excess Cash"
-              subtitle="Ideas to discuss with Sarah and Michael after liquidity conversation"
-            />
-            {singleStockVal > 0 && (
-              <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 flex items-start gap-2.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-rose-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[10px] font-black text-rose-700 uppercase tracking-wide">Concentration Risk</p>
-                  <p className="text-[11px] text-rose-700 mt-0.5">Single-stock positions ({singleStockPct}% of portfolio) exceed the 5% threshold.</p>
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Action Items</p>
-              {[
-                { label: "Add Sector Rotation Fund to Grow bucket", detail: "Reduces correlation to broad market" },
-                { label: "Add Commodities / Inflation Hedge", detail: "Provides protection in rising-rate scenarios" },
-                { label: "Trim concentrated single-stock positions", detail: `${singleStockPct}% of portfolio — target under 5%` },
-                { label: "Review international allocation", detail: "Currently under-weight vs target model" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2.5 rounded-lg border border-border bg-background px-3 py-2.5">
-                  <div className="w-4 h-4 rounded flex-shrink-0 mt-0.5 border-2 border-slate-200 bg-background" />
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-foreground">{item.label}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{item.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Lightbulb className="w-3 h-3 text-blue-600" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-blue-700">Talking Point</span>
-              </div>
-              <p className="text-[11px] text-blue-800 leading-relaxed italic">
-                "With liquidity identified, we can selectively deploy into under-represented segments — sector funds and commodities give diversification within the moderate risk profile."
-              </p>
-            </div>
-          </div>
-          <div
-            className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-blue-50/40 cursor-pointer hover:bg-blue-50 transition-colors"
-            onClick={() => onNavigate("guru")}
-          >
-            <span className="text-[10px] text-muted-foreground">Open GURU Allocation</span>
-            <span className="text-[11px] font-bold text-blue-700 flex items-center gap-1">View now <ArrowUpRight className="w-3.5 h-3.5" /></span>
-          </div>
-        </div>
-
         {/* ── Card 3: Yield Pickup ── */}
         <div
-          className={`rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("yield") ? "border-amber-400 shadow-amber-100" : "border-border"}`}
-          style={{ borderTop: `4px solid #d97706` }}
+          className={`rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("yield") ? "border-amber-400 shadow-amber-100" : "border-border"}`}
+          style={{ borderTop: `3px solid #d97706` }}
         >
-          <div className="px-6 pt-6 pb-5 flex flex-col gap-4 flex-1">
+          <div className="px-4 pt-4 pb-3 flex flex-col gap-3 flex-1">
             <CardCheckHeader
               cardKey="yield"
               color="#d97706"
@@ -6763,93 +6637,59 @@ function AdvisorBriefView({
               badge="Fixed Income"
               priority="Time Sensitive"
               title="Lock In Rates Before Fed Cuts"
-              subtitle={<>Lock in T-bill yields on <em>{fmt(_excessNotTreasuries)}</em> of cash before the next Fed rate cut</>}
+              subtitle={<>Lock in T-bill yields on <em>{fmt(_excessNotTreasuries)}</em> before the next cut</>}
             />
             {/* Headline stats */}
-            <div className="flex items-center gap-5 py-1">
+            <div className="flex items-center gap-4">
               <div>
-                <p className="text-2xl font-black tabular-nums text-amber-600 leading-none">+{_fedCutBps} bps</p>
+                <p className="text-xl font-black tabular-nums text-amber-600 leading-none">+{_fedCutBps} bps</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">saved by locking in now</p>
               </div>
-              <div className="w-px h-8 bg-border flex-shrink-0" />
+              <div className="w-px h-7 bg-border flex-shrink-0" />
               <div>
-                <p className="text-xl font-black tabular-nums text-amber-700 leading-none">{fmt(_fedLockInSavings)}<span className="text-sm font-semibold">/yr</span></p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">saved vs. waiting for cut</p>
+                <p className="text-xl font-black tabular-nums text-amber-700 leading-none">{fmt(_fedLockInSavings)}<span className="text-xs font-semibold">/yr</span></p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">vs. waiting for cut</p>
               </div>
             </div>
-            {/* Rate cut scenario */}
-            <div className="space-y-2">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Rate Cut Exposure</p>
-              <div className="rounded-lg border border-border bg-background px-3 py-2.5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground mb-0.5">Cash exposed to rate changes</p>
-                  <p className="text-base font-black tabular-nums text-foreground">{fmt(_excessNotTreasuries)}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground mb-0.5">Not in treasuries · ex-Fidelity</p>
-                  <p className="text-[10px] font-semibold text-amber-700">idle bank + money market</p>
-                </div>
+            {/* Fed rate path strip */}
+            <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700">Fed Funds Path · 2026</p>
+                <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5 py-0.5">−{_fedCutBps} bps expected</span>
               </div>
-              {/* Fed rate path strip */}
-              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] uppercase tracking-wider font-bold text-amber-700">Fed Funds Path · 2026</p>
-                  <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5 py-0.5">−{_fedCutBps} bps expected</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  {[
-                    { q: "Now", range: "3.50–3.75%", rate: "3.625%", current: true },
-                    { q: "Q2 '26", range: "3.50–3.75%", rate: "Hold", current: false },
-                    { q: "Q3 '26", range: "3.25–3.50%", rate: "−25 bps", cut: true },
-                    { q: "Q4 '26", range: "3.00–3.25%", rate: "−25 bps", cut: true, last: true },
-                  ].map((step, i, arr) => (
-                    <div key={i} className="flex items-center gap-1 flex-1 min-w-0">
-                      <div className={`flex-1 min-w-0 rounded-md px-2 py-1.5 text-center border ${
-                        step.current
-                          ? "bg-amber-100 border-amber-300"
-                          : step.cut
-                          ? "bg-rose-50 border-rose-200"
-                          : "bg-white border-amber-200"
-                      }`}>
-                        <p className={`text-[8px] font-black uppercase tracking-wider ${step.current ? "text-amber-700" : step.cut ? "text-rose-600" : "text-amber-600"}`}>{step.q}</p>
-                        <p className={`text-[10px] font-black tabular-nums leading-tight mt-0.5 ${step.current ? "text-amber-800" : step.cut ? "text-rose-700" : "text-amber-700"}`}>{step.range}</p>
-                        <p className={`text-[8px] font-semibold mt-0.5 ${step.cut ? "text-rose-500" : "text-amber-500"}`}>{step.rate}</p>
-                      </div>
-                      {i < arr.length - 1 && (
-                        <span className="text-amber-400 text-[10px] flex-shrink-0">›</span>
-                      )}
+              <div className="flex items-center gap-1">
+                {[
+                  { q: "Now", range: "3.50–3.75%", rate: "3.625%", current: true },
+                  { q: "Q2 '26", range: "3.50–3.75%", rate: "Hold", current: false },
+                  { q: "Q3 '26", range: "3.25–3.50%", rate: "−25 bps", cut: true },
+                  { q: "Q4 '26", range: "3.00–3.25%", rate: "−25 bps", cut: true },
+                ].map((step, i, arr) => (
+                  <div key={i} className="flex items-center gap-1 flex-1 min-w-0">
+                    <div className={`flex-1 min-w-0 rounded px-1.5 py-1 text-center border ${
+                      step.current ? "bg-amber-100 border-amber-300" : step.cut ? "bg-rose-50 border-rose-200" : "bg-white border-amber-200"
+                    }`}>
+                      <p className={`text-[8px] font-black uppercase tracking-wider ${step.current ? "text-amber-700" : step.cut ? "text-rose-600" : "text-amber-600"}`}>{step.q}</p>
+                      <p className={`text-[9px] font-black tabular-nums leading-tight ${step.current ? "text-amber-800" : step.cut ? "text-rose-700" : "text-amber-700"}`}>{step.range}</p>
+                      <p className={`text-[8px] font-semibold ${step.cut ? "text-rose-500" : "text-amber-500"}`}>{step.rate}</p>
                     </div>
-                  ))}
-                </div>
+                    {i < arr.length - 1 && <span className="text-amber-400 text-[10px] flex-shrink-0">›</span>}
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Lightbulb className="w-3 h-3 text-amber-600" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">Talking Point</span>
-              </div>
-              <p className="text-[11px] text-amber-800 leading-relaxed italic">
-                "The Fed is expected to cut rates by another 50 bps. On the {fmt(_excessNotTreasuries)} of excess cash not yet in treasuries, locking in today's T-bill rate before that cut is worth roughly {fmt(_fedLockInSavings)}/year — at no added risk. The window is now."
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+              <p className="text-[10px] text-amber-800 leading-relaxed italic">
+                "Fed expected to cut 50 bps. Locking in T-bill rate on {fmt(_excessNotTreasuries)} of excess cash is worth ~{fmt(_fedLockInSavings)}/year — at no added risk."
               </p>
             </div>
           </div>
           <div
-            className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-amber-50/40 cursor-pointer hover:bg-amber-50 transition-colors"
+            className="px-4 py-2.5 border-t border-border flex items-center justify-between bg-amber-50/40 cursor-pointer hover:bg-amber-50 transition-colors"
             onClick={() => onNavigate("guru")}
           >
-            <span className="text-[10px] text-muted-foreground">Open Reserve bucket in GURU Allocation</span>
-            <span className="text-[11px] font-bold text-amber-700 flex items-center gap-1">View now <ArrowUpRight className="w-3.5 h-3.5" /></span>
+            <span className="text-[10px] text-muted-foreground">Open Reserve bucket in GURU</span>
+            <span className="text-[10px] font-bold text-amber-700 flex items-center gap-1">View now <ArrowUpRight className="w-3 h-3" /></span>
           </div>
-        </div>
-
-        {/* ── Section Header: Money Movement ── */}
-        <div className="col-span-2 flex items-center gap-4 py-2 pt-4">
-          <div className="flex items-center gap-3">
-            <div className="w-1.5 h-7 rounded-full bg-violet-500 flex-shrink-0" />
-            <p className="text-sm font-black uppercase tracking-widest text-foreground">Money Movement</p>
-          </div>
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-[11px] text-muted-foreground font-semibold flex-shrink-0">2 items</span>
         </div>
 
         {/* ── Card 4: Account Cash Movements ── */}
@@ -7027,237 +6867,6 @@ function AdvisorBriefView({
                 <span className="text-[11px] font-bold text-sky-700 flex items-center gap-1">Open Money Movement <ArrowUpRight className="w-3.5 h-3.5" /></span>
               </div>
             </div>
-          );
-        })()}
-
-        {/* ── Approve Autobill Pay ── */}
-        {(() => {
-          const upcoming = OBLIGATIONS
-            .filter((o) => o.due >= DEMO_NOW)
-            .sort((a, b) => a.due.getTime() - b.due.getTime());
-          const totalPending = upcoming.filter((o) => !scheduled.has(o.id)).reduce((s, o) => s + o.amount, 0);
-          const urgentCount = upcoming.filter((o) => Math.ceil((o.due.getTime() - DEMO_NOW.getTime()) / 86400000) <= 45).length;
-          const scheduledCount = upcoming.filter((o) => scheduled.has(o.id)).length;
-          const activeObl = OBLIGATIONS.find((o) => o.id === wireModalId);
-
-          return (
-          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #7c3aed" }}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
-                  <Send className="w-4 h-4 text-violet-600" />
-                </div>
-                <div>
-                  <p className="text-base font-black text-foreground leading-none">Approve Autobill Pay</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Schedule payments directly from your connected accounts</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-xs font-black tabular-nums text-violet-700">{fmt(totalPending)}</p>
-                  <p className="text-[9px] text-muted-foreground">total pending</p>
-                </div>
-                <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1">
-                  <Lock className="w-3 h-3 text-indigo-600" />
-                  <span className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider">GURU Payments Active</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Summary stat pills */}
-            <div className="px-6 py-3 border-b border-border bg-slate-50/60 flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-slate-400" />
-                <span className="text-[11px] text-muted-foreground font-medium">{upcoming.length} total upcoming</span>
-              </div>
-              {urgentCount > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-rose-500" />
-                  <span className="text-[11px] text-rose-700 font-semibold">{urgentCount} due within 45 days</span>
-                </div>
-              )}
-              {scheduledCount > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-[11px] text-emerald-700 font-semibold">{scheduledCount} scheduled</span>
-                </div>
-              )}
-            </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-[12px]">
-                <thead>
-                  <tr className="bg-slate-800 text-slate-300">
-                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px] w-32">Due Date</th>
-                    <th className="px-2 py-2.5 text-left font-black uppercase tracking-widest text-[9px] w-20">Category</th>
-                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Description</th>
-                    <th className="px-4 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Payee</th>
-                    <th className="px-4 py-2.5 text-right font-black uppercase tracking-widest text-[9px]">Amount</th>
-                    <th className="px-4 py-2.5 text-center font-black uppercase tracking-widest text-[9px]">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {upcoming.map((obl) => {
-                    const daysUntil = Math.ceil((obl.due.getTime() - DEMO_NOW.getTime()) / 86400000);
-                    const isUrgent = daysUntil <= 45;
-                    const isScheduled = scheduled.has(obl.id);
-                    return (
-                      <tr key={obl.id} className={`hover:bg-secondary/30 transition-colors ${isScheduled ? "opacity-60" : ""}`}>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-semibold text-foreground">{format(obl.due, "MMM d, yyyy")}</span>
-                            <span className={`text-[10px] font-bold ${isUrgent ? "text-rose-600" : "text-muted-foreground"}`}>
-                              {isUrgent ? `${daysUntil}d — urgent` : `in ${daysUntil}d`}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-2 py-3">
-                          <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${oblCatStyle(obl.category)}`}>
-                            {obl.category === "tax" ? "Tax" : "Education"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="font-semibold text-foreground leading-tight">{obl.label}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">From: {obl.from}</p>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{obl.payee}</td>
-                        <td className="px-4 py-3 text-right tabular-nums font-black text-rose-700 whitespace-nowrap">{fmt(obl.amount)}</td>
-                        <td className="px-4 py-3 text-center">
-                          {isScheduled ? (
-                            <div className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
-                              <CheckSquare className="w-3 h-3 text-emerald-600" />
-                              <span className="text-[9px] font-black text-emerald-700">Scheduled</span>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setWireFromAccount((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.from }));
-                                const processDate = new Date(obl.due);
-                                processDate.setDate(processDate.getDate() - 2);
-                                setWireScheduleDate((s) => ({
-                                  ...s,
-                                  [obl.id]: s[obl.id] ?? processDate.toISOString().slice(0, 10),
-                                }));
-                                setWireMemo((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.label }));
-                                setWireModalId(obl.id);
-                              }}
-                              className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors whitespace-nowrap"
-                            >
-                              <Send className="w-3 h-3" />
-                              Setup {obl.method}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Wire Setup Modal */}
-            <Dialog open={wireModalId !== null} onOpenChange={(open) => { if (!open) setWireModalId(null); }}>
-              <DialogContent className="max-w-md">
-                {activeObl && (
-                  <>
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2 text-base">
-                        <Send className="w-4 h-4 text-rose-600" />
-                        Setup {activeObl.method} Payment
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-1">
-                      {/* Payment summary */}
-                      <div className="rounded-xl border border-border bg-slate-50 px-4 py-3 flex items-center justify-between">
-                        <div>
-                          <p className="text-[11px] font-black text-foreground leading-tight">{activeObl.label}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{activeObl.payee} · Due {format(activeObl.due, "MMM d, yyyy")}</p>
-                        </div>
-                        <p className="text-lg font-black tabular-nums text-rose-700">{fmt(activeObl.amount)}</p>
-                      </div>
-
-                      {/* From account */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">From Account</label>
-                        <select
-                          value={wireFromAccount[activeObl.id] ?? activeObl.from}
-                          onChange={(e) => setWireFromAccount((s) => ({ ...s, [activeObl.id]: e.target.value }))}
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        >
-                          <option>Citizens Private Banking Checking</option>
-                          <option>Chase Total Checking</option>
-                          <option>Citizens Private Bank Money Market</option>
-                          <option>CapitalOne 360 Savings</option>
-                        </select>
-                      </div>
-
-                      {/* Schedule date */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Process Date</label>
-                        <input
-                          type="date"
-                          value={wireScheduleDate[activeObl.id] ?? ""}
-                          onChange={(e) => setWireScheduleDate((s) => ({ ...s, [activeObl.id]: e.target.value }))}
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        />
-                        <p className="text-[10px] text-muted-foreground">GURU defaults to 2 business days before due date</p>
-                      </div>
-
-                      {/* Memo */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Memo / Reference</label>
-                        <input
-                          type="text"
-                          value={wireMemo[activeObl.id] ?? activeObl.label}
-                          onChange={(e) => setWireMemo((s) => ({ ...s, [activeObl.id]: e.target.value }))}
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        />
-                      </div>
-
-                      {/* Routing info (read-only) */}
-                      <div className="rounded-lg border border-border bg-slate-50 px-4 py-3 space-y-1.5">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Payment Details</p>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Routing Number</span>
-                          <span className="font-mono font-semibold text-foreground">{activeObl.routing}</span>
-                        </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Account / Ref</span>
-                          <span className="font-mono font-semibold text-foreground">{activeObl.acct}</span>
-                        </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Payment Method</span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${activeObl.method === "Wire" ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-sky-50 text-sky-700 border-sky-200"}`}>{activeObl.method}</span>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          onClick={() => setWireModalId(null)}
-                          className="flex-1 rounded-lg border border-border bg-background hover:bg-secondary text-foreground px-4 py-2.5 text-[11px] font-semibold transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => {
-                            setScheduled((s) => new Set([...s, activeObl.id]));
-                            setWireModalId(null);
-                          }}
-                          className="flex-1 rounded-lg bg-slate-900 hover:bg-slate-700 text-white px-4 py-2.5 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5"
-                        >
-                          <CheckSquare className="w-3.5 h-3.5" />
-                          Schedule Payment
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </DialogContent>
-            </Dialog>
-          </div>
           );
         })()}
 
