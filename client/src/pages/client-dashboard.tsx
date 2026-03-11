@@ -6631,7 +6631,7 @@ function AdvisorBriefView({
 
         {/* ── Card 1: Deploy Excess Liquidity ── */}
         <div
-          className={`rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("liquidity") ? "border-emerald-400 shadow-emerald-100" : "border-border"}`}
+          className={`rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all h-full ${checked.has("liquidity") ? "border-emerald-400 shadow-emerald-100" : "border-border"}`}
           style={{ borderTop: `3px solid #10b981` }}
         >
           <div className="px-4 pt-4 pb-3 flex flex-col gap-3 flex-1">
@@ -6675,7 +6675,7 @@ function AdvisorBriefView({
 
         {/* ── Card 2: Portfolio Rebalancing ── */}
         <div
-          className={`rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("rebalance") ? "border-blue-400 shadow-blue-100" : "border-border"}`}
+          className={`rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all h-full ${checked.has("rebalance") ? "border-blue-400 shadow-blue-100" : "border-border"}`}
           style={{ borderTop: `3px solid #3b82f6` }}
         >
           <div className="px-4 pt-4 pb-3 flex flex-col gap-3 flex-1">
@@ -6788,7 +6788,7 @@ function AdvisorBriefView({
         {(() => {
           return (
             <div
-              className={`rounded-2xl border bg-card shadow-sm transition-all flex flex-col ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
+              className={`rounded-2xl border bg-card shadow-sm transition-all flex flex-col row-span-2 ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
               style={{ borderTop: "4px solid #0ea5e9", order: -1 }}
               data-testid="advisor-brief-money-flow-card"
             >
