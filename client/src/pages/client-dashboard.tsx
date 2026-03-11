@@ -216,8 +216,8 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
     .filter((c) => c.type === "outflow")
     .reduce((s, c) => s + Number(c.amount), 0);
   const net = totalIn - totalOut;
-  const rowH = 32; // px per row
-  const visRows = 8;
+  const rowH = 28; // px per row
+  const visRows = 7;
   const duration = Math.max(20, items.length * 2.2); // seconds
 
   const fmtAmt = (v: number) =>
@@ -300,7 +300,7 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
 
       {/* Summary footer */}
       <div className="grid grid-cols-3 divide-x divide-white/8 border-t border-white/10 text-xs">
-        <div className="px-4 py-2.5">
+        <div className="px-4 py-1.5">
           <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">
             12-Mo Inflows
           </p>
@@ -308,7 +308,7 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
             +{fmtAmt(totalIn)}
           </p>
         </div>
-        <div className="px-4 py-2.5">
+        <div className="px-4 py-1.5">
           <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">
             12-Mo Outflows
           </p>
@@ -316,7 +316,7 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
             −{fmtAmt(totalOut)}
           </p>
         </div>
-        <div className="px-4 py-2.5">
+        <div className="px-4 py-1.5">
           <p className="text-[10px] text-white/30 uppercase tracking-wider font-bold mb-0.5">
             12-Mo Net
           </p>
@@ -720,7 +720,7 @@ function NetWorthPanel({
           </div>
         </div>
       </div>
-      <div className="h-32 px-1 mt-1">
+      <div className="h-28 px-1 mt-1">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={timelineData}
@@ -797,7 +797,7 @@ function NetWorthPanel({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-3">
         <div className="flex border border-border rounded-md overflow-hidden mb-2 text-xs font-semibold">
           <button
             className={`flex-1 py-1 transition-colors ${view === "assets" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
@@ -814,7 +814,7 @@ function NetWorthPanel({
             Liabilities
           </button>
         </div>
-        <div className="space-y-0.5 max-h-36 overflow-y-auto">
+        <div className="space-y-0.5 max-h-28 overflow-y-auto">
           {view === "assets" ? (
             sortedAssets.slice(0, 9).map((a) => {
               const tag = liquidityTag(a);
@@ -879,13 +879,13 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
   return (
     <div className={PANEL_CLS}>
       {/* ── Header ── */}
-      <div className="px-4 pt-4 pb-3 border-b border-border/60">
+      <div className="px-4 pt-3 pb-2 border-b border-border/60">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">12 Month Cumulative Cash Flow Forecast</p>
             <div className="flex items-center gap-1.5 mt-0.5">
-              {isPositive ? <TrendingUp className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <TrendingDown className="w-4 h-4 text-rose-500 flex-shrink-0" />}
-              <p className={`text-3xl font-extrabold tabular-nums leading-tight ${isPositive ? "text-emerald-600" : "text-rose-600"}`} data-testid="kpi-annual-net">
+              {isPositive ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> : <TrendingDown className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />}
+              <p className={`text-2xl font-extrabold tabular-nums leading-tight ${isPositive ? "text-emerald-600" : "text-rose-600"}`} data-testid="kpi-annual-net">
                 {isPositive ? "+" : ""}{fmt(annualNet, true)}
               </p>
             </div>
@@ -895,7 +895,7 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
       </div>
       {/* ── Chart 2: Cumulative area chart ── */}
       <div className="px-3 pb-2">
-        <div style={{ height: 280 }}>
+        <div style={{ height: 240 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 52, right: 52, left: 0, bottom: 0 }}>
               <defs>
@@ -7629,7 +7629,7 @@ export default function ClientDashboard() {
       </div>
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
       {activeView === "dashboard" && (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* ── Advisor Brief compact strip ───────────────────────────────────── */}
           <div
             className="rounded-xl bg-card border border-border shadow-sm px-5 py-3.5 flex items-center justify-between gap-4 cursor-pointer hover:shadow-md transition-shadow"
@@ -7666,7 +7666,7 @@ export default function ClientDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
             <NetWorthPanel
               assets={assets}
               liabilities={liabilities}
@@ -7675,7 +7675,7 @@ export default function ClientDashboard() {
             <CashManagementPanel assets={assets} cashFlows={cashFlows} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 items-start">
+          <div className="grid grid-cols-2 gap-2 items-start">
             <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => setActiveView("cashflow")} />
             <CashFlowTicker cashFlows={cashFlows} />
           </div>
