@@ -707,20 +707,20 @@ function NetWorthPanel({
   return (
     <div className={PANEL_CLS}>
       {/* ── Header ── */}
-      <div className="px-4 pt-4 pb-3 border-b border-border/60">
+      <div className="px-4 pt-3 pb-2 border-b border-border/60">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Net Worth</p>
-            <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
+            <p className="text-2xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Total assets minus liabilities · Today</p>
           </div>
           <div className="text-right flex-shrink-0 mt-0.5">
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">5yr Projection</p>
-            <p className="text-lg font-extrabold tabular-nums text-emerald-600">{fmt(projYear5)}</p>
+            <p className="text-base font-extrabold tabular-nums text-emerald-600">{fmt(projYear5)}</p>
           </div>
         </div>
       </div>
-      <div className="h-36 px-1 mt-1">
+      <div className="h-32 px-1 mt-1">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={timelineData}
@@ -1021,11 +1021,11 @@ function CashManagementPanel({
     <div className={PANEL_CLS + " flex flex-col"}>
 
       {/* ── Header ── */}
-      <div className="px-4 pt-4 pb-3 border-b border-border/60">
+      <div className="px-4 pt-3 pb-2 border-b border-border/60">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Liquidity Position</p>
-            <p className="text-3xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5">{fmt(totalLiquid)}</p>
+            <p className="text-2xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5">{fmt(totalLiquid)}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">Total liquid position</p>
           </div>
           <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold flex-shrink-0 mt-1 ${trendUp ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-600 border border-rose-200"}`}>
@@ -1038,25 +1038,25 @@ function CashManagementPanel({
       {/* ── 3 KPI tiles ── */}
       <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60">
         {/* Months Runway */}
-        <div className="px-3 py-3 flex flex-col gap-0.5">
+        <div className="px-3 py-2 flex flex-col gap-0.5">
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Runway</p>
-          <p className={`text-2xl font-extrabold tabular-nums leading-none ${monthsRunway >= 12 ? "text-emerald-600" : monthsRunway >= 6 ? "text-amber-600" : "text-rose-600"}`}>
+          <p className={`text-xl font-extrabold tabular-nums leading-none ${monthsRunway >= 12 ? "text-emerald-600" : monthsRunway >= 6 ? "text-amber-600" : "text-rose-600"}`}>
             {monthsRunway.toFixed(1)}
           </p>
           <p className="text-[9px] text-muted-foreground">months of expenses</p>
         </div>
         {/* Monthly Burn */}
-        <div className="px-3 py-3 flex flex-col gap-0.5">
+        <div className="px-3 py-2 flex flex-col gap-0.5">
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly Burn</p>
-          <p className="text-2xl font-extrabold tabular-nums leading-none text-foreground">
+          <p className="text-xl font-extrabold tabular-nums leading-none text-foreground">
             {fmt(monthlyBurn, true)}
           </p>
           <p className="text-[9px] text-muted-foreground">avg outflows / mo</p>
         </div>
         {/* Annual Coverage */}
-        <div className="px-3 py-3 flex flex-col gap-0.5">
+        <div className="px-3 py-2 flex flex-col gap-0.5">
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Coverage</p>
-          <p className={`text-2xl font-extrabold tabular-nums leading-none ${coverageOk ? "text-emerald-600" : "text-rose-600"}`}>
+          <p className={`text-xl font-extrabold tabular-nums leading-none ${coverageOk ? "text-emerald-600" : "text-rose-600"}`}>
             {coveragePct > 999 ? "—" : `${coveragePct.toFixed(0)}%`}
           </p>
           <div className="flex items-center gap-1 mt-0.5">
@@ -1069,7 +1069,7 @@ function CashManagementPanel({
       </div>
 
       {/* ── Bucket tables ── */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-3">
         <style>{`@keyframes liqWv{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}.liq-wv{animation:liqWv 2.2s linear infinite;}`}</style>
         {(() => {
           const buckets = [
