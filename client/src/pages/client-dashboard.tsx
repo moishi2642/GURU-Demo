@@ -6492,7 +6492,14 @@ function AdvisorBriefView({
       );
     if (checked.has("rebalance"))
       blocks.push(
-        <p key="reb" className="font-serif">We've also been monitoring your single-stock concentration. Your E*Trade positions in Meta and Bank of America now represent about {singleStockPct}% of your total portfolio — above the 5% threshold we'd generally feel comfortable with. We'd like to walk you through a gradual trim strategy that reduces that risk without triggering a large tax event all at once.</p>
+        <div key="reb" className="space-y-1">
+          <p className="font-serif font-semibold">Deploying liquidity:</p>
+          <p className="font-serif">We suggest deploying this liquidity in the following ways to continue to rebalance your investment portfolio:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li className="font-serif">Increase large cap exposure by adding $310,000 into our CIO's flagship sector rotation fund which has beat the S&P 500 by 3% the last 10 years.</li>
+            <li className="font-serif">Increase small cap exposure by adding $190,000 into a small cap mutual fund which has returned 8% the last 10 years.</li>
+          </ol>
+        </div>
       );
     if (checked.has("yield"))
       blocks.push(
