@@ -5915,35 +5915,37 @@ function GuruAllocationView({
               const growImpact = impacts.find(i => i.name === "Grow");
               const investIncrease = growImpact ? growImpact.pickup : 0;
               const isGain = totalPickup >= 0;
-              const gainCol = isGain ? "#34d399" : "#f87171";
               return createPortal(
-                <div className="mx-3 mt-2 mb-3 rounded-lg border border-white/10 bg-white/5 px-3 py-3">
-                  <div className="flex items-center gap-1.5 mb-3">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
-                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-400">Income Impact</p>
+                <div className="mx-3 mt-2 mb-3 rounded-xl overflow-hidden shadow-lg">
+                  {/* Header bar */}
+                  <div className="bg-amber-500 px-3 py-2 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse flex-shrink-0" />
+                    <p className="text-[9px] font-black uppercase tracking-widest text-white">Income Impact</p>
+                    <span className="ml-auto text-[8px] font-semibold text-amber-100/70">live · after-tax</span>
                   </div>
-                  <div className="space-y-2.5">
+                  {/* Body */}
+                  <div className="bg-amber-50 border border-amber-300 border-t-0 rounded-b-xl px-3 py-3 space-y-2.5">
                     <div>
-                      <p className="text-[8px] uppercase tracking-widest text-white/30 font-semibold mb-0.5">After-Tax / Year</p>
-                      <p className="text-lg font-black tabular-nums leading-none" style={{ color: gainCol }}>
+                      <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">After-Tax Income / Year</p>
+                      <p className="text-xl font-black tabular-nums leading-none" style={{ color: isGain ? "#b45309" : "#dc2626" }}>
                         {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
                       </p>
                     </div>
+                    <div className="h-px bg-amber-200" />
                     <div className="flex gap-4">
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-white/30 font-semibold mb-0.5">Income Δ</p>
-                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: gainCol }}>
+                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">Income Δ</p>
+                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: isGain ? "#b45309" : "#dc2626" }}>
                           {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
                         </p>
                       </div>
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-white/30 font-semibold mb-0.5">Invest Incr</p>
-                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: investIncrease >= 0 ? "#34d399" : "#f87171" }}>
+                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">Invest Incr</p>
+                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: investIncrease >= 0 ? "#15803d" : "#dc2626" }}>
                           {investIncrease >= 0 ? "+" : "−"}{fmt(Math.abs(Math.round(investIncrease)))}
                         </p>
                       </div>
                     </div>
-                    <p className="text-[8px] text-white/20 font-medium">Live preview · after-tax</p>
                   </div>
                 </div>,
                 slot

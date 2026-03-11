@@ -12,9 +12,9 @@ export function Layout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
+    <div className="h-screen overflow-hidden bg-background flex flex-col md:flex-row">
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className="w-full md:w-60 bg-[hsl(222,47%,10%)] flex flex-col shadow-2xl z-10 flex-shrink-0">
+      <aside className="w-full md:w-60 bg-[hsl(222,47%,10%)] flex flex-col shadow-2xl z-10 flex-shrink-0 h-full">
         {/* Logo */}
         <div className="px-5 py-5 flex items-center gap-3 border-b border-white/10">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-lg flex-shrink-0">
@@ -51,6 +51,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
         {/* Income Calculator slot — populated via portal from GURU tab */}
         <div id="guru-calc-slot" className="flex-shrink-0" />
+
+        {/* Spacer pushes footer to bottom */}
+        <div className="flex-1" />
 
         {/* Advisor footer */}
         <div className="px-3 pb-4 border-t border-white/8 pt-3 flex-shrink-0">
