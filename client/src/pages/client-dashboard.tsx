@@ -6648,14 +6648,14 @@ function AdvisorBriefView({
               <p className="text-2xl font-black tabular-nums text-emerald-600 leading-none">{fmt(Math.max(0, _abvTotalLiquid - 194196), true)}</p>
               <p className="text-[10px] text-muted-foreground">available to deploy</p>
             </div>
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[9px] font-black text-muted-foreground">Total Cash</span>
-                <span className="text-[10px] font-black tabular-nums text-emerald-700">{fmt(_abvTotalLiquid)}</span>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+                <span className="text-[11px] font-semibold text-foreground">Total Cash</span>
+                <span className="text-[11px] font-black tabular-nums text-emerald-700">{fmt(_abvTotalLiquid)}</span>
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[9px] font-black text-muted-foreground">Cash Needed for 12 Months</span>
-                <span className="text-[10px] font-black tabular-nums text-rose-600">{fmt(194196)}</span>
+              <div className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+                <span className="text-[11px] font-semibold text-foreground">Cash Needed for 12 Months</span>
+                <span className="text-[11px] font-black tabular-nums text-rose-600">{fmt(194196)}</span>
               </div>
             </div>
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
