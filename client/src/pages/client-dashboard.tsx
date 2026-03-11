@@ -7187,22 +7187,22 @@ function AdvisorBriefView({
       </div>
       {/* ── Email Modal ── */}
       <Dialog open={showEmail} onOpenChange={setShowEmail}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <Mail className="w-4 h-4 text-indigo-600" />
               Client Email — Sarah &amp; Michael Kessler
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground border border-border rounded-lg px-4 py-2.5 bg-muted/30">
+          <div className="flex flex-col gap-3 min-h-0 flex-1 overflow-hidden">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground border border-border rounded-lg px-4 py-2.5 bg-muted/30 flex-shrink-0">
               <div><span className="font-semibold">To:</span> Sarah &amp; Michael Kessler &lt;kessler.family@privatebank.com&gt;</div>
               <div className="ml-auto"><span className="font-semibold">Subject:</span> A few things worth discussing — your portfolio update</div>
             </div>
-            <div className="rounded-xl border border-border bg-background px-5 py-4 text-[12px] text-foreground min-h-[280px]">
+            <div className="rounded-xl border border-border bg-background px-5 py-4 text-[12px] text-foreground overflow-y-auto flex-1">
               {buildEmailJSX()}
             </div>
-            <div className="flex items-center gap-3 justify-end">
+            <div className="flex items-center gap-3 justify-end flex-shrink-0 pt-1">
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(buildEmail());
