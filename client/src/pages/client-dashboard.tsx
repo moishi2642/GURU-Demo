@@ -6659,38 +6659,51 @@ function AdvisorBriefView({
                 for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
                 return String(1000 + (h % 9000));
               };
-              const checkingItems = assets
+              type AcctRow = { name: string; bucket: string; value: number };
+              const checkingItems: AcctRow[] = assets
                 .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
-                .map(a => ({ name: (a.description ?? "").split("(")[0].split("—")[0].trim(), bucket: "Operating", color: "#1d4ed8", bg: "bg-blue-50", text: "text-blue-700", value: Number(a.value) }));
-              const savingsItems = reserveItems
+                .map(a => ({ name: (a.description ?? "").split("(")[0].trim(), bucket: "Operating Cash", value: Number(a.value) }));
+              const savingsItems: AcctRow[] = reserveItems
                 .filter(a => !(a.description ?? "").toLowerCase().includes("checking") && !(a.description ?? "").toLowerCase().includes("brokerage"))
-                .map(a => ({ name: (a.description ?? "").split("(")[0].split("—")[0].trim(), bucket: "Reserve", color: "#d97706", bg: "bg-amber-50", text: "text-amber-700", value: Number(a.value) }));
-              const rows = [...checkingItems, ...savingsItems]
-                .sort((a, b) => b.value - a.value)
-                .slice(0, 3);
-              const subtotal = rows.reduce((s, r) => s + r.value, 0);
+                .map(a => ({ name: (a.description ?? "").split("(")[0].trim(), bucket: "Reserve", value: Number(a.value) }));
+              const allRows = [...checkingItems, ...savingsItems].sort((a, b) => b.value - a.value).slice(0, 3);
+              const groups = ["Operating Cash", "Reserve"].map(bucket => ({
+                bucket,
+                rows: allRows.filter(r => r.bucket === bucket),
+              })).filter(g => g.rows.length > 0);
+              const subtotal = allRows.reduce((s, r) => s + r.value, 0);
               return (
-                <div className="rounded-lg border border-border overflow-hidden font-mono">
-                  <div className="grid bg-slate-800 px-3 py-1.5" style={{ gridTemplateColumns: "44px 1fr 72px 80px" }}>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Acct #</span>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Account Name</span>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Bucket</span>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 text-right">Balance</span>
-                  </div>
-                  {rows.map((r, i) => (
-                    <div key={i} className={`grid px-3 py-1.5 border-b border-border/40 items-center ${i % 2 === 0 ? "bg-background" : "bg-muted/20"}`} style={{ gridTemplateColumns: "44px 1fr 72px 80px" }}>
-                      <span className="text-[9px] text-muted-foreground tabular-nums">{acctNum(r.name)}</span>
-                      <span className="text-[10px] text-foreground truncate pr-2">{r.name}</span>
-                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${r.bg} ${r.text}`}>{r.bucket}</span>
-                      <span className="text-[10px] font-black tabular-nums text-right" style={{ color: r.color }}>{fmt(r.value)}</span>
-                    </div>
-                  ))}
-                  <div className="grid px-3 py-1.5 bg-slate-50 border-t-2 border-slate-300 items-center" style={{ gridTemplateColumns: "44px 1fr 72px 80px" }}>
-                    <span />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 col-span-2">Subtotal</span>
-                    <span className="text-[10px] font-black tabular-nums text-right text-slate-700 underline decoration-double">{fmt(subtotal)}</span>
-                  </div>
-                </div>
+                <table className="w-full text-[10px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-foreground/20">
+                      <th className="text-left font-semibold text-muted-foreground py-1 pr-2 w-8">#</th>
+                      <th className="text-left font-semibold text-muted-foreground py-1">Account</th>
+                      <th className="text-right font-semibold text-muted-foreground py-1">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groups.map(g => (
+                      <>
+                        <tr key={g.bucket + "-header"}>
+                          <td colSpan={3} className="pt-2 pb-0.5 text-[9px] font-bold text-foreground uppercase tracking-wider">{g.bucket}</td>
+                        </tr>
+                        {g.rows.map((r, i) => (
+                          <tr key={i}>
+                            <td className="py-0.5 pr-2 text-muted-foreground align-top">{acctNum(r.name)}</td>
+                            <td className="py-0.5 pr-4 text-foreground">{r.name}</td>
+                            <td className="py-0.5 text-right tabular-nums text-foreground">{fmt(r.value)}</td>
+                          </tr>
+                        ))}
+                      </>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-foreground/20">
+                      <td colSpan={2} className="pt-1.5 text-[9px] font-bold text-foreground uppercase tracking-wider pl-0">Total</td>
+                      <td className="pt-1.5 text-right tabular-nums font-black text-foreground underline decoration-double">{fmt(subtotal)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
               );
             })()}
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
