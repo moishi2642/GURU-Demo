@@ -6652,6 +6652,34 @@ function AdvisorBriefView({
                 <span className="text-[11px] font-black tabular-nums text-rose-600">{fmt(194196)}</span>
               </div>
             </div>
+            {/* Where the cash is sitting */}
+            {(() => {
+              const checkingItems = assets
+                .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
+                .map(a => ({ name: (a.description ?? "").split("(")[0].split("—")[0].trim(), bucket: "Operating Cash", color: "#1d4ed8", bg: "bg-blue-50", text: "text-blue-700", value: Number(a.value) }));
+              const savingsItems = reserveItems
+                .filter(a => !(a.description ?? "").toLowerCase().includes("checking") && !(a.description ?? "").toLowerCase().includes("brokerage"))
+                .map(a => ({ name: (a.description ?? "").split("(")[0].split("—")[0].trim(), bucket: "Reserve", color: "#d97706", bg: "bg-amber-50", text: "text-amber-700", value: Number(a.value) }));
+              const rows = [...checkingItems, ...savingsItems]
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 5);
+              return (
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="grid bg-muted/40 border-b border-border px-3 py-1.5" style={{ gridTemplateColumns: "1fr 80px 80px" }}>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Account</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Bucket</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground text-right">Balance</span>
+                  </div>
+                  {rows.map((r, i) => (
+                    <div key={i} className="grid px-3 py-1.5 border-b border-border/50 last:border-0 items-center" style={{ gridTemplateColumns: "1fr 80px 80px" }}>
+                      <span className="text-[10px] text-foreground truncate pr-2">{r.name}</span>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${r.bg} ${r.text} truncate`}>{r.bucket}</span>
+                      <span className="text-[10px] font-black tabular-nums text-right" style={{ color: r.color }}>{fmt(r.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
             <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
               <p className="text-[10px] text-emerald-800 leading-relaxed italic">
                 "Year-end bonus created surplus above the 3-month reserve target — deploying excess into Build and Grow puts it to work."
