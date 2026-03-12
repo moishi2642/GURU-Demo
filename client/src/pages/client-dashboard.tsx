@@ -6654,29 +6654,42 @@ function AdvisorBriefView({
             </div>
             {/* Where the cash is sitting */}
             {(() => {
+              const acctNum = (name: string) => {
+                let h = 0;
+                for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+                return String(1000 + (h % 9000));
+              };
               const checkingItems = assets
                 .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
-                .map(a => ({ name: (a.description ?? "").split("(")[0].split("—")[0].trim(), bucket: "Operating Cash", color: "#1d4ed8", bg: "bg-blue-50", text: "text-blue-700", value: Number(a.value) }));
+                .map(a => ({ name: (a.description ?? "").split("(")[0].split("—")[0].trim(), bucket: "Operating", color: "#1d4ed8", bg: "bg-blue-50", text: "text-blue-700", value: Number(a.value) }));
               const savingsItems = reserveItems
                 .filter(a => !(a.description ?? "").toLowerCase().includes("checking") && !(a.description ?? "").toLowerCase().includes("brokerage"))
                 .map(a => ({ name: (a.description ?? "").split("(")[0].split("—")[0].trim(), bucket: "Reserve", color: "#d97706", bg: "bg-amber-50", text: "text-amber-700", value: Number(a.value) }));
               const rows = [...checkingItems, ...savingsItems]
                 .sort((a, b) => b.value - a.value)
-                .slice(0, 5);
+                .slice(0, 3);
+              const subtotal = rows.reduce((s, r) => s + r.value, 0);
               return (
-                <div className="rounded-lg border border-border overflow-hidden">
-                  <div className="grid bg-muted/40 border-b border-border px-3 py-1.5" style={{ gridTemplateColumns: "1fr 80px 80px" }}>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Account</span>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Bucket</span>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground text-right">Balance</span>
+                <div className="rounded-lg border border-border overflow-hidden font-mono">
+                  <div className="grid bg-slate-800 px-3 py-1.5" style={{ gridTemplateColumns: "44px 1fr 72px 80px" }}>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Acct #</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Account Name</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Bucket</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 text-right">Balance</span>
                   </div>
                   {rows.map((r, i) => (
-                    <div key={i} className="grid px-3 py-1.5 border-b border-border/50 last:border-0 items-center" style={{ gridTemplateColumns: "1fr 80px 80px" }}>
+                    <div key={i} className={`grid px-3 py-1.5 border-b border-border/40 items-center ${i % 2 === 0 ? "bg-background" : "bg-muted/20"}`} style={{ gridTemplateColumns: "44px 1fr 72px 80px" }}>
+                      <span className="text-[9px] text-muted-foreground tabular-nums">{acctNum(r.name)}</span>
                       <span className="text-[10px] text-foreground truncate pr-2">{r.name}</span>
-                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${r.bg} ${r.text} truncate`}>{r.bucket}</span>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${r.bg} ${r.text}`}>{r.bucket}</span>
                       <span className="text-[10px] font-black tabular-nums text-right" style={{ color: r.color }}>{fmt(r.value)}</span>
                     </div>
                   ))}
+                  <div className="grid px-3 py-1.5 bg-slate-50 border-t-2 border-slate-300 items-center" style={{ gridTemplateColumns: "44px 1fr 72px 80px" }}>
+                    <span />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 col-span-2">Subtotal</span>
+                    <span className="text-[10px] font-black tabular-nums text-right text-slate-700 underline decoration-double">{fmt(subtotal)}</span>
+                  </div>
                 </div>
               );
             })()}
