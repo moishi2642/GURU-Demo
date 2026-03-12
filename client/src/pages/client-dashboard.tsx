@@ -132,9 +132,9 @@ function RollingNumber({
       maximumFractionDigits: 0,
     }).format(v);
   return (
-    <span className="font-mono font-bold tracking-tight text-emerald-800 inline-flex items-center">
+    <span className="font-mono font-bold tracking-tight text-foreground inline-flex items-center">
       {formatted}
-      <span className="animate-blink ml-px text-[10px] opacity-25">.</span>
+      <span className="animate-blink ml-px text-[10px] opacity-20">.</span>
     </span>
   );
 }
@@ -335,25 +335,28 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
 // ─── Demo date: simulate "today = March 6, 2026" ──────────────────────────────
 const DEMO_NOW = new Date(2026, 2, 6); // March 6, 2026
 
+// ─── Addepar-style institutional color palette for liquidity buckets ──────────
+// Deep, desaturated — no orange/amber or bright purple. Think Bloomberg terminals.
 const HERO_COLORS: Record<string, { bg: string; accent: string; dot: string }> = {
-  "Operating Cash": { bg: "#1d4ed8", accent: "#93c5fd", dot: "#60a5fa" },
-  Reserve:          { bg: "#d97706", accent: "#fde68a", dot: "#fbbf24" },
-  Build:            { bg: "#16a34a", accent: "#86efac", dot: "#4ade80" },
-  Grow:             { bg: "#5b21b6", accent: "#c084fc", dot: "#c084fc" },
-  "Real Estate":        { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
-  "Alternative Assets": { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
-  "529 Plans":          { bg: "#6b7280", accent: "#d1d5db", dot: "#d1d5db" },
+  "Operating Cash": { bg: "#1a4f9c", accent: "#93bff7", dot: "#5a9cf5" }, // institutional deep blue
+  Reserve:          { bg: "#1a5f52", accent: "#6dd4c2", dot: "#3bbfad" }, // deep teal — replaces amber
+  Build:            { bg: "#1a5c35", accent: "#72c493", dot: "#40a869" }, // deep emerald
+  Grow:             { bg: "#233554", accent: "#7da3c8", dot: "#5585ae" }, // deep slate-navy — replaces purple
+  "Real Estate":        { bg: "#3b4a5e", accent: "#a3b5c8", dot: "#8ea5bb" },
+  "Alternative Assets": { bg: "#3b4a5e", accent: "#a3b5c8", dot: "#8ea5bb" },
+  "529 Plans":          { bg: "#3b4a5e", accent: "#a3b5c8", dot: "#8ea5bb" },
 };
 
 // ─── Book of Business — flag metadata & client data ───────────────────────────
 type FlagKey = "excess_cash" | "cash_deficit" | "product_needed" | "follow_up" | "autobill_approval" | "money_movement";
+// ─── Institutional flag colors — border-only badges, no filled backgrounds ─────
 const FLAG_META: Record<FlagKey, { label: string; short: string; color: string; bg: string; text: string; border: string }> = {
-  excess_cash:       { label: "Excess Cash",      short: "Excess Cash",  color: "#f59e0b", bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-200" },
-  cash_deficit:      { label: "Cash Deficit",      short: "Deficit",      color: "#ef4444", bg: "bg-rose-50",   text: "text-rose-700",   border: "border-rose-200" },
-  product_needed:    { label: "Product Selection", short: "Product",      color: "#3b82f6", bg: "bg-blue-50",   text: "text-blue-700",   border: "border-blue-200" },
-  follow_up:         { label: "Follow Up",         short: "Follow Up",    color: "#8b5cf6", bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
-  autobill_approval: { label: "Autobill Approval", short: "Autobill",     color: "#ec4899", bg: "bg-pink-50",   text: "text-pink-700",   border: "border-pink-200" },
-  money_movement:    { label: "Money Movement",    short: "Movement",     color: "#06b6d4", bg: "bg-cyan-50",   text: "text-cyan-700",   border: "border-cyan-200" },
+  excess_cash:       { label: "Excess Cash",      short: "Excess Cash",  color: "#b45309", bg: "bg-transparent", text: "text-[#92400e]",  border: "border-[#b45309]/40" },
+  cash_deficit:      { label: "Cash Deficit",      short: "Deficit",      color: "#b91c1c", bg: "bg-transparent", text: "text-[#991b1b]",  border: "border-[#b91c1c]/40" },
+  product_needed:    { label: "Product Selection", short: "Product",      color: "#1a4f9c", bg: "bg-transparent", text: "text-[#1a4f9c]",  border: "border-[#1a4f9c]/40" },
+  follow_up:         { label: "Follow Up",         short: "Follow Up",    color: "#1a5c35", bg: "bg-transparent", text: "text-[#1a5c35]",  border: "border-[#1a5c35]/40" },
+  autobill_approval: { label: "Autobill Approval", short: "Autobill",     color: "#1a5f52", bg: "bg-transparent", text: "text-[#1a5f52]",  border: "border-[#1a5f52]/40" },
+  money_movement:    { label: "Money Movement",    short: "Movement",     color: "#233554", bg: "bg-transparent", text: "text-[#233554]",  border: "border-[#233554]/40" },
 };
 interface BobClient { id: number; name: string; initials: string; aum: number; totalAssets: number; liquidCash: number; cashPct: number; flags: FlagKey[]; advisor: string; lastContact: string; }
 const BOB_CLIENTS: BobClient[] = (() => {
@@ -394,44 +397,44 @@ const fmtK = (v: number) => {
 };
 
 const PANEL_CLS =
-  "border border-border/60 shadow-sm bg-card rounded-xl overflow-hidden";
+  "border border-border/60 shadow-sm bg-card rounded overflow-hidden";
 
-// ─── Color constants ───────────────────────────────────────────────────────────
-const GREEN = "hsl(142, 71%, 40%)";
-const RED = "hsl(0, 78%, 55%)";
-const BLUE = "hsl(221, 83%, 53%)";
+// ─── Color constants (updated to institutional palette) ────────────────────────
+const GREEN = "hsl(160, 60%, 38%)";
+const RED   = "hsl(0, 72%, 50%)";
+const BLUE  = "hsl(216, 82%, 43%)";
 
 // ─── GURU Method: 5 Strategic Bucket Definitions ─────────────────────────────
 const GURU_BUCKETS = {
   reserve: {
     label: "Operating Cash",
     short: "Checking — instantly available transaction accounts",
-    color: "#60a5fa",
-    tagCls: "bg-blue-100 text-blue-600",
+    color: "#5a9cf5",
+    tagCls: "bg-transparent border border-[#1a4f9c]/35 text-[#1a4f9c]",
   },
   yield: {
     label: "Reserve",
     short: "Savings & money market — penalty-free, higher-yielding",
-    color: "#fbbf24",
-    tagCls: "bg-amber-100 text-amber-600",
+    color: "#3bbfad",
+    tagCls: "bg-transparent border border-[#1a5f52]/35 text-[#1a5f52]",
   },
   tactical: {
     label: "Build",
     short: "Treasuries & fixed income — 1–3 year horizon",
-    color: "#4ade80",
-    tagCls: "bg-green-100 text-green-600",
+    color: "#40a869",
+    tagCls: "bg-transparent border border-[#1a5c35]/35 text-[#1a5c35]",
   },
   growth: {
     label: "Grow",
     short: "Long-horizon investments — equities, compounding wealth",
-    color: "#c084fc",
-    tagCls: "bg-purple-100 text-purple-600",
+    color: "#5585ae",
+    tagCls: "bg-transparent border border-[#233554]/35 text-[#233554]",
   },
   alternatives: {
     label: "Alternatives",
     short: "Real estate, private equity, RSUs — strategic illiquid assets",
-    color: "#94a3b8",
-    tagCls: "bg-slate-100 text-slate-600",
+    color: "#8ea5bb",
+    tagCls: "bg-transparent border border-slate-400/40 text-slate-600",
   },
 } as const;
 type GuroBucket = keyof typeof GURU_BUCKETS;
