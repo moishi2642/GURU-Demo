@@ -397,7 +397,7 @@ const fmtK = (v: number) => {
 };
 
 const PANEL_CLS =
-  "border border-border/60 shadow-sm bg-card rounded overflow-hidden";
+  "border border-border shadow-sm bg-card rounded-xl overflow-hidden";
 
 // ─── Color constants (updated to institutional palette) ────────────────────────
 const GREEN = "hsl(160, 60%, 38%)";
@@ -709,19 +709,15 @@ function NetWorthPanel({
 
   return (
     <div className={PANEL_CLS}>
-      {/* ── Header ── */}
+      {/* ── Panel header ── */}
+      <div className="panel-hd">
+        <span className="panel-hd-label">Net Worth</span>
+        <span className="panel-hd-value">5yr&nbsp;<span className="text-emerald-600">{fmt(projYear5, true)}</span></span>
+      </div>
+      {/* ── KPI row ── */}
       <div className="px-4 pt-3 pb-2 border-b border-border/60">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Net Worth</p>
-            <p className="text-2xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Total assets minus liabilities · Today</p>
-          </div>
-          <div className="text-right flex-shrink-0 mt-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">5yr Projection</p>
-            <p className="text-base font-extrabold tabular-nums text-emerald-600">{fmt(projYear5)}</p>
-          </div>
-        </div>
+        <p className="serif-hero text-[2rem] font-normal tabular-nums text-foreground leading-tight" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Total assets less liabilities</p>
       </div>
       <div className="h-28 px-1 mt-1">
         <ResponsiveContainer width="100%" height="100%">
@@ -881,20 +877,20 @@ function CashFlowForecastPanel({ cashFlows, onNavigateToCashflow }: { cashFlows:
 
   return (
     <div className={PANEL_CLS}>
-      {/* ── Header ── */}
-      <div className="px-4 pt-3 pb-2 border-b border-border/60">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">12 Month Cumulative Cash Flow Forecast</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              {isPositive ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> : <TrendingDown className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />}
-              <p className={`text-2xl font-extrabold tabular-nums leading-tight ${isPositive ? "text-emerald-600" : "text-rose-600"}`} data-testid="kpi-annual-net">
-                {isPositive ? "+" : ""}{fmt(annualNet, true)}
-              </p>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{isPositive ? "Net surplus over 12 months" : "Net deficit over 12 months"}</p>
-          </div>
-        </div>
+      {/* ── Panel header ── */}
+      <div className="panel-hd">
+        <span className="panel-hd-label">12-Month Cashflow</span>
+        <span className={`flex items-center gap-1 text-[10px] font-semibold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
+          {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          {isPositive ? "Surplus" : "Deficit"}
+        </span>
+      </div>
+      {/* ── KPI row ── */}
+      <div className="px-4 pt-3 pb-1 border-b border-border/60">
+        <p className={`serif-hero text-[2rem] font-normal tabular-nums leading-tight ${isPositive ? "text-emerald-700" : "text-rose-600"}`} data-testid="kpi-annual-net">
+          {isPositive ? "+" : ""}{fmt(annualNet)}
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-1">{isPositive ? "Net surplus · 12-month forecast" : "Net deficit · 12-month forecast"}</p>
       </div>
       {/* ── Chart 2: Cumulative area chart ── */}
       <div className="px-3 pb-2">
@@ -1023,19 +1019,18 @@ function CashManagementPanel({
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
 
-      {/* ── Header ── */}
+      {/* ── Dark chrome header ── */}
+      <div className="panel-hd">
+        <span className="panel-hd-label">Liquidity Position</span>
+        <span className={`flex items-center gap-1 text-[10px] font-semibold ${trendUp ? "text-emerald-600" : "text-rose-600"}`}>
+          {trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          {trendUp ? "Building" : "Depleting"}
+        </span>
+      </div>
+      {/* ── KPI row ── */}
       <div className="px-4 pt-3 pb-2 border-b border-border/60">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Liquidity Position</p>
-            <p className="text-2xl font-extrabold tabular-nums text-foreground leading-tight mt-0.5">{fmt(totalLiquid)}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Total liquid position</p>
-          </div>
-          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold flex-shrink-0 mt-1 ${trendUp ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-600 border border-rose-200"}`}>
-            {trendUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-            {trendUp ? "Building" : "Depleting"}
-          </div>
-        </div>
+        <p className="serif-hero text-[2rem] font-normal tabular-nums text-foreground leading-tight">{fmt(totalLiquid)}</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Total liquid across all accounts</p>
       </div>
 
       {/* ── 3 KPI tiles ── */}
@@ -1210,26 +1205,26 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
 
   return (
     <div className={PANEL_CLS}>
+      {/* ── Panel header ── */}
+      <div className="panel-hd">
+        <span className="panel-hd-label">Investment Portfolio</span>
+        {spyQuote ? (
+          <span className={`flex items-center gap-1 text-[10px] font-semibold ${spyUp ? "text-emerald-600" : "text-rose-600"}`}>
+            {spyUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            S&P {spyUp ? "+" : ""}{spyQuote.changePercent?.toFixed(2)}%
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
+            <ArrowUpRight className="w-3 h-3" />4.32% YTD
+          </span>
+        )}
+      </div>
+      {/* ── KPI row ── */}
       <div className="px-4 pt-3 pb-2 border-b border-border/60">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Investment Portfolio</p>
-            <p className="text-2xl font-bold text-foreground leading-tight mt-0.5" data-testid="kpi-brokerage">{fmt(total)}</p>
-            <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
-              <span>Brokerage <span className="font-semibold text-foreground">{fmt(totalBrok)}</span></span>
-              <span>Retirement <span className="font-semibold text-foreground">{fmt(totalRet)}</span></span>
-            </div>
-          </div>
-          {spyQuote ? (
-            <div className={`flex items-center gap-1 text-xs font-semibold flex-shrink-0 px-2.5 py-1.5 rounded-lg border ${spyUp ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-600 border-rose-200"}`}>
-              {spyUp ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-              S&P {spyUp ? "+" : ""}{spyQuote.changePercent?.toFixed(2)}%
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-xs font-semibold flex-shrink-0 px-2.5 py-1.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200">
-              <ArrowUpRight className="w-3.5 h-3.5" />4.32% YTD
-            </div>
-          )}
+        <p className="serif-hero text-[2rem] font-normal tabular-nums text-foreground leading-tight" data-testid="kpi-brokerage">{fmt(total)}</p>
+        <div className="flex gap-3 text-[10px] text-muted-foreground mt-1">
+          <span>Brokerage&nbsp;<span className="font-semibold text-foreground">{fmt(totalBrok, true)}</span></span>
+          <span>Retirement&nbsp;<span className="font-semibold text-foreground">{fmt(totalRet, true)}</span></span>
         </div>
       </div>
 
@@ -1567,19 +1562,15 @@ function LiabilitiesPanel({ liabilities }: { liabilities: Liability[] }) {
 
   return (
     <div className={PANEL_CLS + " flex flex-col"}>
-      {/* Header */}
+      {/* ── Panel header ── */}
+      <div className="panel-hd">
+        <span className="panel-hd-label">Liabilities</span>
+        <span className="panel-hd-value">Avg Rate&nbsp;<span className="text-foreground font-bold">{wtdRate.toFixed(2)}%</span></span>
+      </div>
+      {/* ── KPI row ── */}
       <div className="px-4 pt-3 pb-3 border-b border-border/60">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Liabilities</p>
-            <p className="text-2xl font-bold text-rose-600 leading-tight mt-0.5">{fmt(totalDebt)}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Total outstanding debt</p>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Wtd. Avg Rate</p>
-            <p className="text-lg font-extrabold tabular-nums text-foreground">{wtdRate.toFixed(2)}%</p>
-          </div>
-        </div>
+        <p className="serif-hero text-[2rem] font-normal tabular-nums text-rose-600 leading-tight">{fmt(totalDebt)}</p>
+        <p className="text-[10px] text-muted-foreground mt-1">Total outstanding debt</p>
       </div>
 
       {/* Column headers */}
