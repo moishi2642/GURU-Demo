@@ -3362,7 +3362,7 @@ function BucketExecutionPanel({
     return isNaN(n) ? raw : Math.round(n).toLocaleString();
   };
 
-  const AMBER = "#d97706";
+  const AMBER = "#9a7b3c";
 
   const SVG_CHEVRON = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")";
 
@@ -3402,15 +3402,15 @@ function BucketExecutionPanel({
 
         {/* ── Transfer Amount ── */}
         {executed ? (
-          <div className="rounded-lg px-3 py-2.5 flex items-start gap-2 bg-emerald-50 border border-emerald-200">
-            <span className="text-base leading-none mt-0.5 text-emerald-600">✓</span>
+          <div className="rounded-lg px-3 py-2.5 flex items-start gap-2" style={{ background: "rgba(46,122,82,0.06)", border: "1px solid rgba(46,122,82,0.25)" }}>
+            <span className="text-base leading-none mt-0.5" style={{ color: "#2e7a52" }}>✓</span>
             <div>
-              <p className="text-[10px] font-black text-emerald-800">Transfer Executed</p>
-              <p className="text-[9px] text-emerald-600 tabular-nums mt-0.5">
+              <p className="text-[10px] font-semibold" style={{ color: "#2e7a52" }}>Transfer Executed</p>
+              <p className="text-[9px] tabular-nums mt-0.5" style={{ color: "#2e7a52" }}>
                 {fmtD(parsedAmt)} moved{" "}
-                <span className="font-semibold text-emerald-700">{fromAccount} → {toAccount}</span>
+                <span className="font-semibold">{fromAccount} → {toAccount}</span>
               </p>
-              <p className="text-[9px] tabular-nums mt-0.5 font-bold" style={{ color: AMBER }}>
+              <p className="text-[9px] tabular-nums mt-0.5 font-semibold" style={{ color: AMBER }}>
                 New balance: {fmtD(needsFunding ? current + parsedAmt : current - parsedAmt)}
               </p>
             </div>
@@ -3423,12 +3423,12 @@ function BucketExecutionPanel({
                 <p className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground mb-1">Current</p>
                 <p className="font-black tabular-nums text-foreground text-[13px]">{fmtD(current)}</p>
               </div>
-              <div className="flex-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+              <div className="flex-1 rounded-lg px-3 py-2.5" style={{ border: "1px solid rgba(154,123,60,0.35)", background: "rgba(154,123,60,0.05)" }}>
                 <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>Target</p>
                 <p className="font-black tabular-nums text-[13px]" style={{ color: AMBER }}>{fmtD(effTarget)}</p>
               </div>
             </div>
-            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5">
+            <div className="rounded-lg px-3 py-2.5" style={{ border: "1px solid rgba(154,123,60,0.35)", background: "rgba(154,123,60,0.05)" }}>
               <p className="text-[8px] uppercase tracking-widest font-bold mb-1" style={{ color: AMBER }}>
                 Transfer Amount
               </p>
@@ -3642,7 +3642,7 @@ function BucketProductPanel({
                   </div>
                   <div className="flex-1 min-w-0">
                     {highestYieldIdx === i && (
-                      <span className="inline-block text-[7px] font-black px-1.5 py-px rounded bg-emerald-100 text-emerald-700 border border-emerald-200 leading-none mb-1">
+                      <span className="inline-block text-[7px] font-semibold px-1.5 py-px rounded leading-none mb-1" style={{ background: "rgba(46,122,82,0.1)", color: "#2e7a52", border: "1px solid rgba(46,122,82,0.25)" }}>
                         ▲ Highest Yield
                       </span>
                     )}
@@ -3697,11 +3697,11 @@ function BucketProductPanel({
       </div>
       <div className="px-3 pb-4 space-y-2">
         {hasPendingTransfer && !staged && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 flex items-start gap-2">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="rounded-lg px-3 py-2 flex items-start gap-2" style={{ border: "1px solid rgba(154,123,60,0.35)", background: "rgba(154,123,60,0.06)" }}>
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "#9a7b3c" }} />
             <div>
-              <p className="text-[10px] font-black uppercase tracking-wide text-amber-700">Action Required</p>
-              <p className="text-[9px] text-amber-600 mt-0.5">Select a product below for the incoming transfer before confirming.</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: "#9a7b3c" }}>Action Required</p>
+              <p className="text-[9px] mt-0.5" style={{ color: "rgba(154,123,60,0.8)" }}>Select a product for the incoming transfer before confirming.</p>
             </div>
           </div>
         )}
@@ -3709,7 +3709,7 @@ function BucketProductPanel({
           onClick={() => setStaged(true)}
           disabled={selected.size === 0 || (multiSelect && !pctValid)}
           className="w-full py-2 rounded-lg text-xs font-black uppercase tracking-widest text-white transition-opacity disabled:opacity-30"
-          style={{ background: hasPendingTransfer && !staged ? "#d97706" : bgColor }}
+          style={{ background: hasPendingTransfer && !staged ? "#9a7b3c" : bgColor }}
         >
           {staged
             ? `✓ Product Change Saved`
@@ -3726,10 +3726,10 @@ function BucketProductPanel({
 const MM_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const MM_BUCKETS = [
-  { key: "op",   label: "Operating Cash", color: "#1a3a8a", accent: "#93c5fd", tag: "Checking + Savings" },
-  { key: "res",  label: "Reserve",        color: "#7c5200", accent: "#fcd34d", tag: "JPMorgan 100% Treasury MMF" },
-  { key: "bld",  label: "Build",          color: "#14532d", accent: "#4ade80", tag: "1yr Treasuries + 2028 Munis" },
-  { key: "grw",  label: "Grow",           color: "#3b0764", accent: "#c084fc", tag: "Growth Equity ETFs" },
+  { key: "op",   label: "Operating Cash", color: "#2e5c8a", accent: "#a8c4e0", tag: "Checking + Savings" },
+  { key: "res",  label: "Reserve",        color: "#8a6e2e", accent: "#d4b87a", tag: "JPMorgan 100% Treasury MMF" },
+  { key: "bld",  label: "Build",          color: "#2e7a52", accent: "#7ac4a0", tag: "1yr Treasuries + 2028 Munis" },
+  { key: "grw",  label: "Grow",           color: "#2e4e7a", accent: "#8aace0", tag: "Growth Equity ETFs" },
 ];
 
 // Starting balances (Jan start)
@@ -5221,6 +5221,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
 
 function GuruAllocationView({
   assets,
+  liabilities,
   cashFlows,
   opsCashMonths,
   setOpsCashMonths,
@@ -5230,6 +5231,7 @@ function GuruAllocationView({
   setBucketProductSelections,
 }: {
   assets: Asset[];
+  liabilities: Liability[];
   cashFlows: CashFlow[];
   opsCashMonths: number;
   setOpsCashMonths: (n: number) => void;
@@ -5239,9 +5241,9 @@ function GuruAllocationView({
   setBucketProductSelections: React.Dispatch<React.SetStateAction<Record<string, Array<{ product: BucketProduct; alloc: number }>>>>;
 }) {
 
-  const [dragItem, setDragItem] = useState<string | null>(null);
   const [activeGuruTab, setActiveGuruTab] = useState<"overview" | "tool">("overview");
   const [expandedBucket, setExpandedBucket] = useState<string | null>(null);
+  const [activeToolStep, setActiveToolStep] = useState<string | null>(null);
 
   function handleExecute(from: string, to: string, amount: number) {
     setPendingTransfers((prev) => {
@@ -5615,29 +5617,58 @@ function GuruAllocationView({
             {(() => {
               const heroCardTotal = assets.reduce((s, a) => s + Number(a.value), 0);
               return (
-                <div className="rounded-xl border border-border bg-card px-4 py-3 mb-2 shadow-sm">
-                  <div className="flex flex-row gap-6 items-center">
-                    {/* Total Assets headline */}
-                    <div className="flex-shrink-0">
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground mb-1">Total Assets</p>
-                      <p className="serif-hero text-[1.9rem] font-normal leading-tight tabular-nums text-foreground">
-                        {fmt(heroCardTotal)}
+                <div className="rounded-xl border border-border bg-card shadow-sm mb-2 overflow-hidden flex">
+                  {/* Section 1 — Total Assets */}
+                  <div className="flex-1 px-5 py-4">
+                    <p className="stat-label mb-1.5">Total Assets</p>
+                    <p className="serif-hero text-[2rem] font-normal leading-none tabular-nums text-foreground">
+                      {fmt(heroCardTotal)}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground mt-1.5 tabular-nums">
+                      AUM · updated today
+                    </p>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="w-px bg-border/60 my-3" />
+
+                  {/* Section 2 — Capital Available to Deploy (alive) */}
+                  <div
+                    className="flex-1 px-5 py-4 relative"
+                    style={{ background: "linear-gradient(135deg, rgba(154,123,60,0.06) 0%, rgba(154,123,60,0.02) 100%)" }}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="signal-dot" />
+                      <p className="text-[9px] font-bold uppercase tracking-[0.13em]" style={{ color: "#9a7b3c" }}>
+                        Capital Available to Deploy
                       </p>
                     </div>
+                    <p className="serif-hero text-[2rem] font-normal leading-none tabular-nums" style={{ color: "#7a6030" }}>
+                      {fmt(excessCash)}
+                    </p>
+                    <p className="text-[9px] mt-1.5" style={{ color: "rgba(154,123,60,0.65)" }}>
+                      Excess cash · 12-mo forecast
+                    </p>
+                  </div>
 
-                    {/* DIVIDER */}
-                    <div className="w-px self-stretch bg-border mx-1" />
+                  {/* Divider */}
+                  <div className="w-px bg-border/60 my-3" />
 
-                    {/* Potential Excess Cash */}
-                    <div className="flex-shrink-0">
-                      <p className="text-[9px] uppercase tracking-[0.13em] text-muted-foreground font-semibold mb-1">Available to Redeploy</p>
-                      <p className="serif-hero text-2xl font-normal tabular-nums text-foreground">{fmt(excessCash)}</p>
-                      <p className="text-[9px] text-muted-foreground mt-0.5">Excess cash · 12-month forecast</p>
+                  {/* Section 3 — Net Worth */}
+                  <div className="flex-1 px-5 py-4">
+                    <p className="stat-label mb-1.5">Net Worth</p>
+                    <p className="serif-hero text-[2rem] font-normal leading-none tabular-nums text-foreground">
+                      {fmt(heroCardTotal - liabilities.reduce((s, l) => s + Number(l.value), 0))}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground mt-1.5">Assets minus liabilities</p>
+                  </div>
+
+                  {/* Live badge */}
+                  <div className="flex items-start justify-end px-4 py-3 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-2.5 py-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-live-dot" />
+                      <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Live</span>
                     </div>
-
-                    {/* Spacer */}
-                    <div className="flex-1" />
-
                   </div>
                 </div>
               );
@@ -5753,32 +5784,32 @@ function GuruAllocationView({
               const investIncrease = pendingTransfers.filter(t => t.to === "Grow").reduce((s, t) => s + t.amount, 0);
               const isGain = totalPickup >= 0;
               return createPortal(
-                <div className="mx-3 mt-2 mb-3 rounded-xl overflow-hidden shadow-lg">
-                  {/* Header bar */}
-                  <div className="bg-amber-500 px-3 py-2 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse flex-shrink-0" />
-                    <p className="text-[9px] font-black uppercase tracking-widest text-white">Income Impact</p>
-                    <span className="ml-auto text-[8px] font-semibold text-amber-100/70">live · after-tax</span>
+                <div className="mx-3 mt-2 mb-3 rounded-lg overflow-hidden" style={{ boxShadow: "0 2px 10px rgba(10,20,60,0.15)" }}>
+                  {/* Header bar — institutional navy */}
+                  <div className="px-3 py-2 flex items-center gap-1.5" style={{ background: "hsl(222,45%,12%)" }}>
+                    <span className="signal-dot flex-shrink-0" />
+                    <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/90">Income Impact</p>
+                    <span className="ml-auto text-[8px] font-medium" style={{ color: "rgba(154,123,60,0.8)" }}>live · after-tax</span>
                   </div>
                   {/* Body */}
-                  <div className="bg-amber-50 border border-amber-300 border-t-0 rounded-b-xl px-3 py-3 space-y-2.5">
+                  <div className="px-3 py-3 space-y-2" style={{ background: "hsl(222,45%,8%)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                     <div>
-                      <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">After-Tax Income / Year</p>
-                      <p className="text-xl font-black tabular-nums leading-none" style={{ color: isGain ? "#b45309" : "#dc2626" }}>
+                      <p className="text-[8px] uppercase tracking-[0.12em] text-white/35 font-semibold mb-0.5">After-Tax Income / Year</p>
+                      <p className="serif-hero text-[1.4rem] font-normal tabular-nums leading-none" style={{ color: isGain ? "#9a7b3c" : "#dc2626" }}>
                         {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
                       </p>
                     </div>
-                    <div className="h-px bg-amber-200" />
+                    <div className="h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
                     <div className="flex gap-4">
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">A-T Income Δ</p>
-                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: isGain ? "#b45309" : "#dc2626" }}>
+                        <p className="text-[8px] uppercase tracking-[0.12em] text-white/35 font-semibold mb-0.5">A-T Income Δ</p>
+                        <p className="text-[13px] font-bold tabular-nums leading-none" style={{ color: isGain ? "#9a7b3c" : "#dc2626" }}>
                           {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
                         </p>
                       </div>
                       <div>
-                        <p className="text-[8px] uppercase tracking-widest text-amber-700/60 font-bold mb-0.5">AUM Increase</p>
-                        <p className="text-sm font-black tabular-nums leading-none" style={{ color: "#15803d" }}>
+                        <p className="text-[8px] uppercase tracking-[0.12em] text-white/35 font-semibold mb-0.5">AUM Increase</p>
+                        <p className="text-[13px] font-bold tabular-nums leading-none" style={{ color: "#4ade80" }}>
                           {investIncrease > 0 ? "+" : ""}{fmt(Math.round(investIncrease))}
                         </p>
                       </div>
@@ -5788,16 +5819,127 @@ function GuruAllocationView({
                 slot
               );
             })()}
-            {/* 4 bucket cards — 2×2 grid */}
-            <div className="space-y-3">
-              {rows.map((r) => {
-                const prods = BUCKET_PRODUCTS[r.def.name] ?? [];
+            {/* ── Workflow step list ── */}
+            <div className="space-y-2 pt-2">
+              {/* Progress summary bar */}
+              {(() => {
+                const needsAction = rows.filter(r => Math.abs(r.target - r.current) > 1000).length;
+                const hasPending = pendingTransfers.length > 0;
                 return (
-                  <div
-                    key={r.def.name}
-                    id={`guru-bucket-${r.def.name.toLowerCase().replace(/\s+/g, '-')}`}
-                    className="rounded-xl overflow-hidden flex shadow-sm border border-border"
-                  >
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-2.5 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {needsAction > 0
+                          ? <span className="signal-dot" />
+                          : <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                        }
+                        <span className="text-[11px] font-semibold text-foreground">
+                          {needsAction > 0 ? `${needsAction} step${needsAction !== 1 ? "s" : ""} need action` : "All buckets on track"}
+                        </span>
+                      </div>
+                      {hasPending && (
+                        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] px-2 py-0.5 rounded-full border" style={{ color: "#9a7b3c", borderColor: "rgba(154,123,60,0.3)", background: "rgba(154,123,60,0.06)" }}>
+                          {pendingTransfers.length} pending
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">Click a step to review and execute</p>
+                  </div>
+                );
+              })()}
+
+              {rows.map((r, idx) => {
+                const prods = BUCKET_PRODUCTS[r.def.name] ?? [];
+                const bucketDelta = r.target - r.current;
+                const isOverfunded = bucketDelta < -1000;
+                const isNeedsAction = bucketDelta > 1000;
+                const hasPendingForBucket = pendingTransfers.some(t => t.from === r.def.name || t.to === r.def.name);
+                const isStepOpen = activeToolStep === r.def.name;
+                const OBstep: Record<string, { accent: string }> = {
+                  "Operating Cash": { accent: "#2e5c8a" },
+                  "Reserve":        { accent: "#8a6e2e" },
+                  "Build":          { accent: "#2e7a52" },
+                  "Grow":           { accent: "#2e4e7a" },
+                };
+                const stepAccent = OBstep[r.def.name]?.accent ?? "#4a5568";
+
+                return (
+                  <div key={r.def.name} id={`guru-bucket-${r.def.name.toLowerCase().replace(/\s+/g, '-')}`} className="rounded-xl overflow-hidden border border-border bg-card shadow-sm">
+                    {/* ── Step header (always visible) ── */}
+                    <div
+                      className="flex items-center gap-4 px-4 py-3.5 cursor-pointer hover:bg-secondary/30 transition-colors select-none"
+                      style={isStepOpen ? { borderBottom: "1px solid hsl(220,16%,88%)" } : undefined}
+                      onClick={() => setActiveToolStep(isStepOpen ? null : r.def.name)}
+                    >
+                      {/* Step number */}
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white"
+                        style={{ background: isStepOpen ? stepAccent : "hsl(220,14%,70%)" }}
+                      >
+                        {idx + 1}
+                      </div>
+
+                      {/* Bucket name + tagline */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[12px] font-semibold text-foreground">{r.def.name}</p>
+                          {hasPendingForBucket && (
+                            <span className="text-[8px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded" style={{ background: "rgba(154,123,60,0.1)", color: "#9a7b3c" }}>
+                              Pending
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 italic truncate">{r.def.tagline}</p>
+                      </div>
+
+                      {/* Current balance */}
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em] font-semibold">Current</p>
+                        <p className="serif-hero text-[15px] font-normal tabular-nums text-foreground mt-0.5">{fmt(r.current)}</p>
+                      </div>
+
+                      {/* Target + delta */}
+                      <div className="text-right flex-shrink-0 w-28">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em] font-semibold">Target</p>
+                        <p className="serif-hero text-[15px] font-normal tabular-nums text-foreground mt-0.5">{fmt(r.target)}</p>
+                      </div>
+
+                      {/* Status badge */}
+                      <div className="flex-shrink-0 w-32 flex justify-end">
+                        {isNeedsAction ? (
+                          <div className={`step-needs-action flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded`}>
+                            <span className="signal-dot" />
+                            <div>
+                              <p className="text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: "#9a7b3c" }}>Needs Action</p>
+                              <p className="text-[10px] font-semibold tabular-nums" style={{ color: "#7a6030" }}>+{fmt(bucketDelta)}</p>
+                            </div>
+                          </div>
+                        ) : isOverfunded ? (
+                          <div className={`step-overfunded flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded`}>
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-rose-500" />
+                            <div>
+                              <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-rose-700">Overfunded</p>
+                              <p className="text-[10px] font-semibold tabular-nums text-rose-600">{fmt(bucketDelta)}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={`step-on-track flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded`}>
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-emerald-500" />
+                            <div>
+                              <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-700">On Track</p>
+                              <p className="text-[10px] font-semibold tabular-nums text-emerald-600">±{fmt(Math.abs(bucketDelta))}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Chevron */}
+                      <div className="text-muted-foreground flex-shrink-0 text-[11px] w-4 text-center">{isStepOpen ? "▲" : "▼"}</div>
+                    </div>
+
+                    {/* ── Step detail (expanded) ── */}
+                    {isStepOpen && (
+                    <div className="overflow-hidden flex border-t border-border">
                     {/* ── LEFT: Header + Accounts ── */}
                     <div className="w-[540px] flex-shrink-0 flex flex-col border-r border-border">
                       <div
@@ -5916,15 +6058,15 @@ function GuruAllocationView({
                             const _outAmt = pendingTransfers.filter((t) => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
                             const allocBal = (r.current + _inAmt - _outAmt) * (sel.alloc / 100);
                             return (
-                              <div key={sel.product.name} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50 flex items-center justify-between gap-2">
+                              <div key={sel.product.name} className="rounded-md px-2 py-1.5 flex items-center justify-between gap-2" style={{ border: "1px solid rgba(154,123,60,0.3)", background: "rgba(154,123,60,0.05)" }}>
                                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500" />
-                                  <span className="text-[11px] font-semibold text-amber-800 leading-tight truncate">{sel.product.name}</span>
+                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#9a7b3c" }} />
+                                  <span className="text-[11px] font-semibold leading-tight truncate" style={{ color: "#7a6030" }}>{sel.product.name}</span>
                                 </div>
                                 <div className="flex items-center gap-4 flex-shrink-0">
-                                  <span className="text-[10px] font-bold text-amber-700 tabular-nums w-20 text-right">{fmt(allocBal)}</span>
-                                  {!isGrow && <span className="text-[10px] font-semibold text-amber-600 tabular-nums w-10 text-right">{sel.product.grossYield}</span>}
-                                  <span className="text-[10px] text-amber-600 tabular-nums w-24 text-right">{sel.product.atYield}</span>
+                                  <span className="text-[10px] font-bold tabular-nums w-20 text-right" style={{ color: "#9a7b3c" }}>{fmt(allocBal)}</span>
+                                  {!isGrow && <span className="text-[10px] font-semibold tabular-nums w-10 text-right" style={{ color: "#9a7b3c" }}>{sel.product.grossYield}</span>}
+                                  <span className="text-[10px] tabular-nums w-24 text-right" style={{ color: "#9a7b3c" }}>{sel.product.atYield}</span>
                                 </div>
                               </div>
                             );
@@ -5934,26 +6076,26 @@ function GuruAllocationView({
                           )}
                           {/* Pending outbound transfers */}
                           {pendingTransfers.filter((t) => t.from === r.def.name).map((pt) => (
-                            <div key={`outbound-${pt.to}`} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50 flex items-center justify-between gap-2">
+                            <div key={`outbound-${pt.to}`} className="rounded-md px-2 py-1.5 flex items-center justify-between gap-2" style={{ border: "1px solid rgba(154,123,60,0.3)", background: "rgba(154,123,60,0.05)" }}>
                               <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
-                                <span className="text-[11px] font-semibold text-amber-800 leading-tight">Transfer out → {pt.to}</span>
+                                <span className="signal-dot flex-shrink-0" />
+                                <span className="text-[11px] font-semibold leading-tight" style={{ color: "#7a6030" }}>Transfer out → {pt.to}</span>
                               </div>
-                              <span className="text-[10px] font-bold text-red-600 tabular-nums flex-shrink-0">−{fmt(pt.amount)}</span>
+                              <span className="text-[10px] font-bold tabular-nums flex-shrink-0 text-destructive">−{fmt(pt.amount)}</span>
                             </div>
                           ))}
                           {/* Pending inbound transfers */}
                           {pendingTransfers.filter((t) => t.to === r.def.name).map((pt) => (
-                            <div key={`inbound-${pt.from}`} className="rounded-md px-2 py-1.5 border border-amber-300 bg-amber-50 flex items-center justify-between gap-2">
+                            <div key={`inbound-${pt.from}`} className="rounded-md px-2 py-1.5 flex items-center justify-between gap-2" style={{ border: "1px solid rgba(154,123,60,0.3)", background: "rgba(154,123,60,0.05)" }}>
                               <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-amber-500 animate-pulse" />
-                                <span className="text-[11px] font-semibold text-amber-800 leading-tight">Transfer from {pt.from}</span>
+                                <span className="signal-dot flex-shrink-0" />
+                                <span className="text-[11px] font-semibold leading-tight" style={{ color: "#7a6030" }}>Transfer from {pt.from}</span>
                               </div>
-                              <span className="text-[10px] font-bold text-amber-700 tabular-nums flex-shrink-0">+{fmt(pt.amount)}</span>
+                              <span className="text-[10px] font-bold tabular-nums flex-shrink-0" style={{ color: "#9a7b3c" }}>+{fmt(pt.amount)}</span>
                             </div>
                           ))}
                           {pendingTransfers.filter((t) => t.to === r.def.name).length > 0 && (
-                            <div className="flex items-center gap-1 mt-1 text-[9px] font-black uppercase tracking-wider text-amber-600">
+                            <div className="flex items-center gap-1 mt-1 text-[9px] font-semibold uppercase tracking-[0.1em]" style={{ color: "#9a7b3c" }}>
                               <AlertCircle className="w-3 h-3 flex-shrink-0" />
                               Select a product for incoming funds →
                             </div>
@@ -6036,6 +6178,8 @@ function GuruAllocationView({
                         setBucketProductSelections(prev => ({ ...prev, [r.def.name]: sels }))
                       }
                     />
+                  </div>
+                    )}
                   </div>
                 );
               })}
@@ -7115,7 +7259,7 @@ function AdvisorBriefView({
               </button>
               <button
                 onClick={() => setShowEmail(false)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded text-white text-[11px] font-semibold transition-colors" style={{ background: "hsl(222,45%,14%)" }}
               >
                 <Check className="w-3.5 h-3.5" />
                 Done
@@ -7156,11 +7300,11 @@ export function BookOfBusinessView() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground leading-none">Book of Business</h2>
-          <p className="text-[11px] text-muted-foreground mt-1">{BOB_CLIENTS.length} accounts · {fmt(totalAUM, true)} total AUM · <span className="text-rose-600 font-semibold">{needsActionCount} need action</span> · <span className="text-emerald-600 font-semibold">{healthyCount} healthy</span></p>
+          <p className="text-[11px] text-muted-foreground mt-1">{BOB_CLIENTS.length} accounts · {fmt(totalAUM, true)} total AUM · <span className="font-semibold" style={{ color: "#b04040" }}>{needsActionCount} need action</span> · <span className="font-semibold" style={{ color: "#2e7a52" }}>{healthyCount} healthy</span></p>
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold rounded-lg bg-cyan-600 text-white hover:bg-cyan-500 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded border transition-colors" style={{ background: "hsl(222,45%,12%)", color: "rgba(255,255,255,0.85)", borderColor: "rgba(255,255,255,0.08)" }}
             data-testid="button-send-all-emails"
           >
             <Mail className="w-3 h-3" /> Send Bulk Emails
@@ -7172,10 +7316,11 @@ export function BookOfBusinessView() {
       <div className="grid grid-cols-7 gap-2.5">
         <button
           onClick={() => setActiveFlag("all")}
-          className={`rounded-xl border p-3 text-center transition-all hover:shadow-sm ${activeFlag === "all" ? "bg-slate-800 border-slate-700" : "bg-card border-border"}`}
+          className={`rounded-xl border p-3 text-center transition-all hover:shadow-sm ${activeFlag === "all" ? "border-border" : "bg-card border-border"}`}
+          style={activeFlag === "all" ? { background: "hsl(222,45%,12%)" } : undefined}
         >
-          <p className={`text-xl font-black ${activeFlag === "all" ? "text-white" : "text-foreground"}`}>{BOB_CLIENTS.length}</p>
-          <p className={`text-[9px] uppercase tracking-widest mt-0.5 ${activeFlag === "all" ? "text-white/70" : "text-muted-foreground"}`}>All</p>
+          <p className={`text-xl font-semibold tabular-nums ${activeFlag === "all" ? "text-white" : "text-foreground"}`}>{BOB_CLIENTS.length}</p>
+          <p className={`text-[9px] uppercase tracking-[0.1em] mt-0.5 ${activeFlag === "all" ? "text-white/50" : "text-muted-foreground"}`}>All</p>
         </button>
         {(Object.entries(FLAG_META) as [FlagKey, typeof FLAG_META[FlagKey]][]).map(([key, meta]) => (
           <button
@@ -7274,29 +7419,29 @@ export function BookOfBusinessView() {
                 <div className="flex items-center gap-1 flex-wrap">
                   {client.flags.includes("excess_cash") && (
                     isDone(client.id, "review")
-                      ? <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />Reviewed</span>
-                      : <button onClick={() => markDone(client.id, "review")} className="flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 whitespace-nowrap transition-colors" data-testid={`action-review-${client.id}`}>
+                      ? <span className="text-[8px] font-semibold flex items-center gap-0.5" style={{ color: "#2e7a52" }}><Check className="w-2.5 h-2.5" />Reviewed</span>
+                      : <button onClick={() => markDone(client.id, "review")} className="flex items-center gap-1 text-[9px] font-semibold px-2 py-1 rounded border whitespace-nowrap transition-colors hover:brightness-95" style={{ background: "rgba(154,123,60,0.07)", color: "#7a6030", borderColor: "rgba(154,123,60,0.25)" }} data-testid={`action-review-${client.id}`}>
                           <Lightbulb className="w-2.5 h-2.5" /> Review
                         </button>
                   )}
                   {client.flags.includes("product_needed") && (
                     isDone(client.id, "product")
-                      ? <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />Assigned</span>
-                      : <button onClick={() => markDone(client.id, "product")} className="flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 whitespace-nowrap transition-colors" data-testid={`action-product-${client.id}`}>
+                      ? <span className="text-[8px] font-semibold flex items-center gap-0.5" style={{ color: "#2e7a52" }}><Check className="w-2.5 h-2.5" />Assigned</span>
+                      : <button onClick={() => markDone(client.id, "product")} className="flex items-center gap-1 text-[9px] font-semibold px-2 py-1 rounded border whitespace-nowrap transition-colors hover:brightness-95" style={{ background: "rgba(46,92,138,0.07)", color: "#2e5c8a", borderColor: "rgba(46,92,138,0.25)" }} data-testid={`action-product-${client.id}`}>
                           <Target className="w-2.5 h-2.5" /> Assign
                         </button>
                   )}
                   {client.flags.includes("autobill_approval") && (
                     isDone(client.id, "autobill")
-                      ? <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />Approved</span>
-                      : <button onClick={() => markDone(client.id, "autobill")} className="flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 whitespace-nowrap transition-colors" data-testid={`action-autobill-${client.id}`}>
+                      ? <span className="text-[8px] font-semibold flex items-center gap-0.5" style={{ color: "#2e7a52" }}><Check className="w-2.5 h-2.5" />Approved</span>
+                      : <button onClick={() => markDone(client.id, "autobill")} className="flex items-center gap-1 text-[9px] font-semibold px-2 py-1 rounded border whitespace-nowrap transition-colors hover:brightness-95" style={{ background: "rgba(110,78,122,0.07)", color: "#6e4e7a", borderColor: "rgba(110,78,122,0.25)" }} data-testid={`action-autobill-${client.id}`}>
                           <CheckSquare className="w-2.5 h-2.5" /> Approve
                         </button>
                   )}
                   {(client.flags.includes("money_movement") || client.flags.includes("cash_deficit") || client.flags.includes("follow_up")) && (
                     isDone(client.id, "email")
-                      ? <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5"><Check className="w-2.5 h-2.5" />Sent</span>
-                      : <button onClick={() => markDone(client.id, "email")} className="flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100 whitespace-nowrap transition-colors" data-testid={`action-email-${client.id}`}>
+                      ? <span className="text-[8px] font-semibold flex items-center gap-0.5" style={{ color: "#2e7a52" }}><Check className="w-2.5 h-2.5" />Sent</span>
+                      : <button onClick={() => markDone(client.id, "email")} className="flex items-center gap-1 text-[9px] font-semibold px-2 py-1 rounded border whitespace-nowrap transition-colors hover:brightness-95" style={{ background: "rgba(46,122,82,0.07)", color: "#2e7a52", borderColor: "rgba(46,122,82,0.25)" }} data-testid={`action-email-${client.id}`}>
                           <Mail className="w-2.5 h-2.5" /> Email
                         </button>
                   )}
@@ -7450,9 +7595,9 @@ export default function ClientDashboard() {
   const _warrenPayment   = _findPayment(["nyc property", "tribeca", "property tax"]);
 
   const riskColor: Record<string, string> = {
-    conservative: "bg-blue-100 text-blue-700",
-    moderate: "bg-amber-100 text-amber-700",
-    aggressive: "bg-rose-100 text-rose-700",
+    conservative: "bg-secondary text-secondary-foreground",
+    moderate: "bg-secondary text-secondary-foreground",
+    aggressive: "bg-secondary text-secondary-foreground",
   };
 
   const navActive = (key: ActiveView, subTab?: "balancesheet" | "cashflow") => {
@@ -7462,7 +7607,7 @@ export default function ClientDashboard() {
 
   const navItemStyle = (active: boolean) =>
     active
-      ? { background: "rgba(255,255,255,0.09)", boxShadow: "inset 2px 0 0 hsl(216,82%,55%)" }
+      ? { background: "rgba(255,255,255,0.07)", boxShadow: "inset 2px 0 0 rgba(154,123,60,0.7)" }
       : undefined;
 
   const navItemCls = (active: boolean) =>
@@ -7501,7 +7646,7 @@ export default function ClientDashboard() {
       >
         <LayoutDashboard
           className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("dashboard") ? "hsl(216,82%,65%)" : undefined }}
+          style={{ color: navActive("dashboard") ? "#9a7b3c" : undefined }}
         />
         Dashboard
       </div>
@@ -7514,7 +7659,7 @@ export default function ClientDashboard() {
       >
         <PieChartIcon
           className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("guru") ? "hsl(216,82%,65%)" : undefined }}
+          style={{ color: navActive("guru") ? "#9a7b3c" : undefined }}
         />
         GURU Allocation
       </div>
@@ -7527,7 +7672,7 @@ export default function ClientDashboard() {
       >
         <ClipboardList
           className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("advisorbrief") ? "hsl(216,82%,65%)" : undefined }}
+          style={{ color: navActive("advisorbrief") ? "#9a7b3c" : undefined }}
         />
         Advisor Brief
       </div>
@@ -7542,7 +7687,7 @@ export default function ClientDashboard() {
       >
         <FileText
           className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("financials", "balancesheet") ? "hsl(216,82%,65%)" : undefined }}
+          style={{ color: navActive("financials", "balancesheet") ? "#9a7b3c" : undefined }}
         />
         Net Worth
       </div>
@@ -7555,7 +7700,7 @@ export default function ClientDashboard() {
       >
         <ArrowLeftRight
           className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("financials", "cashflow") ? "hsl(216,82%,65%)" : undefined }}
+          style={{ color: navActive("financials", "cashflow") ? "#9a7b3c" : undefined }}
         />
         Cash Flow
       </div>
@@ -7568,7 +7713,7 @@ export default function ClientDashboard() {
       >
         <ArrowLeftRight
           className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("moneymovement") ? "hsl(216,82%,65%)" : undefined }}
+          style={{ color: navActive("moneymovement") ? "#9a7b3c" : undefined }}
         />
         Money Movement
       </div>
@@ -7616,31 +7761,31 @@ export default function ClientDashboard() {
             data-testid="advisor-brief-strip"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                <ClipboardList className="w-4 h-4 text-slate-600" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "hsl(222,45%,12%)" }}>
+                <ClipboardList className="w-4 h-4" style={{ color: "#9a7b3c" }} />
               </div>
               <div>
-                <p className="text-sm font-black text-foreground leading-none">Advisor Brief</p>
+                <p className="text-[13px] font-semibold text-foreground leading-none tracking-tight">Advisor Brief</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">4 priorities prepared for today's meeting</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
               {[
-                { label: "Liquidity", color: "#10b981", sub: fmt(totalToInvestTop, true) },
-                { label: "Investments", color: "#3b82f6", sub: "Rebalance" },
-                { label: "Yield", color: "#d97706", sub: `+${Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps` },
-                { label: "Planning", color: "#f43f5e", sub: "6-mo view" },
+                { label: "Liquidity", color: "#2e7a52", sub: fmt(totalToInvestTop, true) },
+                { label: "Investments", color: "#2e5c8a", sub: "Rebalance" },
+                { label: "Yield", color: "#9a7b3c", sub: `+${Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps` },
+                { label: "Planning", color: "#6e4e7a", sub: "6-mo view" },
               ].map((p) => (
                 <div key={p.label} className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: p.color }} />
                   <div>
-                    <p className="text-[10px] font-bold text-foreground leading-none">{p.label}</p>
+                    <p className="text-[10px] font-semibold text-foreground leading-none">{p.label}</p>
                     <p className="text-[9px] text-muted-foreground leading-none mt-0.5">{p.sub}</p>
                   </div>
                 </div>
               ))}
-              <span className="text-[10px] font-bold text-primary flex items-center gap-0.5 ml-2">
-                View Brief <ArrowUpRight className="w-3 h-3" />
+              <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-0.5 ml-1 hover:text-foreground transition-colors">
+                View <ArrowUpRight className="w-3 h-3" />
               </span>
             </div>
           </div>
@@ -7701,6 +7846,7 @@ export default function ClientDashboard() {
         <div className="space-y-4">
           <GuruAllocationView
           assets={assets}
+          liabilities={liabilities}
           cashFlows={cashFlows}
           opsCashMonths={opsCashMonths}
           setOpsCashMonths={setOpsCashMonths}

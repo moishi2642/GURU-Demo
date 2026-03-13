@@ -174,41 +174,76 @@
   }
 }
 
-/* ─── ADDEPAR-STYLE DATA TABLE UTILITIES ─────────────────────────────────── */
+/* ─── INSTITUTIONAL DESIGN UTILITIES ────────────────────────────────────── */
 @layer utilities {
 
-  /* ─── Clean panel header — white with 2px accent top border + tight label ─ */
-  /* Premium through restraint: whitespace + typography, not dark backgrounds */
+  /* ─── Panel header — white card, 2px dark top rule, tight label ── */
   .panel-hd {
     background: hsl(0, 0%, 100%);
-    border-bottom: 1px solid hsl(220, 16%, 91%);
-    border-top: 2px solid hsl(220, 26%, 18%);  /* thin dark accent stripe at top */
+    border-bottom: 1px solid hsl(220, 16%, 90%);
+    border-top: 2px solid hsl(220, 26%, 16%);
     @apply px-4 py-2.5 flex items-center justify-between select-none;
   }
   .panel-hd-label {
-    @apply text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
     letter-spacing: 0.13em;
+    color: hsl(220, 14%, 46%);
   }
   .panel-hd-value {
-    @apply text-[11px] font-semibold tabular-nums text-foreground;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 
-  /* ─── Serif display numbers — premium feel for hero KPIs ─── */
+  /* ─── Serif hero numbers — Instrument Serif, editorial premium ── */
   .serif-hero {
     font-family: var(--font-serif);
-    @apply tracking-tight;
+    letter-spacing: -0.01em;
   }
 
-  /* Tabular numbers — essential for aligned financial data */
+  /* ─── Active signal — pulsing dot for live/actionable data ── */
+  .signal-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #9a7b3c;
+    animation: signal-pulse 2.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes signal-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(0.75); }
+  }
+
+  /* ─── Workflow step states ── */
+  .step-needs-action {
+    border-left: 3px solid #9a7b3c;
+  }
+  .step-on-track {
+    border-left: 3px solid #2e7a52;
+  }
+  .step-overfunded {
+    border-left: 3px solid #c0392b;
+  }
+  .step-neutral {
+    border-left: 3px solid hsl(220, 16%, 82%);
+  }
+
+  /* Tabular numbers */
   .tabular { font-variant-numeric: tabular-nums; }
 
-  /* Institutional stat header pattern */
+  /* Stat label */
   .stat-label {
-    @apply text-[10px] font-semibold uppercase tracking-widest text-muted-foreground;
-    letter-spacing: 0.08em;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: hsl(220, 14%, 52%);
   }
 
-  /* Clean divider line used between data rows */
+  /* Data row separator */
   .data-row {
     @apply border-b border-border/40 last:border-0;
   }
