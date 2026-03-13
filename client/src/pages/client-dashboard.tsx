@@ -5486,6 +5486,17 @@ function GuruAllocationView({
         const excessProds = excessProdsT;
         return (
           <>
+
+      {/* ── GURU Analysis: Step 1 → 2 ── */}
+      {step1Done && (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg" style={{ background: "rgba(154,123,60,0.05)", border: "1px solid rgba(154,123,60,0.18)" }}>
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#9a7b3c", opacity: 0.75 }} />
+          <span className="text-[9px] font-bold uppercase tracking-[0.14em] flex-shrink-0" style={{ color: "#9a7b3c" }}>GURU</span>
+          <span className="text-muted-foreground/40 select-none px-0.5">·</span>
+          <span className="text-[10px] italic text-muted-foreground">Liquidity targets established · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)}</span> excess capital identified · {(opCurrentMonths + resCurrentMonths).toFixed(1)} mos total liquid coverage secured.</span>
+        </div>
+      )}
+
       {/* ── STEP 2: Capital Release ── */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
@@ -5542,6 +5553,16 @@ function GuruAllocationView({
           </div>
         )}
       </div>
+
+      {/* ── GURU Analysis: Step 2 → 3 ── */}
+      {step2Done && (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg" style={{ background: "rgba(154,123,60,0.05)", border: "1px solid rgba(154,123,60,0.18)" }}>
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#9a7b3c", opacity: 0.75 }} />
+          <span className="text-[9px] font-bold uppercase tracking-[0.14em] flex-shrink-0" style={{ color: "#9a7b3c" }}>GURU</span>
+          <span className="text-muted-foreground/40 select-none px-0.5">·</span>
+          <span className="text-[10px] italic text-muted-foreground">Capital routing plan confirmed · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)}</span> moving from {opExcess > 100 && resExcess > 100 ? "Operating Cash and Reserve" : opExcess > 100 ? "Operating Cash" : "Reserve"} into Investment Pool.</span>
+        </div>
+      )}
 
       {/* ── STEP 3: Product Allocation ── */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
