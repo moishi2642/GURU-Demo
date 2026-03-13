@@ -5396,13 +5396,11 @@ function GuruAllocationView({
                   bg: "#faf8f2",
                 },
               ] as const).map((b) => {
-                const maxM = Math.max(b.currentMonths, b.targetMonths) * 1.15 || 1;
-                const curPct = Math.min((b.currentMonths / maxM) * 100, 100);
-                const tgtPct = Math.min((b.targetMonths / maxM) * 100, 100);
+                // Bar: current fills 100%, target line shows where target falls
                 const isOver = b.currentMonths > b.targetMonths;
-                const fillEnd = Math.min(curPct, tgtPct);
-                const excessStart = Math.min(tgtPct, curPct);
-                const excessWidth = isOver ? Math.abs(curPct - tgtPct) : 0;
+                const tgtLinePct = b.currentMonths > 0
+                  ? Math.min((b.targetMonths / b.currentMonths) * 100, 100)
+                  : 100;
                 return (
                   <div key={b.label} className="rounded-xl border-2 p-5 space-y-4" style={{ borderColor: b.borderColor, background: b.bg }}>
                     {/* Header */}
@@ -5418,19 +5416,25 @@ function GuruAllocationView({
                       )}
                     </div>
 
-                    {/* Slider */}
+                    {/* Coverage bar — current always fills full width; target line marks the threshold */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-baseline">
                         <span className="text-[9.5px] text-muted-foreground">Current: <span className="font-semibold text-foreground">{b.currentMonths.toFixed(1)} mos</span></span>
                         <span className="text-[9.5px] text-muted-foreground">Target: <span className="font-semibold text-foreground">{b.targetMonths} mos</span></span>
                       </div>
-                      <div className="relative h-2 rounded-full" style={{ background: "hsl(220,14%,88%)" }}>
-                        <div className="absolute left-0 top-0 h-full rounded-full" style={{ width: `${fillEnd}%`, background: b.accentColor }} />
-                        {isOver && excessWidth > 0 && (
-                          <div className="absolute top-0 h-full" style={{ left: `${excessStart}%`, width: `${excessWidth}%`, background: "rgba(154,123,60,0.38)", borderRadius: "0 3px 3px 0" }} />
+                      <div className="relative h-2.5 rounded-full overflow-hidden" style={{ background: isOver ? "rgba(154,123,60,0.22)" : "hsl(220,14%,88%)" }}>
+                        {/* Target zone — solid accent from 0 to target line */}
+                        <div className="absolute left-0 top-0 h-full" style={{ width: `${isOver ? tgtLinePct : 100}%`, background: b.accentColor, borderRadius: isOver ? "4px 0 0 4px" : "4px" }} />
+                        {/* Target line divider */}
+                        {isOver && (
+                          <div className="absolute top-0 h-full w-[2px]" style={{ left: `${tgtLinePct}%`, background: "rgba(255,255,255,0.7)" }} />
                         )}
-                        <div className="absolute top-1/2 w-0.5 h-4 rounded-full" style={{ left: `${tgtPct}%`, transform: "translate(-50%, -50%)", background: b.accentColor, opacity: 0.7 }} />
                       </div>
+                      {isOver && (
+                        <p className="text-[9px] font-semibold" style={{ color: "#9a7b3c" }}>
+                          {(b.currentMonths - b.targetMonths).toFixed(1)} mos above target · {fmt(b.excess)} to release
+                        </p>
+                      )}
                     </div>
 
                     {/* Stepper */}
@@ -5451,12 +5455,6 @@ function GuruAllocationView({
                         <p className="text-[15px] font-semibold tabular-nums text-foreground">{fmt(b.current)}</p>
                       </div>
                     </div>
-                    {b.excess > 100 && (
-                      <div className="pt-2 border-t border-border">
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.1em] mb-1" style={{ color: "rgba(154,123,60,0.7)" }}>Excess to Release</p>
-                        <p className="text-[16px] font-semibold tabular-nums" style={{ color: "#9a7b3c" }}>{fmt(b.excess)}</p>
-                      </div>
-                    )}
                   </div>
                 );
               })}
