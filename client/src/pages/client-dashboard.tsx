@@ -5240,6 +5240,8 @@ function GuruAllocationView({
 }) {
 
   const [dragItem, setDragItem] = useState<string | null>(null);
+  const [activeGuruTab, setActiveGuruTab] = useState<"overview" | "tool">("overview");
+  const [expandedBucket, setExpandedBucket] = useState<string | null>(null);
 
   function handleExecute(from: string, to: string, amount: number) {
     setPendingTransfers((prev) => {
@@ -5637,214 +5639,97 @@ function GuruAllocationView({
                     <div className="flex-1" />
 
                   </div>
-                  {/* ── GURU Allocation Landing — 5-column bucket grid ── */}
-                  {(() => {
-                    const fmtK = (v: number) => `$${Math.round(v).toLocaleString()}`;
-                    const totalAllAssets = rows.reduce((s, r) => s + r.current, 0) + reVal + altVal + plan529;
-
-                    // Option B color palette — light tint, institutional accents
-                    const OB: Record<string, { accent: string; tint: string; bdr: string }> = {
-                      "Operating Cash": { accent: "#2e5c8a", tint: "#f2f6fa", bdr: "#cfe0f0" },
-                      "Reserve":        { accent: "#8a6e2e", tint: "#faf7f0", bdr: "#e0d4b0" },
-                      "Build":          { accent: "#2e7a52", tint: "#f2faf5", bdr: "#c0e0cc" },
-                      "Grow":           { accent: "#2e4e7a", tint: "#f2f5fa", bdr: "#c8d5e8" },
-                    };
-                    const OB_OTHER = { accent: "#4a4a5a", tint: "#f5f5f7", bdr: "#d8d8e0" };
-
-                    const renderLandingCard = (
-                      name: string,
-                      tagline: string,
-                      rule: string,
-                      balance: number,
-                      yieldLabel: string,
-                      subAccounts: { name: string; value: number; yield_: string; yieldAT: string; acctNum?: string }[],
-                      isGrow: boolean,
-                      colors: { accent: string; tint: string; bdr: string },
-                    ) => {
-                      const pct = totalAllAssets > 0 ? (balance / totalAllAssets) * 100 : 0;
-                      return (
-                        <div key={name} className="flex flex-col">
-                          {/* Card header */}
-                          <div style={{
-                            background: colors.tint,
-                            borderColor: colors.bdr,
-                            borderTopColor: colors.accent,
-                            borderTopWidth: 3,
-                            borderStyle: "solid",
-                            borderRadius: "8px 8px 0 0",
-                          }} className="px-3 py-3">
-                            <p style={{ color: colors.accent }} className="text-[9px] font-bold uppercase tracking-[0.14em] mb-1">{name}</p>
-                            <p className="font-serif italic text-[12px] text-gray-700 leading-tight mb-1">{tagline}</p>
-                            <p className="text-[9px] text-gray-400 leading-tight pb-3 mb-3" style={{ borderBottom: `1px solid ${colors.bdr}` }}>{rule}</p>
-                            <p className="serif-hero text-[20px] font-normal text-gray-900 leading-none mb-2 tabular-nums">{fmtK(balance)}</p>
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-[10px] text-gray-400">{yieldLabel}</span>
-                              <span style={{ color: colors.accent }} className="text-[10px] font-semibold">{pct.toFixed(0)}%</span>
-                            </div>
-                            <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.07)" }}>
-                              <div style={{ width: `${pct}%`, background: colors.accent, opacity: 0.55 }} className="h-[3px] rounded-full" />
-                            </div>
-                          </div>
-                          {/* Accounts list */}
-                          <div style={{ borderColor: colors.bdr, borderTopColor: "#f0f0f0" }} className="bg-white border border-t rounded-b-lg overflow-hidden">
-                            <div className="text-[9px] font-semibold uppercase tracking-[0.11em] text-gray-400 px-3 py-[7px] bg-gray-50 border-b border-gray-100">
-                              Accounts
-                            </div>
-                            {subAccounts.map((acct) => (
-                              <div key={acct.name} className="flex items-center justify-between px-3 py-[9px] border-b border-gray-50 last:border-0 hover:bg-gray-50 cursor-pointer">
-                                <div>
-                                  <p className="text-[11px] font-medium text-gray-800 leading-tight">{acct.name}</p>
-                                  <p className="text-[10px] text-gray-400">····{acct.acctNum ?? "N/A"}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="serif-hero text-[13px] font-normal text-gray-800 tabular-nums leading-none">{fmtK(acct.value)}</p>
-                                  <p className="text-[9px] text-gray-400 mt-0.5">{isGrow ? acct.yieldAT : acct.yield_}</p>
-                                </div>
-                              </div>
-                            ))}
-                            <div className="flex justify-between items-center px-3 py-[7px] bg-gray-50 border-t border-gray-100">
-                              <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-gray-500">Total</span>
-                              <span className="serif-hero text-[13px] font-normal text-gray-600 tabular-nums">{fmtK(balance)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    };
-
-                    // Build Grow (Other) sub-accounts
-                    const otherSubAccounts = [
-                      ...(reVal > 0 ? [{ name: "Real Estate", value: reVal, yield_: "~5%", yieldAT: "~3.4%", acctNum: "N/A" }] : []),
-                      ...(altVal > 0 ? [{ name: "Private Equity & Alts", value: altVal, yield_: "[15%+]", yieldAT: "~10.2%", acctNum: "N/A" }] : []),
-                      { name: "529 Plans", value: plan529, yield_: "—", yieldAT: "—", acctNum: "6612" },
-                    ];
-
-                    /* ── 5-column landing grid ── */
-                    return (
-                      <div className="grid grid-cols-5 gap-2.5 mt-5">
-                        {rows.map((r) => {
-                          const c = OB[r.def.name] ?? OB_OTHER;
-                          const avgYield = weightedGrossYield(r.subAccounts, r.current);
-                          const isGrow = r.def.name === "Grow";
-                          const yieldLabel = isGrow ? "—" : avgYield > 0 ? `${avgYield.toFixed(2)}% yield` : "0.01% yield";
-                          return renderLandingCard(
-                            r.def.name,
-                            r.def.tagline,
-                            r.def.rule,
-                            r.current,
-                            yieldLabel,
-                            r.subAccounts,
-                            isGrow,
-                            c,
-                          );
-                        })}
-                        {renderLandingCard(
-                          "Grow (Other)",
-                          "Illiquid & alternative holdings",
-                          "Real estate, alternatives & 529 plans",
-                          reVal + altVal + plan529,
-                          "— yield",
-                          otherSubAccounts,
-                          true,
-                          OB_OTHER,
-                        )}
-                      </div>
-                    );
-                  })()}
-                  {/* ── Org-chart flow lines — hidden for now ── */}
-                  {(() => {
-                    return null;
-                    if (pendingTransfers.length === 0) return null;
-                    const H = 72;
-                    const dropY = 36;
-                    const BUCKET_ORDER = ["Operating Cash", "Reserve", "Build", "Grow"] as const;
-                    const bucketPct = (name: string) => {
-                      const idx = BUCKET_ORDER.indexOf(name as typeof BUCKET_ORDER[number]);
-                      if (idx === -1) return null;
-                      return ((idx + 0.5) / 5) * 100;
-                    };
-                    return (
-                      <div className="relative mt-1 mb-1" style={{ height: H }}>
-                        {pendingTransfers.map((pt, di) => {
-                          const srcPct = bucketPct(pt.from);
-                          const tgtPct = bucketPct(pt.to);
-                          if (srcPct === null || tgtPct === null) return null;
-                          const srcRow = rows.find((r) => r.def.name === pt.from);
-                          const tgtRow = rows.find((r) => r.def.name === pt.to);
-                          const srcColor = srcRow?.def.bg ?? "#64748b";
-                          const tgtColor = tgtRow?.def.bg ?? "#64748b";
-                          const leftPct = Math.min(srcPct, tgtPct);
-                          const wPct = Math.abs(srcPct - tgtPct);
-                          const fmtAmt = `$${Math.round(pt.amount).toLocaleString()}`;
-                          return (
-                            <div key={`${pt.from}->${pt.to}`}>
-                              {/* Vertical drop from source */}
-                              <div className="absolute rounded-full" style={{
-                                left: `${srcPct}%`, top: 0,
-                                width: 2, height: dropY,
-                                background: srcColor,
-                                transform: "translateX(-50%)",
-                                opacity: 0.6,
-                              }} />
-                              {/* Amount label beside drop line */}
-                              <div className="absolute text-[9px] font-black tabular-nums bg-white/90 rounded px-1 leading-tight whitespace-nowrap" style={{
-                                left: `calc(${srcPct}% + 6px)`,
-                                top: Math.floor(dropY / 2) - 6,
-                                color: "#dc2626",
-                              }}>
-                                {fmtAmt} out
-                              </div>
-                              {/* Horizontal connector */}
-                              <div className="absolute" style={{
-                                left: `${leftPct}%`, top: dropY,
-                                width: `${wPct}%`, height: 2,
-                                background: `linear-gradient(to ${srcPct < tgtPct ? "right" : "left"}, ${srcColor}80, ${tgtColor}80)`,
-                              }} />
-                              {/* Vertical rise to target */}
-                              <div className="absolute rounded-full" style={{
-                                left: `${tgtPct}%`, top: dropY - 28,
-                                width: 2, height: 28,
-                                background: tgtColor,
-                                transform: "translateX(-50%)",
-                                opacity: 0.6,
-                              }} />
-                              {/* "in" label beside rise line */}
-                              <div className="absolute text-[9px] font-black tabular-nums bg-white/90 rounded px-1 leading-tight whitespace-nowrap" style={{
-                                left: `calc(${tgtPct}% + 6px)`,
-                                top: dropY - 22,
-                                color: "#16a34a",
-                              }}>
-                                {fmtAmt} in
-                              </div>
-                              {/* Animated dot traveling from → to */}
-                              <motion.div
-                                className="absolute rounded-full z-10 shadow"
-                                style={{
-                                  width: 9, height: 9,
-                                  background: srcColor,
-                                  marginLeft: -4, marginTop: -4,
-                                }}
-                                animate={{
-                                  left: [`${srcPct}%`, `${srcPct}%`, `${tgtPct}%`, `${tgtPct}%`],
-                                  top: [0, dropY, dropY, dropY - 28],
-                                }}
-                                transition={{
-                                  duration: 2.8,
-                                  delay: di * 0.8,
-                                  repeat: Infinity,
-                                  ease: "easeInOut",
-                                  times: [0, 0.35, 0.65, 1],
-                                }}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
                 </div>
               );
             })()}
+            {/* ── Tab switcher ── */}
+            <div className="flex items-center gap-0 mt-3 border-b border-border">
+              {(["overview", "tool"] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveGuruTab(tab)}
+                  className={`px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] border-b-2 -mb-px transition-colors ${activeGuruTab === tab ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                  {tab === "overview" ? "Overview" : "Allocation Tool"}
+                </button>
+              ))}
+            </div>
             </div>{/* end sticky hero wrapper */}
+            {/* ── Tab content ── */}
+            {activeGuruTab === "overview" ? (
+              /* ─── OVERVIEW: 4 clean bucket cards + expandable accounts ─── */
+              (() => {
+                const fmtK = (v: number) => `$${Math.round(v).toLocaleString()}`;
+                const totalAllAssets = rows.reduce((s2, r2) => s2 + r2.current, 0) + reVal + altVal + plan529;
+                const OB: Record<string, { accent: string; tint: string; bdr: string }> = {
+                  "Operating Cash": { accent: "#2e5c8a", tint: "#f2f6fa", bdr: "#cfe0f0" },
+                  "Reserve":        { accent: "#8a6e2e", tint: "#faf7f0", bdr: "#e0d4b0" },
+                  "Build":          { accent: "#2e7a52", tint: "#f2faf5", bdr: "#c0e0cc" },
+                  "Grow":           { accent: "#2e4e7a", tint: "#f2f5fa", bdr: "#c8d5e8" },
+                };
+                return (
+                  <div className="grid grid-cols-4 gap-3 pt-5">
+                    {rows.map((r) => {
+                      const c = OB[r.def.name] ?? { accent: "#4a4a5a", tint: "#f5f5f7", bdr: "#d8d8e0" };
+                      const pct = totalAllAssets > 0 ? (r.current / totalAllAssets) * 100 : 0;
+                      const isGrow = r.def.name === "Grow";
+                      const isExpanded = expandedBucket === r.def.name;
+                      const acctCount = r.subAccounts.length;
+                      return (
+                        <div key={r.def.name} className="flex flex-col">
+                          {/* ── Bucket card ── */}
+                          <div
+                            style={{ background: c.tint, borderColor: c.bdr, borderTopColor: c.accent, borderTopWidth: 3, borderStyle: "solid", borderRadius: isExpanded ? "8px 8px 0 0" : "8px" }}
+                            className="px-4 py-4 cursor-pointer hover:brightness-[0.98] transition-all"
+                            onClick={() => setExpandedBucket(isExpanded ? null : r.def.name)}
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <p style={{ color: c.accent }} className="text-[9px] font-bold uppercase tracking-[0.14em]">{r.def.name}</p>
+                              <span style={{ color: c.accent }} className="text-[9px] font-semibold opacity-60">{pct.toFixed(0)}%</span>
+                            </div>
+                            <p className="font-serif italic text-[12px] text-gray-700 leading-tight mb-1">{r.def.tagline}</p>
+                            <p className="text-[9px] text-gray-400 leading-tight mb-4" style={{ borderBottom: `1px solid ${c.bdr}`, paddingBottom: "12px" }}>{r.def.rule}</p>
+                            <p className="serif-hero text-[22px] font-normal text-gray-900 leading-none tabular-nums mb-3">{fmtK(r.current)}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-gray-400">{isGrow ? "—" : `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}% yield`}</span>
+                              <button style={{ color: c.accent }} className="text-[10px] font-semibold flex items-center gap-1 hover:opacity-80">
+                                {acctCount} account{acctCount !== 1 ? "s" : ""} {isExpanded ? "▲" : "›"}
+                              </button>
+                            </div>
+                          </div>
+                          {/* ── Expandable accounts ── */}
+                          {isExpanded && (
+                            <div style={{ borderColor: c.bdr, borderTopColor: "#f0f0f0" }} className="bg-white border border-t overflow-hidden rounded-b-lg">
+                              <div className="text-[9px] font-semibold uppercase tracking-[0.11em] text-gray-400 px-4 py-2 bg-gray-50 border-b border-gray-100">
+                                Accounts
+                              </div>
+                              {r.subAccounts.map((acct) => (
+                                <div key={acct.name} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                                  <div>
+                                    <p className="text-[11px] font-medium text-gray-800 leading-tight">{acct.name}</p>
+                                    <p className="text-[10px] text-gray-400 mt-0.5">····{acct.acctNum ?? "N/A"}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="serif-hero text-[13px] font-normal text-gray-800 tabular-nums leading-none">{fmtK(acct.value)}</p>
+                                    <p className="text-[9px] text-gray-400 mt-0.5">{isGrow ? acct.yieldAT : acct.yield_}</p>
+                                  </div>
+                                </div>
+                              ))}
+                              <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-t border-gray-100">
+                                <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-gray-500">Total</span>
+                                <span className="serif-hero text-[13px] font-normal text-gray-600 tabular-nums">{fmtK(r.current)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()
+            ) : (
+              /* ─── ALLOCATION TOOL: existing detailed panels ─── */
+              <>
             {/* ── Income Calculator — portal into dark sidebar ── */}
             {(() => {
               const anyChanges = pendingTransfers.length > 0;
@@ -6156,6 +6041,8 @@ function GuruAllocationView({
               })}
             </div>
           </>
+              </>
+            )}
         );
       })()}
     </div>
