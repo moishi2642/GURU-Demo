@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Users, BrainCircuit, Users2, Bell, Search } from "lucide-react";
 
-export function Layout({ children }: { children: ReactNode }) {
+export function Layout({ children, sidebarNav }: { children: ReactNode; sidebarNav?: ReactNode }) {
   const [location] = useLocation();
 
   const navItems = [
@@ -53,50 +53,54 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
 
         {/* ── Navigation ────────────────────────────────────────────────── */}
-        <nav className="px-3 py-4 flex-1">
-          <p
-            className="text-[9px] font-bold uppercase px-2 mb-2"
-            style={{ color: "rgba(255,255,255,0.22)", letterSpacing: "0.1em" }}
-          >
-            Platform
-          </p>
+        {sidebarNav ? (
+          sidebarNav
+        ) : (
+          <nav className="px-3 py-4 flex-1">
+            <p
+              className="text-[9px] font-bold uppercase px-2 mb-2"
+              style={{ color: "rgba(255,255,255,0.22)", letterSpacing: "0.1em" }}
+            >
+              Platform
+            </p>
 
-          {navItems.map((item) => {
-            const isActive =
-              location === item.href ||
-              (item.href !== "/" && location.startsWith(item.href));
+            {navItems.map((item) => {
+              const isActive =
+                location === item.href ||
+                (item.href !== "/" && location.startsWith(item.href));
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                data-testid={`link-nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-                className={`
-                  group flex items-center gap-2.5 px-2 py-[7px] rounded
-                  text-[12.5px] font-medium transition-all duration-100 mb-0.5
-                  ${isActive
-                    ? "text-white"
-                    : "text-white/40 hover:text-white/75 hover:bg-white/[0.04]"
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  data-testid={`link-nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                  className={`
+                    group flex items-center gap-2.5 px-2 py-[7px] rounded
+                    text-[12.5px] font-medium transition-all duration-100 mb-0.5
+                    ${isActive
+                      ? "text-white"
+                      : "text-white/40 hover:text-white/75 hover:bg-white/[0.04]"
+                    }
+                  `}
+                  style={
+                    isActive
+                      ? {
+                          background: "rgba(255,255,255,0.09)",
+                          boxShadow: "inset 2px 0 0 hsl(216,82%,55%)",
+                        }
+                      : undefined
                   }
-                `}
-                style={
-                  isActive
-                    ? {
-                        background: "rgba(255,255,255,0.09)",
-                        boxShadow: "inset 2px 0 0 hsl(216,82%,55%)",
-                      }
-                    : undefined
-                }
-              >
-                <item.icon
-                  className="w-[14px] h-[14px] flex-shrink-0 transition-colors"
-                  style={{ color: isActive ? "hsl(216,82%,65%)" : undefined }}
-                />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+                >
+                  <item.icon
+                    className="w-[14px] h-[14px] flex-shrink-0 transition-colors"
+                    style={{ color: isActive ? "hsl(216,82%,65%)" : undefined }}
+                  />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         {/* ── Income Calculator portal slot ─────────────────────────────── */}
         <div id="guru-calc-slot" className="flex-shrink-0" />

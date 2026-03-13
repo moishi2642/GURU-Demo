@@ -7455,36 +7455,133 @@ export default function ClientDashboard() {
     aggressive: "bg-rose-100 text-rose-700",
   };
 
-  const navItems: {
-    key: ActiveView;
-    label: string;
-    icon: React.ElementType;
-    activeCls?: string;
-    inactiveCls?: string;
-  }[] = [
-    { key: "advisorbrief", label: "Advisor Brief", icon: ClipboardList, activeCls: "bg-rose-600 text-white shadow-sm", inactiveCls: "text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200" },
-    { key: "dashboard", label: "Kessler Dashboard", icon: LayoutDashboard },
-    { key: "financials", label: "Kessler Financials & Forecast", icon: FileText },
-    { key: "guru", label: "GURU Allocation", icon: PieChartIcon },
-    { key: "moneymovement", label: "Money Movement", icon: ArrowLeftRight },
-  ];
+  const navActive = (key: ActiveView, subTab?: "balancesheet" | "cashflow") => {
+    if (subTab) return activeView === key && financialsTab === subTab;
+    return activeView === key;
+  };
+
+  const navItemStyle = (active: boolean) =>
+    active
+      ? { background: "rgba(255,255,255,0.09)", boxShadow: "inset 2px 0 0 hsl(216,82%,55%)" }
+      : undefined;
+
+  const navItemCls = (active: boolean) =>
+    `flex items-center gap-2.5 px-2 py-[7px] rounded text-[12.5px] font-medium transition-all duration-100 mb-0.5 cursor-pointer select-none ${
+      active ? "text-white" : "text-white/40 hover:text-white/75 hover:bg-white/[0.04]"
+    }`;
+
+  const SectionLabel = ({ children }: { children: string }) => (
+    <p
+      className="text-[9px] font-bold uppercase px-2 mb-2 mt-4"
+      style={{ color: "rgba(255,255,255,0.22)", letterSpacing: "0.1em" }}
+    >
+      {children}
+    </p>
+  );
+
+  const clientSidebarNav = (
+    <nav className="px-3 py-4 flex-1 overflow-y-auto">
+      {/* Back to all clients */}
+      <Link href="/">
+        <div
+          className="flex items-center gap-1.5 px-2 py-[6px] rounded text-[11px] text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all duration-100 mb-3 cursor-pointer"
+        >
+          <ChevronLeft className="w-3 h-3" />
+          All Clients
+        </div>
+      </Link>
+
+      <SectionLabel>Client</SectionLabel>
+
+      <div
+        className={navItemCls(navActive("dashboard"))}
+        style={navItemStyle(navActive("dashboard"))}
+        onClick={() => setActiveView("dashboard")}
+        data-testid="nav-dashboard"
+      >
+        <LayoutDashboard
+          className="w-[14px] h-[14px] flex-shrink-0"
+          style={{ color: navActive("dashboard") ? "hsl(216,82%,65%)" : undefined }}
+        />
+        Dashboard
+      </div>
+
+      <div
+        className={navItemCls(navActive("guru"))}
+        style={navItemStyle(navActive("guru"))}
+        onClick={() => setActiveView("guru")}
+        data-testid="nav-guru"
+      >
+        <PieChartIcon
+          className="w-[14px] h-[14px] flex-shrink-0"
+          style={{ color: navActive("guru") ? "hsl(216,82%,65%)" : undefined }}
+        />
+        GURU Allocation
+      </div>
+
+      <div
+        className={navItemCls(navActive("advisorbrief"))}
+        style={navItemStyle(navActive("advisorbrief"))}
+        onClick={() => setActiveView("advisorbrief")}
+        data-testid="nav-advisorbrief"
+      >
+        <ClipboardList
+          className="w-[14px] h-[14px] flex-shrink-0"
+          style={{ color: navActive("advisorbrief") ? "hsl(216,82%,65%)" : undefined }}
+        />
+        Advisor Brief
+      </div>
+
+      <SectionLabel>Financials</SectionLabel>
+
+      <div
+        className={navItemCls(navActive("financials", "balancesheet"))}
+        style={navItemStyle(navActive("financials", "balancesheet"))}
+        onClick={() => { setActiveView("financials"); setFinancialsTab("balancesheet"); }}
+        data-testid="nav-networth"
+      >
+        <FileText
+          className="w-[14px] h-[14px] flex-shrink-0"
+          style={{ color: navActive("financials", "balancesheet") ? "hsl(216,82%,65%)" : undefined }}
+        />
+        Net Worth
+      </div>
+
+      <div
+        className={navItemCls(navActive("financials", "cashflow"))}
+        style={navItemStyle(navActive("financials", "cashflow"))}
+        onClick={() => { setActiveView("financials"); setFinancialsTab("cashflow"); }}
+        data-testid="nav-cashflow"
+      >
+        <ArrowLeftRight
+          className="w-[14px] h-[14px] flex-shrink-0"
+          style={{ color: navActive("financials", "cashflow") ? "hsl(216,82%,65%)" : undefined }}
+        />
+        Cash Flow
+      </div>
+
+      <div
+        className={navItemCls(navActive("moneymovement"))}
+        style={navItemStyle(navActive("moneymovement"))}
+        onClick={() => setActiveView("moneymovement")}
+        data-testid="nav-moneymovement"
+      >
+        <ArrowLeftRight
+          className="w-[14px] h-[14px] flex-shrink-0"
+          style={{ color: navActive("moneymovement") ? "hsl(216,82%,65%)" : undefined }}
+        />
+        Money Movement
+      </div>
+    </nav>
+  );
 
   return (
-    <Layout>
+    <Layout sidebarNav={clientSidebarNav}>
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
       <div className="mb-5">
         {/* Client identity bar */}
-        <div className="bg-card rounded-xl border border-border shadow-sm px-5 py-4 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-card rounded-xl border border-border shadow-sm px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
-            <Link href="/">
-              <button
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                data-testid="link-back-clients"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </Link>
-            <div className="h-8 w-px bg-border flex-shrink-0" />
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1
@@ -7507,25 +7604,6 @@ export default function ClientDashboard() {
               </p>
             </div>
           </div>
-        </div>
-
-        {/* ── Tab Navigation — pill style ─────────────────────────────────────── */}
-        <div className="flex items-center gap-1 bg-card border border-border rounded-xl px-1.5 py-1.5 shadow-sm">
-          {navItems.map(({ key, label, icon: Icon, activeCls, inactiveCls }) => (
-            <button
-              key={key}
-              onClick={() => setActiveView(key)}
-              data-testid={`nav-${key}`}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium rounded-lg transition-all ${
-                activeView === key
-                  ? (activeCls ?? "bg-[hsl(222,47%,12%)] text-white shadow-sm")
-                  : (inactiveCls ?? "text-muted-foreground hover:text-foreground hover:bg-secondary/60")
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {label}
-            </button>
-          ))}
         </div>
       </div>
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
@@ -7577,7 +7655,7 @@ export default function ClientDashboard() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 items-start">
-            <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => setActiveView("cashflow")} />
+            <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => { setActiveView("financials"); setFinancialsTab("cashflow"); }} />
             <CashFlowTicker cashFlows={cashFlows} />
           </div>
 
@@ -7605,26 +7683,6 @@ export default function ClientDashboard() {
       {/* ── Client Financials & Forecast ───────────────────────────────────────── */}
       {activeView === "financials" && (
         <div className="space-y-5">
-          {/* Sub-tab switcher */}
-          <div className="flex items-center gap-1 border-b border-border pb-0">
-            {(["balancesheet", "cashflow"] as const).map((tab) => {
-              const label = tab === "balancesheet" ? "Balance Sheet" : "Cash Flow Forecast";
-              const isActive = financialsTab === tab;
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setFinancialsTab(tab)}
-                  className={`px-6 py-2.5 text-sm font-bold tracking-wide rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-blue-100 text-blue-400 hover:bg-blue-200 hover:text-blue-600"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
           {financialsTab === "balancesheet" && (
             <DetailsView
               assets={assets}
