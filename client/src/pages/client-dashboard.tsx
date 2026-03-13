@@ -6040,7 +6040,7 @@ function GuruAllocationView({
                 );
               })}
             </div>
-          </>
+              </>
             )}
           </>
         );
