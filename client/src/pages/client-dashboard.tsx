@@ -5257,19 +5257,7 @@ function GuruAllocationView({
     }
   }, [step2Done]);
 
-  function handleExecute(from: string, to: string, amount: number) {
-    setPendingTransfers((prev) => {
-      const filtered = prev.filter((t) => !(t.from === from && t.to === to));
-      return [...filtered, { from, to, amount }];
-    });
-  }
-  function handleUndo(from: string, to: string) {
-    setPendingTransfers((prev) =>
-      prev.filter((t) => !(t.from === from && t.to === to)),
-    );
-  }
-
-  const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
+  const { reserve, yieldBucket, tactical } = cashBuckets(assets);
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
   const moMapT: Record<string, number> = {};
@@ -5329,7 +5317,7 @@ function GuruAllocationView({
               </span>
               <span className="text-[9px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(154,123,60,0.85)" }}>GURU Insight · Kessler Family</span>
             </div>
-            <p className="font-serif text-[1.3rem] text-white leading-snug mb-3 font-bold">Compounding favors capital that stays invested.</p>
+            <p className="font-display italic text-[1.35rem] text-white leading-snug mb-3" style={{ fontWeight: 400 }}>Compounding favors capital that stays invested.</p>
             <p className="text-[11.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
               The Kessler Family had a strong year-end — bonuses landed in January. Their balance sheet is in excellent shape, but they're holding more liquidity than they need. At {liquidCoverageT.toFixed(1)} months of coverage against a {opMonthsLocal + resMonthsLocal}-month target, there's roughly <span style={{ color: "rgba(154,123,60,0.85)" }}>{fmt(totalExcessT)}</span> sitting above the threshold. <span className="italic">Now is the time to speak with them about right-sizing liquidity and putting that capital to work in Cresset's strategies.</span>
             </p>
