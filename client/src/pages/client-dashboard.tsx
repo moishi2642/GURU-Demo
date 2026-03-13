@@ -6041,7 +6041,6 @@ function GuruAllocationView({
               })}
             </div>
           </>
-              </>
             )}
         );
       })()}
