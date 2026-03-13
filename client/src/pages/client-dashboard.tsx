@@ -335,16 +335,16 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
 // ─── Demo date: simulate "today = March 6, 2026" ──────────────────────────────
 const DEMO_NOW = new Date(2026, 2, 6); // March 6, 2026
 
-// ─── Addepar-style institutional color palette for liquidity buckets ──────────
-// Deep, desaturated — no orange/amber or bright purple. Think Bloomberg terminals.
+// ─── Institutional color palette — private wealth / Goldman aesthetic ─────────
+// Deep, desaturated. Navy, warm gold, forest, slate. No orange, no purple.
 const HERO_COLORS: Record<string, { bg: string; accent: string; dot: string }> = {
-  "Operating Cash": { bg: "#1a4f9c", accent: "#93bff7", dot: "#5a9cf5" }, // institutional deep blue
-  Reserve:          { bg: "#1a5f52", accent: "#6dd4c2", dot: "#3bbfad" }, // deep teal — replaces amber
-  Build:            { bg: "#1a5c35", accent: "#72c493", dot: "#40a869" }, // deep emerald
-  Grow:             { bg: "#233554", accent: "#7da3c8", dot: "#5585ae" }, // deep slate-navy — replaces purple
-  "Real Estate":        { bg: "#3b4a5e", accent: "#a3b5c8", dot: "#8ea5bb" },
-  "Alternative Assets": { bg: "#3b4a5e", accent: "#a3b5c8", dot: "#8ea5bb" },
-  "529 Plans":          { bg: "#3b4a5e", accent: "#a3b5c8", dot: "#8ea5bb" },
+  "Operating Cash": { bg: "#162843", accent: "#7aa7d4", dot: "#5a85b8" }, // deep navy
+  Reserve:          { bg: "#3a2710", accent: "#c9a84c", dot: "#b8943f" }, // deep warm gold
+  Build:            { bg: "#0e3320", accent: "#5ab88a", dot: "#3da870" }, // deep forest
+  Grow:             { bg: "#1e2d40", accent: "#7da3c8", dot: "#5585ae" }, // deep slate
+  "Real Estate":        { bg: "#2a2a2a", accent: "#a3a3a3", dot: "#888888" },
+  "Alternative Assets": { bg: "#2a2a2a", accent: "#a3a3a3", dot: "#888888" },
+  "529 Plans":          { bg: "#2a2a2a", accent: "#a3a3a3", dot: "#888888" },
 };
 
 // ─── Book of Business — flag metadata & client data ───────────────────────────
@@ -409,31 +409,31 @@ const GURU_BUCKETS = {
   reserve: {
     label: "Operating Cash",
     short: "Checking — instantly available transaction accounts",
-    color: "#5a9cf5",
-    tagCls: "bg-transparent border border-[#1a4f9c]/35 text-[#1a4f9c]",
+    color: "#5a85b8",
+    tagCls: "bg-transparent border border-[#162843]/35 text-[#162843]",
   },
   yield: {
     label: "Reserve",
     short: "Savings & money market — penalty-free, higher-yielding",
-    color: "#3bbfad",
-    tagCls: "bg-transparent border border-[#1a5f52]/35 text-[#1a5f52]",
+    color: "#b8943f",
+    tagCls: "bg-transparent border border-[#3a2710]/35 text-[#3a2710]",
   },
   tactical: {
     label: "Build",
     short: "Treasuries & fixed income — 1–3 year horizon",
-    color: "#40a869",
-    tagCls: "bg-transparent border border-[#1a5c35]/35 text-[#1a5c35]",
+    color: "#3da870",
+    tagCls: "bg-transparent border border-[#0e3320]/35 text-[#0e3320]",
   },
   growth: {
     label: "Grow",
     short: "Long-horizon investments — equities, compounding wealth",
     color: "#5585ae",
-    tagCls: "bg-transparent border border-[#233554]/35 text-[#233554]",
+    tagCls: "bg-transparent border border-[#1e2d40]/35 text-[#1e2d40]",
   },
   alternatives: {
     label: "Alternatives",
     short: "Real estate, private equity, RSUs — strategic illiquid assets",
-    color: "#8ea5bb",
+    color: "#888888",
     tagCls: "bg-transparent border border-slate-400/40 text-slate-600",
   },
 } as const;
@@ -3384,7 +3384,7 @@ function BucketExecutionPanel({
                   className="w-7 h-7 rounded-full bg-background border border-border flex items-center justify-center text-sm font-bold text-muted-foreground hover:bg-muted transition-colors select-none"
                 >−</button>
                 <div className="flex-1 text-center">
-                  <span className="text-3xl font-black tabular-nums leading-none text-foreground">
+                  <span className="serif-hero text-3xl font-normal tabular-nums leading-none text-foreground">
                     {months}
                   </span>
                   <span className="text-[10px] font-semibold text-muted-foreground ml-1.5 leading-none">
@@ -5020,33 +5020,33 @@ const GURU_BUCKETS_DEF = [
     name: "Operating Cash",
     tagline: "Cash for upcoming expenditures",
     rule: "2-3 months of cash",
-    bg: "#1d4ed8",
-    dark: "#1e40af",
-    accent: "#93c5fd",
+    bg: "#162843",    // deep institutional navy
+    dark: "#0f1e33",
+    accent: "#7aa7d4",
   },
   {
     name: "Reserve",
     tagline: "Active cash management for what's next",
     rule: "12 months of cash for anticipated outflow",
-    bg: "#d97706",
-    dark: "#b45309",
-    accent: "#fcd34d",
+    bg: "#3a2710",    // deep warm gold — not orange
+    dark: "#2a1c09",
+    accent: "#c9a84c",
   },
   {
     name: "Build",
     tagline: "Disciplined saving for big goals on the horizon",
     rule: "Large expenditure in next 3 years",
-    bg: "#16a34a",
-    dark: "#15803d",
-    accent: "#4ade80",
+    bg: "#0e3320",    // deep forest green
+    dark: "#082516",
+    accent: "#5ab88a",
   },
   {
     name: "Grow",
     tagline: "Long-term compounded investing",
     rule: "5 years + aggressive investment portfolio",
-    bg: "#5b21b6",
-    dark: "#4c1d95",
-    accent: "#c084fc",
+    bg: "#1e2d40",    // deep slate — not purple
+    dark: "#151f2d",
+    accent: "#7da3c8",
   },
 ] as const;
 
@@ -5613,29 +5613,24 @@ function GuruAllocationView({
             {(() => {
               const heroCardTotal = assets.reduce((s, a) => s + Number(a.value), 0);
               return (
-                <div className="rounded-xl border bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 px-4 py-1.5 mb-2">
-                  <div className="flex flex-row gap-4 items-center">
+                <div className="rounded-xl border border-border bg-card px-4 py-3 mb-2 shadow-sm">
+                  <div className="flex flex-row gap-6 items-center">
                     {/* Total Assets headline */}
-                    <div className="flex-shrink-0 flex items-center gap-3">
-                      <div className="rounded-lg p-1.5 bg-emerald-100">
-                        <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-700">Total Assets</p>
-                        <p className="text-2xl font-extrabold leading-tight tabular-nums text-emerald-700">
-                          {fmt(heroCardTotal)}
-                        </p>
-                      </div>
+                    <div className="flex-shrink-0">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground mb-1">Total Assets</p>
+                      <p className="serif-hero text-[1.9rem] font-normal leading-tight tabular-nums text-foreground">
+                        {fmt(heroCardTotal)}
+                      </p>
                     </div>
 
                     {/* DIVIDER */}
-                    <div className="w-px self-stretch bg-emerald-200 mx-1" />
+                    <div className="w-px self-stretch bg-border mx-1" />
 
-                    {/* Potential Excess Cash — static metric */}
+                    {/* Potential Excess Cash */}
                     <div className="flex-shrink-0">
-                      <p className="text-[9px] uppercase tracking-widest text-emerald-700/70 font-bold mb-0.5">Potential Excess Cash</p>
-                      <p className="text-xl font-black tabular-nums text-emerald-700">{fmt(excessCash)}</p>
-                      <p className="text-[9px] text-emerald-600/60 mt-0.5">available to redeploy</p>
+                      <p className="text-[9px] uppercase tracking-[0.13em] text-muted-foreground font-semibold mb-1">Available to Redeploy</p>
+                      <p className="serif-hero text-2xl font-normal tabular-nums text-foreground">{fmt(excessCash)}</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Excess cash · 12-month forecast</p>
                     </div>
 
                     {/* Spacer */}
@@ -5677,28 +5672,27 @@ function GuruAllocationView({
                             <div className="rounded-xl p-3 flex-1" style={{ background: hc.bg }}>
                               <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
                                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot ?? hc.accent }} />
-                                <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 leading-tight truncate">{r.def.name}</span>
                               </div>
                               {/* Before row — balance + yield crossed out */}
                               <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
-                                <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(r.current)}</p>
-                                {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>}
+                                <p className="serif-hero text-sm font-normal text-white tabular-nums leading-none">{fmtK(r.current)}</p>
+                                {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>}
                               </div>
-                              {/* Dotted divider */}
-                              <div className="border-t border-dashed border-white/25 my-1.5" />
-                              {/* After row — new balance + yield (updated if product changed) */}
+                              <div className="border-t border-dashed border-white/20 my-1.5" />
+                              {/* After row */}
                               <div className="flex items-baseline justify-between gap-1">
-                                <p className="font-black text-white tabular-nums text-[16px]">
+                                <p className="serif-hero font-normal text-white tabular-nums text-[16px] leading-none">
                                   {fmtK(proBalance)}
                                 </p>
                                 {!isGrowCard && (
                                   yieldChanged ? (
                                     <span className="flex items-baseline gap-1 flex-shrink-0">
-                                      <span className="text-white/40 tabular-nums text-[10px]">{avgYieldV.toFixed(2)}% yield</span>
-                                      <span className="text-white tabular-nums text-[11px] font-black">{newGrossYield.toFixed(2)}% yield</span>
+                                      <span className="text-white/40 tabular-nums text-[10px]">{avgYieldV.toFixed(2)}%</span>
+                                      <span className="text-white tabular-nums text-[10px] font-semibold">{newGrossYield.toFixed(2)}%</span>
                                     </span>
                                   ) : (
-                                    <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px] font-semibold">{avgYieldV.toFixed(2)}% yield</p>
+                                    <p className="text-white/60 tabular-nums flex-shrink-0 text-[10px] font-medium">{avgYieldV.toFixed(2)}%</p>
                                   )
                                 )}
                               </div>
@@ -5711,8 +5705,8 @@ function GuruAllocationView({
                         <div key={`${r.def.name}-${proforma ? "pro" : "cur"}`} className="flex flex-col">
                           <div className="mb-1 h-5 flex items-center justify-center">
                             {!proforma && yieldChanged && (
-                              <span className="text-[8px] font-black px-2 py-0.5 rounded-full border bg-violet-50 border-violet-300 text-violet-700">
-                                ~ yield change
+                              <span className="text-[8px] font-semibold px-2 py-0.5 rounded-full border bg-secondary border-border text-muted-foreground">
+                                yield change
                               </span>
                             )}
                           </div>
@@ -5728,29 +5722,27 @@ function GuruAllocationView({
                           >
                             <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot }} />
-                              <span className="text-[11px] font-black uppercase text-white leading-tight truncate">{r.def.name}</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 leading-tight truncate">{r.def.name}</span>
                             </div>
                             {yieldChanged && !proforma ? (
                               <>
                                 {/* Before row — faded + crossed out */}
                                 <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
-                                  <p className="text-sm font-bold text-white tabular-nums leading-none">{fmtK(balance)}</p>
-                                  {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}% yield</p>}
+                                  <p className="serif-hero text-sm font-normal text-white tabular-nums leading-none">{fmtK(balance)}</p>
+                                  {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>}
                                 </div>
-                                {/* Dotted divider */}
-                                <div className="border-t border-dashed border-white/25 my-1.5" />
-                                {/* After row */}
+                                <div className="border-t border-dashed border-white/20 my-1.5" />
                                 <div className="flex items-baseline justify-between gap-1">
-                                  <p className="font-black text-white tabular-nums text-[16px] leading-none">{fmtK(balance)}</p>
-                                  {!isGrowCard && <p className="text-white tabular-nums flex-shrink-0 text-[11px] font-black">{newGrossYield.toFixed(2)}% yield</p>}
+                                  <p className="serif-hero text-white tabular-nums text-[17px] font-normal leading-none">{fmtK(balance)}</p>
+                                  {!isGrowCard && <p className="text-white/80 tabular-nums flex-shrink-0 text-[10px] font-semibold">{newGrossYield.toFixed(2)}%</p>}
                                 </div>
                               </>
                             ) : (
-                              <div className="flex items-baseline justify-between mt-1 gap-1">
-                                <p className="font-black text-white tabular-nums text-[14px]">
+                              <div className="flex items-baseline justify-between mt-1.5 gap-1">
+                                <p className="serif-hero text-white tabular-nums text-[16px] font-normal leading-none">
                                   {fmtK(balance)}
                                 </p>
-                                {!isGrowCard && <p className="text-white/60 tabular-nums flex-shrink-0 text-[12px]">{avgYieldV.toFixed(2)}% yield</p>}
+                                {!isGrowCard && <p className="text-white/50 tabular-nums flex-shrink-0 text-[10px] font-medium">{avgYieldV.toFixed(2)}%</p>}
                               </div>
                             )}
                           </div>
