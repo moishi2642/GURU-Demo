@@ -5244,6 +5244,21 @@ function GuruAllocationView({
   const [activeGuruTab, setActiveGuruTab] = useState<"overview" | "tool">("overview");
   const [expandedBucket, setExpandedBucket] = useState<string | null>(null);
   const [activeToolStep, setActiveToolStep] = useState<string | null>(null);
+  // ── Three-step workflow state ──────────────────────────────────────────────
+  const [step1Done, setStep1Done] = useState(false);
+  const [step2Done, setStep2Done] = useState(false);
+  const [step3Analyzing, setStep3Analyzing] = useState(false);
+  const [step3Visible, setStep3Visible] = useState(false);
+  const [opMonthsLocal, setOpMonthsLocal] = useState(opsCashMonths);
+  const [resMonthsLocal, setResMonthsLocal] = useState(12);
+  const [selProd, setSelProd] = useState<Record<string, number>>({ excess: 0 });
+  useEffect(() => {
+    if (step2Done && !step3Analyzing && !step3Visible) {
+      setStep3Analyzing(true);
+      const t = setTimeout(() => { setStep3Analyzing(false); setStep3Visible(true); }, 1600);
+      return () => clearTimeout(t);
+    }
+  }, [step2Done]);
 
   function handleExecute(from: string, to: string, amount: number) {
     setPendingTransfers((prev) => {
@@ -5759,432 +5774,282 @@ function GuruAllocationView({
                 );
               })()
             ) : (
-              /* ─── ALLOCATION TOOL: existing detailed panels ─── */
-              <>
-            {/* ── Income Calculator — portal into dark sidebar ── */}
-            {(() => {
-              const anyChanges = pendingTransfers.length > 0;
-              if (!anyChanges) return null;
-              const slot = typeof document !== "undefined" ? document.getElementById("guru-calc-slot") : null;
-              if (!slot) return null;
-              const impacts = rows.map((r) => {
-                const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
-                const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
-                const newBalance = r.current + inAmt - outAmt;
-                const curATYield = weightedATYield(r.subAccounts, r.current);
-                return {
-                  name: r.def.name,
-                  pickup: (newBalance * curATYield / 100) - (r.current * curATYield / 100),
-                  curIncome: r.current * curATYield / 100,
-                };
-              });
-              const totalPickup = impacts.reduce((s, i) => s + i.pickup, 0);
-              const totalCurIncome = impacts.reduce((s, i) => s + i.curIncome, 0);
-              const pctChange = totalCurIncome > 0 ? (totalPickup / totalCurIncome) * 100 : 0;
-              const investIncrease = pendingTransfers.filter(t => t.to === "Grow").reduce((s, t) => s + t.amount, 0);
-              const isGain = totalPickup >= 0;
-              return createPortal(
-                <div className="mx-3 mt-2 mb-3 rounded-lg overflow-hidden" style={{ boxShadow: "0 2px 10px rgba(10,20,60,0.15)" }}>
-                  {/* Header bar — institutional navy */}
-                  <div className="px-3 py-2 flex items-center gap-1.5" style={{ background: "hsl(222,45%,12%)" }}>
-                    <span className="signal-dot flex-shrink-0" />
-                    <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-white/90">Income Impact</p>
-                    <span className="ml-auto text-[8px] font-medium" style={{ color: "rgba(154,123,60,0.8)" }}>live · after-tax</span>
-                  </div>
-                  {/* Body */}
-                  <div className="px-3 py-3 space-y-2" style={{ background: "hsl(222,45%,8%)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                    <div>
-                      <p className="text-[8px] uppercase tracking-[0.12em] text-white/35 font-semibold mb-0.5">After-Tax Income / Year</p>
-                      <p className="serif-hero text-[1.4rem] font-normal tabular-nums leading-none" style={{ color: isGain ? "#9a7b3c" : "#dc2626" }}>
-                        {isGain ? "+" : "−"}{fmt(Math.abs(Math.round(totalPickup)))}
-                      </p>
-                    </div>
-                    <div className="h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
-                    <div className="flex gap-4">
-                      <div>
-                        <p className="text-[8px] uppercase tracking-[0.12em] text-white/35 font-semibold mb-0.5">A-T Income Δ</p>
-                        <p className="text-[13px] font-bold tabular-nums leading-none" style={{ color: isGain ? "#9a7b3c" : "#dc2626" }}>
-                          {isGain ? "+" : "−"}{Math.abs(pctChange).toFixed(1)}%
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] uppercase tracking-[0.12em] text-white/35 font-semibold mb-0.5">AUM Increase</p>
-                        <p className="text-[13px] font-bold tabular-nums leading-none" style={{ color: "#4ade80" }}>
-                          {investIncrease > 0 ? "+" : ""}{fmt(Math.round(investIncrease))}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>,
-                slot
-              );
-            })()}
-            {/* ── Workflow step list ── */}
-            <div className="space-y-2 pt-2">
-              {/* Progress summary bar */}
-              {(() => {
-                const needsAction = rows.filter(r => Math.abs(r.target - r.current) > 1000).length;
-                const hasPending = pendingTransfers.length > 0;
+              /* ─── ALLOCATION TOOL: three-step progressive workflow ─── */
+              (() => {
+                // ── Compute metrics ─────────────────────────────────────────
+                const moMap2: Record<string, number> = {};
+                cashFlows.filter((c) => c.type === "outflow").forEach((c) => {
+                  const d = new Date(c.date as string);
+                  const k = `${d.getFullYear()}-${d.getMonth()}`;
+                  moMap2[k] = (moMap2[k] ?? 0) + Number(c.amount);
+                });
+                const moVals2 = Object.values(moMap2);
+                const monthlyBurn = moVals2.length ? Math.min(...moVals2) : 18056;
+                const opCurrent = reserve;
+                const flowCurrent = yieldBucket + tactical;
+                const opCurrentMonths = monthlyBurn > 0 ? opCurrent / monthlyBurn : 0;
+                const resCurrentMonths = monthlyBurn > 0 ? flowCurrent / monthlyBurn : 0;
+                const opTargetAmt = opMonthsLocal * monthlyBurn;
+                const resTargetAmt = resMonthsLocal * monthlyBurn;
+                const opExcess = Math.max(0, opCurrent - opTargetAmt);
+                const resExcess = Math.max(0, flowCurrent - resTargetAmt);
+                const totalExcess = opExcess + resExcess;
+                const liquidCoverage = opCurrentMonths + resCurrentMonths;
+                const returnPickup = Math.round(totalExcess * 0.054);
+                const excessProds = [
+                  { name: "Cresset Short Duration", risk: "Low risk", grossYield: "6.10%", atYield: "5.40%", annualIncome: Math.round(totalExcess * 0.054), liquidity: "Daily liquidity · small NAV movement", rec: true },
+                  { name: "JPMorgan 100% Treasuries MMF", risk: "Zero risk", grossYield: "4.30%", atYield: "2.80%", annualIncome: Math.round(totalExcess * 0.028), liquidity: "Same-day liquidity · stable NAV", rec: false },
+                  { name: "US Treasury Ladder 1–6 Month", risk: "Zero risk", grossYield: "4.22%", atYield: "2.74%", annualIncome: Math.round(totalExcess * 0.0274), liquidity: "Holds to maturity · full capital return", rec: false },
+                ];
                 return (
-                  <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-2.5 mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1.5">
-                        {needsAction > 0
-                          ? <span className="signal-dot" />
-                          : <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-                        }
-                        <span className="text-[11px] font-semibold text-foreground">
-                          {needsAction > 0 ? `${needsAction} step${needsAction !== 1 ? "s" : ""} need action` : "All buckets on track"}
-                        </span>
-                      </div>
-                      {hasPending && (
-                        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] px-2 py-0.5 rounded-full border" style={{ color: "#9a7b3c", borderColor: "rgba(154,123,60,0.3)", background: "rgba(154,123,60,0.06)" }}>
-                          {pendingTransfers.length} pending
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">Click a step to review and execute</p>
-                  </div>
-                );
-              })()}
-
-              {rows.map((r, idx) => {
-                const prods = BUCKET_PRODUCTS[r.def.name] ?? [];
-                const bucketDelta = r.target - r.current;
-                const isOverfunded = bucketDelta < -1000;
-                const isNeedsAction = bucketDelta > 1000;
-                const hasPendingForBucket = pendingTransfers.some(t => t.from === r.def.name || t.to === r.def.name);
-                const isStepOpen = activeToolStep === r.def.name;
-                const OBstep: Record<string, { accent: string }> = {
-                  "Operating Cash": { accent: "#2e5c8a" },
-                  "Reserve":        { accent: "#8a6e2e" },
-                  "Build":          { accent: "#2e7a52" },
-                  "Grow":           { accent: "#2e4e7a" },
-                };
-                const stepAccent = OBstep[r.def.name]?.accent ?? "#4a5568";
-
-                return (
-                  <div key={r.def.name} id={`guru-bucket-${r.def.name.toLowerCase().replace(/\s+/g, '-')}`} className="rounded-xl overflow-hidden border border-border bg-card shadow-sm">
-                    {/* ── Step header (always visible) ── */}
-                    <div
-                      className="flex items-center gap-4 px-4 py-3.5 cursor-pointer hover:bg-secondary/30 transition-colors select-none"
-                      style={isStepOpen ? { borderBottom: "1px solid hsl(220,16%,88%)" } : undefined}
-                      onClick={() => setActiveToolStep(isStepOpen ? null : r.def.name)}
-                    >
-                      {/* Step number */}
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white"
-                        style={{ background: isStepOpen ? stepAccent : "hsl(220,14%,70%)" }}
-                      >
-                        {idx + 1}
-                      </div>
-
-                      {/* Bucket name + tagline */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-[12px] font-semibold text-foreground">{r.def.name}</p>
-                          {hasPendingForBucket && (
-                            <span className="text-[8px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded" style={{ background: "rgba(154,123,60,0.1)", color: "#9a7b3c" }}>
-                              Pending
+                  <div className="space-y-3 pt-4">
+                    {/* ── Opportunity Banner ── */}
+                    <div className="rounded-xl overflow-hidden border border-[hsl(222,45%,20%)]" style={{ background: "hsl(222,45%,11%)" }}>
+                      <div className="flex">
+                        <div className="flex-1 px-6 py-5 min-w-0">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="relative flex h-2 w-2 flex-shrink-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "#9a7b3c" }} />
+                              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#9a7b3c" }} />
                             </span>
-                          )}
+                            <span className="text-[9px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(154,123,60,0.85)" }}>Capital Opportunity · Kessler Family</span>
+                          </div>
+                          <p className="font-serif italic text-[1.1rem] text-white leading-snug mb-2">Compounding favors capital that stays invested.</p>
+                          <p className="text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.52)" }}>
+                            The Kessler Family is holding {liquidCoverage.toFixed(1)} months of liquid coverage against a {opMonthsLocal + resMonthsLocal}-month target — leaving roughly <span style={{ color: "rgba(154,123,60,0.85)" }}>{fmt(totalExcess)}</span> above threshold. Right-sizing their liquidity and deploying that capital into Cresset strategies could generate an additional <span style={{ color: "rgba(46,122,82,0.85)" }}>{fmt(returnPickup)}/yr</span> in after-tax income.
+                          </p>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 italic truncate">{r.def.tagline}</p>
-                      </div>
-
-                      {/* Current balance */}
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em] font-semibold">Current</p>
-                        <p className="serif-hero text-[15px] font-normal tabular-nums text-foreground mt-0.5">{fmt(r.current)}</p>
-                      </div>
-
-                      {/* Target + delta */}
-                      <div className="text-right flex-shrink-0 w-28">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.1em] font-semibold">Target</p>
-                        <p className="serif-hero text-[15px] font-normal tabular-nums text-foreground mt-0.5">{fmt(r.target)}</p>
-                      </div>
-
-                      {/* Status badge */}
-                      <div className="flex-shrink-0 w-32 flex justify-end">
-                        {isNeedsAction ? (
-                          <div className={`step-needs-action flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded`}>
-                            <span className="signal-dot" />
-                            <div>
-                              <p className="text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: "#9a7b3c" }}>Needs Action</p>
-                              <p className="text-[10px] font-semibold tabular-nums" style={{ color: "#7a6030" }}>+{fmt(bucketDelta)}</p>
+                        <div className="w-px my-4 flex-shrink-0" style={{ background: "rgba(255,255,255,0.07)" }} />
+                        <div className="flex flex-col justify-between py-5 px-6 flex-shrink-0 gap-3" style={{ minWidth: 190 }}>
+                          {[
+                            { label: "Total Assets", val: fmt(totalAssets), sub: "Full balance sheet", color: "rgba(255,255,255,0.85)" },
+                            { label: "Liquid Coverage", val: `${liquidCoverage.toFixed(1)} mos`, sub: `Target: ${opMonthsLocal + resMonthsLocal} months`, color: "#9a7b3c" },
+                            { label: "Excess Liquidity", val: fmt(totalExcess), sub: "Above threshold", color: "#9a7b3c" },
+                            { label: "Return Pickup / Year", val: `+${fmt(returnPickup)}`, sub: "If deployed today", color: "#2e7a52" },
+                          ].map((m) => (
+                            <div key={m.label}>
+                              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{m.label}</p>
+                              <p className="text-[14px] font-semibold tabular-nums leading-none" style={{ color: m.color }}>{m.val}</p>
+                              <p className="text-[9px] mt-0.5" style={{ color: "rgba(255,255,255,0.25)" }}>{m.sub}</p>
                             </div>
-                          </div>
-                        ) : isOverfunded ? (
-                          <div className={`step-overfunded flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded`}>
-                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-rose-500" />
-                            <div>
-                              <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-rose-700">Overfunded</p>
-                              <p className="text-[10px] font-semibold tabular-nums text-rose-600">{fmt(bucketDelta)}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className={`step-on-track flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded`}>
-                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-emerald-500" />
-                            <div>
-                              <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-700">On Track</p>
-                              <p className="text-[10px] font-semibold tabular-nums text-emerald-600">±{fmt(Math.abs(bucketDelta))}</p>
-                            </div>
-                          </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── STEP 1: Liquidity Policy ── */}
+                    <div className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white"
+                          style={{ background: step1Done ? "#2e7a52" : "hsl(222,45%,18%)" }}
+                        >{step1Done ? "✓" : "1"}</div>
+                        <span className="text-[12px] font-semibold text-foreground flex-1">Liquidity Policy</span>
+                        {step1Done && (
+                          <button onClick={() => { setStep1Done(false); setStep2Done(false); setStep3Analyzing(false); setStep3Visible(false); }} className="text-[10px] font-semibold px-3 py-1 rounded border border-border hover:bg-secondary transition-colors text-muted-foreground">Edit</button>
                         )}
                       </div>
-
-                      {/* Chevron */}
-                      <div className="text-muted-foreground flex-shrink-0 text-[11px] w-4 text-center">{isStepOpen ? "▲" : "▼"}</div>
-                    </div>
-
-                    {/* ── Step detail (expanded) ── */}
-                    {isStepOpen && (
-                    <div className="overflow-hidden flex border-t border-border">
-                    {/* ── LEFT: Header + Accounts ── */}
-                    <div className="w-[540px] flex-shrink-0 flex flex-col border-r border-border">
-                      <div
-                        className="px-4 py-3 flex items-center gap-2.5"
-                        style={{ background: HERO_COLORS[r.def.name]?.bg ?? r.def.bg }}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ background: r.def.accent }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-base font-bold text-white leading-none">
-                            {r.def.name}
-                          </p>
-                          <p
-                            className="text-[10px] italic mt-0.5 truncate"
-                            style={{ color: r.def.accent, opacity: 0.85 }}
-                          >
-                            {r.def.tagline}
-                          </p>
+                      {step1Done ? (
+                        <div className="flex items-start gap-3 px-5 py-3.5" style={{ borderLeft: "3px solid #2e7a52", background: "rgba(46,122,82,0.04)" }}>
+                          <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#2e7a52" }} />
+                          <div>
+                            <p className="text-[11px] font-semibold text-foreground">Liquidity targets set</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">Op Cash: {opMonthsLocal} mos · Reserve: {resMonthsLocal} mos · <span className="font-semibold" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)} excess capital identified</span></p>
+                          </div>
                         </div>
-                        <p className="text-[10px] text-white/50 text-right leading-snug max-w-[90px] flex-shrink-0">
-                          {r.def.rule}
-                        </p>
-                      </div>
-                      <div className="bg-card px-4 pt-3 pb-3 flex-1 flex flex-col">
-                        {/* Column headers */}
-                        {(() => {
-                          const isG = r.def.name === "Grow";
-                          return (
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Account</span>
-                              <div className="flex items-center gap-4">
-                                <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground w-20 text-right">Balance</span>
-                                {!isG && <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground w-10 text-right">Yield</span>}
-                                <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground w-24 text-right">{isG ? "5yr Return" : "Tax-Eff. Yield"}</span>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                        {(() => {
-                          const activeSels = bucketProductSelections[r.def.name] ?? [];
-                          const hasNewAlloc = activeSels.length > 0;
-                          const isGrow = r.def.name === "Grow";
-                          const strikeCls = hasNewAlloc ? "opacity-35 line-through decoration-slate-400" : "";
-
-                          const equityNames = ["International", "US Total Market", "US Large Cap", "US Small Cap", "US Dividend / Value", "Single Stock"];
-                          const growGroups = isGrow ? [
-                            { label: "Equities", items: r.subAccounts.filter(a => equityNames.includes(a.name)) },
-                            { label: "Fixed Income", items: r.subAccounts.filter(a => a.name === "Bonds") },
-                            { label: "Cash", items: r.subAccounts.filter(a => a.name.startsWith("Cash")) },
-                            { label: "Alternatives", items: r.subAccounts.filter(a => a.name === "Crypto") },
-                          ].filter(g => g.items.length > 0) : [];
-
-                          const AcctRow = ({ dot, name, acctNum, bal, yld, at, showYld, dotColor }: {
-                            dot?: boolean; name: React.ReactNode; acctNum?: string;
-                            bal: React.ReactNode; yld?: React.ReactNode; at: React.ReactNode;
-                            showYld: boolean; dotColor?: string;
-                          }) => (
-                            <div className="flex items-center justify-between gap-2 min-w-0">
-                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                {dot !== false && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />}
-                                <span className="text-[11px] text-muted-foreground leading-tight truncate">{name}</span>
-                                {acctNum && <span className="flex-shrink-0 text-[9px] tabular-nums text-muted-foreground/60">···{acctNum}</span>}
-                              </div>
-                              <div className="flex items-center gap-4 flex-shrink-0">
-                                <span className="text-[10px] font-semibold tabular-nums text-foreground w-20 text-right">{bal}</span>
-                                {showYld && <span className="text-[10px] font-semibold tabular-nums text-foreground w-10 text-right">{yld ?? "—"}</span>}
-                                <span className="text-[10px] tabular-nums text-muted-foreground w-24 text-right">{at}</span>
-                              </div>
-                            </div>
-                          );
-
-                          return (
-                        <div className="space-y-1.5 flex-1">
-                          {isGrow ? (
-                            growGroups.map((group) => {
-                              const groupTotal = group.items.reduce((s, a) => s + a.value, 0);
+                      ) : (
+                        <div className="p-5 space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            {([
+                              { label: "Operating Cash", sublabel: "Checking · transaction accounts", currentMonths: opCurrentMonths, targetMonths: opMonthsLocal, setTarget: setOpMonthsLocal, current: opCurrent, excess: opExcess, color: "#2e5c8a" },
+                              { label: "Reserve", sublabel: "Savings, MM & Treasuries", currentMonths: resCurrentMonths, targetMonths: resMonthsLocal, setTarget: setResMonthsLocal, current: flowCurrent, excess: resExcess, color: "#8a6e2e" },
+                            ] as const).map((b) => {
+                              const isOver = b.currentMonths > b.targetMonths;
+                              const fillPct = b.currentMonths > 0 ? Math.min((b.targetMonths / b.currentMonths) * 100, 100) : 0;
+                              const excessFillPct = isOver ? 100 - fillPct : 0;
                               return (
-                                <div key={group.label} className={`space-y-1 ${strikeCls}`}>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{group.label}</span>
-                                    <span className="text-[10px] font-black tabular-nums text-foreground">{fmt(groupTotal)}</span>
+                                <div key={b.label} className="rounded-lg border border-border bg-background p-4 space-y-3">
+                                  <div>
+                                    <p className="text-[11px] font-semibold text-foreground">{b.label}</p>
+                                    <p className="text-[10px] text-muted-foreground">{b.sublabel}</p>
                                   </div>
-                                  {group.items.map((acct) => (
-                                    <div key={acct.name} className="pl-2">
-                                      <AcctRow
-                                        dotColor={hasNewAlloc ? "#94a3b8" : r.def.accent}
-                                        name={acct.name}
-                                        acctNum={acct.acctNum}
-                                        bal={fmt(acct.value)}
-                                        at={acct.yieldAT}
-                                        showYld={false}
-                                      />
+                                  <div>
+                                    <div className="flex justify-between items-baseline mb-1.5">
+                                      <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Coverage</span>
+                                      <span className="text-[10px] font-semibold tabular-nums" style={{ color: isOver ? "#9a7b3c" : "#2e7a52" }}>{b.currentMonths.toFixed(1)} mos {isOver ? "· Overfunded" : "· On Target"}</span>
                                     </div>
-                                  ))}
+                                    <div className="relative h-2 rounded-full overflow-hidden" style={{ background: "hsl(220,14%,90%)" }}>
+                                      <div className="absolute left-0 top-0 h-full rounded-l-full transition-all duration-300" style={{ width: `${fillPct}%`, background: b.color }} />
+                                      {excessFillPct > 0 && (
+                                        <div className="absolute top-0 h-full" style={{ left: `${fillPct}%`, width: `${excessFillPct}%`, background: "rgba(154,123,60,0.38)", borderRadius: "0 3px 3px 0" }} />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-5">
+                                    <div>
+                                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Current</p>
+                                      <p className="text-[12px] font-semibold tabular-nums text-foreground mt-0.5">{fmt(b.current)}</p>
+                                    </div>
+                                    {b.excess > 100 && (
+                                      <div>
+                                        <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: "rgba(154,123,60,0.7)" }}>Excess</p>
+                                        <p className="text-[12px] font-semibold tabular-nums mt-0.5" style={{ color: "#9a7b3c" }}>{fmt(b.excess)}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between pt-1">
+                                    <span className="text-[10px] text-muted-foreground">Target months</span>
+                                    <div className="flex items-center gap-2">
+                                      <button onClick={() => b.setTarget(Math.max(1, b.targetMonths - 1))} className="w-6 h-6 rounded border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary text-[13px] font-bold transition-colors">−</button>
+                                      <span className="text-[13px] font-bold tabular-nums w-6 text-center text-foreground">{b.targetMonths}</span>
+                                      <button onClick={() => b.setTarget(b.targetMonths + 1)} className="w-6 h-6 rounded border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary text-[13px] font-bold transition-colors">+</button>
+                                    </div>
+                                  </div>
                                 </div>
                               );
-                            })
-                          ) : r.subAccounts.map((acct) => (
-                            <div key={acct.name} className={strikeCls}>
-                              <AcctRow
-                                dotColor={hasNewAlloc ? "#94a3b8" : r.def.accent}
-                                name={acct.name}
-                                acctNum={acct.acctNum}
-                                bal={fmt(acct.value)}
-                                yld={acct.yield_}
-                                at={acct.yieldAT}
-                                showYld={true}
-                              />
-                            </div>
-                          ))}
-                          {/* New amber rows for selected products */}
-                          {activeSels.map((sel) => {
-                            const _inAmt = pendingTransfers.filter((t) => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
-                            const _outAmt = pendingTransfers.filter((t) => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
-                            const allocBal = (r.current + _inAmt - _outAmt) * (sel.alloc / 100);
-                            return (
-                              <div key={sel.product.name} className="rounded-md px-2 py-1.5 flex items-center justify-between gap-2" style={{ border: "1px solid rgba(154,123,60,0.3)", background: "rgba(154,123,60,0.05)" }}>
-                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#9a7b3c" }} />
-                                  <span className="text-[11px] font-semibold leading-tight truncate" style={{ color: "#7a6030" }}>{sel.product.name}</span>
-                                </div>
-                                <div className="flex items-center gap-4 flex-shrink-0">
-                                  <span className="text-[10px] font-bold tabular-nums w-20 text-right" style={{ color: "#9a7b3c" }}>{fmt(allocBal)}</span>
-                                  {!isGrow && <span className="text-[10px] font-semibold tabular-nums w-10 text-right" style={{ color: "#9a7b3c" }}>{sel.product.grossYield}</span>}
-                                  <span className="text-[10px] tabular-nums w-24 text-right" style={{ color: "#9a7b3c" }}>{sel.product.atYield}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          {r.subAccounts.length === 0 && (
-                            <p className="text-xs text-muted-foreground italic">No accounts mapped</p>
-                          )}
-                          {/* Pending outbound transfers */}
-                          {pendingTransfers.filter((t) => t.from === r.def.name).map((pt) => (
-                            <div key={`outbound-${pt.to}`} className="rounded-md px-2 py-1.5 flex items-center justify-between gap-2" style={{ border: "1px solid rgba(154,123,60,0.3)", background: "rgba(154,123,60,0.05)" }}>
-                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                <span className="signal-dot flex-shrink-0" />
-                                <span className="text-[11px] font-semibold leading-tight" style={{ color: "#7a6030" }}>Transfer out → {pt.to}</span>
-                              </div>
-                              <span className="text-[10px] font-bold tabular-nums flex-shrink-0 text-destructive">−{fmt(pt.amount)}</span>
-                            </div>
-                          ))}
-                          {/* Pending inbound transfers */}
-                          {pendingTransfers.filter((t) => t.to === r.def.name).map((pt) => (
-                            <div key={`inbound-${pt.from}`} className="rounded-md px-2 py-1.5 flex items-center justify-between gap-2" style={{ border: "1px solid rgba(154,123,60,0.3)", background: "rgba(154,123,60,0.05)" }}>
-                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                <span className="signal-dot flex-shrink-0" />
-                                <span className="text-[11px] font-semibold leading-tight" style={{ color: "#7a6030" }}>Transfer from {pt.from}</span>
-                              </div>
-                              <span className="text-[10px] font-bold tabular-nums flex-shrink-0" style={{ color: "#9a7b3c" }}>+{fmt(pt.amount)}</span>
-                            </div>
-                          ))}
-                          {pendingTransfers.filter((t) => t.to === r.def.name).length > 0 && (
-                            <div className="flex items-center gap-1 mt-1 text-[9px] font-semibold uppercase tracking-[0.1em]" style={{ color: "#9a7b3c" }}>
-                              <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                              Select a product for incoming funds →
-                            </div>
-                          )}
+                            })}
+                          </div>
+                          <div className="flex justify-end">
+                            <button onClick={() => setStep1Done(true)} className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Set Liquidity Targets →</button>
+                          </div>
                         </div>
-                          );
-                        })()}
-                        {/* Totals footer */}
-                        {(() => {
-                          const outAmt = pendingTransfers.filter((t) => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
-                          const inAmt = pendingTransfers.filter((t) => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
-                          const netDelta = inAmt - outAmt;
-                          const hasPending = netDelta !== 0;
-                          const adjTotal = r.current + netDelta;
-                          const ftIsGrow = r.def.name === "Grow";
-                          return (
-                            <div className="mt-2.5 pt-2 border-t border-border flex items-center justify-between">
-                              <span className="text-[9px] text-muted-foreground italic">
-                                {r.subAccounts.length} position{r.subAccounts.length !== 1 ? "s" : ""}
-                              </span>
-                              <div className="flex items-center gap-4">
-                                {hasPending ? (
-                                  <span className="text-xs font-bold tabular-nums flex flex-col items-end leading-tight w-20">
-                                    <span className="text-muted-foreground line-through text-[10px]">{fmt(r.current)}</span>
-                                    <span className="text-amber-600">{fmt(adjTotal)}</span>
-                                  </span>
-                                ) : (
-                                  <span className="text-xs font-bold tabular-nums text-foreground w-20 text-right">{fmt(r.current)}</span>
-                                )}
-                                {!ftIsGrow && (
-                                  <span className="text-[10px] font-bold tabular-nums w-10 text-right" style={{ color: r.def.bg }}>
-                                    {r.current > 0 ? `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
-                                  </span>
-                                )}
-                                <span className="text-[9px] text-muted-foreground tabular-nums w-24 text-right">
-                                  {r.current > 0 ? `${weightedATYield(r.subAccounts, r.current).toFixed(2)}%` : "—"}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
+                      )}
                     </div>
-                    {/* ── EXECUTION: Transfer panel ── */}
-                    <BucketExecutionPanel
-                      bucketName={r.def.name}
-                      current={r.current}
-                      target={r.target}
-                      delta={r.target - r.current}
-                      accentColor={r.def.accent}
-                      bgColor={r.def.bg}
-                      avgYield={weightedGrossYield(r.subAccounts, r.current)}
-                      avgYieldAT={weightedATYield(r.subAccounts, r.current)}
-                      bpPickup={r.bpPickup}
-                      totalAssets={totalAssets}
-                      onExecute={handleExecute}
-                      onUndo={handleUndo}
-                      monthsInputConfig={
-                        r.def.name === "Operating Cash"
-                          ? { defaultMonths: opsCashMonths, monthlyUnit: 20940, label: "mos. of expenses" }
-                          : r.def.name === "Reserve"
-                            ? {
-                                defaultMonths: 12,
-                                forecastCumulatives: forecastData.map(d => d.cumulative),
-                                nextMonthExpenses: 3 * minMonthly,
-                                label: "mos. of cumulative net cashflow",
-                              }
-                            : undefined
-                      }
-                    />
-                    {/* ── RIGHT: Products panel ── */}
-                    <BucketProductPanel
-                      bgColor={r.def.bg}
-                      accentColor={r.def.accent}
-                      products={prods}
-                      currentAvgYieldAT={weightedATYield(r.subAccounts, r.current)}
-                      bucketName={r.def.name}
-                      hasPendingTransfer={pendingTransfers.some(t => t.to === r.def.name)}
-                      onSelectionChange={(sels) =>
-                        setBucketProductSelections(prev => ({ ...prev, [r.def.name]: sels }))
-                      }
-                    />
-                  </div>
-                    )}
+
+                    {/* ── STEP 2: Capital Release ── */}
+                    <div className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white"
+                          style={{ background: step2Done ? "#2e7a52" : step1Done ? "hsl(222,45%,18%)" : "hsl(220,14%,78%)" }}
+                        >{step2Done ? "✓" : "2"}</div>
+                        <span className={`text-[12px] font-semibold flex-1 ${step1Done ? "text-foreground" : "text-muted-foreground"}`}>Capital Release</span>
+                        {step2Done && (
+                          <button onClick={() => { setStep2Done(false); setStep3Analyzing(false); setStep3Visible(false); }} className="text-[10px] font-semibold px-3 py-1 rounded border border-border hover:bg-secondary transition-colors text-muted-foreground">Edit</button>
+                        )}
+                      </div>
+                      {!step1Done ? (
+                        <div className="px-5 py-3.5 flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 text-muted-foreground/40" />
+                          <span className="text-[11px] text-muted-foreground/60">Capital release plan generates after liquidity targets are set.</span>
+                        </div>
+                      ) : step2Done ? (
+                        <div className="flex items-start gap-3 px-5 py-3.5" style={{ borderLeft: "3px solid #2e7a52", background: "rgba(46,122,82,0.04)" }}>
+                          <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#2e7a52" }} />
+                          <div>
+                            <p className="text-[11px] font-semibold text-foreground">Capital release confirmed</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{fmt(totalExcess)} routing to Investment Pool</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-5 space-y-4">
+                          <div className="rounded-lg border border-border overflow-hidden">
+                            <div className="grid px-4 py-2 bg-secondary/40 border-b border-border text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground" style={{ gridTemplateColumns: "1fr 32px 160px 1fr" }}>
+                              <span>Source</span><span></span><span>Amount to Release</span><span>Destination</span>
+                            </div>
+                            {([
+                              { source: "Operating Cash", desc: opExcess > 0 ? `Chase Checking \u00b74821 \u00b7 ${opCurrentMonths.toFixed(1)} mos coverage` : "At target — no release needed", amount: opExcess },
+                              { source: "Reserve", desc: resExcess > 0 ? `Citizens Bank \u00b77204 \u00b7 ${resCurrentMonths.toFixed(1)} mos coverage` : "At target — no release needed", amount: resExcess },
+                            ] as const).map((row) => (
+                              <div key={row.source} className="grid items-center px-4 py-3 border-b border-border last:border-0" style={{ gridTemplateColumns: "1fr 32px 160px 1fr" }}>
+                                <div>
+                                  <p className="text-[11px] font-semibold text-foreground">{row.source}</p>
+                                  <p className="text-[10px] text-muted-foreground">{row.desc}</p>
+                                </div>
+                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40" />
+                                <p className="text-[12px] font-bold tabular-nums" style={{ color: row.amount > 100 ? "#9a7b3c" : "hsl(220,14%,72%)" }}>
+                                  {row.amount > 100 ? fmt(row.amount) : "—"}
+                                </p>
+                                <div>
+                                  <p className="text-[11px] font-semibold text-foreground">Investment Pool</p>
+                                  <p className="text-[10px] text-muted-foreground">Above coverage target</p>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="flex items-center justify-between px-4 py-2.5 bg-secondary/30 border-t border-border">
+                              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Total Capital to Deploy</span>
+                              <span className="text-[13px] font-bold tabular-nums" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)}</span>
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <button onClick={() => setStep2Done(true)} className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Find Best Allocation →</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── STEP 3: Product Allocation ── */}
+                    <div className="rounded-xl border border-border bg-card overflow-hidden">
+                      <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white"
+                          style={{ background: step3Visible ? "#2e7a52" : step2Done ? "hsl(222,45%,18%)" : "hsl(220,14%,78%)" }}
+                        >{step3Visible ? "✓" : "3"}</div>
+                        <span className={`text-[12px] font-semibold flex-1 ${step2Done ? "text-foreground" : "text-muted-foreground"}`}>Product Allocation</span>
+                      </div>
+                      {!step2Done ? (
+                        <div className="px-5 py-3.5 flex items-center gap-2">
+                          <Lock className="w-3.5 h-3.5 text-muted-foreground/40" />
+                          <span className="text-[11px] text-muted-foreground/60">GURU will identify optimal products once the capital release plan is confirmed.</span>
+                        </div>
+                      ) : step3Analyzing ? (
+                        <div className="px-5 py-4 flex items-center gap-3">
+                          <div className="flex gap-1.5">
+                            {[0, 1, 2].map((i) => (
+                              <span key={i} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#9a7b3c", animationDelay: `${i * 0.2}s` }} />
+                            ))}
+                          </div>
+                          <span className="text-[11px] text-muted-foreground italic">GURU is analyzing best products for tax-optimized yield…</span>
+                        </div>
+                      ) : step3Visible ? (
+                        <div className="p-5 space-y-4">
+                          <div>
+                            <p className="text-[11px] font-semibold text-foreground">Best options for {fmt(totalExcess)} in excess capital</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">Ranked by after-tax yield · optimized for 37% bracket</p>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            {excessProds.map((p, i) => {
+                              const isSel = (selProd["excess"] ?? 0) === i;
+                              return (
+                                <div
+                                  key={p.name}
+                                  onClick={() => setSelProd((s) => ({ ...s, excess: i }))}
+                                  className="rounded-lg border cursor-pointer transition-all p-4 space-y-2.5"
+                                  style={{
+                                    borderColor: isSel ? "#9a7b3c" : "hsl(220,14%,88%)",
+                                    background: isSel ? "rgba(154,123,60,0.05)" : "white",
+                                    boxShadow: isSel ? "0 0 0 1px rgba(154,123,60,0.25)" : undefined,
+                                  }}
+                                >
+                                  {p.rec && (
+                                    <div className="text-[8px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full w-fit" style={{ background: "rgba(154,123,60,0.12)", color: "#9a7b3c" }}>Recommended</div>
+                                  )}
+                                  <div className="flex items-start justify-between gap-1">
+                                    <p className="text-[11px] font-semibold text-foreground leading-tight">{p.name}</p>
+                                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: p.risk === "Zero risk" ? "rgba(46,122,82,0.08)" : "rgba(46,92,138,0.08)", color: p.risk === "Zero risk" ? "#2e7a52" : "#2e5c8a" }}>{p.risk}</span>
+                                  </div>
+                                  <div>
+                                    <p className="text-[20px] font-bold tabular-nums leading-none" style={{ color: "#9a7b3c" }}>{p.atYield}</p>
+                                    <p className="text-[9px] text-muted-foreground mt-0.5">{p.grossYield} gross · AT yield</p>
+                                  </div>
+                                  <div className="flex items-center justify-between pt-1 border-t border-border">
+                                    <span className="text-[9px] text-muted-foreground">Annual Income</span>
+                                    <span className="text-[11px] font-bold tabular-nums" style={{ color: "#2e7a52" }}>+{fmt(p.annualIncome)}/yr</span>
+                                  </div>
+                                  <p className="text-[9px] text-muted-foreground">{p.liquidity}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex justify-end">
+                            <button className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "#2e7a52" }}>Confirm Allocation →</button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 );
-              })}
-            </div>
-              </>
+              })()
             )}
           </>
         );
