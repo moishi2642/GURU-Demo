@@ -5402,57 +5402,58 @@ function GuruAllocationView({
                   ? Math.min((b.targetMonths / b.currentMonths) * 100, 100)
                   : 100;
                 return (
-                  <div key={b.label} className="rounded-xl border-2 p-5 space-y-4" style={{ borderColor: b.borderColor, background: b.bg }}>
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: b.accentColor }}>{b.label}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Monthly burn: {fmt(monthlyBurnT)} · {b.sublabelAcct}</p>
+                  <div key={b.label} className="rounded-xl border border-border p-5 space-y-4" style={{ background: "#faf9f7", borderTop: `2px solid ${b.accentColor}` }}>
+                    {/* Header — no excess badge here; it lives below the bar */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: b.accentColor }}>{b.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Monthly burn: {fmt(monthlyBurnT)} · {b.sublabelAcct}</p>
+                    </div>
+
+                    {/* Coverage bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Current: <span className="font-semibold text-foreground">{b.currentMonths.toFixed(1)} mos</span></span>
+                        <span className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Target: <span className="font-semibold text-foreground">{b.targetMonths} mos</span></span>
                       </div>
-                      {b.excess > 100 && (
-                        <div className="px-2.5 py-1 rounded text-[9px] font-bold flex-shrink-0 whitespace-nowrap" style={{ background: "rgba(154,123,60,0.13)", color: "#8a6e2e", border: "1px solid rgba(154,123,60,0.28)" }}>
-                          +{fmt(b.excess)} Above Target
+                      <div className="relative rounded-full overflow-hidden" style={{ height: 6, background: isOver ? "rgba(154,123,60,0.18)" : "hsl(220,14%,88%)" }}>
+                        <div className="absolute left-0 top-0 h-full" style={{ width: `${isOver ? tgtLinePct : 100}%`, background: b.accentColor, opacity: 0.85, borderRadius: isOver ? "3px 0 0 3px" : "3px" }} />
+                        {isOver && (
+                          <div className="absolute top-0 h-full w-[2px]" style={{ left: `${tgtLinePct}%`, background: "rgba(255,255,255,0.85)" }} />
+                        )}
+                      </div>
+                      {/* Excess / deficit badge — single location, styled to pop */}
+                      {isOver ? (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: "rgba(154,123,60,0.12)", border: "1px solid rgba(154,123,60,0.3)" }}>
+                          <span className="text-[10px] font-bold tabular-nums" style={{ color: "#9a7b3c" }}>{fmt(b.excess)}</span>
+                          <span className="text-[9px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#9a7b3c" }}>excess · {(b.currentMonths - b.targetMonths).toFixed(1)} mos above target</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: "rgba(46,92,138,0.08)", border: "1px solid rgba(46,92,138,0.2)" }}>
+                          <span className="text-[10px] font-bold tabular-nums" style={{ color: b.accentColor }}>{fmt(b.targetAmt - b.current)}</span>
+                          <span className="text-[9px] font-semibold uppercase tracking-[0.08em]" style={{ color: b.accentColor }}>to reach target · {(b.targetMonths - b.currentMonths).toFixed(1)} mos short</span>
                         </div>
                       )}
                     </div>
 
-                    {/* Coverage bar — current always fills full width; target line marks the threshold */}
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-baseline">
-                        <span className="text-[9.5px] text-muted-foreground">Current: <span className="font-semibold text-foreground">{b.currentMonths.toFixed(1)} mos</span></span>
-                        <span className="text-[9.5px] text-muted-foreground">Target: <span className="font-semibold text-foreground">{b.targetMonths} mos</span></span>
+                    {/* Stepper — fit-content width per mockup */}
+                    <div className="flex items-center rounded-lg border border-border overflow-hidden bg-white" style={{ width: "fit-content" }}>
+                      <button onClick={() => b.setTarget(Math.max(1, b.targetMonths - 1))} className="flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors border-r border-border flex-shrink-0 text-[16px]" style={{ width: 34, height: 34 }}>−</button>
+                      <div className="flex flex-col items-center justify-center" style={{ minWidth: 90, padding: "0 18px" }}>
+                        <span className="font-serif leading-none text-foreground" style={{ fontSize: 20 }}>{b.targetMonths}</span>
+                        <span className="text-[10px] text-muted-foreground">mo target</span>
                       </div>
-                      <div className="relative h-2.5 rounded-full overflow-hidden" style={{ background: isOver ? "rgba(154,123,60,0.22)" : "hsl(220,14%,88%)" }}>
-                        {/* Target zone — solid accent from 0 to target line */}
-                        <div className="absolute left-0 top-0 h-full" style={{ width: `${isOver ? tgtLinePct : 100}%`, background: b.accentColor, borderRadius: isOver ? "4px 0 0 4px" : "4px" }} />
-                        {/* Target line divider */}
-                        {isOver && (
-                          <div className="absolute top-0 h-full w-[2px]" style={{ left: `${tgtLinePct}%`, background: "rgba(255,255,255,0.7)" }} />
-                        )}
-                      </div>
-                      {isOver && (
-                        <p className="text-[9px] font-semibold" style={{ color: "#9a7b3c" }}>
-                          {(b.currentMonths - b.targetMonths).toFixed(1)} mos above target · {fmt(b.excess)} to release
-                        </p>
-                      )}
+                      <button onClick={() => b.setTarget(b.targetMonths + 1)} className="flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors border-l border-border flex-shrink-0 text-[16px]" style={{ width: 34, height: 34 }}>+</button>
                     </div>
 
-                    {/* Stepper */}
-                    <div className="flex items-center rounded-lg border border-border overflow-hidden bg-white">
-                      <button onClick={() => b.setTarget(Math.max(1, b.targetMonths - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors text-[18px] border-r border-border flex-shrink-0">−</button>
-                      <div className="flex-1 text-center text-[12px] font-semibold text-foreground">{b.targetMonths} mo target</div>
-                      <button onClick={() => b.setTarget(b.targetMonths + 1)} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors text-[18px] border-l border-border flex-shrink-0">+</button>
-                    </div>
-
-                    {/* Balances */}
+                    {/* Balances — color-coded: target = neutral, current = accent if over, muted-warning if under */}
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border">
                       <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-1">Target Balance</p>
-                        <p className="text-[15px] font-semibold tabular-nums text-foreground">{fmt(b.targetAmt)}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Target Balance</p>
+                        <p className="text-[13px] font-medium tabular-nums font-mono" style={{ color: "hsl(220,14%,45%)" }}>{fmt(b.targetAmt)}</p>
                       </div>
                       <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-1">Current Balance</p>
-                        <p className="text-[15px] font-semibold tabular-nums text-foreground">{fmt(b.current)}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Current Balance</p>
+                        <p className="text-[13px] font-semibold tabular-nums font-mono" style={{ color: isOver ? b.accentColor : "hsl(30,60%,42%)" }}>{fmt(b.current)}</p>
                       </div>
                     </div>
                   </div>
@@ -5461,11 +5462,15 @@ function GuruAllocationView({
             </div>
 
             {/* Step 1 footer */}
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] text-muted-foreground">
-                Excess identified: <span className="font-semibold" style={{ color: "#9a7b3c" }}>{fmt(totalExcessT)}</span> · ready for capital release
-              </p>
-              <button onClick={() => setStep1Done(true)} className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Set Liquidity Targets →</button>
+            <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl" style={{ background: "rgba(154,123,60,0.08)", border: "1px solid rgba(154,123,60,0.25)" }}>
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "#9a7b3c" }}>Total Excess Identified</p>
+                  <p className="font-serif text-[22px] leading-none mt-0.5" style={{ color: "#9a7b3c" }}>{fmt(totalExcessT)}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Ready to release into investment pool</p>
+                </div>
+              </div>
+              <button onClick={() => setStep1Done(true)} className="flex-shrink-0 px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Set Liquidity Targets →</button>
             </div>
           </div>
         )}
