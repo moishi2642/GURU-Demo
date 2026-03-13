@@ -5241,9 +5241,6 @@ function GuruAllocationView({
   setBucketProductSelections: React.Dispatch<React.SetStateAction<Record<string, Array<{ product: BucketProduct; alloc: number }>>>>;
 }) {
 
-  const [activeGuruTab, setActiveGuruTab] = useState<"overview" | "tool">("overview");
-  const [expandedBucket, setExpandedBucket] = useState<string | null>(null);
-  const [activeToolStep, setActiveToolStep] = useState<string | null>(null);
   // ── Three-step workflow state ──────────────────────────────────────────────
   const [step1Done, setStep1Done] = useState(false);
   const [step2Done, setStep2Done] = useState(false);
@@ -5273,790 +5270,352 @@ function GuruAllocationView({
   }
 
   const { reserve, yieldBucket, tactical, totalLiquid } = cashBuckets(assets);
-  const forecastData = buildForecast(cashFlows);
-  const cashTrough = computeTrough(forecastData);
-  const cashExcess = totalLiquid - cashTrough;
-  const totalToInvest = Math.round(Math.max(0, cashExcess));
-
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
-  const growth = assets
-    .filter((a) => a.type === "equity")
-    .reduce((s, a) => s + Number(a.value), 0);
-  const alts = assets
-    .filter((a) => a.type === "alternative" || a.type === "real_estate")
-    .reduce((s, a) => s + Number(a.value), 0);
 
-  const buckets = [
-    {
-      label: "Operating Cash",
-      sublabel: "Checking — transaction accounts",
-      value: reserve,
-      color: GURU_BUCKETS_DEF[0].bg,
-      pct: (reserve / totalAssets) * 100,
-    },
-    {
-      label: "Reserve",
-      sublabel: "Savings, MM & Treasuries",
-      value: yieldBucket + tactical,
-      color: GURU_BUCKETS_DEF[1].bg,
-      pct: ((yieldBucket + tactical) / totalAssets) * 100,
-    },
-    {
-      label: "Build",
-      sublabel: "Equities & brokerage investments",
-      value: growth,
-      color: GURU_BUCKETS_DEF[2].bg,
-      pct: (growth / totalAssets) * 100,
-    },
-    {
-      label: "Grow",
-      sublabel: "Real estate, PE, carry, RSUs",
-      value: alts,
-      color: GURU_BUCKETS_DEF[3].bg,
-      pct: (alts / totalAssets) * 100,
-    },
+  const moMapT: Record<string, number> = {};
+  cashFlows.filter((c) => c.type === "outflow").forEach((c) => {
+    const d = new Date(c.date as string);
+    const k = `${d.getFullYear()}-${d.getMonth()}`;
+    moMapT[k] = (moMapT[k] ?? 0) + Number(c.amount);
+  });
+  const moValsT = Object.values(moMapT);
+  const monthlyBurnT = moValsT.length ? Math.min(...moValsT) : 18056;
+  const opCurrentT = reserve;
+  const flowCurrentT = yieldBucket + tactical;
+  const opCurrentMonthsT = monthlyBurnT > 0 ? opCurrentT / monthlyBurnT : 0;
+  const resCurrentMonthsT = monthlyBurnT > 0 ? flowCurrentT / monthlyBurnT : 0;
+  const opTargetAmtT = opMonthsLocal * monthlyBurnT;
+  const resTargetAmtT = resMonthsLocal * monthlyBurnT;
+  const opExcessT = Math.max(0, opCurrentT - opTargetAmtT);
+  const resExcessT = Math.max(0, flowCurrentT - resTargetAmtT);
+  const totalExcessT = opExcessT + resExcessT;
+  const liquidCoverageT = opCurrentMonthsT + resCurrentMonthsT;
+  const returnPickupT = Math.round(totalExcessT * 0.054);
+  const excessProdsT = [
+    { name: "Cresset Short Duration", risk: "Low risk", grossYield: "6.10%", atYield: "5.40%", annualIncome: Math.round(totalExcessT * 0.054), liquidity: "Daily liquidity · small NAV movement", rec: true },
+    { name: "JPMorgan 100% Treasuries MMF", risk: "Zero risk", grossYield: "4.30%", atYield: "2.80%", annualIncome: Math.round(totalExcessT * 0.028), liquidity: "Same-day liquidity · stable NAV", rec: false },
+    { name: "US Treasury Ladder 1–6 Month", risk: "Zero risk", grossYield: "4.22%", atYield: "2.74%", annualIncome: Math.round(totalExcessT * 0.0274), liquidity: "Holds to maturity · full capital return", rec: false },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* ── Rebalancing Recommendation ───────────────────────────────────── */}
+    <div className="space-y-5">
+      {/* ── Page Header ── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[22px] font-bold text-foreground tracking-tight">Allocation Tool</h1>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Set coverage targets · GURU generates the recommended transfer schedule</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 bg-white border border-border rounded-full px-3 py-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+            <span className="text-[10px] font-semibold text-foreground tracking-wide">LIVE · 8S AGO</span>
+          </div>
+          <button className="px-4 py-1.5 rounded-full border border-border text-[10px] font-semibold text-foreground bg-white hover:bg-secondary transition-colors">Present to Client</button>
+          <button className="px-4 py-1.5 rounded-full text-[10px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Execute All →</button>
+        </div>
+      </div>
+
+      {/* ── GURU Insight Banner ── */}
+      <div className="rounded-xl overflow-hidden border border-[hsl(222,45%,20%)]" style={{ background: "hsl(222,45%,11%)" }}>
+        <div className="flex">
+          <div className="flex-1 px-7 py-6 min-w-0">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="relative flex h-2 w-2 flex-shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "#9a7b3c" }} />
+                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#9a7b3c" }} />
+              </span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(154,123,60,0.85)" }}>GURU Insight · Kessler Family</span>
+            </div>
+            <p className="font-serif text-[1.3rem] text-white leading-snug mb-3 font-bold">Compounding favors capital that stays invested.</p>
+            <p className="text-[11.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
+              The Kessler Family had a strong year-end — bonuses landed in January. Their balance sheet is in excellent shape, but they're holding more liquidity than they need. At {liquidCoverageT.toFixed(1)} months of coverage against a {opMonthsLocal + resMonthsLocal}-month target, there's roughly <span style={{ color: "rgba(154,123,60,0.85)" }}>{fmt(totalExcessT)}</span> sitting above the threshold. <span className="italic">Now is the time to speak with them about right-sizing liquidity and putting that capital to work in Cresset's strategies.</span>
+            </p>
+          </div>
+          <div className="w-px my-5 flex-shrink-0" style={{ background: "rgba(255,255,255,0.07)" }} />
+          <div className="flex flex-col justify-between py-6 px-7 flex-shrink-0 gap-4" style={{ minWidth: 210 }}>
+            {[
+              { label: "Total Assets", val: fmt(totalAssets), sub: "Full balance sheet", color: "rgba(255,255,255,0.9)" },
+              { label: "Liquid Coverage", val: `${liquidCoverageT.toFixed(1)} mos`, sub: `Target: ${opMonthsLocal + resMonthsLocal} months`, color: "#9a7b3c" },
+              { label: "Excess Liquidity", val: fmt(totalExcessT), sub: "Above coverage threshold", color: "#9a7b3c" },
+              { label: "Return Pickup / Year", val: `+${fmt(returnPickupT)}`, sub: "If deployed today", color: "#2e7a52" },
+            ].map((m) => (
+              <div key={m.label}>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{m.label}</p>
+                <p className="text-[18px] font-bold tabular-nums leading-none" style={{ color: m.color }}>{m.val}</p>
+                <p className="text-[9px] mt-0.5" style={{ color: "rgba(255,255,255,0.25)" }}>{m.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── STEP 1: Liquidity Policy ── */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step1Done ? "#2e7a52" : "hsl(222,45%,18%)" }}>
+              {step1Done ? "✓" : "1"}
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground">Liquidity Policy</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground">Set coverage months for each bucket · GURU calculates excess</span>
+            {step1Done && (
+              <button onClick={() => { setStep1Done(false); setStep2Done(false); setStep3Analyzing(false); setStep3Visible(false); }} className="text-[10px] font-semibold px-3 py-1 rounded border border-border hover:bg-secondary transition-colors text-muted-foreground">Edit</button>
+            )}
+          </div>
+        </div>
+
+        {step1Done ? (
+          <div className="flex items-start gap-3 px-5 py-4 rounded-xl" style={{ borderLeft: "3px solid #2e7a52", background: "rgba(46,122,82,0.04)", border: "1px solid hsl(220,16%,90%)", borderLeftColor: "#2e7a52", borderLeftWidth: 3 }}>
+            <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#2e7a52" }} />
+            <div>
+              <p className="text-[11px] font-semibold text-foreground">Liquidity targets set</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Op Cash: {opMonthsLocal} mos · Reserve: {resMonthsLocal} mos · <span className="font-semibold" style={{ color: "#9a7b3c" }}>{fmt(totalExcessT)} excess capital identified</span></p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              {([
+                {
+                  label: "Operating Cash",
+                  sublabelAcct: "Checking + Savings",
+                  currentMonths: opCurrentMonthsT,
+                  targetMonths: opMonthsLocal,
+                  setTarget: setOpMonthsLocal,
+                  current: opCurrentT,
+                  targetAmt: opTargetAmtT,
+                  excess: opExcessT,
+                  accentColor: "#2e5c8a",
+                  borderColor: "#cfe0f0",
+                  bg: "#f4f8fc",
+                },
+                {
+                  label: "Reserve",
+                  sublabelAcct: "Savings + MM",
+                  currentMonths: resCurrentMonthsT,
+                  targetMonths: resMonthsLocal,
+                  setTarget: setResMonthsLocal,
+                  current: flowCurrentT,
+                  targetAmt: resTargetAmtT,
+                  excess: resExcessT,
+                  accentColor: "#8a6e2e",
+                  borderColor: "#e0d4b0",
+                  bg: "#faf8f2",
+                },
+              ] as const).map((b) => {
+                const maxM = Math.max(b.currentMonths, b.targetMonths) * 1.15 || 1;
+                const curPct = Math.min((b.currentMonths / maxM) * 100, 100);
+                const tgtPct = Math.min((b.targetMonths / maxM) * 100, 100);
+                const isOver = b.currentMonths > b.targetMonths;
+                const fillEnd = Math.min(curPct, tgtPct);
+                const excessStart = Math.min(tgtPct, curPct);
+                const excessWidth = isOver ? Math.abs(curPct - tgtPct) : 0;
+                return (
+                  <div key={b.label} className="rounded-xl border-2 p-5 space-y-4" style={{ borderColor: b.borderColor, background: b.bg }}>
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: b.accentColor }}>{b.label}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Monthly burn: {fmt(monthlyBurnT)} · {b.sublabelAcct}</p>
+                      </div>
+                      {b.excess > 100 && (
+                        <div className="px-2.5 py-1 rounded text-[9px] font-bold flex-shrink-0 whitespace-nowrap" style={{ background: "rgba(154,123,60,0.13)", color: "#8a6e2e", border: "1px solid rgba(154,123,60,0.28)" }}>
+                          +{fmt(b.excess)} Above Target
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Slider */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-[9.5px] text-muted-foreground">Current: <span className="font-semibold text-foreground">{b.currentMonths.toFixed(1)} mos</span></span>
+                        <span className="text-[9.5px] text-muted-foreground">Target: <span className="font-semibold text-foreground">{b.targetMonths} mos</span></span>
+                      </div>
+                      <div className="relative h-2 rounded-full" style={{ background: "hsl(220,14%,88%)" }}>
+                        <div className="absolute left-0 top-0 h-full rounded-full" style={{ width: `${fillEnd}%`, background: b.accentColor }} />
+                        {isOver && excessWidth > 0 && (
+                          <div className="absolute top-0 h-full" style={{ left: `${excessStart}%`, width: `${excessWidth}%`, background: "rgba(154,123,60,0.38)", borderRadius: "0 3px 3px 0" }} />
+                        )}
+                        <div className="absolute top-1/2 w-0.5 h-4 rounded-full" style={{ left: `${tgtPct}%`, transform: "translate(-50%, -50%)", background: b.accentColor, opacity: 0.7 }} />
+                      </div>
+                    </div>
+
+                    {/* Stepper */}
+                    <div className="flex items-center rounded-lg border border-border overflow-hidden bg-white">
+                      <button onClick={() => b.setTarget(Math.max(1, b.targetMonths - 1))} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors text-[18px] border-r border-border flex-shrink-0">−</button>
+                      <div className="flex-1 text-center text-[12px] font-semibold text-foreground">{b.targetMonths} mo target</div>
+                      <button onClick={() => b.setTarget(b.targetMonths + 1)} className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors text-[18px] border-l border-border flex-shrink-0">+</button>
+                    </div>
+
+                    {/* Balances */}
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border">
+                      <div>
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-1">Target Balance</p>
+                        <p className="text-[15px] font-semibold tabular-nums text-foreground">{fmt(b.targetAmt)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-1">Current Balance</p>
+                        <p className="text-[15px] font-semibold tabular-nums text-foreground">{fmt(b.current)}</p>
+                      </div>
+                    </div>
+                    {b.excess > 100 && (
+                      <div className="pt-2 border-t border-border">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.1em] mb-1" style={{ color: "rgba(154,123,60,0.7)" }}>Excess to Release</p>
+                        <p className="text-[16px] font-semibold tabular-nums" style={{ color: "#9a7b3c" }}>{fmt(b.excess)}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Step 1 footer */}
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] text-muted-foreground">
+                Excess identified: <span className="font-semibold" style={{ color: "#9a7b3c" }}>{fmt(totalExcessT)}</span> · ready for capital release
+              </p>
+              <button onClick={() => setStep1Done(true)} className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Set Liquidity Targets →</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── STEP 2 & 3 ── */}
       {(() => {
-        const reserveCurrent = reserve;
-        const flowCurrent = yieldBucket;
-        const buildCurrent = tactical;
-        const equityValEarly = assets
-          .filter(
-            (a) =>
-              a.type === "equity" &&
-              !(a.description ?? "").toLowerCase().includes("ira"),
-          )
-          .reduce((s, a) => s + Number(a.value), 0);
-        const retireValEarly =
-          assets
-            .filter(
-              (a) =>
-                a.type === "equity" &&
-                (a.description ?? "").toLowerCase().includes("ira"),
-            )
-            .reduce((s, a) => s + Number(a.value), 0) +
-          assets
-            .filter(
-              (a) =>
-                a.type === "fixed_income" &&
-                ((a.description ?? "").toLowerCase().includes("ira") ||
-                  (a.description ?? "").toLowerCase().includes("401")),
-            )
-            .reduce((s, a) => s + Number(a.value), 0);
-        const altValEarly = assets
-          .filter((a) => a.type === "alternative")
-          .reduce((s, a) => s + Number(a.value), 0);
-        const reValEarly = assets
-          .filter((a) => a.type === "real_estate")
-          .reduce((s, a) => s + Number(a.value), 0);
-        const plan529 = 35600;
-        const otherCurrent = altValEarly + reValEarly + plan529;
-        // Sum of prototype Grow breakdown: Cash+Intl+US Mkt+LgCap+SmCap+Div+Stock+Bonds+Crypto
-        const growCurrent = 222965 + 244685 + 779878 + 535000 + 323582 + 94369 + 238311 + 61210 + 9500; // = 2,509,500
-
-        const moMap: Record<string, number> = {};
-        cashFlows
-          .filter((c) => c.type === "outflow")
-          .forEach((c) => {
-            const d = new Date(c.date as string);
-            const k = `${d.getFullYear()}-${d.getMonth()}`;
-            moMap[k] = (moMap[k] ?? 0) + Number(c.amount);
-          });
-        const moVals = Object.values(moMap);
-        const minMonthly = moVals.length ? Math.min(...moVals) : 18056;
-        const annualOut = cashFlows
-          .filter((c) => c.type === "outflow")
-          .reduce((s, c) => s + Number(c.amount), 0);
-        const annualSalIn = cashFlows
-          .filter((c) => c.type === "inflow" && c.category === "salary")
-          .reduce((s, c) => s + Number(c.amount), 0);
-
-        const reserveTarget = Math.round(minMonthly * opsCashMonths);
-        const flowTarget = cashTrough; // target the 12-month cumulative cash flow trough
-        const buildTarget = buildCurrent;
-        // Use prototype model total ($5,996,550) so growTarget is consistent with
-        // hardcoded growCurrent ($2,509,500) — both reflect the prototype asset values
-        const PROTO_TOTAL_ASSETS = 5996550;
-        const growTarget =
-          PROTO_TOTAL_ASSETS - reserveTarget - flowTarget - buildTarget - otherCurrent;
-
-        const reserveDelta = reserveTarget - reserveCurrent;
-        const flowDelta = flowTarget - flowCurrent;
-        const growDelta = growTarget - growCurrent;
-
-        const excessCash =
-          Math.abs(Math.min(reserveDelta, 0)) +
-          Math.abs(Math.min(flowDelta, 0));
-        const addlIncome = Math.round(
-          Math.abs(Math.min(reserveDelta, 0)) * (0.07 * 0.63 - 0.001) +
-            Math.abs(Math.min(flowDelta, 0)) * (0.07 * 0.63 - 0.043 * 0.63),
-        );
-        const pctIncrease =
-          annualSalIn > 0 ? ((addlIncome / annualSalIn) * 100).toFixed(1) : "0";
-
-        // ── Sub-accounts per bucket (computed from assets) ──────────────
-        type Acct = {
-          name: string;
-          value: number;
-          yield_: string;
-          yieldAT: string;
-          acctNum?: string;
-        };
-        const acctHash = (s: string) =>
-          String(Math.abs(s.split("").reduce((a, c) => ((a * 31 + c.charCodeAt(0)) | 0), 0)) % 9000 + 1000);
-        const shortName = (desc: string | null | undefined) =>
-          (desc ?? "").split("(")[0].split("—")[0].split("–")[0].trim();
-        const parseYieldNum = (y: string): number => {
-          const m = y.replace(/[~\[\]<>+%]/g, "").match(/(\d+\.?\d*)/);
-          return m ? parseFloat(m[1]) : 0;
-        };
-        // Tax rates: Federal 35% | State 8% | City 4% | Cap Gains 20%
-        // Bank accounts: all taxes = 47% → keep 53%
-        const toATFull = (gross: string) => { const n = parseYieldNum(gross); return n > 0 ? `${(n * 0.53).toFixed(2)}%` : "—"; };
-        // Treasuries / T-bills / MM funds in govts: federal only = 35% → keep 65%
-        const toATFed  = (gross: string) => { const n = parseYieldNum(gross); return n > 0 ? `${(n * 0.65).toFixed(2)}%` : "—"; };
-        // Muni bonds: triple exempt → keep 100%
-        const toATMuni = (gross: string) => { const n = parseYieldNum(gross); return n > 0 ? `${n.toFixed(2)}%` : "—"; };
-        // Equities / cap gains: 20% fed + 8% state + 4% city = 32% → keep 68%
-        const toATCapG = (gross: string) => { const n = parseYieldNum(gross); return n > 0 ? `${(n * 0.68).toFixed(2)}%` : "—"; };
-        // Detect gov't treasury MMFs / sweeps (state+city exempt → federal only at 35%)
-        // Bank money market accounts (Citizens, BofA, etc.) are ordinary interest — fully taxed
-        const isTreasuryMM = (desc: string | null) => {
-          const d = (desc ?? "").toLowerCase();
-          // Explicit treasury/sweep keywords — but exclude bank deposit money markets
-          if (d.includes("private bank") || d.includes("citizens") || d.includes("bank of america")) return false;
-          return d.includes("sweep") || d.includes("treasur") || d.includes("t-bill") ||
-            (d.includes("money market") && (d.includes("government") || d.includes("fidelity") || d.includes("vanguard") || d.includes("schwab") || d.includes("jpmorgan") || d.includes("blackrock")));
-        };
-
-        const reserveAccts: Acct[] = assets
-          .filter(
-            (a) =>
-              a.type === "cash" &&
-              (a.description ?? "").toLowerCase().includes("checking"),
-          )
-          .map((a) => {
-            const y = extractRate(a.description)
-              ? extractRate(a.description) + "%"
-              : "0.01%";
-            const n = shortName(a.description);
-            return {
-              name: n,
-              value: Number(a.value),
-              yield_: y,
-              yieldAT: toATFull(y),
-              acctNum: acctHash(n),
-            };
-          });
-
-        const flowAccts: Acct[] = assets
-          .filter(
-            (a) =>
-              a.type === "cash" &&
-              !(a.description ?? "").toLowerCase().includes("checking"),
-          )
-          .map((a) => {
-            const y = extractRate(a.description)
-              ? extractRate(a.description) + "%"
-              : "0.01%";
-            const n = shortName(a.description);
-            return {
-              name: n,
-              value: Number(a.value),
-              yield_: y,
-              yieldAT: isTreasuryMM(a.description) ? toATFed(y) : toATFull(y),
-              acctNum: acctHash(n),
-            };
-          });
-
-        const buildAccts: Acct[] = assets
-          .filter(
-            (a) =>
-              a.type === "fixed_income" &&
-              ((a.description ?? "").toLowerCase().includes("treasur") ||
-                (a.description ?? "").toLowerCase().includes("t-bill")),
-          )
-          .map((a) => {
-            const y = extractRate(a.description)
-              ? extractRate(a.description) + "%"
-              : "—";
-            const n = shortName(a.description);
-            return {
-              name: n,
-              value: Number(a.value),
-              yield_: y,
-              yieldAT: toATFed(y),
-              acctNum: acctHash(n),
-            };
-          });
-
-        const altVal = altValEarly;
-        const reVal = reValEarly;
-        // Grow sub-accounts: detailed breakdown per prototype model
-        // yieldAT field repurposed as 5yr historical return for display
-        const growAccts: Acct[] = [
-          { name: "International",            value: 244685, yield_: "—", yieldAT: "7.9%",  acctNum: acctHash("International") },
-          { name: "US Total Market",          value: 779878, yield_: "—", yieldAT: "14.1%", acctNum: acctHash("US Total Market") },
-          { name: "US Large Cap",             value: 535000, yield_: "—", yieldAT: "15.2%", acctNum: acctHash("US Large Cap") },
-          { name: "US Small Cap",             value: 323582, yield_: "—", yieldAT: "9.1%",  acctNum: acctHash("US Small Cap") },
-          { name: "US Dividend / Value",      value: 94369,  yield_: "—", yieldAT: "10.3%", acctNum: acctHash("US Dividend / Value") },
-          { name: "Single Stock",             value: 238311, yield_: "—", yieldAT: "~20%+", acctNum: acctHash("Single Stock") },
-          { name: "Bonds",                    value: 61210,  yield_: "—", yieldAT: "0.2%",  acctNum: acctHash("Bonds") },
-          { name: "Crypto",                   value: 9500,   yield_: "—", yieldAT: "~30%+", acctNum: acctHash("Crypto") },
-        ];
-        const otherAccts: Acct[] = [
-          ...(altVal > 0
-            ? [
-                {
-                  name: "Private Equity & Alternatives",
-                  value: altVal,
-                  yield_: "[15%+]",
-                  yieldAT: toATCapG("15%"), // cap gains rate → 10.20%
-                },
-              ]
-            : []),
-          ...(reVal > 0
-            ? [
-                {
-                  name: "Real Estate",
-                  value: reVal,
-                  yield_: "~5%",
-                  yieldAT: toATCapG("5%"), // cap gains rate → 3.40%
-                },
-              ]
-            : []),
-        ];
-        const weightedGrossYield = (accts: Acct[], total: number): number => {
-          if (total === 0 || accts.length === 0) return 0;
-          return (
-            accts.reduce((s, a) => s + parseYieldNum(a.yield_) * a.value, 0) /
-            total
-          );
-        };
-        // Weights AT yields (excludes "Tax-def." and "—" entries)
-        const weightedATYield = (accts: Acct[], total: number): number => {
-          if (total === 0 || accts.length === 0) return 0;
-          let weightedSum = 0, weightedTotal = 0;
-          for (const a of accts) {
-            const n = parseYieldNum(a.yieldAT);
-            if (n > 0) { weightedSum += n * a.value; weightedTotal += a.value; }
-          }
-          return weightedTotal > 0 ? weightedSum / weightedTotal : 0;
-        };
-
-        type GBRow = {
-          def: (typeof GURU_BUCKETS_DEF)[number];
-          current: number;
-          target: number;
-          delta: number;
-          calc: string;
-          subAccounts: Acct[];
-          guruAtPct: number;
-          bpPickup: number;
-        };
-        const mkRow = (
-          def: (typeof GURU_BUCKETS_DEF)[number],
-          current: number,
-          target: number,
-          delta: number,
-          calc: string,
-          subAccounts: Acct[],
-          guruAtPct: number,
-        ): GBRow => ({
-          def,
-          current,
-          target,
-          delta,
-          calc,
-          subAccounts,
-          guruAtPct,
-          bpPickup: Math.round(
-            (guruAtPct - weightedATYield(subAccounts, current)) * 100,
-          ),
-        });
-        const rows: GBRow[] = [
-          mkRow(
-            GURU_BUCKETS_DEF[0],
-            reserveCurrent,
-            reserveTarget,
-            reserveDelta,
-            "2 months of core recurring expenses",
-            reserveAccts,
-            2.28, // CIT Money Market Fund: 4.30% × 53% (bank MM, ordinary income)
-          ),
-          mkRow(
-            GURU_BUCKETS_DEF[1],
-            flowAccts.reduce((s, a) => s + a.value, 0),
-            flowTarget,
-            flowTarget - flowAccts.reduce((s, a) => s + a.value, 0),
-            "12 months of total anticipated outflows",
-            flowAccts,
-            2.80, // JPMorgan 100% Treasuries MMF: 4.30% × 65% (federal only)
-          ),
-          mkRow(
-            GURU_BUCKETS_DEF[2],
-            buildCurrent,
-            buildTarget,
-            0,
-            "Maintain short-term reserve position",
-            buildAccts,
-            2.74, // US Treasuries 3–6 Month Ladder: 4.22% × 65% (federal only)
-          ),
-          mkRow(
-            GURU_BUCKETS_DEF[3],
-            growCurrent,
-            growTarget,
-            growDelta,
-            "Remaining assets — long-term compounding",
-            growAccts,
-            6.00, // S&P 500 / Total Market ETF: 7.5% × 80% (fed cap gains 20% only)
-          ),
-        ];
-
-        const deltaIcon = (d: number) => (d > 0 ? "▲" : d < 0 ? "▼" : "—");
-        const deltaCls = (d: number) =>
-          d > 0
-            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-            : d < 0
-              ? "bg-rose-50 text-rose-600 border-rose-200"
-              : "bg-secondary/30 text-muted-foreground border-border";
-
+        const totalExcess = totalExcessT;
+        const opExcess = opExcessT;
+        const resExcess = resExcessT;
+        const opCurrentMonths = opCurrentMonthsT;
+        const resCurrentMonths = resCurrentMonthsT;
+        const excessProds = excessProdsT;
         return (
           <>
-            {/* ── Portfolio Overview Hero — sticky, tightened ── */}
-            <div className="sticky top-0 z-20 bg-background pb-2 -mt-5 md:-mt-7 -mx-5 md:-mx-7 px-5 md:px-7 pt-3">
-            {(() => {
-              const heroCardTotal = assets.reduce((s, a) => s + Number(a.value), 0);
-              return (
-                <div className="rounded-xl border border-border bg-card shadow-sm mb-2 overflow-hidden flex">
-                  {/* Section 1 — Total Assets */}
-                  <div className="flex-1 px-5 py-4">
-                    <p className="stat-label mb-1.5">Total Assets</p>
-                    <p className="serif-hero text-[2rem] font-normal leading-none tabular-nums text-foreground">
-                      {fmt(heroCardTotal)}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground mt-1.5 tabular-nums">
-                      AUM · updated today
-                    </p>
+      {/* ── STEP 2: Capital Release ── */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step2Done ? "#2e7a52" : step1Done ? "hsl(222,45%,18%)" : "hsl(220,14%,78%)" }}>{step2Done ? "✓" : "2"}</div>
+          <span className={`text-[12px] font-semibold flex-1 ${step1Done ? "text-foreground" : "text-muted-foreground"}`}>Capital Release</span>
+          {step2Done && (
+            <button onClick={() => { setStep2Done(false); setStep3Analyzing(false); setStep3Visible(false); }} className="text-[10px] font-semibold px-3 py-1 rounded border border-border hover:bg-secondary transition-colors text-muted-foreground">Edit</button>
+          )}
+        </div>
+        {!step1Done ? (
+          <div className="px-5 py-3.5 flex items-center gap-2">
+            <Lock className="w-3.5 h-3.5 text-muted-foreground/40" />
+            <span className="text-[11px] text-muted-foreground/60">Capital release plan generates after liquidity targets are set.</span>
+          </div>
+        ) : step2Done ? (
+          <div className="flex items-start gap-3 px-5 py-3.5" style={{ borderLeft: "3px solid #2e7a52", background: "rgba(46,122,82,0.04)" }}>
+            <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#2e7a52" }} />
+            <div>
+              <p className="text-[11px] font-semibold text-foreground">Capital release confirmed</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{fmt(totalExcess)} routing to Investment Pool</p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-5 space-y-4">
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="grid px-4 py-2 bg-secondary/40 border-b border-border text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground" style={{ gridTemplateColumns: "1fr 32px 160px 1fr" }}>
+                <span>Source</span><span></span><span>Amount to Release</span><span>Destination</span>
+              </div>
+              {([
+                { source: "Operating Cash", desc: opExcess > 0 ? `Chase Checking ·4821 · ${opCurrentMonths.toFixed(1)} mos coverage` : "At target — no release needed", amount: opExcess },
+                { source: "Reserve", desc: resExcess > 0 ? `Citizens Bank ·7204 · ${resCurrentMonths.toFixed(1)} mos coverage` : "At target — no release needed", amount: resExcess },
+              ] as const).map((row) => (
+                <div key={row.source} className="grid items-center px-4 py-3 border-b border-border last:border-0" style={{ gridTemplateColumns: "1fr 32px 160px 1fr" }}>
+                  <div>
+                    <p className="text-[11px] font-semibold text-foreground">{row.source}</p>
+                    <p className="text-[10px] text-muted-foreground">{row.desc}</p>
                   </div>
-
-                  {/* Divider */}
-                  <div className="w-px bg-border/60 my-3" />
-
-                  {/* Section 2 — Capital Available to Deploy (alive) */}
-                  <div
-                    className="flex-1 px-5 py-4 relative"
-                    style={{ background: "linear-gradient(135deg, rgba(154,123,60,0.06) 0%, rgba(154,123,60,0.02) 100%)" }}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="signal-dot" />
-                      <p className="text-[9px] font-bold uppercase tracking-[0.13em]" style={{ color: "#9a7b3c" }}>
-                        Capital Available to Deploy
-                      </p>
-                    </div>
-                    <p className="serif-hero text-[2rem] font-normal leading-none tabular-nums" style={{ color: "#7a6030" }}>
-                      {fmt(excessCash)}
-                    </p>
-                    <p className="text-[9px] mt-1.5" style={{ color: "rgba(154,123,60,0.65)" }}>
-                      Excess cash · 12-mo forecast
-                    </p>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="w-px bg-border/60 my-3" />
-
-                  {/* Section 3 — Net Worth */}
-                  <div className="flex-1 px-5 py-4">
-                    <p className="stat-label mb-1.5">Net Worth</p>
-                    <p className="serif-hero text-[2rem] font-normal leading-none tabular-nums text-foreground">
-                      {fmt(heroCardTotal - liabilities.reduce((s, l) => s + Number(l.value), 0))}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground mt-1.5">Assets minus liabilities</p>
-                  </div>
-
-                  {/* Live badge */}
-                  <div className="flex items-start justify-end px-4 py-3 flex-shrink-0">
-                    <div className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-2.5 py-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-live-dot" />
-                      <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Live</span>
-                    </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40" />
+                  <p className="text-[12px] font-bold tabular-nums" style={{ color: row.amount > 100 ? "#9a7b3c" : "hsl(220,14%,72%)" }}>{row.amount > 100 ? fmt(row.amount) : "—"}</p>
+                  <div>
+                    <p className="text-[11px] font-semibold text-foreground">Investment Pool</p>
+                    <p className="text-[10px] text-muted-foreground">Above coverage target</p>
                   </div>
                 </div>
-              );
-            })()}
-            {/* ── Tab switcher ── */}
-            <div className="flex items-center gap-0 mt-3 border-b border-border">
-              {(["overview", "tool"] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveGuruTab(tab)}
-                  className={`px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.1em] border-b-2 -mb-px transition-colors ${activeGuruTab === tab ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-                >
-                  {tab === "overview" ? "Overview" : "Allocation Tool"}
-                </button>
+              ))}
+              <div className="flex items-center justify-between px-4 py-2.5 bg-secondary/30 border-t border-border">
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Total Capital to Deploy</span>
+                <span className="text-[13px] font-bold tabular-nums" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)}</span>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button onClick={() => setStep2Done(true)} className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Find Best Allocation →</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── STEP 3: Product Allocation ── */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step3Visible ? "#2e7a52" : step2Done ? "hsl(222,45%,18%)" : "hsl(220,14%,78%)" }}>{step3Visible ? "✓" : "3"}</div>
+          <span className={`text-[12px] font-semibold flex-1 ${step2Done ? "text-foreground" : "text-muted-foreground"}`}>Product Allocation</span>
+        </div>
+        {!step2Done ? (
+          <div className="px-5 py-3.5 flex items-center gap-2">
+            <Lock className="w-3.5 h-3.5 text-muted-foreground/40" />
+            <span className="text-[11px] text-muted-foreground/60">GURU will identify optimal products once the capital release plan is confirmed.</span>
+          </div>
+        ) : step3Analyzing ? (
+          <div className="px-5 py-4 flex items-center gap-3">
+            <div className="flex gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#9a7b3c", animationDelay: `${i * 0.2}s` }} />
               ))}
             </div>
-            </div>{/* end sticky hero wrapper */}
-            {/* ── Tab content ── */}
-            {activeGuruTab === "overview" ? (
-              /* ─── OVERVIEW: 4 clean bucket cards + expandable accounts ─── */
-              (() => {
-                const fmtK = (v: number) => `$${Math.round(v).toLocaleString()}`;
-                const totalAllAssets = rows.reduce((s2, r2) => s2 + r2.current, 0) + reVal + altVal + plan529;
-                const OB: Record<string, { accent: string; tint: string; bdr: string }> = {
-                  "Operating Cash": { accent: "#2e5c8a", tint: "#f2f6fa", bdr: "#cfe0f0" },
-                  "Reserve":        { accent: "#8a6e2e", tint: "#faf7f0", bdr: "#e0d4b0" },
-                  "Build":          { accent: "#2e7a52", tint: "#f2faf5", bdr: "#c0e0cc" },
-                  "Grow":           { accent: "#2e4e7a", tint: "#f2f5fa", bdr: "#c8d5e8" },
-                };
+            <span className="text-[11px] text-muted-foreground italic">GURU is analyzing best products for tax-optimized yield…</span>
+          </div>
+        ) : step3Visible ? (
+          <div className="p-5 space-y-4">
+            <div>
+              <p className="text-[11px] font-semibold text-foreground">Best options for {fmt(totalExcess)} in excess capital</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Ranked by after-tax yield · optimized for 37% bracket</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {excessProds.map((p, i) => {
+                const isSel = (selProd["excess"] ?? 0) === i;
                 return (
-                  <div className="grid grid-cols-4 gap-3 pt-5">
-                    {rows.map((r) => {
-                      const c = OB[r.def.name] ?? { accent: "#4a4a5a", tint: "#f5f5f7", bdr: "#d8d8e0" };
-                      const pct = totalAllAssets > 0 ? (r.current / totalAllAssets) * 100 : 0;
-                      const isGrow = r.def.name === "Grow";
-                      const isExpanded = expandedBucket === r.def.name;
-                      const acctCount = r.subAccounts.length;
-                      return (
-                        <div key={r.def.name} className="flex flex-col">
-                          {/* ── Bucket card ── */}
-                          <div
-                            style={{ background: c.tint, borderColor: c.bdr, borderTopColor: c.accent, borderTopWidth: 3, borderStyle: "solid", borderRadius: isExpanded ? "8px 8px 0 0" : "8px" }}
-                            className="px-4 py-4 cursor-pointer hover:brightness-[0.98] transition-all"
-                            onClick={() => setExpandedBucket(isExpanded ? null : r.def.name)}
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <p style={{ color: c.accent }} className="text-[9px] font-bold uppercase tracking-[0.14em]">{r.def.name}</p>
-                              <span style={{ color: c.accent }} className="text-[9px] font-semibold opacity-60">{pct.toFixed(0)}%</span>
-                            </div>
-                            <p className="font-serif italic text-[12px] text-gray-700 leading-tight mb-1">{r.def.tagline}</p>
-                            <p className="text-[9px] text-gray-400 leading-tight mb-4" style={{ borderBottom: `1px solid ${c.bdr}`, paddingBottom: "12px" }}>{r.def.rule}</p>
-                            <p className="serif-hero text-[22px] font-normal text-gray-900 leading-none tabular-nums mb-3">{fmtK(r.current)}</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-gray-400">{isGrow ? "—" : `${weightedGrossYield(r.subAccounts, r.current).toFixed(2)}% yield`}</span>
-                              <button style={{ color: c.accent }} className="text-[10px] font-semibold flex items-center gap-1 hover:opacity-80">
-                                {acctCount} account{acctCount !== 1 ? "s" : ""} {isExpanded ? "▲" : "›"}
-                              </button>
-                            </div>
-                          </div>
-                          {/* ── Expandable accounts ── */}
-                          {isExpanded && (
-                            <div style={{ borderColor: c.bdr, borderTopColor: "#f0f0f0" }} className="bg-white border border-t overflow-hidden rounded-b-lg">
-                              <div className="text-[9px] font-semibold uppercase tracking-[0.11em] text-gray-400 px-4 py-2 bg-gray-50 border-b border-gray-100">
-                                Accounts
-                              </div>
-                              {r.subAccounts.map((acct) => (
-                                <div key={acct.name} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50">
-                                  <div>
-                                    <p className="text-[11px] font-medium text-gray-800 leading-tight">{acct.name}</p>
-                                    <p className="text-[10px] text-gray-400 mt-0.5">····{acct.acctNum ?? "N/A"}</p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="serif-hero text-[13px] font-normal text-gray-800 tabular-nums leading-none">{fmtK(acct.value)}</p>
-                                    <p className="text-[9px] text-gray-400 mt-0.5">{isGrow ? acct.yieldAT : acct.yield_}</p>
-                                  </div>
-                                </div>
-                              ))}
-                              <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-t border-gray-100">
-                                <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-gray-500">Total</span>
-                                <span className="serif-hero text-[13px] font-normal text-gray-600 tabular-nums">{fmtK(r.current)}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                  <div key={p.name} onClick={() => setSelProd((s) => ({ ...s, excess: i }))} className="rounded-lg border cursor-pointer transition-all p-4 space-y-2.5" style={{ borderColor: isSel ? "#9a7b3c" : "hsl(220,14%,88%)", background: isSel ? "rgba(154,123,60,0.05)" : "white", boxShadow: isSel ? "0 0 0 1px rgba(154,123,60,0.25)" : undefined }}>
+                    {p.rec && (
+                      <div className="text-[8px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full w-fit" style={{ background: "rgba(154,123,60,0.12)", color: "#9a7b3c" }}>Recommended</div>
+                    )}
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="text-[11px] font-semibold text-foreground leading-tight">{p.name}</p>
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: p.risk === "Zero risk" ? "rgba(46,122,82,0.08)" : "rgba(46,92,138,0.08)", color: p.risk === "Zero risk" ? "#2e7a52" : "#2e5c8a" }}>{p.risk}</span>
+                    </div>
+                    <div>
+                      <p className="text-[20px] font-bold tabular-nums leading-none" style={{ color: "#9a7b3c" }}>{p.atYield}</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">{p.grossYield} gross · AT yield</p>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-border">
+                      <span className="text-[9px] text-muted-foreground">Annual Income</span>
+                      <span className="text-[11px] font-bold tabular-nums" style={{ color: "#2e7a52" }}>+{fmt(p.annualIncome)}/yr</span>
+                    </div>
+                    <p className="text-[9px] text-muted-foreground">{p.liquidity}</p>
                   </div>
                 );
-              })()
-            ) : (
-              /* ─── ALLOCATION TOOL: three-step progressive workflow ─── */
-              (() => {
-                // ── Compute metrics ─────────────────────────────────────────
-                const moMap2: Record<string, number> = {};
-                cashFlows.filter((c) => c.type === "outflow").forEach((c) => {
-                  const d = new Date(c.date as string);
-                  const k = `${d.getFullYear()}-${d.getMonth()}`;
-                  moMap2[k] = (moMap2[k] ?? 0) + Number(c.amount);
-                });
-                const moVals2 = Object.values(moMap2);
-                const monthlyBurn = moVals2.length ? Math.min(...moVals2) : 18056;
-                const opCurrent = reserve;
-                const flowCurrent = yieldBucket + tactical;
-                const opCurrentMonths = monthlyBurn > 0 ? opCurrent / monthlyBurn : 0;
-                const resCurrentMonths = monthlyBurn > 0 ? flowCurrent / monthlyBurn : 0;
-                const opTargetAmt = opMonthsLocal * monthlyBurn;
-                const resTargetAmt = resMonthsLocal * monthlyBurn;
-                const opExcess = Math.max(0, opCurrent - opTargetAmt);
-                const resExcess = Math.max(0, flowCurrent - resTargetAmt);
-                const totalExcess = opExcess + resExcess;
-                const liquidCoverage = opCurrentMonths + resCurrentMonths;
-                const returnPickup = Math.round(totalExcess * 0.054);
-                const excessProds = [
-                  { name: "Cresset Short Duration", risk: "Low risk", grossYield: "6.10%", atYield: "5.40%", annualIncome: Math.round(totalExcess * 0.054), liquidity: "Daily liquidity · small NAV movement", rec: true },
-                  { name: "JPMorgan 100% Treasuries MMF", risk: "Zero risk", grossYield: "4.30%", atYield: "2.80%", annualIncome: Math.round(totalExcess * 0.028), liquidity: "Same-day liquidity · stable NAV", rec: false },
-                  { name: "US Treasury Ladder 1–6 Month", risk: "Zero risk", grossYield: "4.22%", atYield: "2.74%", annualIncome: Math.round(totalExcess * 0.0274), liquidity: "Holds to maturity · full capital return", rec: false },
-                ];
-                return (
-                  <div className="space-y-3 pt-4">
-                    {/* ── Opportunity Banner ── */}
-                    <div className="rounded-xl overflow-hidden border border-[hsl(222,45%,20%)]" style={{ background: "hsl(222,45%,11%)" }}>
-                      <div className="flex">
-                        <div className="flex-1 px-6 py-5 min-w-0">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="relative flex h-2 w-2 flex-shrink-0">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "#9a7b3c" }} />
-                              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#9a7b3c" }} />
-                            </span>
-                            <span className="text-[9px] font-bold uppercase tracking-[0.14em]" style={{ color: "rgba(154,123,60,0.85)" }}>Capital Opportunity · Kessler Family</span>
-                          </div>
-                          <p className="font-serif italic text-[1.1rem] text-white leading-snug mb-2">Compounding favors capital that stays invested.</p>
-                          <p className="text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.52)" }}>
-                            The Kessler Family is holding {liquidCoverage.toFixed(1)} months of liquid coverage against a {opMonthsLocal + resMonthsLocal}-month target — leaving roughly <span style={{ color: "rgba(154,123,60,0.85)" }}>{fmt(totalExcess)}</span> above threshold. Right-sizing their liquidity and deploying that capital into Cresset strategies could generate an additional <span style={{ color: "rgba(46,122,82,0.85)" }}>{fmt(returnPickup)}/yr</span> in after-tax income.
-                          </p>
-                        </div>
-                        <div className="w-px my-4 flex-shrink-0" style={{ background: "rgba(255,255,255,0.07)" }} />
-                        <div className="flex flex-col justify-between py-5 px-6 flex-shrink-0 gap-3" style={{ minWidth: 190 }}>
-                          {[
-                            { label: "Total Assets", val: fmt(totalAssets), sub: "Full balance sheet", color: "rgba(255,255,255,0.85)" },
-                            { label: "Liquid Coverage", val: `${liquidCoverage.toFixed(1)} mos`, sub: `Target: ${opMonthsLocal + resMonthsLocal} months`, color: "#9a7b3c" },
-                            { label: "Excess Liquidity", val: fmt(totalExcess), sub: "Above threshold", color: "#9a7b3c" },
-                            { label: "Return Pickup / Year", val: `+${fmt(returnPickup)}`, sub: "If deployed today", color: "#2e7a52" },
-                          ].map((m) => (
-                            <div key={m.label}>
-                              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{m.label}</p>
-                              <p className="text-[14px] font-semibold tabular-nums leading-none" style={{ color: m.color }}>{m.val}</p>
-                              <p className="text-[9px] mt-0.5" style={{ color: "rgba(255,255,255,0.25)" }}>{m.sub}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ── STEP 1: Liquidity Policy ── */}
-                    <div className="rounded-xl border border-border bg-card overflow-hidden">
-                      <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white"
-                          style={{ background: step1Done ? "#2e7a52" : "hsl(222,45%,18%)" }}
-                        >{step1Done ? "✓" : "1"}</div>
-                        <span className="text-[12px] font-semibold text-foreground flex-1">Liquidity Policy</span>
-                        {step1Done && (
-                          <button onClick={() => { setStep1Done(false); setStep2Done(false); setStep3Analyzing(false); setStep3Visible(false); }} className="text-[10px] font-semibold px-3 py-1 rounded border border-border hover:bg-secondary transition-colors text-muted-foreground">Edit</button>
-                        )}
-                      </div>
-                      {step1Done ? (
-                        <div className="flex items-start gap-3 px-5 py-3.5" style={{ borderLeft: "3px solid #2e7a52", background: "rgba(46,122,82,0.04)" }}>
-                          <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#2e7a52" }} />
-                          <div>
-                            <p className="text-[11px] font-semibold text-foreground">Liquidity targets set</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">Op Cash: {opMonthsLocal} mos · Reserve: {resMonthsLocal} mos · <span className="font-semibold" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)} excess capital identified</span></p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-5 space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            {([
-                              { label: "Operating Cash", sublabel: "Checking · transaction accounts", currentMonths: opCurrentMonths, targetMonths: opMonthsLocal, setTarget: setOpMonthsLocal, current: opCurrent, excess: opExcess, color: "#2e5c8a" },
-                              { label: "Reserve", sublabel: "Savings, MM & Treasuries", currentMonths: resCurrentMonths, targetMonths: resMonthsLocal, setTarget: setResMonthsLocal, current: flowCurrent, excess: resExcess, color: "#8a6e2e" },
-                            ] as const).map((b) => {
-                              const isOver = b.currentMonths > b.targetMonths;
-                              const fillPct = b.currentMonths > 0 ? Math.min((b.targetMonths / b.currentMonths) * 100, 100) : 0;
-                              const excessFillPct = isOver ? 100 - fillPct : 0;
-                              return (
-                                <div key={b.label} className="rounded-lg border border-border bg-background p-4 space-y-3">
-                                  <div>
-                                    <p className="text-[11px] font-semibold text-foreground">{b.label}</p>
-                                    <p className="text-[10px] text-muted-foreground">{b.sublabel}</p>
-                                  </div>
-                                  <div>
-                                    <div className="flex justify-between items-baseline mb-1.5">
-                                      <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Coverage</span>
-                                      <span className="text-[10px] font-semibold tabular-nums" style={{ color: isOver ? "#9a7b3c" : "#2e7a52" }}>{b.currentMonths.toFixed(1)} mos {isOver ? "· Overfunded" : "· On Target"}</span>
-                                    </div>
-                                    <div className="relative h-2 rounded-full overflow-hidden" style={{ background: "hsl(220,14%,90%)" }}>
-                                      <div className="absolute left-0 top-0 h-full rounded-l-full transition-all duration-300" style={{ width: `${fillPct}%`, background: b.color }} />
-                                      {excessFillPct > 0 && (
-                                        <div className="absolute top-0 h-full" style={{ left: `${fillPct}%`, width: `${excessFillPct}%`, background: "rgba(154,123,60,0.38)", borderRadius: "0 3px 3px 0" }} />
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-5">
-                                    <div>
-                                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Current</p>
-                                      <p className="text-[12px] font-semibold tabular-nums text-foreground mt-0.5">{fmt(b.current)}</p>
-                                    </div>
-                                    {b.excess > 100 && (
-                                      <div>
-                                        <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: "rgba(154,123,60,0.7)" }}>Excess</p>
-                                        <p className="text-[12px] font-semibold tabular-nums mt-0.5" style={{ color: "#9a7b3c" }}>{fmt(b.excess)}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center justify-between pt-1">
-                                    <span className="text-[10px] text-muted-foreground">Target months</span>
-                                    <div className="flex items-center gap-2">
-                                      <button onClick={() => b.setTarget(Math.max(1, b.targetMonths - 1))} className="w-6 h-6 rounded border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary text-[13px] font-bold transition-colors">−</button>
-                                      <span className="text-[13px] font-bold tabular-nums w-6 text-center text-foreground">{b.targetMonths}</span>
-                                      <button onClick={() => b.setTarget(b.targetMonths + 1)} className="w-6 h-6 rounded border border-border flex items-center justify-center text-muted-foreground hover:bg-secondary text-[13px] font-bold transition-colors">+</button>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="flex justify-end">
-                            <button onClick={() => setStep1Done(true)} className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Set Liquidity Targets →</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ── STEP 2: Capital Release ── */}
-                    <div className="rounded-xl border border-border bg-card overflow-hidden">
-                      <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white"
-                          style={{ background: step2Done ? "#2e7a52" : step1Done ? "hsl(222,45%,18%)" : "hsl(220,14%,78%)" }}
-                        >{step2Done ? "✓" : "2"}</div>
-                        <span className={`text-[12px] font-semibold flex-1 ${step1Done ? "text-foreground" : "text-muted-foreground"}`}>Capital Release</span>
-                        {step2Done && (
-                          <button onClick={() => { setStep2Done(false); setStep3Analyzing(false); setStep3Visible(false); }} className="text-[10px] font-semibold px-3 py-1 rounded border border-border hover:bg-secondary transition-colors text-muted-foreground">Edit</button>
-                        )}
-                      </div>
-                      {!step1Done ? (
-                        <div className="px-5 py-3.5 flex items-center gap-2">
-                          <Lock className="w-3.5 h-3.5 text-muted-foreground/40" />
-                          <span className="text-[11px] text-muted-foreground/60">Capital release plan generates after liquidity targets are set.</span>
-                        </div>
-                      ) : step2Done ? (
-                        <div className="flex items-start gap-3 px-5 py-3.5" style={{ borderLeft: "3px solid #2e7a52", background: "rgba(46,122,82,0.04)" }}>
-                          <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#2e7a52" }} />
-                          <div>
-                            <p className="text-[11px] font-semibold text-foreground">Capital release confirmed</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{fmt(totalExcess)} routing to Investment Pool</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-5 space-y-4">
-                          <div className="rounded-lg border border-border overflow-hidden">
-                            <div className="grid px-4 py-2 bg-secondary/40 border-b border-border text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground" style={{ gridTemplateColumns: "1fr 32px 160px 1fr" }}>
-                              <span>Source</span><span></span><span>Amount to Release</span><span>Destination</span>
-                            </div>
-                            {([
-                              { source: "Operating Cash", desc: opExcess > 0 ? `Chase Checking \u00b74821 \u00b7 ${opCurrentMonths.toFixed(1)} mos coverage` : "At target — no release needed", amount: opExcess },
-                              { source: "Reserve", desc: resExcess > 0 ? `Citizens Bank \u00b77204 \u00b7 ${resCurrentMonths.toFixed(1)} mos coverage` : "At target — no release needed", amount: resExcess },
-                            ] as const).map((row) => (
-                              <div key={row.source} className="grid items-center px-4 py-3 border-b border-border last:border-0" style={{ gridTemplateColumns: "1fr 32px 160px 1fr" }}>
-                                <div>
-                                  <p className="text-[11px] font-semibold text-foreground">{row.source}</p>
-                                  <p className="text-[10px] text-muted-foreground">{row.desc}</p>
-                                </div>
-                                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40" />
-                                <p className="text-[12px] font-bold tabular-nums" style={{ color: row.amount > 100 ? "#9a7b3c" : "hsl(220,14%,72%)" }}>
-                                  {row.amount > 100 ? fmt(row.amount) : "—"}
-                                </p>
-                                <div>
-                                  <p className="text-[11px] font-semibold text-foreground">Investment Pool</p>
-                                  <p className="text-[10px] text-muted-foreground">Above coverage target</p>
-                                </div>
-                              </div>
-                            ))}
-                            <div className="flex items-center justify-between px-4 py-2.5 bg-secondary/30 border-t border-border">
-                              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Total Capital to Deploy</span>
-                              <span className="text-[13px] font-bold tabular-nums" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)}</span>
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <button onClick={() => setStep2Done(true)} className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Find Best Allocation →</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ── STEP 3: Product Allocation ── */}
-                    <div className="rounded-xl border border-border bg-card overflow-hidden">
-                      <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white"
-                          style={{ background: step3Visible ? "#2e7a52" : step2Done ? "hsl(222,45%,18%)" : "hsl(220,14%,78%)" }}
-                        >{step3Visible ? "✓" : "3"}</div>
-                        <span className={`text-[12px] font-semibold flex-1 ${step2Done ? "text-foreground" : "text-muted-foreground"}`}>Product Allocation</span>
-                      </div>
-                      {!step2Done ? (
-                        <div className="px-5 py-3.5 flex items-center gap-2">
-                          <Lock className="w-3.5 h-3.5 text-muted-foreground/40" />
-                          <span className="text-[11px] text-muted-foreground/60">GURU will identify optimal products once the capital release plan is confirmed.</span>
-                        </div>
-                      ) : step3Analyzing ? (
-                        <div className="px-5 py-4 flex items-center gap-3">
-                          <div className="flex gap-1.5">
-                            {[0, 1, 2].map((i) => (
-                              <span key={i} className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#9a7b3c", animationDelay: `${i * 0.2}s` }} />
-                            ))}
-                          </div>
-                          <span className="text-[11px] text-muted-foreground italic">GURU is analyzing best products for tax-optimized yield…</span>
-                        </div>
-                      ) : step3Visible ? (
-                        <div className="p-5 space-y-4">
-                          <div>
-                            <p className="text-[11px] font-semibold text-foreground">Best options for {fmt(totalExcess)} in excess capital</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">Ranked by after-tax yield · optimized for 37% bracket</p>
-                          </div>
-                          <div className="grid grid-cols-3 gap-3">
-                            {excessProds.map((p, i) => {
-                              const isSel = (selProd["excess"] ?? 0) === i;
-                              return (
-                                <div
-                                  key={p.name}
-                                  onClick={() => setSelProd((s) => ({ ...s, excess: i }))}
-                                  className="rounded-lg border cursor-pointer transition-all p-4 space-y-2.5"
-                                  style={{
-                                    borderColor: isSel ? "#9a7b3c" : "hsl(220,14%,88%)",
-                                    background: isSel ? "rgba(154,123,60,0.05)" : "white",
-                                    boxShadow: isSel ? "0 0 0 1px rgba(154,123,60,0.25)" : undefined,
-                                  }}
-                                >
-                                  {p.rec && (
-                                    <div className="text-[8px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full w-fit" style={{ background: "rgba(154,123,60,0.12)", color: "#9a7b3c" }}>Recommended</div>
-                                  )}
-                                  <div className="flex items-start justify-between gap-1">
-                                    <p className="text-[11px] font-semibold text-foreground leading-tight">{p.name}</p>
-                                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: p.risk === "Zero risk" ? "rgba(46,122,82,0.08)" : "rgba(46,92,138,0.08)", color: p.risk === "Zero risk" ? "#2e7a52" : "#2e5c8a" }}>{p.risk}</span>
-                                  </div>
-                                  <div>
-                                    <p className="text-[20px] font-bold tabular-nums leading-none" style={{ color: "#9a7b3c" }}>{p.atYield}</p>
-                                    <p className="text-[9px] text-muted-foreground mt-0.5">{p.grossYield} gross · AT yield</p>
-                                  </div>
-                                  <div className="flex items-center justify-between pt-1 border-t border-border">
-                                    <span className="text-[9px] text-muted-foreground">Annual Income</span>
-                                    <span className="text-[11px] font-bold tabular-nums" style={{ color: "#2e7a52" }}>+{fmt(p.annualIncome)}/yr</span>
-                                  </div>
-                                  <p className="text-[9px] text-muted-foreground">{p.liquidity}</p>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="flex justify-end">
-                            <button className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "#2e7a52" }}>Confirm Allocation →</button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })()
-            )}
+              })}
+            </div>
+            <div className="flex justify-end">
+              <button className="px-5 py-2.5 rounded-lg text-[11px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "#2e7a52" }}>Confirm Allocation →</button>
+            </div>
+          </div>
+        ) : null}
+      </div>
           </>
         );
       })()}
     </div>
   );
 }
+
 
 // ─── Balance Sheet View (renamed from Details View) ───────────────────────────
 function DetailsView({
