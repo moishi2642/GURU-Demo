@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, BrainCircuit, BarChart3, Bell, Search, Users2, TrendingUp, Activity } from "lucide-react";
+import { Users, BrainCircuit, Users2, Bell, Search } from "lucide-react";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
@@ -20,47 +20,36 @@ export function Layout({ children }: { children: ReactNode }) {
         style={{ background: "hsl(222,45%,8%)" }}
       >
         {/* ── Brand ─────────────────────────────────────────────────────── */}
-        <div className="px-5 pt-5 pb-4 border-b border-white/[0.07]">
-          {/* Logo mark + wordmark */}
-          <div className="flex items-center gap-2.5 mb-3">
-            {/* Geometric mark — two overlapping squares, Addepar-inspired */}
-            <div className="relative w-7 h-7 flex-shrink-0">
-              <div className="absolute inset-0 rounded-sm bg-[hsl(216,82%,43%)]" />
-              <div
-                className="absolute rounded-sm"
-                style={{
-                  inset: "4px 0 0 4px",
-                  background: "rgba(255,255,255,0.18)",
-                }}
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <TrendingUp className="w-3.5 h-3.5 text-white" />
-              </div>
-            </div>
-            <div>
-              <span className="font-display font-bold text-[15px] text-white tracking-[-0.01em] leading-none">
-                GURU
-              </span>
-              <p className="text-[9px] text-white/30 uppercase tracking-[0.12em] font-medium mt-0.5">
-                Wealth Intelligence
-              </p>
-            </div>
-          </div>
-
-          {/* Firm context pill */}
-          <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded"
-            style={{ background: "rgba(255,255,255,0.05)" }}
-          >
-            <Activity className="w-2.5 h-2.5 text-[hsl(216,82%,60%)] flex-shrink-0" />
-            <span className="text-[10px] text-white/50 font-medium truncate">
-              Advisor Dashboard
-            </span>
+        <div className="px-5 pt-6 pb-5 border-b border-white/[0.07]">
+          <div className="flex items-center justify-between">
             <span
-              className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: "hsl(160,60%,45%)" }}
-            />
+              className="font-display text-[19px] text-white leading-none"
+              style={{ letterSpacing: "0.05em" }}
+            >
+              GURU<span style={{ color: "#9a7b3c" }}>.</span>
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                className="flex items-center justify-center w-7 h-7 rounded transition-colors"
+                style={{ color: "rgba(255,255,255,0.30)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.30)")}
+              >
+                <Search className="w-3.5 h-3.5" />
+              </button>
+              <button
+                className="flex items-center justify-center w-7 h-7 rounded transition-colors"
+                style={{ color: "rgba(255,255,255,0.30)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.30)")}
+              >
+                <Bell className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
+          <p className="text-[9px] text-white/25 uppercase tracking-[0.14em] mt-1.5">
+            Wealth Intelligence
+          </p>
         </div>
 
         {/* ── Navigation ────────────────────────────────────────────────── */}
@@ -145,62 +134,6 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* ── Main Content ──────────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-h-0 min-w-0">
-
-        {/* ── Top bar ─────────────────────────────────────────────────────── */}
-        <header
-          className="border-b flex-shrink-0 flex items-center justify-between px-6 py-0 h-11"
-          style={{
-            background: "hsl(222,42%,12%)",
-            borderColor: "rgba(255,255,255,0.07)",
-          }}
-        >
-          {/* Left: breadcrumb-style context */}
-          <div className="flex items-center gap-1.5 text-[11.5px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-            <BarChart3 className="w-3 h-3" style={{ color: "hsl(216,82%,55%)" }} />
-            <span style={{ color: "rgba(255,255,255,0.25)" }}>/</span>
-            <span className="font-medium" style={{ color: "rgba(255,255,255,0.50)" }}>
-              AI Financial Decisioning
-            </span>
-          </div>
-
-          {/* Right: actions */}
-          <div className="flex items-center gap-1">
-            <button
-              className="flex items-center justify-center w-7 h-7 rounded transition-colors"
-              style={{ color: "rgba(255,255,255,0.35)" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
-              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
-            >
-              <Search className="w-3.5 h-3.5" />
-            </button>
-            <button
-              className="flex items-center justify-center w-7 h-7 rounded transition-colors"
-              style={{ color: "rgba(255,255,255,0.35)" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
-              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
-            >
-              <Bell className="w-3.5 h-3.5" />
-            </button>
-
-            <span className="h-3.5 w-px mx-1" style={{ background: "rgba(255,255,255,0.12)" }} />
-
-            {/* Live status */}
-            <div
-              className="flex items-center gap-1.5 px-2 py-1 rounded text-[10.5px] font-medium"
-              style={{
-                background: "rgba(22,163,74,0.12)",
-                color: "hsl(160,60%,48%)",
-                border: "1px solid rgba(22,163,74,0.18)",
-              }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ background: "hsl(160,60%,48%)" }}
-              />
-              Live
-            </div>
-          </div>
-        </header>
 
         {/* ── Page content ──────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto p-5 md:p-6">
