@@ -5590,6 +5590,15 @@ function GuruAllocationView({
               <p className="text-[11px] font-semibold text-foreground">Best options for {fmt(totalExcess)} in excess capital</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">Ranked by after-tax yield · optimized for 37% bracket</p>
             </div>
+
+            {/* GURU Analysis: before product selection */}
+            <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg" style={{ background: "rgba(154,123,60,0.05)", border: "1px solid rgba(154,123,60,0.18)" }}>
+              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#9a7b3c", opacity: 0.75 }} />
+              <span className="text-[9px] font-bold uppercase tracking-[0.14em] flex-shrink-0" style={{ color: "#9a7b3c" }}>GURU</span>
+              <span className="text-muted-foreground/40 select-none px-0.5">·</span>
+              <span className="text-[10px] italic text-muted-foreground">Based on market yields and your {opMonthsLocal + resMonthsLocal}-month liquidity policy, GURU recommends short-duration income strategies · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>{fmt(returnPickupT)}/yr</span> return pickup at optimal after-tax yield.</span>
+            </div>
+
             <div className="grid grid-cols-3 gap-3">
               {excessProds.map((p, i) => {
                 const isSel = (selProd["excess"] ?? 0) === i;
