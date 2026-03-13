@@ -5637,142 +5637,116 @@ function GuruAllocationView({
                     <div className="flex-1" />
 
                   </div>
-                  {/* 5 bucket mini-cards — single row normally, two-row pro forma when transfers pending */}
+                  {/* ── GURU Allocation Landing — 5-column bucket grid ── */}
                   {(() => {
-                    const hasPending = pendingTransfers.length > 0;
                     const fmtK = (v: number) => `$${Math.round(v).toLocaleString()}`;
+                    const totalAllAssets = rows.reduce((s, r) => s + r.current, 0) + reVal + altVal + plan529;
 
-                    const renderBucketCard = (r: GBRow, proforma: boolean) => {
-                      const hc = HERO_COLORS[r.def.name] ?? { bg: r.def.bg, accent: r.def.accent };
-                      const inAmt = pendingTransfers.filter(t => t.to === r.def.name).reduce((s, t) => s + t.amount, 0);
-                      const outAmt = pendingTransfers.filter(t => t.from === r.def.name).reduce((s, t) => s + t.amount, 0);
-                      const proBalance = r.current + inAmt - outAmt;
-                      const balance = proforma ? proBalance : r.current;
-                      const deltaAmt = proBalance - r.current;
-                      const avgYieldV = weightedGrossYield(r.subAccounts, r.current);
-                      const isOverfund = r.delta < -5000;
-                      const isDragTarget = dragItem && dragItem !== r.def.name;
+                    // Option B color palette — light tint, institutional accents
+                    const OB: Record<string, { accent: string; tint: string; bdr: string }> = {
+                      "Operating Cash": { accent: "#2e5c8a", tint: "#f2f6fa", bdr: "#cfe0f0" },
+                      "Reserve":        { accent: "#8a6e2e", tint: "#faf7f0", bdr: "#e0d4b0" },
+                      "Build":          { accent: "#2e7a52", tint: "#f2faf5", bdr: "#c0e0cc" },
+                      "Grow":           { accent: "#2e4e7a", tint: "#f2f5fa", bdr: "#c8d5e8" },
+                    };
+                    const OB_OTHER = { accent: "#4a4a5a", tint: "#f5f5f7", bdr: "#d8d8e0" };
 
-                      const isGrowCard = r.def.name === "Grow";
-
-                      /* ── Product-change yield preview ── */
-                      const parseGross = (s: string) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
-                      const productSels = bucketProductSelections[r.def.name] ?? [];
-                      const hasProductChange = !isGrowCard && productSels.length > 0;
-                      const newGrossYield = hasProductChange
-                        ? productSels.reduce((s, sel) => s + parseGross(sel.product.grossYield) * (sel.alloc / 100), 0)
-                        : avgYieldV;
-                      const yieldChanged = hasProductChange && Math.abs(newGrossYield - avgYieldV) > 0.001;
-
-                      /* ── Option B inline before/after — all buckets with a delta ── */
-                      if (hasPending && deltaAmt !== 0 && !proforma) {
-                        return (
-                          <div key={`${r.def.name}-optB`} className="flex flex-col">
-                            <div className="mb-1 h-5" />
-                            <div className="rounded-xl p-3 flex-1" style={{ background: hc.bg }}>
-                              <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot ?? hc.accent }} />
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 leading-tight truncate">{r.def.name}</span>
-                              </div>
-                              {/* Before row — balance + yield crossed out */}
-                              <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
-                                <p className="serif-hero text-sm font-normal text-white tabular-nums leading-none">{fmtK(r.current)}</p>
-                                {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>}
-                              </div>
-                              <div className="border-t border-dashed border-white/20 my-1.5" />
-                              {/* After row */}
-                              <div className="flex items-baseline justify-between gap-1">
-                                <p className="serif-hero font-normal text-white tabular-nums text-[16px] leading-none">
-                                  {fmtK(proBalance)}
-                                </p>
-                                {!isGrowCard && (
-                                  yieldChanged ? (
-                                    <span className="flex items-baseline gap-1 flex-shrink-0">
-                                      <span className="text-white/40 tabular-nums text-[10px]">{avgYieldV.toFixed(2)}%</span>
-                                      <span className="text-white tabular-nums text-[10px] font-semibold">{newGrossYield.toFixed(2)}%</span>
-                                    </span>
-                                  ) : (
-                                    <p className="text-white/60 tabular-nums flex-shrink-0 text-[10px] font-medium">{avgYieldV.toFixed(2)}%</p>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
+                    const renderLandingCard = (
+                      name: string,
+                      tagline: string,
+                      rule: string,
+                      balance: number,
+                      yieldLabel: string,
+                      subAccounts: { name: string; value: number; yield_: string; yieldAT: string; acctNum?: string }[],
+                      isGrow: boolean,
+                      colors: { accent: string; tint: string; bdr: string },
+                    ) => {
+                      const pct = totalAllAssets > 0 ? (balance / totalAllAssets) * 100 : 0;
                       return (
-                        <div key={`${r.def.name}-${proforma ? "pro" : "cur"}`} className="flex flex-col">
-                          <div className="mb-1 h-5 flex items-center justify-center">
-                            {!proforma && yieldChanged && (
-                              <span className="text-[8px] font-semibold px-2 py-0.5 rounded-full border bg-secondary border-border text-muted-foreground">
-                                yield change
-                              </span>
-                            )}
-                          </div>
-                          <div
-                            className={`rounded-xl p-3 flex-1 transition-all duration-150 ${!proforma && isDragTarget ? "ring-2 ring-amber-400 ring-offset-1 scale-[1.02]" : ""}`}
-                            style={{ background: hc.bg }}
-                            onDragOver={!proforma && isDragTarget ? (e) => e.preventDefault() : undefined}
-                            onDrop={!proforma && isDragTarget ? (e) => {
-                              e.preventDefault();
-                              setDragItem(null);
-                              document.getElementById(`guru-bucket-${r.def.name.toLowerCase().replace(/\s+/g, "-")}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-                            } : undefined}
-                          >
-                            <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hc.dot }} />
-                              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70 leading-tight truncate">{r.def.name}</span>
+                        <div key={name} className="flex flex-col">
+                          {/* Card header */}
+                          <div style={{
+                            background: colors.tint,
+                            borderColor: colors.bdr,
+                            borderTopColor: colors.accent,
+                            borderTopWidth: 3,
+                            borderStyle: "solid",
+                            borderRadius: "8px 8px 0 0",
+                          }} className="px-3 py-3">
+                            <p style={{ color: colors.accent }} className="text-[9px] font-bold uppercase tracking-[0.14em] mb-1">{name}</p>
+                            <p className="font-serif italic text-[12px] text-gray-700 leading-tight mb-1">{tagline}</p>
+                            <p className="text-[9px] text-gray-400 leading-tight pb-3 mb-3" style={{ borderBottom: `1px solid ${colors.bdr}` }}>{rule}</p>
+                            <p className="serif-hero text-[20px] font-normal text-gray-900 leading-none mb-2 tabular-nums">{fmtK(balance)}</p>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-[10px] text-gray-400">{yieldLabel}</span>
+                              <span style={{ color: colors.accent }} className="text-[10px] font-semibold">{pct.toFixed(0)}%</span>
                             </div>
-                            {yieldChanged && !proforma ? (
-                              <>
-                                {/* Before row — faded + crossed out */}
-                                <div className="flex items-baseline justify-between gap-1 mt-1 opacity-40 line-through">
-                                  <p className="serif-hero text-sm font-normal text-white tabular-nums leading-none">{fmtK(balance)}</p>
-                                  {!isGrowCard && <p className="text-white/70 tabular-nums flex-shrink-0 text-[10px]">{avgYieldV.toFixed(2)}%</p>}
+                            <div className="h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.07)" }}>
+                              <div style={{ width: `${pct}%`, background: colors.accent, opacity: 0.55 }} className="h-[3px] rounded-full" />
+                            </div>
+                          </div>
+                          {/* Accounts list */}
+                          <div style={{ borderColor: colors.bdr, borderTopColor: "#f0f0f0" }} className="bg-white border border-t rounded-b-lg overflow-hidden">
+                            <div className="text-[9px] font-semibold uppercase tracking-[0.11em] text-gray-400 px-3 py-[7px] bg-gray-50 border-b border-gray-100">
+                              Accounts
+                            </div>
+                            {subAccounts.map((acct) => (
+                              <div key={acct.name} className="flex items-center justify-between px-3 py-[9px] border-b border-gray-50 last:border-0 hover:bg-gray-50 cursor-pointer">
+                                <div>
+                                  <p className="text-[11px] font-medium text-gray-800 leading-tight">{acct.name}</p>
+                                  <p className="text-[10px] text-gray-400">····{acct.acctNum ?? "N/A"}</p>
                                 </div>
-                                <div className="border-t border-dashed border-white/20 my-1.5" />
-                                <div className="flex items-baseline justify-between gap-1">
-                                  <p className="serif-hero text-white tabular-nums text-[17px] font-normal leading-none">{fmtK(balance)}</p>
-                                  {!isGrowCard && <p className="text-white/80 tabular-nums flex-shrink-0 text-[10px] font-semibold">{newGrossYield.toFixed(2)}%</p>}
+                                <div className="text-right">
+                                  <p className="serif-hero text-[13px] font-normal text-gray-800 tabular-nums leading-none">{fmtK(acct.value)}</p>
+                                  <p className="text-[9px] text-gray-400 mt-0.5">{isGrow ? acct.yieldAT : acct.yield_}</p>
                                 </div>
-                              </>
-                            ) : (
-                              <div className="flex items-baseline justify-between mt-1.5 gap-1">
-                                <p className="serif-hero text-white tabular-nums text-[16px] font-normal leading-none">
-                                  {fmtK(balance)}
-                                </p>
-                                {!isGrowCard && <p className="text-white/50 tabular-nums flex-shrink-0 text-[10px] font-medium">{avgYieldV.toFixed(2)}%</p>}
                               </div>
-                            )}
+                            ))}
+                            <div className="flex justify-between items-center px-3 py-[7px] bg-gray-50 border-t border-gray-100">
+                              <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-gray-500">Total</span>
+                              <span className="serif-hero text-[13px] font-normal text-gray-600 tabular-nums">{fmtK(balance)}</span>
+                            </div>
                           </div>
                         </div>
                       );
                     };
 
-                    const renderSubCats = () => {
-                      const totalOther = reVal + altVal + plan529;
-                      return (
-                        <div className="flex flex-col">
-                          <div className="h-5 mb-1" />
-                          <div className="rounded-xl p-3 flex-1 bg-slate-500">
-                            <div className="flex items-center gap-1.5 min-w-0 mb-0.5">
-                              <span className="w-2 h-2 rounded-full flex-shrink-0 bg-slate-300" />
-                              <span className="text-[11px] font-black uppercase text-white leading-tight truncate">Grow (Other)</span>
-                            </div>
-                            <p className={`${fmtK(totalOther).length > 9 ? "text-sm" : fmtK(totalOther).length > 7 ? "text-base" : "text-xl"} font-black text-white leading-none tabular-nums mt-1`}>
-                              {fmtK(totalOther)}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    };
+                    // Build Grow (Other) sub-accounts
+                    const otherSubAccounts = [
+                      ...(reVal > 0 ? [{ name: "Real Estate", value: reVal, yield_: "~5%", yieldAT: "~3.4%", acctNum: "N/A" }] : []),
+                      ...(altVal > 0 ? [{ name: "Private Equity & Alts", value: altVal, yield_: "[15%+]", yieldAT: "~10.2%", acctNum: "N/A" }] : []),
+                      { name: "529 Plans", value: plan529, yield_: "—", yieldAT: "—", acctNum: "6612" },
+                    ];
 
-                    /* ── Single-row layout — Option B cards are self-contained ── */
+                    /* ── 5-column landing grid ── */
                     return (
-                      <div className="grid grid-cols-5 gap-3 mt-5">
-                        {rows.map((r) => renderBucketCard(r, false))}
-                        {renderSubCats()}
+                      <div className="grid grid-cols-5 gap-2.5 mt-5">
+                        {rows.map((r) => {
+                          const c = OB[r.def.name] ?? OB_OTHER;
+                          const avgYield = weightedGrossYield(r.subAccounts, r.current);
+                          const isGrow = r.def.name === "Grow";
+                          const yieldLabel = isGrow ? "—" : avgYield > 0 ? `${avgYield.toFixed(2)}% yield` : "0.01% yield";
+                          return renderLandingCard(
+                            r.def.name,
+                            r.def.tagline,
+                            r.def.rule,
+                            r.current,
+                            yieldLabel,
+                            r.subAccounts,
+                            isGrow,
+                            c,
+                          );
+                        })}
+                        {renderLandingCard(
+                          "Grow (Other)",
+                          "Illiquid & alternative holdings",
+                          "Real estate, alternatives & 529 plans",
+                          reVal + altVal + plan529,
+                          "— yield",
+                          otherSubAccounts,
+                          true,
+                          OB_OTHER,
+                        )}
                       </div>
                     );
                   })()}
