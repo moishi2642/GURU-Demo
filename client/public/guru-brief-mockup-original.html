@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU · Advisor Brief · Kessler Family</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --paper: #f5f4f0;
+  --white: #ffffff;
+  --ink:   #181816;
+  --ink2:  #3a3a35;
+  --ink3:  #68685f;
+  --ink4:  #9c9c93;
+  --ink5:  #d0d0c8;
+  --rule:  #e6e5e0;
+  --mono:  'Courier New', Courier, monospace;
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans:  'DM Sans', -apple-system, sans-serif;
+
+  --green:       #0d6b50;
+  --green-l:     #e5f3ee;
+  --green-m:     #b4d9ce;
+  --amber:       #a55b00;
+  --amber-l:     #fcf1e6;
+  --amber-m:     #f0ce97;
+  --blue:        #1b3f8a;
+  --blue-l:      #edf1fb;
+  --blue-m:      #b4c5f5;
+  --red:         #be2a2c;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: 54px;
+  min-height: 100vh;
+  background: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 0 24px;
+  gap: 2px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+}
+
+.logo { margin-bottom: 22px; cursor: pointer; }
+
+.nav-item {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: rgba(255,255,255,0.28);
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+  border: none;
+  background: transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); }
+.nav-item.active { background: rgba(78,205,196,0.14); color: #4ecdc4; }
+.nav-item .badge {
+  position: absolute; top: 5px; right: 5px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--red);
+}
+
+/* ─── MAIN ─── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  height: 50px;
+  background: var(--white);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 36px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  flex-shrink: 0;
+}
+
+.topbar-left { display: flex; align-items: center; gap: 8px; }
+.topbar-client { font-family: var(--serif); font-size: 15px; color: var(--ink); }
+.topbar-sep { color: var(--ink5); font-size: 14px; margin: 0 2px; }
+.topbar-page { font-size: 12px; font-weight: 500; color: var(--ink3); letter-spacing: 0.02em; }
+
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+.meeting-pill {
+  font-size: 11px; font-weight: 500;
+  padding: 4px 10px; border-radius: 20px;
+  background: var(--amber-l); color: var(--amber);
+  border: 1px solid var(--amber-m);
+}
+.advisor-name { font-size: 12px; color: var(--ink3); }
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--green-l); border: 1px solid var(--green-m);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: var(--green);
+}
+
+/* ─── PAGE ─── */
+.page { padding: 36px 40px 72px; max-width: 900px; }
+
+.eyebrow {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--ink4); margin-bottom: 6px;
+}
+
+.page-title {
+  font-family: var(--serif);
+  font-size: 34px; font-weight: 400;
+  color: var(--ink); line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.page-lede {
+  font-family: var(--sans);
+  font-size: 14px; font-weight: 300;
+  color: var(--ink3); line-height: 1.7;
+  max-width: 520px; margin-bottom: 18px;
+}
+
+.status-row { display: flex; align-items: center; gap: 7px; }
+.s-pill {
+  font-size: 11px; font-weight: 600;
+  padding: 4px 11px; border-radius: 20px;
+}
+.s-net { font-size: 11px; color: var(--ink4); margin-left: 3px; }
+.s-net span { font-family: var(--mono); }
+
+/* ─── CARDS ─── */
+.cards { display: flex; flex-direction: column; gap: 16px; margin-top: 32px; }
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: opacity 0.4s, transform 0.4s, box-shadow 0.2s;
+}
+.card:hover { box-shadow: 0 3px 20px rgba(0,0,0,0.055); }
+.card.resolved { opacity: 0.3; transform: scale(0.988); pointer-events: none; }
+.card.deferred { opacity: 0.45; }
+.card.dimmed { opacity: 0.62; }
+
+.card-bar { height: 4px; }
+
+/* narrative */
+.card-body { padding: 20px 24px 18px; }
+
+.card-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 11px; }
+.card-tags { display: flex; gap: 6px; }
+
+.tag {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.card-title {
+  font-family: var(--serif);
+  font-size: 24px; font-weight: 400;
+  color: var(--ink); line-height: 1.25;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.card-sub {
+  font-family: var(--sans);
+  font-size: 14px; font-weight: 300; color: var(--ink2);
+  line-height: 1.7; margin-bottom: 16px;
+}
+
+.card-amount {
+  font-family: var(--serif);
+  font-size: 36px; font-weight: 400;
+  display: flex; align-items: baseline; gap: 10px;
+  margin-bottom: 16px; letter-spacing: -0.01em;
+}
+.card-amount-unit {
+  font-family: var(--sans);
+  font-size: 13px; font-weight: 300;
+  color: var(--ink3);
+}
+
+.data-table {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 16px;
+}
+.data-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 0;
+  font-size: 13px; font-weight: 400;
+  border-bottom: 1px solid var(--rule);
+}
+.data-row:last-child { border-bottom: none; }
+.data-row span:first-child { color: var(--ink3); font-weight: 300; }
+.data-val { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+
+.card-quote {
+  font-family: var(--serif);
+  font-size: 15px; font-style: italic; font-weight: 400;
+  color: var(--ink3); line-height: 1.8;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--rule);
+  border-left: none;
+}
+
+/* ─── DECISION STRIP ─── */
+/* ─── DECISION STRIP ─── */
+.d-strip {
+  border-top: 1px solid var(--rule);
+  padding: 18px 24px 20px;
+  background: #fafaf8;
+}
+
+.d-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.d-guru-label {
+  display: flex; align-items: center; gap: 7px;
+}
+.d-guru-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--ink);
+  flex-shrink: 0;
+}
+.d-decision-title {
+  font-size: 13px; font-weight: 600; color: var(--ink); line-height: 1.4;
+}
+.d-guru-tag {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--ink4);
+  border: 1px solid var(--rule); border-radius: 4px;
+  padding: 2px 7px; white-space: nowrap; flex-shrink: 0;
+}
+.d-alert {
+  font-size: 11px; font-weight: 500;
+  display: flex; align-items: center; gap: 5px;
+}
+.d-alert-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+
+.d-compare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.d-box {
+  background: var(--white);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 11px 14px;
+}
+.d-box-after {
+  background: var(--white);
+  border-radius: 8px;
+  padding: 11px 14px;
+  border: 1px solid;
+}
+.d-lbl {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--ink4); margin-bottom: 5px;
+}
+.d-num {
+  font-family: var(--mono);
+  font-size: 15px; color: var(--ink);
+  margin-bottom: 2px; letter-spacing: -0.02em;
+}
+.d-det {
+  font-size: 11px; color: var(--ink3); font-weight: 300;
+  margin-bottom: 3px;
+}
+.d-yld { font-family: var(--mono); font-size: 11px; }
+.d-arrow {
+  font-size: 18px; color: var(--ink5);
+  text-align: center; user-select: none;
+}
+
+.d-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 13px;
+  border-top: 1px solid var(--rule);
+}
+.d-footnote { font-size: 11px; color: var(--ink4); font-weight: 300; }
+.d-btn-group { display: flex; align-items: center; gap: 10px; }
+
+.email-check {
+  display: flex; align-items: center; gap: 7px; cursor: pointer;
+}
+.email-check input[type="checkbox"] {
+  width: 17px; height: 17px; cursor: pointer;
+  accent-color: var(--ink);
+  flex-shrink: 0;
+}
+.email-check-label {
+  font-size: 13px; font-weight: 600; color: var(--ink2);
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+
+.btn-approve {
+  font-family: var(--sans);
+  font-size: 12px; font-weight: 600;
+  padding: 9px 24px; border-radius: 7px;
+  border: none; color: #fff; cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: filter 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.btn-approve:hover { filter: brightness(0.87); }
+.btn-approve:active { transform: scale(0.97); }
+
+.btn-defer {
+  font-family: var(--sans);
+  font-size: 12px; font-weight: 400;
+  padding: 9px 18px; border-radius: 7px;
+  border: 1px solid var(--ink3);
+  background: var(--white); color: var(--ink2);
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.12s;
+}
+.btn-defer:hover { background: var(--rule); }
+
+/* ─── FOOTER ─── */
+.page-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  margin-top: 8px;
+}
+.footer-note { font-family: var(--sans); font-size: 12px; font-weight: 300; color: var(--ink4); }
+.footer-btns { display: flex; gap: 8px; }
+.footer-btn {
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  padding: 8px 16px; border-radius: 8px;
+  border: 1px solid var(--rule);
+  background: var(--white); color: var(--ink2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.footer-btn:hover { background: var(--paper); }
+.footer-btn-dark {
+  background: var(--ink); color: #fff;
+  border-color: var(--ink);
+}
+.footer-btn-dark:hover { background: var(--ink2); filter: none; }
+
+/* ─── EMAIL OVERLAY ─── */
+.overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(20,20,18,0.52);
+  z-index: 100;
+  align-items: flex-end; justify-content: center;
+}
+.overlay.open { display: flex; }
+
+.email-sheet {
+  background: var(--white);
+  border-radius: 16px 16px 0 0;
+  width: 100%; max-width: 820px;
+  padding: 28px 32px 32px;
+  max-height: 88vh; overflow-y: auto;
+  animation: rise 0.22s ease;
+}
+@keyframes rise { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.email-hd { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.email-title { font-family: var(--serif); font-size: 20px; color: var(--ink); margin-bottom: 3px; }
+.email-sub-line { font-size: 12px; color: var(--ink3); }
+.email-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--paper); border: none;
+  font-size: 18px; color: var(--ink3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.email-field {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 9px 14px;
+  margin-bottom: 10px; font-size: 13px;
+}
+.field-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink4); flex-shrink: 0; }
+.email-field input { background: none; border: none; outline: none; font-size: 13px; color: var(--ink); width: 100%; font-family: var(--sans); }
+
+.email-body-area {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 14px;
+  font-family: var(--serif); font-size: 14px;
+  line-height: 1.8; color: var(--ink);
+  width: 100%; resize: none; outline: none;
+  margin-bottom: 16px;
+}
+
+.email-footer-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ─── FLASH ─── */
+.flash {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: #fff;
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  padding: 10px 20px; border-radius: 10px;
+  z-index: 200;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s;
+  white-space: nowrap;
+}
+.flash.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- FLASH -->
+<div class="flash" id="flash"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#4ecdc4" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#4ecdc4" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <button class="nav-item active">
+    <div class="badge"></div>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+  </button>
+  <button class="nav-item">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  </button>
+  <button class="nav-item">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+  </button>
+  <button class="nav-item">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg>
+  </button>
+  <button class="nav-item">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  </button>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-client">Kessler Family</span>
+      <span class="topbar-sep">/</span>
+      <span class="topbar-page">Advisor Brief</span>
+    </div>
+    <div class="topbar-right">
+      <span class="meeting-pill">Client meeting Mar 20</span>
+      <span class="advisor-name">James Mercer</span>
+      <div class="avatar">JM</div>
+    </div>
+  </div>
+
+  <!-- PAGE -->
+  <div class="page">
+
+    <div class="eyebrow">Morning Brief · Wednesday, March 18, 2026</div>
+    <div class="page-title">Good morning, James.</div>
+    <div class="page-lede">Four items require your attention ahead of Thursday's meeting. The liquidity harvest and deployment sequence should be reviewed together — they are connected.</div>
+    <div class="status-row">
+      <span class="s-pill" style="background:#fdecea;color:var(--red);border:1px solid #f5a8a8;">1 urgent</span>
+      <span class="s-pill" style="background:var(--green-l);color:var(--green);border:1px solid var(--green-m);">2 deploy</span>
+      <span class="s-pill" style="background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-m);">1 cash update</span>
+      <span class="s-pill" style="background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-m);">1 act before May 7</span>
+      <span class="s-net">· <span>$8,420,000</span> net worth</span>
+    </div>
+
+    <div class="cards">
+
+      <!-- ── CARD 1: LIQUIDITY HARVEST ── -->
+      <div class="card" id="c1">
+        <div class="card-bar" style="background:var(--green)"></div>
+        <div class="card-body">
+          <div class="card-meta">
+            <div class="card-tags">
+              <span class="tag" style="background:var(--green-l);color:var(--green);">Liquidity</span>
+            </div>
+            <span class="tag" style="background:#fdecea;color:var(--red);">High Priority</span>
+          </div>
+          <div class="card-title">Year-End Bonus Has Created Deployable Surplus</div>
+          <div class="card-sub">The January bonus pushed balances above the 3-month reserve floor on all three accounts. $499,440 is sitting idle at a blended yield of 0.8% — earning $3,900 a year when it should be earning $25,500.</div>
+          <div class="card-amount" style="color:var(--green);">$499,440 <span class="card-amount-unit">cleared for deployment</span></div>
+          <div class="data-table">
+            <div class="data-row">
+              <span>Citizens Private Banking Checking ·· 3438</span>
+              <span style="display:flex;gap:16px;align-items:center;">
+                <span style="font-size:11px;font-weight:300;color:var(--ink4);">balance $107,000 · floor $80,000</span>
+                <span class="data-val" style="color:var(--green);">−$27,000</span>
+              </span>
+            </div>
+            <div class="data-row">
+              <span>Citizens Private Bank Money Market ·· 1482</span>
+              <span style="display:flex;gap:16px;align-items:center;">
+                <span style="font-size:11px;font-weight:300;color:var(--ink4);">balance $225,000 · floor $51,000</span>
+                <span class="data-val" style="color:var(--green);">−$174,000</span>
+              </span>
+            </div>
+            <div class="data-row">
+              <span>Fidelity Cash Sweep / Money Market ·· 4976</span>
+              <span style="display:flex;gap:16px;align-items:center;">
+                <span style="font-size:11px;font-weight:300;color:var(--ink4);">balance $368,440 · floor $70,000</span>
+                <span class="data-val" style="color:var(--green);">−$298,440</span>
+              </span>
+            </div>
+            <div class="data-row" style="border-top:1px solid var(--rule);margin-top:2px;">
+              <span style="font-weight:500;">Total to harvest</span>
+              <span class="data-val" style="color:var(--green);font-size:14px;">$499,440</span>
+            </div>
+          </div>
+          <div class="card-quote">"Sweeping the excess into the Build and Grow allocation captures an additional $21,600 per year. Reserves remain intact across all three accounts — this is pure yield pickup with no liquidity cost."</div>
+        </div>
+        <div class="d-strip">
+          <div class="d-head">
+            <div class="d-guru-label">
+              <span class="d-guru-tag">GURU recommended action</span>
+              <span class="d-decision-title">Sweep $499,440 excess into GURU allocation</span>
+            </div>
+            <div class="d-alert" style="color:var(--red);"><div class="d-alert-dot" style="background:var(--red);"></div>Urgent &middot; $4,800/mo cost of inaction</div>
+          </div>
+          <div class="d-compare">
+            <div class="d-box">
+              <div class="d-lbl">Now</div>
+              <div class="d-num">$499,440</div>
+              <div class="d-det">3 bank accounts · idle</div>
+              
+            </div>
+            <div class="d-arrow">→</div>
+            <div class="d-box-after" style="border-color:var(--green-m);">
+              <div class="d-lbl" style="color:var(--green);">After GURU</div>
+              <div class="d-num" style="color:var(--green);">$499,440</div>
+              <div class="d-det">Build &amp; Grow buckets</div>
+              
+            </div>
+          </div>
+          <div class="d-footer">
+            <label class="email-check">
+              <input type="checkbox" id="email-c1">
+              <span class="email-check-label">Include in client email</span>
+            </label>
+            <div class="d-btn-group">
+              
+              <button class="btn-defer" onclick="defer('c1')">Defer</button>
+              <button class="btn-approve" style="background:var(--green);" onclick="approve('c1','Harvest $499,440 to GURU allocation')">Approve</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CARD 2: DEPLOY INTO INVESTMENTS ── -->
+      <div class="card" id="c2">
+        <div class="card-bar" style="background:var(--green)"></div>
+        <div class="card-body">
+          <div class="card-meta">
+            <div class="card-tags">
+              <span class="tag" style="background:var(--green-l);color:var(--green);">Investments</span>
+            </div>
+            <span class="tag" style="background:var(--green-l);color:var(--green);">Medium Priority</span>
+          </div>
+          <div class="card-title">Rebalance Portfolio with the Harvested $499,440</div>
+          <div class="card-sub">With $499,440 harvested, three positions put it to work within the moderate risk profile: the CIO Sector Rotation Fund, a Small Cap Mutual Fund, and the Cresset Short Duration Bond Fund.</div>
+          <div class="card-amount" style="color:var(--green);">$499,440 <span class="card-amount-unit">to deploy across three positions</span></div>
+
+          <div style="margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink4);margin-bottom:10px;">Ideas to explore</div>
+
+            <label style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule);cursor:pointer;">
+              <input type="checkbox" style="margin-top:2px;width:15px;height:15px;accent-color:var(--green);flex-shrink:0;">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;">CIO Flagship Sector Rotation Fund &mdash; $199,440</div>
+                <div style="font-size:12px;font-weight:300;color:var(--ink3);">Reduces correlation to broad market &middot; target yield 6.2% &middot; underrepresented in current sleeve</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule);cursor:pointer;">
+              <input type="checkbox" style="margin-top:2px;width:15px;height:15px;accent-color:var(--green);flex-shrink:0;">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;">Small Cap Mutual Fund &mdash; $150,000</div>
+                <div style="font-size:12px;font-weight:300;color:var(--ink3);">Increases exposure to high-growth segment &middot; target yield 8.4% &middot; consistent with moderate-aggressive profile</div>
+              </div>
+            </label>
+
+            <label style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;cursor:pointer;">
+              <input type="checkbox" style="margin-top:2px;width:15px;height:15px;accent-color:var(--green);flex-shrink:0;">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;">Cresset Short Duration Bond Fund &mdash; $150,000</div>
+                <div style="font-size:12px;font-weight:300;color:var(--ink3);">Anchors fixed income sleeve &middot; target yield 5.4% &middot; low duration risk ahead of potential Fed cut</div>
+              </div>
+            </label>
+          </div>
+
+          <div class="card-quote">"The sector rotation fund reduces correlation to the broad market, the small cap sleeve adds high-growth exposure, and short-duration fixed income anchors the position ahead of any rate movement. Each fills a gap in the current allocation."</div>
+        </div>
+        <div style="border-top:1px solid var(--rule);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;">
+          <label class="email-check">
+            <input type="checkbox" id="email-c2">
+            <span class="email-check-label">Include in client email</span>
+          </label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn-defer" onclick="defer('c2')">Defer</button>
+            <button class="btn-approve" style="background:var(--green);" onclick="approve('c2','Deploy $499,440 into selected positions')">Open GURU Allocation →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CARD 3: CASH MOVEMENT UPDATE ── -->
+      <div class="card" id="c3">
+        <div class="card-bar" style="background:#1a3f8f"></div>
+        <div class="card-body">
+          <div class="card-meta">
+            <div class="card-tags">
+              <span class="tag" style="background:var(--blue-l);color:var(--blue);">Cash Movement</span>
+            </div>
+            <span class="tag" style="background:#f0f0eb;color:var(--ink3);">Monthly Update</span>
+          </div>
+          <div class="card-title">March Money Movement — Where Every Dollar Sits</div>
+          <div class="card-sub">March ran net positive — $42,500 in, $24,260 out, $18,240 surplus routed to Reserve. The cash architecture is working as modelled. One item is open: a $85,000 wire to Fidelity due March 20.</div>
+
+          <!-- SCHEMATIC -->
+          <div style="margin-bottom:16px;">
+
+            <!-- ROW: OPERATING -->
+            <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:flex-start;margin-bottom:8px;">
+              <div style="background:#1a3f8f;border-radius:10px;padding:14px 10px;text-align:center;">
+                <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.6);margin-bottom:4px;">Operating</div>
+                <div style="font-family:var(--mono);font-size:14px;color:#fff;font-weight:700;">$90,879</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;padding-top:4px;">
+                <div style="border:1px solid var(--blue-m);border-radius:8px;padding:9px 12px;background:var(--blue-l);">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                    <div>
+                      <div style="font-size:12px;font-weight:500;color:var(--blue);">CIT Money Market Bank Account</div>
+                      <div style="font-size:11px;font-weight:300;color:var(--ink3);margin-top:1px;">Primary operating · Jan ending</div>
+                    </div>
+                    <div style="font-family:var(--mono);font-size:13px;color:var(--blue);font-weight:600;">$90,879</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MOVEMENT ARROW: JPMorgan → CIT -->
+            <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;margin-bottom:8px;">
+              <div></div>
+              <div style="padding-left:12px;">
+                <div style="display:inline-flex;align-items:center;gap:6px;background:#e8f0fe;border:1px solid var(--blue-m);border-radius:20px;padding:4px 12px;">
+                  <span style="color:var(--blue);font-size:13px;">↑</span>
+                  <span style="font-family:var(--mono);font-size:11px;color:var(--blue);font-weight:600;">$46,739 · JPMorgan → CIT</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROW: RESERVE -->
+            <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:flex-start;margin-bottom:8px;">
+              <div style="background:var(--amber);border-radius:10px;padding:14px 10px;text-align:center;">
+                <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.65);margin-bottom:4px;">Reserve</div>
+                <div style="font-family:var(--mono);font-size:14px;color:#fff;font-weight:700;">$129,385</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;padding-top:4px;">
+                <div style="border:1px solid var(--amber-m);border-radius:8px;padding:9px 12px;background:var(--amber-l);">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                    <div>
+                      <div style="font-size:12px;font-weight:500;color:var(--amber);">JPMorgan 100% Treasuries Money Market</div>
+                      <div style="font-size:11px;font-weight:300;color:var(--ink3);margin-top:1px;">Autodraw to Operating</div>
+                    </div>
+                    <div style="font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:600;">$27,927</div>
+                  </div>
+                </div>
+
+                <!-- inner movement -->
+                <div style="padding-left:12px;">
+                  <div style="display:inline-flex;align-items:center;gap:6px;background:var(--amber-l);border:1px solid var(--amber-m);border-radius:20px;padding:4px 12px;">
+                    <span style="color:var(--amber);font-size:13px;">↑</span>
+                    <span style="font-family:var(--mono);font-size:11px;color:var(--amber);font-weight:600;">$7,478 · T-Bill → JPMorgan</span>
+                  </div>
+                </div>
+
+                <div style="border:1px solid var(--amber-m);border-radius:8px;padding:9px 12px;background:var(--amber-l);">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                    <div>
+                      <div style="font-size:12px;font-weight:500;color:var(--amber);">T-Bill Ladder</div>
+                      <div style="font-size:11px;font-weight:300;color:var(--ink3);margin-top:1px;">3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</div>
+                    </div>
+                    <div style="font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:600;">$101,458</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ROW: BUILD -->
+            <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:flex-start;">
+              <div style="background:var(--green);border-radius:10px;padding:14px 10px;text-align:center;">
+                <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.65);margin-bottom:4px;">Build</div>
+                <div style="font-family:var(--mono);font-size:14px;color:#fff;font-weight:700;">$226,545</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;padding-top:4px;">
+                <div style="border:1px solid var(--green-m);border-radius:8px;padding:9px 12px;background:var(--green-l);">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                    <div>
+                      <div style="font-size:12px;font-weight:500;color:var(--green);">2028 Municipal Bonds</div>
+                      <div style="font-size:11px;font-weight:300;color:var(--ink3);margin-top:1px;">Tax-advantaged income</div>
+                    </div>
+                    <div style="font-family:var(--mono);font-size:13px;color:var(--green);font-weight:600;">$32,161</div>
+                  </div>
+                </div>
+                <div style="border:1px solid var(--green-m);border-radius:8px;padding:9px 12px;background:var(--green-l);">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                    <div>
+                      <div style="font-size:12px;font-weight:500;color:var(--green);">S&amp;P Low Volatility Index</div>
+                      <div style="font-size:11px;font-weight:300;color:var(--ink3);margin-top:1px;">Short-duration ladder</div>
+                    </div>
+                    <div style="font-family:var(--mono);font-size:13px;color:var(--green);font-weight:600;">$194,384</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /schematic -->
+
+          <div class="card-quote">"The Fidelity wire is routine margin settlement — it does not affect the liquidity harvest or deployment plan above. Once initiated, March is closed and the household is on track with the 12-month cash flow forecast."</div>
+        </div>
+        <div style="border-top:1px solid var(--rule);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;">
+          <label class="email-check">
+            <input type="checkbox" id="email-c3">
+            <span class="email-check-label">Include in client email</span>
+          </label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            
+            <button class="btn-defer" onclick="defer('c3')">Defer</button>
+            <button class="btn-approve" style="background:var(--blue);" onclick="approve('c3','Wire $85K to Fidelity')">Initiate Wire</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CARD 4: FED RATE / LOCK IN ── -->
+      <div class="card dimmed" id="c4">
+        <div class="card-bar" style="background:var(--amber)"></div>
+        <div class="card-body">
+          <div class="card-meta">
+            <div class="card-tags">
+              <span class="tag" style="background:var(--amber-l);color:var(--amber);">Macro</span>
+            </div>
+            <span class="tag" style="background:var(--amber-l);color:var(--amber);">Act Before May 7</span>
+          </div>
+          <div class="card-title">Lock In Rates Before the Fed Cuts — Money Markets Will Float Down</div>
+          <div class="card-sub">The Fed is expected to cut on May 7. Money market funds reprice immediately — the Kesslers hold $1.1M across two floating MM positions. A 25bp cut costs $2,750 per year. The window to lock in 5.2% closes when the cut lands.</div>
+          <div class="card-amount" style="color:var(--amber);">$1,100,000 <span class="card-amount-unit">exposed to rate cut repricing</span></div>
+          <div class="data-table">
+            <div class="data-row">
+              <span>Citizens Private Bank Money Market ·· 1482</span>
+              <span style="display:flex;gap:16px;align-items:center;">
+                <span style="font-size:11px;font-weight:300;color:var(--ink4);">floating · reprices at cut</span>
+                <span class="data-val" style="color:var(--amber);">$225,000</span>
+              </span>
+            </div>
+            <div class="data-row">
+              <span>Fidelity Government MMF ·· 4976</span>
+              <span style="display:flex;gap:16px;align-items:center;">
+                <span style="font-size:11px;font-weight:300;color:var(--ink4);">floating · reprices at cut</span>
+                <span class="data-val" style="color:var(--amber);">$875,000</span>
+              </span>
+            </div>
+          </div>
+          <div class="card-quote">"Rotating into 6-month T-bills before May 7 locks in 5.2% through October — regardless of what the Fed does. The position remains semi-liquid and rolls back into the MM or extends further depending on the rate path in Q4."</div>
+        </div>
+        <div class="d-strip">
+          <div class="d-head">
+            <div class="d-guru-label">
+              <span class="d-guru-tag">GURU recommended action</span>
+              <span class="d-decision-title">Rotate $1.1M from money market → 6-mo T-bills before May 7</span>
+            </div>
+            <div class="d-alert" style="color:var(--amber);"><div class="d-alert-dot" style="background:var(--amber);"></div>Act before May 7 &middot; 50 days</div>
+          </div>
+          <div class="d-compare">
+            <div class="d-box">
+              <div class="d-lbl">Now · floating</div>
+              <div class="d-num">$1,100,000</div>
+              <div class="d-det">Money market funds</div>
+              
+            </div>
+            <div class="d-arrow">→</div>
+            <div class="d-box-after" style="border-color:var(--amber-m);">
+              <div class="d-lbl" style="color:var(--amber);">After GURU · locked</div>
+              <div class="d-num" style="color:var(--amber);">$1,100,000</div>
+              <div class="d-det">6-mo T-bills · matures Oct</div>
+              
+            </div>
+          </div>
+          <div class="d-footer">
+            <label class="email-check">
+              <input type="checkbox" id="email-c4">
+              <span class="email-check-label">Include in client email</span>
+            </label>
+            <div class="d-btn-group">
+              
+              <button class="btn-defer" onclick="defer('c4')">Defer</button>
+              <button class="btn-approve" style="background:var(--amber);" onclick="approve('c4','Lock $1.1M into 6-mo T-bills')">Approve</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /cards -->
+
+    <!-- FOOTER -->
+    <div class="page-footer">
+      <div class="footer-note">Prepared by GURU · Updated 7:02 AM · 2 items resolved this week</div>
+      <div class="footer-btns">
+        <button class="footer-btn" onclick="openEmailComposer()">Draft client email</button>
+        <button class="footer-btn footer-btn-dark" onclick="approveAll()">Approve all urgent →</button>
+      </div>
+    </div>
+
+  </div><!-- /page -->
+</div><!-- /main -->
+
+<!-- EMAIL OVERLAY -->
+<div class="overlay" id="emailOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="email-sheet">
+    <div class="email-hd">
+      <div>
+        <div class="email-title">Draft Client Email</div>
+        <div class="email-sub-line">Based on today's Advisor Brief · Kessler Family</div>
+      </div>
+      <button class="email-close" onclick="document.getElementById('emailOverlay').classList.remove('open')">×</button>
+    </div>
+
+    <div class="email-field">
+      <span class="field-lbl">To</span>
+      <span style="color:var(--ink);font-size:13px;">Sarah & Michael Kessler &lt;<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c6ada3b5b5aaa3b486a0a7abafaabfe8a5a9ab">[email&#160;protected]</a>&gt;</span>
+    </div>
+
+    <div class="email-field">
+      <span class="field-lbl">Subject</span>
+      <input type="text" value="Portfolio Update — March 18, 2026">
+    </div>
+
+    <textarea class="email-body-area" rows="11">Dear Sarah and Michael,
+
+I wanted to share a brief update ahead of our meeting on Thursday.
+
+Following a review of the household balance sheet this morning, I have identified two items I'd like to discuss and act on with your approval:
+
+1. Cash deployment — Since the January bonus, approximately $499,440 is sitting above your reserve threshold earning very little. I recommend deploying this into a short-duration T-bill ladder at 5.20%, which would generate an additional $62,400 per year. This remains fully liquid and can be structured around your upcoming cash needs.
+
+2. Portfolio rebalancing — Your equity allocation has drifted to 62% following strong performance, which is above the 56% ceiling in your investment policy. I recommend a modest trim of $340K to restore compliance, which also allows us to harvest $68K in unrealised gains.
+
+Both items are straightforward and I can have them executed by end of week with your approval. I will walk through the detail on Thursday.
+
+Warm regards,
+James Mercer</textarea>
+
+    <div class="email-footer-btns">
+      <button class="footer-btn" onclick="document.getElementById('emailOverlay').classList.remove('open')">Discard</button>
+      <button class="footer-btn" onclick="document.getElementById('emailOverlay').classList.remove('open')">Save draft</button>
+      <button class="footer-btn footer-btn-dark" onclick="sendEmail()">Send →</button>
+    </div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  function showFlash(msg) {
+    const el = document.getElementById('flash');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  function flash2(msg) { showFlash(msg); }
+
+  function openEmailComposer() {
+    const items = [];
+    const checks = [
+      { id: 'email-c1', text: '1. Liquidity harvest — $499,440 is sitting above reserve floors across your three bank accounts at a blended yield of 0.8%, earning $3,900 per year. We recommend sweeping this excess into the GURU allocation where it earns an estimated 5.1%, capturing an additional $21,600 per year. All three reserve floors remain intact.' },
+      { id: 'email-c2', text: '2. Portfolio deployment — With the $499,440 harvested, we propose deploying across three positions within your moderate risk profile: CIO Flagship Sector Rotation Fund ($199,440, reduces market correlation), Small Cap Mutual Fund ($150,000, high-growth exposure), and Cresset Short Duration Bond Fund ($150,000, anchors fixed income ahead of rate movement). Each fills a current gap in the allocation.' },
+      { id: 'email-c3', text: '3. March cash update — March ran net positive: $42,500 in, $24,260 out, $18,240 surplus routed to Reserve. The cash architecture is on track. One item remains open: a $85,000 wire to Fidelity due March 20 to settle a routine margin call. This does not affect the liquidity or deployment plan.' },
+      { id: 'email-c4', text: '4. Rate lock ahead of Fed cut — The Fed is expected to cut on May 7. Your $1,100,000 across two money market funds will reprice immediately — a 25bp cut costs approximately $2,750 per year. We recommend rotating into 6-month T-bills before the meeting to lock in 5.2% through October, regardless of what the Fed does.' },
+    ];
+    checks.forEach(c => {
+      if (document.getElementById(c.id) && document.getElementById(c.id).checked) items.push(c.text);
+    });
+    const body = document.getElementById('emailBody');
+    const itemBlock = items.length > 0 ? items.join('\n\n') : '[Select items above to include]';
+    body.value = `Dear Sarah and Michael,\n\nI wanted to share a brief update ahead of our meeting on Thursday.\n\nFollowing a review of the household balance sheet this morning, I have identified the following items I'd like to discuss and act on with your approval:\n\n${itemBlock}\n\nI can have the approved items executed by end of week. I will walk through the detail on Thursday.\n\nWarm regards,\nJames Mercer`;
+    document.getElementById('emailOverlay').classList.add('open');
+  }
+
+  function approve(id, label) {
+    showFlash('✓ ' + label);
+    setTimeout(() => {
+      const c = document.getElementById(id);
+      c.classList.add('resolved');
+    }, 320);
+  }
+
+  function defer(id) {
+    const c = document.getElementById(id);
+    c.classList.add('deferred');
+    showFlash('Deferred');
+  }
+
+  function approveAll() {
+    approve('c1', 'Deploy $1.2M to T-bill ladder');
+    setTimeout(() => approve('c2', 'Trim

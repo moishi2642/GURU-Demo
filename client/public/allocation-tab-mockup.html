@@ -1,0 +1,3635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allocation — GURU Private Wealth</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --page:    #f0ece5;
+    --card:    #f5f1ec;   /* linen cards */
+    --navy:    #1a2e4a;
+    --gold:    #8a6920;
+    --forest:  #1e4d30;
+    --rust:    #8b3a2a;
+    --border:  rgba(0,0,0,0.09);
+    --divider: rgba(0,0,0,0.06);
+    --text:    #1a1a1a;
+    --mid:     rgba(0,0,0,0.55);   /* minimum secondary text */
+    --dim:     rgba(0,0,0,0.50);   /* minimum tertiary text */
+  }
+
+  /* ── DESIGN RULES ──────────────────────────────── *
+   *  Minimum font-size: 10px                         *
+   *  Minimum text opacity on light bg: 0.50          *
+   *  Minimum text opacity on dark bg:  0.45          *
+   *  No K abbreviations — full dollar amounts only   *
+   * ─────────────────────────────────────────────── */
+
+  body {
+    background: var(--page);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── PAGE HEADER ──────────────────────────────── */
+  .ph {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 32px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+  .ph-left { display: flex; align-items: center; gap: 0; }
+  .ph-wordmark { font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--navy); }
+  .ph-sep { width: 1px; height: 14px; background: rgba(0,0,0,0.12); margin: 0 16px; }
+  .ph-tab { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.45); }
+  .ph-tab.active { color: var(--navy); border-bottom: 2px solid var(--navy); padding-bottom: 1px; }
+  .ph-right { display: flex; align-items: center; gap: 16px; }
+  .ph-client { font-size: 11px; color: var(--mid); letter-spacing: 0.03em; }
+  .ph-live { display: flex; align-items: center; gap: 5px; }
+  .ph-live-dot { width: 5px; height: 5px; border-radius: 50%; background: #3a8a5a; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  .ph-live-dot { animation: pulse 2.5s infinite; }
+  .ph-live-txt { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(58,138,90,0.75); }
+
+  /* ── CLIENT HERO BAR ────────────────────────────── */
+  .hero-bar {
+    background: linear-gradient(135deg, #142238 0%, #1a2e4a 55%, #1e3555 100%);
+    padding: 0 32px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 48px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: relative; overflow: hidden;
+  }
+  .hero-bar::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg,rgba(138,105,32,0.5),rgba(138,105,32,0.15) 40%,transparent);
+  }
+  .hero-bar::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,255,255,0.012) 40px, rgba(255,255,255,0.012) 41px);
+    pointer-events: none;
+  }
+  .hero-client { display: flex; align-items: center; gap: 18px; padding: 22px 0; border-right: 1px solid rgba(255,255,255,0.07); padding-right: 48px; }
+  .hero-monogram {
+    width: 46px; height: 46px; border-radius: 3px;
+    background: rgba(138,105,32,0.22); border: 1px solid rgba(138,105,32,0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; letter-spacing: 0.08em;
+    color: rgba(255,215,120,0.82); flex-shrink: 0;
+  }
+  .hero-client-info { display: flex; flex-direction: column; gap: 4px; }
+  .hero-client-name { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.9); letter-spacing: 0.02em; }
+  .hero-client-since { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+
+  .hero-aum { display: flex; flex-direction: column; gap: 6px; padding: 22px 0; }
+  .hero-aum-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+  .hero-aum-val { font-size: 36px; font-weight: 300; color: rgba(255,255,255,0.92); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+  .hero-aum-meta { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.02em; margin-top: 1px; }
+  .hero-tier-bar-wrap { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+  .hero-tier-bar { display: flex; height: 4px; border-radius: 1px; overflow: hidden; gap: 1px; width: 280px; }
+  .htb-seg { height: 100%; }
+  .htb-op  { background: rgba(91,143,204,0.8);  width: 19%; }
+  .htb-res { background: rgba(138,105,32,0.85); width: 61.5%; }
+  .htb-bld { background: rgba(30,77,48,0.85);   width: 19.5%; }
+  .hero-tier-labels { display: flex; gap: 1px; width: 280px; }
+  .htl-seg { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .htl-op  { width: 19%;   color: rgba(91,143,204,0.7); }
+  .htl-res { width: 61.5%; color: rgba(138,105,32,0.7); }
+  .htl-bld { width: 19.5%; color: rgba(30,137,64,0.6); text-align: right; }
+
+  .hero-stats { display: flex; align-items: stretch; gap: 0; border-left: 1px solid rgba(255,255,255,0.07); }
+  .hero-stat {
+    display: flex; flex-direction: column; justify-content: center; gap: 5px;
+    padding: 24px 32px;
+    border-right: 1px solid rgba(255,255,255,0.07);
+  }
+  .hero-stat-lbl-row { display: flex; align-items: center; gap: 6px; }
+  .hero-stat-bullet { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .hero-stat-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.42); }
+  .hero-stat-val { font-size: 24px; font-weight: 300; color: rgba(255,255,255,0.90); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+  .hero-stat-note { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.38); letter-spacing: 0.04em; }
+  .hero-status-badge {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border: 1px solid rgba(58,138,90,0.3);
+    border-radius: 2px; background: rgba(58,138,90,0.08); margin-left: 8px;
+  }
+  .hsb-dot { width: 5px; height: 5px; border-radius: 50%; background: #3a8a5a; animation: pulse 2.5s infinite; }
+  .hsb-txt { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(58,138,90,0.8); }
+
+  /* ── GURU INSIGHT ROW — two cards side by side ── */
+  .insight-row {
+    display: flex; gap: 18px; align-items: stretch;
+    margin: 20px 32px 0;
+  }
+
+  /* ── GURU INSIGHT BAR (narrative only) ─────────── */
+  .insight-bar {
+    background: #1e2838;
+    border-radius: 12px;
+    padding: 22px 28px;
+    flex: 1;
+    position: relative; overflow: hidden;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.18);
+  }
+  .insight-bar::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg,rgba(94,204,138,0.35),rgba(94,204,138,0.08) 40%,transparent);
+  }
+  .insight-narrative { width: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .insight-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; }
+  .insight-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ecc8a; flex-shrink: 0; box-shadow: 0 0 6px rgba(94,204,138,0.65); }
+  @keyframes ipulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .insight-dot { animation: ipulse 2.8s infinite; }
+  @keyframes cfm-pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  @keyframes borderRunBlue {
+    0%   { background-position: 0% 0,   100% 0,   100% 100%, 0% 100%; }
+    100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+  }
+  .insight-lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(94,204,138,0.85); font-family: 'Inter', sans-serif; }
+  .insight-hl { font-size: 21px; font-weight: 300; color: rgba(255,255,255,0.92); letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 11px; }
+  .insight-body { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.52); }
+  .insight-body em { color: rgba(255,255,255,0.78); font-style: italic; }
+  /* Stat pills beneath the narrative text */
+  .insight-stats { display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap; }
+  .insight-stat-pill {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 7px 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.04);
+  }
+  .isp-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.38); }
+  .isp-val { font-size: 14px; font-weight: 300; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.82); letter-spacing: -0.01em; }
+
+  /* ── GURU MODEL CARD — Detection System Style ── */
+  .guru-model-card {
+    position: relative; overflow: hidden;
+    background: linear-gradient(160deg, #1a3a6b 0%, #163060 55%, #0f2248 100%);
+    border: 1px solid rgba(91,143,204,0.35);
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+    width: 520px; flex-shrink: 0;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.28), 0 0 0 1px rgba(91,143,204,0.12);
+  }
+  /* scan line at top (matching det-col) */
+  .guru-model-card::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px; pointer-events: none;
+    background: linear-gradient(90deg, rgba(91,143,204,0.65), rgba(91,143,204,0.1) 60%, transparent);
+  }
+  /* animated running border */
+  .guru-model-card::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.75) 50%, transparent 100%) top / 200% 2px no-repeat,
+      linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.45) 50%, transparent 100%) right / 2px 200% no-repeat,
+      linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.55) 50%, transparent 100%) bottom / 200% 2px no-repeat,
+      linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.45) 50%, transparent 100%) left / 2px 200% no-repeat;
+    border-radius: 8px;
+    animation: borderRunBlue 6s linear infinite;
+  }
+  .gmc-top-strip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(91,143,204,0.15);
+    position: relative; z-index: 2; flex-shrink: 0;
+  }
+  .gmc-guru-badge { display: flex; align-items: center; gap: 7px; }
+  .gmc-guru-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #5ecc8a; box-shadow: 0 0 6px rgba(94,204,138,0.7);
+    animation: cfm-pulse 2.2s ease-in-out infinite;
+  }
+  .gmc-guru-lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(94,204,138,0.85); font-family: 'Inter', sans-serif; }
+  .gmc-live-pill {
+    margin-left: auto; display: flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border: 1px solid rgba(91,143,204,0.25);
+    border-radius: 2px; background: rgba(91,143,204,0.06);
+  }
+  .gmc-live-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(91,143,204,0.9); animation: cfm-pulse 1.8s infinite; }
+  .gmc-live-txt { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+  .gmc-kpi-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+    flex: 1; position: relative; z-index: 2;
+  }
+  .gmc-kpi {
+    display: flex; flex-direction: column; justify-content: center; gap: 5px;
+    padding: 14px 16px;
+    border-right: 1px solid rgba(255,255,255,0.07);
+  }
+  .gmc-kpi:last-child { border-right: none; }
+  .gmc-kpi-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.48); }
+  .gmc-kpi-val { font-size: 17px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: rgba(255,255,255,0.90); }
+
+  /* ── BODY ─────────────────────────────────────── */
+  .body { padding: 28px 32px 56px; }
+
+  /* ── SECTION LABEL ────────────────────────────── */
+  .section-lbl {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(0,0,0,0.55); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-lbl::after { content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.09); }
+
+  /* ── TIER BALANCE CARDS ──────────────────────── */
+  .tier-cards { display: flex; flex-direction: column; gap: 7px; margin-bottom: 28px; overflow-x: auto; }
+  .tier-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    border-radius: 3px;
+    display: grid;
+    grid-template-columns: 286px 1fr 208px 234px 208px;
+    align-items: center;
+    min-width: 900px;
+    transition: box-shadow 0.15s;
+  }
+  .tier-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+  .tc-op  { border-left-color: var(--navy); }
+  .tc-res { border-left-color: var(--gold); }
+  .tc-bld { border-left-color: var(--forest); }
+  .tc-inv { border-left-color: rgba(0,0,0,0.1); }
+
+  .tc-name-col { padding: 16px 16px 16px 20px; border-right: 1px solid var(--divider); display: flex; flex-direction: column; gap: 3px; align-self: stretch; justify-content: center; }
+  .tc-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .tc-desc { font-size: 10px; color: var(--dim); line-height: 1.4; }
+  .tc-accounts { font-size: 10px; color: var(--dim); margin-top: 2px; letter-spacing: 0.03em; }
+
+  .tc-balance-col { padding: 16px 20px; border-right: 1px solid var(--divider); display: flex; flex-direction: column; gap: 4px; }
+  .tc-bal { font-size: 20px; font-weight: 400; font-variant-numeric: tabular-nums; }
+  .tc-cov { font-size: 10px; color: var(--dim); }
+  .tc-bar-track { height: 3px; background: rgba(0,0,0,0.06); border-radius: 1px; width: 100%; margin-top: 3px; }
+  .tc-bar-fill  { height: 3px; border-radius: 1px; transition: width 0.4s; }
+
+  /* Pro forma state */
+  .tc-proforma { display: none; flex-direction: column; gap: 1px; margin-top: 4px; }
+  .tc-proforma.active { display: flex; }
+  .tc-bal-old { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.35); text-decoration: line-through; }
+  .tc-bal-new { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tc-movement-badge { display: none; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 2px; margin-top: 3px; }
+  .tc-movement-badge.active { display: flex; }
+  .badge-out { background: rgba(139,58,42,0.08); color: var(--rust); border: 1px solid rgba(139,58,42,0.18); }
+  .badge-in  { background: rgba(30,77,48,0.08);  color: var(--forest); border: 1px solid rgba(30,77,48,0.18); }
+
+  .tc-target-col { padding: 16px 20px; border-right: 1px solid var(--divider); display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+  .tc-target-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(0,0,0,0.50); }
+  .tc-target-val { font-size: 14px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--mid); }
+  .tc-pct { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 2px; }
+  .tc-pct-over { color: var(--navy);   background: rgba(26,46,74,0.08);  border: 1px solid rgba(26,46,74,0.14); }
+  .tc-pct-ok   { color: var(--forest); background: rgba(30,77,48,0.08);  border: 1px solid rgba(30,77,48,0.14); }
+
+  .tc-excess-col { padding: 16px 20px; border-right: 1px solid var(--divider); display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+  .tc-excess-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(0,0,0,0.50); }
+  .tc-excess-val { font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .tc-yield-col { padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+  .tc-yield-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(0,0,0,0.50); }
+  .tc-yield-rate { font-size: 16px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--text); }
+  .tc-yield-income { font-size: 10px; color: var(--dim); }
+
+  /* ── TRANSFER PARAMETER CARDS ─────────────────── */
+  .lp-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .lp-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .lp-op  { border-left-color: var(--navy); }
+  .lp-res { border-left-color: var(--gold); }
+  .lp-bld { border-left-color: var(--forest); }
+  .lp-inv { border-left-color: rgba(0,0,0,0.1); }
+
+  .lp-card-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 20px;
+    border-bottom: 1px solid var(--divider);
+    background: rgba(0,0,0,0.015);
+  }
+  .lp-tier-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .lp-tier-sub  { font-size: 10px; color: var(--dim); margin-top: 2px; }
+
+  .param-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 2px;
+  }
+  .badge-over { background: rgba(26,46,74,0.1);   color: var(--navy);   border: 1px solid rgba(26,46,74,0.18); }
+  .badge-ok   { background: rgba(30,77,48,0.1);   color: var(--forest); border: 1px solid rgba(30,77,48,0.18); }
+  .badge-idle { background: rgba(0,0,0,0.04);     color: rgba(0,0,0,0.55); border: 1px solid rgba(0,0,0,0.1); }
+
+  /* 2-column body: Coverage Target | Transfer Form */
+  .lp-card-body {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+  }
+  .lp-left { padding: 20px 24px; border-right: 1px solid var(--divider); }
+  .lp-right { padding: 20px 24px; }
+
+  .lp-col-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(0,0,0,0.55); margin-bottom: 14px;
+  }
+
+  /* Coverage stepper */
+  .stepper {
+    display: inline-flex; align-items: center;
+    border: 1px solid rgba(0,0,0,0.14); border-radius: 2px;
+    background: #fff;
+  }
+  .stepper-btn {
+    width: 30px; height: 32px; border: none; background: transparent;
+    cursor: pointer; font-size: 13px; color: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s;
+  }
+  .stepper-btn:hover { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); }
+  .stepper-sep { width: 1px; height: 20px; background: rgba(0,0,0,0.1); }
+  .stepper-val {
+    font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.75);
+    min-width: 56px; text-align: center; font-variant-numeric: tabular-nums;
+    padding: 0 8px; line-height: 32px;
+  }
+
+  .lp-target-computed {
+    margin-top: 14px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .lp-target-lbl { font-size: 10px; color: var(--dim); }
+  .lp-target-val { font-size: 18px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--text); }
+  .lp-target-note { font-size: 10px; color: var(--dim); }
+
+  /* Coverage gauge — minimal */
+  .lp-gauge { position: relative; height: 4px; background: rgba(0,0,0,0.08); border-radius: 2px; margin: 14px 0 8px; }
+  .lp-gauge-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 2px; transition: width 0.4s; }
+  .lp-gauge-needle { position: absolute; top: -5px; bottom: -5px; width: 2px; background: rgba(0,0,0,0.4); border-radius: 1px; transition: left 0.4s; }
+  .lp-gauge-needle::after {
+    content: attr(data-label);
+    position: absolute; top: -18px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px; color: rgba(0,0,0,0.50); font-weight: 700; white-space: nowrap;
+  }
+  .lp-gauge-ends { display: flex; justify-content: space-between; font-size: 10px; color: rgba(0,0,0,0.40); }
+
+  /* Transfer form */
+  .form-field { margin-bottom: 14px; }
+  .form-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(0,0,0,0.55); margin-bottom: 6px; display: block;
+  }
+  .form-input {
+    width: 100%;
+    font-size: 14px; font-weight: 500; color: var(--text);
+    padding: 9px 12px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.14);
+    border-radius: 2px;
+    font-variant-numeric: tabular-nums;
+    font-family: 'Inter', system-ui, sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--navy); box-shadow: 0 0 0 2px rgba(26,46,74,0.08); }
+
+  .form-select {
+    width: 100%;
+    font-size: 13px; font-weight: 500; color: var(--text);
+    padding: 9px 12px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.14);
+    border-radius: 2px;
+    font-family: 'Inter', system-ui, sans-serif;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+    transition: border-color 0.15s;
+  }
+  .form-select:focus { border-color: var(--navy); }
+
+  .form-select-product { margin-top: 8px; }
+
+  /* Pro forma preview */
+  .proforma-preview {
+    display: none;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.025);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 2px;
+    margin-top: 14px;
+  }
+  .proforma-preview.visible { display: block; }
+  .pf-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(0,0,0,0.50); margin-bottom: 8px; }
+  .pf-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .pf-row-lbl { font-size: 10px; color: var(--dim); }
+  .pf-old { font-size: 12px; font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.35); text-decoration: line-through; }
+  .pf-new { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pf-green { color: var(--forest); }
+  .pf-red   { color: var(--rust); }
+
+  /* Transfer action row */
+  .lp-action-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  .lp-queue-btn {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 9px 20px; border-radius: 2px;
+    background: var(--navy); color: rgba(255,255,255,0.9);
+    border: none; cursor: pointer; transition: background 0.15s;
+  }
+  .lp-queue-btn:hover { background: #142338; }
+  .lp-reset-link { font-size: 11px; color: var(--dim); cursor: pointer; }
+  .lp-reset-link:hover { color: var(--text); }
+
+  /* Product recommendation */
+  .product-card {
+    padding: 10px 12px;
+    background: rgba(30,77,48,0.05);
+    border: 1px solid rgba(30,77,48,0.15);
+    border-radius: 2px;
+    margin-top: 8px;
+  }
+  .prod-name { font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .prod-meta { font-size: 10px; color: var(--dim); line-height: 1.5; }
+  .prod-yield { font-weight: 600; color: var(--forest); }
+
+  /* ── TOTALS ROW ─────────────────────────────── */
+  .total-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    border-top: 2px solid var(--navy);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 16px 24px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .total-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--mid); }
+  .total-sub { font-size: 10px; color: var(--dim); margin-top: 3px; }
+  .total-tbal { text-align: center; }
+  .total-tbal-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(0,0,0,0.50); }
+  .total-tbal-val { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--mid); }
+  .total-dep { text-align: right; }
+  .total-dep-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(0,0,0,0.50); }
+  .total-dep-val { font-size: 24px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--text); transition: all 0.4s; }
+
+  /* ── ACTION ROW ───────────────────────────────── */
+  .action-row { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 36px; }
+  .action-link { font-size: 11px; color: var(--dim); cursor: pointer; }
+  .action-link:hover { color: var(--text); }
+  .action-btn {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 10px 26px; border-radius: 2px;
+    background: var(--navy); color: rgba(255,255,255,0.9);
+    border: none; cursor: pointer; transition: background 0.15s;
+  }
+  .action-btn:hover { background: #142338; }
+
+  /* ── YIELD ANALYSIS ──────────────────────────── */
+  .yield-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .yield-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 3px;
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .yield-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .yield-card-1::before { background: var(--forest); }
+  .yield-card-2::before { background: var(--navy); }
+  .yield-card-3::before { background: var(--gold); }
+  .yield-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--dim); margin-bottom: 12px; }
+  .yield-val { font-size: 26px; font-weight: 300; font-variant-numeric: tabular-nums; color: var(--text); line-height: 1; margin-bottom: 8px; }
+  .yield-note { font-size: 10px; color: var(--dim); line-height: 1.5; }
+  .yield-note-green { color: var(--forest); }
+
+  /* Hidden compat elements */
+  .js-compat { display: none; }
+
+  /* ── WIZARD PROGRESS BAR ─────────────────────────── */
+  .wizard-bar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex; align-items: stretch;
+  }
+  .wp-step {
+    display: flex; align-items: center; gap: 9px;
+    padding: 13px 18px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    color: rgba(0,0,0,0.32);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap; cursor: default;
+  }
+  .wp-step-num {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,0.16);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .wp-step.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .wp-step.active .wp-step-num { border-color: var(--navy); color: var(--navy); background: rgba(26,46,74,0.07); }
+  .wp-step.done { color: var(--forest); }
+  .wp-step.done .wp-step-num { border-color: var(--forest); background: rgba(30,77,48,0.08); color: var(--forest); }
+  .wp-arrow { display: flex; align-items: center; color: rgba(0,0,0,0.15); font-size: 11px; }
+
+  /* ── BODY ────────────────────────────────────────── */
+  .body { padding: 24px 32px 96px; }
+
+  /* ── SECTION LABEL ──────────────────────────────── */
+  .section-lbl {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(0,0,0,0.45); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-lbl::after { content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.08); }
+
+  /* ── TIER BALANCE CARDS (top, always visible) ───── */
+  .tier-cards { display: flex; flex-direction: column; gap: 6px; margin-bottom: 28px; overflow-x: auto; }
+  .tier-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    border-radius: 3px;
+    display: grid;
+    grid-template-columns: 260px 1fr 195px 221px 195px;
+    align-items: center;
+    min-width: 900px;
+    transition: box-shadow 0.15s;
+  }
+  .tier-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .tc-op  { border-left-color: var(--navy); }
+  .tc-res { border-left-color: var(--gold); }
+  .tc-bld { border-left-color: var(--forest); }
+  .tc-name-col { padding: 14px 16px 14px 18px; border-right: 1px solid var(--divider); display: flex; flex-direction: column; gap: 2px; align-self: stretch; justify-content: center; }
+  .tc-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .tc-accounts { font-size: 10px; color: var(--dim); margin-top: 1px; }
+  .tc-balance-col { padding: 14px 18px; border-right: 1px solid var(--divider); }
+  .tc-bal { font-size: 20px; font-weight: 400; font-variant-numeric: tabular-nums; }
+  .tc-cov { font-size: 10px; color: var(--dim); margin-top: 2px; }
+  .tc-status-col { padding: 14px 18px; border-right: 1px solid var(--divider); display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+  .tc-status-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.45); }
+  .tc-status-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; padding: 3px 8px; border-radius: 2px; }
+  .tc-queued { background: rgba(26,46,74,0.08); color: var(--navy); border: 1px solid rgba(26,46,74,0.16); }
+  .tc-pending { background: rgba(0,0,0,0.03); color: rgba(0,0,0,0.40); border: 1px solid rgba(0,0,0,0.09); }
+  .tc-done { background: rgba(30,77,48,0.07); color: var(--forest); border: 1px solid rgba(30,77,48,0.16); }
+  .tc-excess-col { padding: 14px 18px; border-right: 1px solid var(--divider); display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+  .tc-excess-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.45); }
+  .tc-excess-val { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .tc-yield-col { padding: 14px 18px; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+  .tc-yield-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.45); }
+  .tc-yield-rate { font-size: 15px; font-weight: 400; font-variant-numeric: tabular-nums; }
+  .tc-yield-income { font-size: 10px; color: var(--dim); }
+
+  /* ── REALLOCATION PANEL ─────────────────────────── */
+  /* Tab nav between buckets */
+  .bucket-tabs {
+    display: flex; gap: 0; margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .bucket-tab {
+    padding: 10px 22px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    color: rgba(0,0,0,0.40);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    background: none; border-top: none; border-left: none; border-right: none;
+    transition: color 0.15s;
+    position: relative; bottom: -1px;
+  }
+  .bucket-tab:hover { color: rgba(0,0,0,0.65); }
+  .bucket-tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .bucket-tab .tab-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .bucket-tab .tab-check { font-size: 10px; }
+
+  /* The main reallocation card */
+  .realloc-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    min-height: 320px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  /* Left sidebar */
+  .rc-sidebar {
+    padding: 22px 20px;
+    border-right: 1px solid var(--divider);
+    background: rgba(0,0,0,0.012);
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .rc-eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .rc-eyebrow-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .rc-tier-name { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .rc-tier-desc { font-size: 10px; color: var(--dim); line-height: 1.45; margin-bottom: 14px; }
+  .rc-accounts-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.40); margin-bottom: 5px; }
+  .rc-accounts { font-size: 10px; color: var(--dim); line-height: 1.6; margin-bottom: 18px; }
+  .rc-divider { height: 1px; background: var(--divider); margin-bottom: 16px; }
+  .rc-balance-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.40); margin-bottom: 4px; }
+  .rc-balance-val { font-size: 24px; font-weight: 300; font-variant-numeric: tabular-nums; margin-bottom: 3px; }
+  .rc-balance-cov { font-size: 10px; color: var(--dim); margin-bottom: 10px; }
+  .rc-bar-track { height: 3px; background: rgba(0,0,0,0.07); border-radius: 2px; overflow: hidden; }
+  .rc-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+  /* Right main area */
+  .rc-main {
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+  .rc-left-col { display: flex; flex-direction: column; }
+  .rc-right-col { display: flex; flex-direction: column; }
+
+  /* Months hero */
+  .rc-hero-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(0,0,0,0.45); margin-bottom: 16px;
+  }
+  .rc-stepper-wrap {
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 10px;
+    border: 1px solid rgba(0,0,0,0.12); border-radius: 3px;
+    background: #fff; align-self: flex-start;
+  }
+  .rc-step-btn {
+    width: 44px; height: 64px;
+    border: none; background: transparent;
+    cursor: pointer; font-size: 20px; color: rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s, color 0.1s; flex-shrink: 0;
+  }
+  .rc-step-btn:hover { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); }
+  .rc-months-display {
+    min-width: 80px; height: 64px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px; font-weight: 200; font-variant-numeric: tabular-nums;
+    color: var(--navy); line-height: 1; letter-spacing: -0.02em;
+    border-left: 1px solid rgba(0,0,0,0.1);
+    border-right: 1px solid rgba(0,0,0,0.1);
+    padding: 0 10px;
+  }
+  .rc-months-unit {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: rgba(0,0,0,0.40); margin-bottom: 20px;
+  }
+
+  /* Calc breakdown */
+  .rc-calc { display: flex; flex-direction: column; gap: 0; }
+  .rc-calc-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 12px;
+  }
+  .rc-calc-row:last-child { border-bottom: none; }
+  .rc-calc-lbl { color: rgba(0,0,0,0.50); }
+  .rc-calc-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Transfer badge */
+  .rc-xfer-badge {
+    margin-top: 14px; padding: 9px 14px;
+    border-radius: 3px; display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px;
+  }
+  .xfer-out { background: rgba(139,58,42,0.06); border: 1px solid rgba(139,58,42,0.16); }
+  .xfer-in  { background: rgba(30,77,48,0.06);  border: 1px solid rgba(30,77,48,0.16); }
+  .xfer-bal { background: rgba(0,0,0,0.03);      border: 1px solid rgba(0,0,0,0.08); }
+  .rc-xfer-lbl { color: rgba(0,0,0,0.55); font-weight: 500; }
+  .rc-xfer-val { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .xfer-out .rc-xfer-val { color: var(--rust); }
+  .xfer-in  .rc-xfer-val { color: var(--forest); }
+  .xfer-bal .rc-xfer-val { color: rgba(0,0,0,0.40); }
+
+  /* Transfer form */
+  .rc-form-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(0,0,0,0.45); margin-bottom: 14px;
+  }
+  .form-field { margin-bottom: 12px; }
+  .form-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(0,0,0,0.50); margin-bottom: 5px; display: block;
+  }
+  .form-input {
+    width: 100%; font-size: 14px; font-weight: 500; color: var(--text);
+    padding: 9px 12px; background: #fff;
+    border: 1px solid rgba(0,0,0,0.14); border-radius: 2px;
+    font-variant-numeric: tabular-nums; font-family: 'Inter', system-ui, sans-serif;
+    outline: none; transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--navy); box-shadow: 0 0 0 2px rgba(26,46,74,0.07); }
+  .form-select {
+    width: 100%; font-size: 13px; font-weight: 500; color: var(--text);
+    padding: 9px 12px; background: #fff;
+    border: 1px solid rgba(0,0,0,0.14); border-radius: 2px;
+    font-family: 'Inter', system-ui, sans-serif; outline: none; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.45)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat; background-position: right 10px center;
+    padding-right: 30px; transition: border-color 0.15s;
+  }
+  .form-select:focus { border-color: var(--navy); }
+
+  /* Pro forma */
+  .proforma-box {
+    display: none; padding: 11px 13px;
+    background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 2px; margin-top: 10px;
+  }
+  .proforma-box.visible { display: block; }
+  .pf-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(0,0,0,0.45); margin-bottom: 7px; }
+  .pf-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; font-size: 11px; }
+  .pf-row:last-child { margin-bottom: 0; }
+  .pf-row-lbl { color: rgba(0,0,0,0.50); }
+  .pf-old { font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.32); text-decoration: line-through; margin-right: 5px; }
+  .pf-new { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pf-green { color: var(--forest); }
+  .pf-red   { color: var(--rust); }
+
+  /* Actions */
+  .rc-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 16px; }
+  .btn-queue {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 9px 18px; border-radius: 2px;
+    background: var(--navy); color: rgba(255,255,255,0.92);
+    border: none; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-queue:hover { background: #142338; }
+  .btn-queue.queued { background: var(--forest); }
+  .btn-skip { font-size: 11px; color: var(--dim); background: none; border: none; cursor: pointer; padding: 9px 6px; }
+  .btn-skip:hover { color: var(--text); }
+
+  /* Step actions bar */
+  .step-actions {
+    display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+    padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.07); margin-top: 4px;
+  }
+  .step-link { font-size: 11px; color: var(--dim); background: none; border: none; cursor: pointer; }
+  .step-link:hover { color: var(--text); }
+  .btn-continue {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 10px 24px; border-radius: 2px;
+    background: var(--navy); color: rgba(255,255,255,0.92);
+    border: none; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-continue:hover { background: #142338; }
+  /* ── STEP INLINE NUMBERS (in section headers) ── */
+  .step-inline-num {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    border: 2px solid rgba(0,0,0,0.15);
+    color: rgba(0,0,0,0.35);
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .step-inline-num.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .step-inline-num.done { background: var(--forest); color: #fff; border-color: var(--forest); }
+
+  /* ── STEP STUB ROWS (collapsed context rows) ── */
+  .step-stub-num {
+    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    border: 2px solid rgba(0,0,0,0.12);
+    color: rgba(0,0,0,0.28);
+    background: transparent;
+    transition: all 0.2s;
+  }
+  .step-stub-num.done { background: var(--forest); color: #fff; border-color: var(--forest); }
+  .step-stub-num.dim { border-color: rgba(0,0,0,0.12); color: rgba(0,0,0,0.28); }
+  .step-stub-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; color: rgba(0,0,0,0.32); }
+  .step-stub-lbl.done { color: var(--forest); }
+  .step-stub-lbl.dim { color: rgba(0,0,0,0.28); }
+
+  /* ── ACCORDION BUCKET CARDS ──────────────────── */
+  .ba-stack { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+  .ba-card {
+    background: #fefdfb;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  }
+  /* Top color accent line — same as bucket cards */
+  .ba-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: 8px 8px 0 0;
+  }
+  .ba-card-op::before  { background: var(--navy); }
+  .ba-card-res::before { background: var(--gold); }
+  .ba-card-bld::before { background: var(--forest); }
+
+  .ba-header {
+    display: flex; align-items: center;
+    padding: 18px 20px 14px;
+    cursor: pointer; user-select: none;
+    transition: filter 0.12s;
+  }
+  .ba-header:hover { filter: brightness(0.97); }
+
+  /* Hide old slab */
+  .ba-hdr-slab { display: none; }
+  .ba-hdr-eyebrow { display: none; }
+  .ba-hdr-dot { display: none; }
+
+  .ba-hdr-left { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+  /* Name — small uppercase colored label (matches hbc-name) */
+  .ba-hdr-name {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    line-height: 1;
+  }
+  .ba-card-op  .ba-hdr-name { color: #3d6fa8; }
+  .ba-card-res .ba-hdr-name { color: var(--gold); }
+  .ba-card-bld .ba-hdr-name { color: var(--forest); }
+
+  /* Balance — shown in header only when collapsed */
+  .ba-hdr-bal {
+    font-size: 18px; font-weight: 300; font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em; line-height: 1; color: var(--text);
+  }
+  /* Hide header balance when card is open */
+  .ba-card:not(.collapsed) .ba-hdr-bal { display: none; }
+
+  .ba-hdr-right { display: flex; align-items: center; gap: 10px; }
+  .ba-hdr-status {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 2px;
+  }
+  .ba-s-pending { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.35); border: 1px solid rgba(0,0,0,0.09); }
+  .ba-s-queued  { background: rgba(26,46,74,0.08); color: var(--navy); border: 1px solid rgba(26,46,74,0.18); }
+  .ba-s-done    { background: rgba(30,77,48,0.07); color: var(--forest); border: 1px solid rgba(30,77,48,0.18); }
+  .ba-chevron {
+    font-size: 10px; color: rgba(0,0,0,0.25); margin-left: 2px;
+    transition: transform 0.2s; flex-shrink: 0;
+  }
+  .ba-card.collapsed .ba-chevron { transform: rotate(-90deg); }
+
+  .ba-body { display: flex; border-top: 1px solid rgba(0,0,0,0.07); }
+  .ba-card.collapsed .ba-body { display: none; }
+
+  /* Left sidebar: accounts + faint balances */
+  .ba-left {
+    width: 315px; flex-shrink: 0;
+    padding: 13px 22px 14px 24px;
+    border-right: 1px solid rgba(0,0,0,0.07);
+    background: rgba(0,0,0,0.015);
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .ba-left-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(0,0,0,0.38); margin-bottom: 10px; }
+  .ba-acct-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+  .ba-acct-name { font-size: 11px; color: rgba(0,0,0,0.60); }
+  .ba-acct-bal  { font-size: 11px; font-variant-numeric: tabular-nums; color: rgba(0,0,0,0.38); font-weight: 500; }
+
+  /* Right content area */
+  .ba-right {
+    flex: 1; padding: 13px 32px 14px 28px;
+    display: grid; grid-template-columns: auto auto auto; gap: 36px; justify-content: start; align-content: start;
+  }
+  .ba-col { display: flex; flex-direction: column; }
+
+  /* Coverage target section */
+  .ba-cov-eyebrow {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(0,0,0,0.45); margin-bottom: 8px;
+  }
+  /* Stepper + Target Balance side by side */
+  .ba-stepper-row {
+    display: flex; align-items: flex-end; gap: 14px; margin-bottom: 8px;
+  }
+  .ba-stepper-row .ba-field { flex: none; margin-bottom: 0; }
+  .cov-stepper {
+    display: inline-flex; align-items: stretch;
+    border: 1px solid rgba(0,0,0,0.14); border-radius: 3px;
+    background: #fff; align-self: flex-start; flex-shrink: 0;
+  }
+  .cov-step-btn {
+    width: 32px; height: 36px; border: none; background: transparent; cursor: pointer;
+    font-size: 16px; color: rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s, color 0.1s; flex-shrink: 0;
+  }
+  .cov-step-btn:hover { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); }
+  .cov-months-display {
+    min-width: 60px; padding: 0 8px; height: 36px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-left: 1px solid rgba(0,0,0,0.1);
+    border-right: 1px solid rgba(0,0,0,0.1);
+    line-height: 1;
+  }
+  .cov-months-num {
+    font-size: 20px; font-weight: 300; font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .cov-months-unit {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(0,0,0,0.38); margin-top: 2px;
+  }
+  .ba-metric-note {
+    font-size: 10px; color: rgba(0,0,0,0.42); margin-bottom: 0; line-height: 1.5;
+  }
+  .ba-metric-note em { font-style: normal; font-weight: 600; color: rgba(0,0,0,0.60); }
+
+  /* Colored field (bucket-tinted input) */
+  .ba-field { margin-bottom: 8px; }
+  .ba-field-lbl {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 6px; display: block;
+  }
+  .ba-input {
+    width: 160px; font-size: 18px; font-weight: 300;
+    padding: 5px 10px; border-radius: 2px; height: 36px;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+    font-family: 'Inter', system-ui, sans-serif;
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  /* Per-bucket tints applied via JS via class */
+  .tint-op { border: 1.5px solid rgba(26,46,74,0.28); background: rgba(26,46,74,0.04); color: var(--navy); }
+  .tint-op:focus { border-color: rgba(26,46,74,0.55); box-shadow: 0 0 0 2px rgba(26,46,74,0.07); }
+  .tint-res { border: 1.5px solid rgba(138,105,32,0.30); background: rgba(138,105,32,0.04); color: var(--gold); }
+  .tint-res:focus { border-color: rgba(138,105,32,0.55); box-shadow: 0 0 0 2px rgba(138,105,32,0.07); }
+  .tint-bld { border: 1.5px solid rgba(30,77,48,0.28); background: rgba(30,77,48,0.04); color: var(--forest); }
+  .tint-bld:focus { border-color: rgba(30,77,48,0.55); box-shadow: 0 0 0 2px rgba(30,77,48,0.07); }
+
+  /* Select tints — use background-color to preserve dropdown arrow image */
+  .ba-select.tint-op  { border: 1.5px solid rgba(26,46,74,0.28);   background-color: rgba(26,46,74,0.04);   color: var(--navy); }
+  .ba-select.tint-res { border: 1.5px solid rgba(138,105,32,0.30); background-color: rgba(138,105,32,0.04); color: var(--gold); }
+  .ba-select.tint-bld { border: 1.5px solid rgba(30,77,48,0.28);   background-color: rgba(30,77,48,0.04);   color: var(--forest); }
+
+  .ba-select {
+    width: 160px; font-size: 11px; font-weight: 500; padding: 6px 28px 6px 10px; border-radius: 2px; height: 36px;
+    font-family: 'Inter', system-ui, sans-serif; outline: none; cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat: no-repeat; background-position: right 8px center;
+    border: 1px solid rgba(0,0,0,0.14); background-color: #fff; color: var(--text);
+    transition: border-color 0.15s;
+  }
+  .ba-select:focus { border-color: var(--navy); }
+
+  /* Pro forma — appears as 3rd column in ba-right */
+  .ba-proforma { display: none; padding: 10px 13px; background: rgba(0,0,0,0.025); border: 1px solid rgba(0,0,0,0.08); border-radius: 2px; min-width: 160px; align-self: start; margin-top: 48px; }
+  .ba-proforma.visible { display: block; }
+
+  /* Invisible label spacer for field alignment */
+  .ba-field-spacer { visibility: hidden; pointer-events: none; }
+
+  /* Skip link sits right-aligned below Set Transfer, outside the amt-row */
+  .ba-skip-line { text-align: right; margin: 2px 0 6px; }
+  .ba-btn-col { display: flex; flex-direction: column; gap: 6px; }
+
+  /* ── PRODUCT SELECTION (Step 3) ─────────────────── */
+  .step3-wrap {
+    background: #fefdfb; border-radius: 8px; padding: 24px 28px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06); border: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .step3-hero {
+    margin-bottom: 24px;
+  }
+  .step3-hero-title {
+    font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px;
+  }
+  .step3-hero-sub {
+    font-size: 11px; color: var(--mid);
+  }
+
+  /* Thinking animation */
+  .thinking-wrap {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 56px 0; gap: 14px;
+  }
+  .thinking-dots { display: inline-flex; gap: 7px; align-items: center; }
+  .thinking-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--navy); opacity: 0.3;
+    animation: dot-pulse 1.4s ease-in-out infinite;
+  }
+  .thinking-dots span:nth-child(2) { animation-delay: 0.22s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.44s; }
+  @keyframes dot-pulse { 0%,80%,100%{transform:scale(0.75);opacity:0.25} 40%{transform:scale(1);opacity:0.75} }
+  .thinking-lbl { font-size: 11px; color: var(--mid); letter-spacing: 0.04em; }
+
+  .prod-bucket { margin-bottom: 32px; }
+  .prod-bucket-hd {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.07);
+  }
+  .prod-bucket-slab { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+  .prod-bucket-name { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); }
+  .prod-bucket-bal { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--dim); margin-left: auto; }
+  .prod-alloc-note { font-size: 10px; color: rgba(0,0,0,0.35); }
+
+  .prod-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+  #step-3-panel .prod-cards { grid-template-columns: repeat(2, 1fr); }
+
+  .prod-card {
+    background: white; border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 8px; padding: 9px 12px;
+    cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+  .prod-card:hover { border-color: rgba(0,0,0,0.18); box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .prod-card.selected { border-color: var(--navy); border-width: 1.5px; box-shadow: 0 0 0 3px rgba(26,46,74,0.07); }
+  .prod-card.selected.res-sel { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(138,105,32,0.07); }
+  .prod-card.selected.bld-sel { border-color: var(--forest); box-shadow: 0 0 0 3px rgba(30,77,48,0.07); }
+
+  /* Recommended badge (floats above the card name) */
+  .prod-badge {
+    display: inline-flex; align-items: center;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px; margin-bottom: 7px;
+    background: rgba(138,105,32,0.09); border: 1px solid rgba(138,105,32,0.22); color: var(--gold);
+  }
+  .prod-badge-inline {
+    font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gold); border: 1px solid rgba(138,105,32,0.35);
+    border-radius: 20px; padding: 1px 7px; white-space: nowrap; margin-left: auto;
+  }
+
+  /* Card header: name + risk pill */
+  .prod-card-hdr {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .prod-card-name { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.3; flex: 1; }
+
+  /* Risk pill */
+  .prod-risk-pill {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; margin-top: 2px;
+  }
+  .risk-zero { background: rgba(30,77,48,0.08); color: var(--forest); border: 1px solid rgba(30,77,48,0.18); }
+  .risk-fdic { background: rgba(26,46,74,0.07); color: var(--navy); border: 1px solid rgba(26,46,74,0.15); }
+  .risk-low  { background: rgba(138,105,32,0.08); color: var(--gold); border: 1px solid rgba(138,105,32,0.20); }
+  .risk-mkt  { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.45); border: 1px solid rgba(0,0,0,0.12); }
+
+  /* After-tax yield — large serif */
+  .prod-at-yield {
+    font-family: 'Instrument Serif', 'Georgia', serif;
+    font-size: 22px; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums;
+    margin-bottom: 1px;
+  }
+  .prod-yield-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  .prod-yield-sub { font-size: 9px; color: var(--mid); }
+  .prod-tax-eff { font-size: 11px; color: var(--gold); white-space: nowrap; text-align: right; font-weight: 500; }
+
+  /* Divider */
+  .prod-card-div { height: 1px; background: rgba(0,0,0,0.07); margin: 5px 0; }
+
+  /* Annual income row */
+  .prod-income-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .prod-income-lbl { font-size: 9px; color: var(--dim); }
+  .prod-income-val { font-size: 16px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--forest); }
+
+  .prod-desc { font-size: 8px; color: rgba(0,0,0,0.38); line-height: 1.4; margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* Allocation % row (appears below cards when ≥1 selected) */
+  /* prod-alloc-row removed — % allocation is inside each product card */
+  .risk-illiq { background: rgba(139,58,42,0.07); color: var(--rust); border: 1px solid rgba(139,58,42,0.18); }
+
+  /* ── PRODUCT BUCKET ACCORDION (Step 3) ─────────────────── */
+  .pba-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; margin-bottom: 12px; overflow: hidden;
+  }
+  .pba-hdr {
+    display: flex; align-items: center; gap: 0;
+    padding: 0; cursor: pointer; border-bottom: 1px solid var(--border);
+    transition: background 0.12s; user-select: none;
+  }
+  .pba-hdr:hover { background: rgba(0,0,0,0.016); }
+  .pba-slab { width: 3px; align-self: stretch; flex-shrink: 0; border-radius: 0; }
+  .pba-hdr-inner {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px 13px 14px; min-width: 0;
+  }
+  .pba-name { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); white-space: nowrap; }
+  .pba-note { font-size: 10px; color: rgba(0,0,0,0.35); }
+  .pba-status {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+    background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.40); border: 1px solid rgba(0,0,0,0.12);
+  }
+  .pba-status.pba-confirmed { background: rgba(30,77,48,0.08); color: var(--forest); border-color: rgba(30,77,48,0.2); }
+  .pba-bal-wrap { display: flex; flex-direction: column; align-items: flex-end; margin-left: auto; }
+  .pba-bal { font-size: 20px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--text); white-space: nowrap; }
+  .pba-bal-lbl { font-size: 9px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+  .pba-chev { font-size: 13px; color: rgba(0,0,0,0.30); margin-left: 10px; transition: transform 0.15s; flex-shrink: 0; }
+  .pba-summary-line { font-size: 10px; color: var(--mid); margin-top: 3px; font-style: italic; }
+  .pba-hdr-stack { display: flex; flex-direction: column; min-width: 0; }
+  .pba-body { padding: 16px 18px 20px; }
+  .pba-body.collapsed { display: none; }
+
+  /* Step panels — upcoming hidden, done collapsed to banner */
+  .sp-upcoming { display: none; }
+  .sp-done-bar {
+    display: none; align-items: center; gap: 10px;
+    padding: 10px 18px; background: rgba(30,77,48,0.04);
+    border: 1px solid rgba(30,77,48,0.12); border-radius: 5px;
+    margin-bottom: 10px; cursor: pointer;
+  }
+  .sp-done-bar.visible { display: flex; }
+  .sp-done-bar-icon { width: 18px; height: 18px; border-radius: 50%; background: var(--forest);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #fff; font-weight: 700; flex-shrink: 0; }
+  .sp-done-bar-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--forest); }
+  .sp-done-bar-sub { font-size: 11px; color: var(--dim); margin-left: 4px; }
+  .sp-done-bar-edit { margin-left: auto; font-size: 10px; color: var(--mid); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* Selected check overlay on product card */
+  /* Inline % allocation inside selected product cards */
+  .prod-pct-wrap { margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.07); }
+  .prod-pct-row { display: flex; align-items: center; justify-content: space-between; }
+  .prod-pct-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+  .prod-pct-inp {
+    width: 60px; height: 26px; border: 1px solid rgba(0,0,0,0.18); border-radius: 3px;
+    font-size: 12px; font-weight: 700; text-align: center;
+    background: rgba(0,0,0,0.025); font-family: 'Inter', sans-serif;
+    color: var(--navy); font-variant-numeric: tabular-nums; outline: none;
+    cursor: text;
+  }
+  .prod-card.selected .prod-pct-inp { border-color: rgba(26,46,74,0.35); }
+  .prod-card.selected.res-sel .prod-pct-inp { border-color: rgba(138,105,32,0.35); }
+  .prod-card.selected.bld-sel .prod-pct-inp { border-color: rgba(30,77,48,0.35); }
+
+  .prod-card .prod-sel-chk {
+    position: absolute; top: 10px; right: 10px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--navy); color: white;
+    font-size: 9px; font-weight: 700;
+    display: none; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .prod-card.selected .prod-sel-chk { display: flex; }
+  .prod-card.selected.res-sel .prod-sel-chk { background: var(--gold); }
+  .prod-card.selected.bld-sel .prod-sel-chk { background: var(--forest); }
+
+
+  .prod-confirm-row { display: flex; justify-content: flex-end; margin-top: 16px; }
+  .prod-confirm-btn {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 9px 20px; border-radius: 3px; border: none; cursor: pointer;
+    background: var(--navy); color: white; transition: background 0.15s;
+  }
+  .prod-confirm-btn:hover { background: #142338; }
+  .prod-confirmed { background: var(--forest) !important; }
+  .pf-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(0,0,0,0.45); margin-bottom: 6px; }
+  .pf-r { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+  .pf-r:last-child { margin-bottom: 0; }
+  .pf-rlbl { color: rgba(0,0,0,0.50); }
+  .pf-o { text-decoration: line-through; color: rgba(0,0,0,0.30); margin-right:4px; font-variant-numeric: tabular-nums; }
+  .pf-n { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pf-n.red { color: var(--rust); } .pf-n.grn { color: var(--forest); }
+
+  /* Inline amount + button row */
+  .ba-amt-row { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 10px; }
+  .ba-amt-row .ba-field { flex: none; margin-bottom: 0; }
+  .ba-amt-row .ba-skip-btn { margin-bottom: 1px; }
+
+  /* Action buttons */
+  .ba-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; }
+  .ba-queue-btn {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 0 14px; border-radius: 2px; white-space: nowrap; height: 36px; width: 160px;
+    background: var(--navy); color: rgba(255,255,255,0.92);
+    border: none; cursor: pointer; transition: background 0.15s;
+  }
+  .ba-queue-btn:hover { background: #142338; }
+  .ba-queue-btn.queued { background: var(--forest); }
+  .ba-skip-btn { font-size: 11px; color: var(--dim); background: none; border: none; cursor: pointer; padding: 9px 4px; }
+  .ba-skip-btn:hover { color: var(--text); }
+  /* Undo Transfer button state */
+  .ba-undo-btn { background: rgba(0,0,0,0.22) !important; color: rgba(255,255,255,0.58) !important; }
+  .ba-undo-btn:hover { background: rgba(0,0,0,0.32) !important; }
+
+  /* ── PRODUCT ALLOCATION % INSIDE CARD ──────────── */
+  .prod-pct-line {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(0,0,0,0.07);
+  }
+  .prod-pct-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+  .prod-pct-input {
+    width: 56px; height: 26px; border: 1px solid rgba(0,0,0,0.18); border-radius: 3px;
+    font-size: 12px; font-weight: 700; text-align: center; background: rgba(0,0,0,0.02);
+    font-family: 'Inter', sans-serif; color: var(--navy); font-variant-numeric: tabular-nums;
+    outline: none; cursor: text;
+  }
+  .prod-pct-input:focus { border-color: var(--navy); background: white; }
+
+  /* ── STEP DIVIDER ────────────────────────────────── */
+  .step-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 32px 0 22px; padding: 0;
+  }
+  .sd-num {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid rgba(0,0,0,0.14); background: var(--card);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.38);
+  }
+  .sd-title { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(0,0,0,0.40); white-space: nowrap; }
+  .step-divider::after { content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.08); }
+
+  /* ── CHANGE LEDGER (shown after finalize) ──────── */
+  /* ── CHANGE LEDGER — screenshot-match style ──────── */
+  .change-ledger { margin-top: 28px; }
+  .cl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 14px; }
+  .cl-grid-2 { grid-template-columns: repeat(2, 1fr) !important; }
+
+  .cl-card { background: #faf9f7; border: 1px solid rgba(0,0,0,0.10); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+
+  /* Dark header band per bucket */
+  .cl-card-hd { padding: 10px 14px 9px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .cl-card-hd-title { font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.93); letter-spacing: -0.01em; line-height: 1.1; }
+  .cl-card-hd-sub { font-size: 10px; color: rgba(255,255,255,0.55); font-style: italic; margin-top: 3px; }
+  .cl-card-hd-right { display: none; }
+
+  /* Table area */
+  .cl-tbl-hdr { display: grid; gap: 4px; padding: 7px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); background: rgba(0,0,0,0.025); }
+  .cl-tbl-hdr span { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(0,0,0,0.32); }
+  .cl-tbl-hdr span:not(:first-child) { text-align: right; }
+
+  /* Row base */
+  .cl-row { display: grid; gap: 4px; padding: 7px 14px; align-items: center; font-size: 11px; border-bottom: 1px solid rgba(0,0,0,0.04); }
+  .cl-row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Strikethrough old accounts */
+  .cl-row-old { color: rgba(0,0,0,0.33); }
+  .cl-row-old span { text-decoration: line-through; }
+  .cl-row-old .cl-dot-cell { text-decoration: none; }
+
+  /* Group header for Investments sub-groups */
+  .cl-row-grp { padding: 5px 14px 2px; }
+  .cl-row-grp span { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(0,0,0,0.28); text-decoration: none !important; }
+
+  /* Amber highlighted new product rows */
+  .cl-row-new { background: rgba(255,243,210,0.50); border-bottom: 1px solid rgba(138,105,32,0.12); }
+  .cl-row-new .cl-name { font-weight: 600; color: var(--gold); }
+  .cl-row-new .cl-yield-val { color: var(--gold); font-weight: 600; }
+  .cl-row-new .cl-at-val { color: var(--gold); font-weight: 600; }
+
+  /* Transfer rows — amber with direction color */
+  .cl-row-xfer { background: rgba(255,243,210,0.40); border-bottom: 1px solid rgba(138,105,32,0.10); }
+  .cl-row-xfer .cl-name { color: var(--gold); font-weight: 500; }
+  .cl-xfer-neg { color: var(--rust) !important; font-weight: 600; }
+  .cl-xfer-pos { color: var(--forest) !important; font-weight: 600; }
+
+  /* Dot indicators */
+  .cl-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; flex-shrink: 0; }
+  .cl-dot-old  { background: rgba(0,0,0,0.22); }
+  .cl-dot-new  { background: var(--gold); }
+  .cl-dot-xfer { background: var(--gold); }
+
+  /* Footer */
+  .cl-card-footer { display: grid; gap: 4px; padding: 9px 14px; border-top: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.018); align-items: center; }
+  .cl-footer-pos { font-size: 10px; color: rgba(0,0,0,0.38); }
+  .cl-footer-bal-old { text-decoration: line-through; color: rgba(0,0,0,0.35); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .cl-footer-bal-new { color: var(--gold); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .cl-footer-yield { color: rgba(0,0,0,0.55); font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; }
+
+  /* ── STEP PREVIEW LINES (2 and 3) ───────────── */
+  .step-preview {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--card);
+    padding: 14px 20px;
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 8px;
+    opacity: 0.6;
+  }
+  .sp-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: rgba(0,0,0,0.35);
+    flex-shrink: 0;
+  }
+  .sp-info { display: flex; flex-direction: column; gap: 2px; }
+  .sp-title { font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.40); }
+  .sp-desc { font-size: 10px; color: rgba(0,0,0,0.30); }
+
+  /* ── SECTION LABEL ────────────────────────────── */
+  .section-lbl {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(0,0,0,0.50); margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-lbl::after { content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.08); }
+
+  /* ── STEP ACTIONS BAR ────────────────────────── */
+  .step-actions {
+    display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+    padding-top: 14px; border-top: 1px solid rgba(0,0,0,0.07); margin-top: 12px;
+  }
+  .step-link { font-size: 11px; color: var(--dim); background: none; border: none; cursor: pointer; }
+  .step-link:hover { color: var(--text); }
+  .btn-continue {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 10px 24px; border-radius: 2px;
+    background: var(--navy); color: rgba(255,255,255,0.92);
+    border: none; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-continue:hover { background: #142338; }
+
+  .ba-acct-total { display: flex; flex-direction: column; gap: 4px;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.08); }
+  .ba-acct-total-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: rgba(0,0,0,0.40); }
+  .ba-acct-total-val { font-size: 18px; font-weight: 300; font-variant-numeric: tabular-nums;
+    color: var(--text); letter-spacing: -0.02em; }
+  .ba-two-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+
+  /* ══ LIQUIDITY TIER BALANCES ══════════════════════════════════════════════ */
+  .ltb-section {
+    background: var(--card);
+    border-bottom: 1px solid var(--divider);
+    padding: 0 32px 0;
+  }
+  .ltb-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 0 14px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .ltb-header-lbl {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(0,0,0,0.38);
+  }
+  .ltb-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 120px 140px 130px;
+    align-items: center; gap: 0;
+    min-height: 90px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+  }
+  .ltb-row:last-child { border-bottom: none; }
+  .ltb-row.dimmed { opacity: 0.62; }
+
+  /* Left: name + desc + accounts */
+  .ltb-id {
+    display: flex; align-items: flex-start; gap: 0;
+    padding: 16px 20px 16px 0;
+    border-right: 1px solid rgba(0,0,0,0.06);
+  }
+  .ltb-slab { width: 3px; border-radius: 2px; align-self: stretch; margin-right: 14px; flex-shrink: 0; }
+  .ltb-id-text { display: flex; flex-direction: column; gap: 3px; }
+  .ltb-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .ltb-desc { font-size: 10px; color: var(--dim); line-height: 1.4; }
+  .ltb-accounts { font-size: 10px; color: rgba(0,0,0,0.40); margin-top: 4px; letter-spacing: 0.02em; }
+
+  /* Middle: balance + bar */
+  .ltb-mid {
+    padding: 14px 24px;
+    border-right: 1px solid rgba(0,0,0,0.06);
+  }
+  .ltb-bal { font-size: 30px; font-weight: 300; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .ltb-cov { font-size: 10px; color: var(--dim); margin-bottom: 10px; }
+  .ltb-bar-track {
+    height: 3px; background: rgba(0,0,0,0.07); border-radius: 2px; overflow: hidden;
+  }
+  .ltb-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+  /* Target col */
+  .ltb-col {
+    padding: 0 20px;
+    display: flex; flex-direction: column; gap: 3px;
+    border-right: 1px solid rgba(0,0,0,0.06);
+    align-self: stretch; justify-content: center;
+  }
+  .ltb-col:last-child { border-right: none; }
+  .ltb-col-lbl {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(0,0,0,0.30); margin-bottom: 2px;
+  }
+  .ltb-col-val { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text); }
+  .ltb-col-sub { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .ltb-pct {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    padding: 2px 7px; border-radius: 2px; margin-top: 3px;
+  }
+  .ltb-pct-over { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.45); }
+  .ltb-excess-pos { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* ── HORIZONTAL BUCKET CARDS ─────────────────────── */
+  .hbc-section {
+    background: var(--page);
+    padding: 8px 32px 10px;
+  }
+  .hbc-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  /* ── STYLE B: left slab + white card body ── */
+  .hbc-card {
+    border-radius: 6px; overflow: hidden;
+    display: flex; flex-direction: row;
+    background: #fefdfb;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.07);
+  }
+
+  /* Left color slab */
+  .hbc-slab { width: 4px; flex-shrink: 0; }
+  .hbc-total .hbc-slab { background: var(--navy); }
+  .hbc-op    .hbc-slab { background: #5b8fcc; }
+  .hbc-res   .hbc-slab { background: #c49a28; }
+  .hbc-bld   .hbc-slab { background: #3a8a5a; }
+  .hbc-grow  .hbc-slab { background: #5b8fcc; }
+  .hbc-other .hbc-slab { background: #8fa8c4; }
+
+  /* Card body */
+  .hbc-body {
+    padding: 9px 12px 8px; flex: 1;
+    display: flex; flex-direction: column;
+  }
+
+  /* Header row: name + yield */
+  .hbc-header {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    margin-bottom: 4px;
+  }
+  /* Bucket name — colored per bucket */
+  .hbc-name {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .hbc-total .hbc-name { color: var(--navy); }
+  .hbc-op    .hbc-name { color: #3d6fa8; }
+  .hbc-res   .hbc-name { color: var(--gold); }
+  .hbc-bld   .hbc-name { color: var(--forest); }
+  .hbc-grow  .hbc-name { color: #3d6fa8; }
+  /* Grow (Other) — read-only, dimmed to signal not directly reallocated here */
+  .hbc-other .hbc-name { color: #6e8fab; }
+  .hbc-card.hbc-other { opacity: 0.62; }
+  .hbc-card.hbc-other:hover { opacity: 0.78; transition: opacity 0.2s; }
+
+  /* Yield */
+  .hbc-yield {
+    font-size: 10px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap;
+    color: rgba(0,0,0,0.35);
+  }
+
+  /* Balance */
+  .hbc-bal {
+    font-size: 15px; font-weight: 300; color: var(--text);
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
+    margin-bottom: 5px;
+  }
+
+  /* Relative allocation bar */
+  .hbc-bar-track {
+    height: 2px; background: rgba(0,0,0,0.07); border-radius: 1px; overflow: hidden;
+    margin-bottom: 5px;
+  }
+  .hbc-bar-fill { height: 100%; border-radius: 1px; }
+  .hbc-op    .hbc-bar-fill { background: #5b8fcc; }
+  .hbc-res   .hbc-bar-fill { background: #c49a28; }
+  .hbc-bld   .hbc-bar-fill { background: #3a8a5a; }
+  .hbc-grow  .hbc-bar-fill { background: #5b8fcc; }
+  .hbc-other .hbc-bar-fill { background: #8fa8c4; }
+
+  /* Tier-breakdown bar (Total Assets card only) */
+  .hbc-tier-bar { display: flex; height: 2px; border-radius: 1px; overflow: hidden; gap: 1px; margin-bottom: 8px; }
+  .hbc-tier-op  { background: rgba(91,143,204,0.75); width: 19%; }
+  .hbc-tier-res { background: rgba(196,154,40,0.75); width: 61.5%; }
+  .hbc-tier-bld { background: rgba(58,138,90,0.75);  width: 19.5%; }
+
+  /* Description subtext — hidden to keep header compact */
+  .hbc-desc { display: none; }
+
+  /* ── INCOME IMPACT STICKY BAR ─────────────────────── */
+  #ii-bar {
+    display: none !important;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
+    background: #3e2a05;
+    border-top: 1px solid rgba(255,180,60,0.22);
+    padding: 0 32px;
+    display: flex; align-items: center; gap: 0;
+    box-shadow: 0 -6px 28px rgba(0,0,0,0.40);
+    min-height: 58px;
+  }
+  .ii-header-strip {
+    display: flex; align-items: center; gap: 7px;
+    padding: 10px 20px 10px 0;
+    border-right: 1px solid rgba(255,180,60,0.15);
+    margin-right: 20px;
+    flex-shrink: 0;
+  }
+  .ii-header-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: rgba(255,190,70,0.85);
+    animation: pulse 2.5s infinite;
+  }
+  .ii-header-txt {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,195,80,0.85); white-space: nowrap;
+  }
+  .ii-inputs {
+    display: flex; align-items: center; gap: 14px;
+    padding-right: 20px;
+    border-right: 1px solid rgba(255,180,60,0.15);
+    margin-right: 20px;
+  }
+  .ii-input-group { display: flex; align-items: center; gap: 6px; }
+  .ii-input-lbl {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,195,80,0.55); white-space: nowrap;
+  }
+  .ii-input {
+    font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.88);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,180,60,0.22);
+    border-radius: 2px; padding: 4px 9px; outline: none;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ii-input:focus { background: rgba(255,255,255,0.13); border-color: rgba(255,195,80,0.5); }
+  .ii-input-amt { width: 118px; }
+  .ii-input-pct { width: 60px; }
+  .ii-outputs { display: flex; align-items: stretch; gap: 0; flex: 1; }
+  .ii-stat {
+    display: flex; flex-direction: column; justify-content: center; gap: 1px;
+    padding: 8px 22px; border-right: 1px solid rgba(255,180,60,0.10);
+  }
+  .ii-stat:last-child { border-right: none; }
+  .ii-stat-lbl {
+    font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,195,80,0.50);
+  }
+  .ii-stat-val {
+    font-size: 20px; font-weight: 300; font-variant-numeric: tabular-nums;
+    color: rgba(255,255,255,0.90); letter-spacing: -0.02em; line-height: 1;
+  }
+  .ii-stat.gold .ii-stat-val { color: rgba(255,200,80,0.95); font-weight: 400; }
+  .ii-stat-sub { font-size: 9px; color: rgba(255,195,80,0.40); }
+
+  /* ── Embedded mode: hide hero/insight/bucket strip ── */
+  body.embedded #insight-row,
+  body.embedded .hbc-section,
+  body.embedded .section-title-row { display: none !important; }
+
+</style>
+<script>
+  if (new URLSearchParams(location.search).get('embedded') === '1') {
+    document.documentElement.classList.add('loading-embedded');
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.classList.add('embedded');
+    });
+  }
+</script>
+
+
+<!-- ══ SECTION TITLE ══ -->
+<div class="section-title-row" style="padding:18px 32px 0;display:flex;align-items:baseline;gap:12px">
+  <h1 style="font-size:22px;font-weight:300;color:var(--navy);letter-spacing:-0.01em;margin:0">Asset Allocation</h1>
+  <span style="font-size:11px;color:rgba(0,0,0,0.40);letter-spacing:0.04em">Kessler Family · Annual Rebalancing Review</span>
+</div>
+
+<!-- ══ INSIGHT ROW ══ -->
+<div class="insight-row" id="insight-row">
+
+  <!-- GURU Insight narrative -->
+  <div class="insight-bar">
+    <div class="insight-narrative">
+      <div class="insight-eyebrow">
+        <div class="insight-dot"></div>
+        <div class="insight-lbl">GURU Insight · Kessler Family</div>
+      </div>
+      <div class="insight-hl">Strong liquidity, ready to work harder.</div>
+      <div class="insight-body">
+        The Kesslers are running well above liquidity policy — reserve sits at 23.6 months vs a 12-month target, and operating cash covers 6.3 months when 2 is sufficient.
+        That's approximately <em>$300,000 above threshold</em>. Deploying that excess into short-duration strategies picks up an estimated <em>$9,200 after tax per year</em> with no increase in risk profile.
+      </div>
+    </div>
+  </div>
+
+  <!-- GURU Intelligence card — sits outside the insight bar -->
+  <div class="guru-model-card">
+    <div class="gmc-top-strip">
+      <div class="gmc-guru-badge">
+        <div class="gmc-guru-dot"></div>
+        <span class="gmc-guru-lbl">GURU Intelligence</span>
+      </div>
+      <div class="gmc-live-pill">
+        <div class="gmc-live-dot"></div>
+        <span class="gmc-live-txt">Live · Now</span>
+      </div>
+    </div>
+    <div class="gmc-kpi-grid">
+      <div class="gmc-kpi">
+        <span class="gmc-kpi-lbl">Potential Excess Liquidity</span>
+        <span class="gmc-kpi-val" style="color:rgba(212,168,67,0.95)">$299,926</span>
+      </div>
+      <div class="gmc-kpi">
+        <span class="gmc-kpi-lbl">After-Tax Return Pickup</span>
+        <span class="gmc-kpi-val" style="color:rgba(94,204,138,0.92)">+$9,200 / yr</span>
+      </div>
+      <div class="gmc-kpi">
+        <span class="gmc-kpi-lbl">Annual Expenses</span>
+        <span class="gmc-kpi-val">$299,268</span>
+      </div>
+      <div class="gmc-kpi">
+        <span class="gmc-kpi-lbl">Annual Net Cash Flow</span>
+        <span class="gmc-kpi-val" style="color:rgba(91,143,204,0.95)">+$66,338</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ HORIZONTAL BUCKET CARDS ══ -->
+<div class="hbc-section" style="position:sticky;top:0;z-index:50;background:var(--bg,#faf9f7);border-bottom:1px solid var(--border,rgba(0,0,0,0.08));box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+
+  <!-- Total Assets summary row above cards -->
+  <div style="display:flex;align-items:baseline;gap:10px;padding:0 0 8px">
+    <span style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,0,0,0.35)">Total Assets</span>
+    <span style="font-size:22px;font-weight:300;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;color:var(--navy)">$6,148,236</span>
+  </div>
+
+  <div class="hbc-row">
+
+    <!-- Operating -->
+    <div class="hbc-card hbc-op">
+      <div class="hbc-slab"></div>
+      <div class="hbc-body">
+        <div class="hbc-header"><span class="hbc-name">Operating Cash</span><span class="hbc-yield" id="hbc-yield-op">0.01%</span></div>
+        <div class="hbc-bal" id="hbc-bal-op">$132,050</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19%"></div></div>
+        <div class="hbc-desc">Cash for upcoming expenditures</div>
+      </div>
+    </div>
+
+    <!-- Reserve -->
+    <div class="hbc-card hbc-res">
+      <div class="hbc-slab"></div>
+      <div class="hbc-body">
+        <div class="hbc-header"><span class="hbc-name">Reserve Cash</span><span class="hbc-yield" id="hbc-yield-res">4.60%</span></div>
+        <div class="hbc-bal" id="hbc-bal-res">$426,586</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:62%"></div></div>
+        <div class="hbc-desc">Active cash management for what's next</div>
+      </div>
+    </div>
+
+    <!-- Build -->
+    <div class="hbc-card hbc-bld">
+      <div class="hbc-slab"></div>
+      <div class="hbc-body">
+        <div class="hbc-header"><span class="hbc-name">Capital Build</span><span class="hbc-yield" id="hbc-yield-bld">4.85%</span></div>
+        <div class="hbc-bal" id="hbc-bal-bld">$135,000</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19.5%"></div></div>
+        <div class="hbc-desc">Disciplined saving for goals on the horizon</div>
+      </div>
+    </div>
+
+    <!-- Investments -->
+    <div class="hbc-card hbc-grow">
+      <div class="hbc-slab"></div>
+      <div class="hbc-body">
+        <div class="hbc-header"><span class="hbc-name">Investments</span><span class="hbc-yield" id="hbc-yield-grow">3.95%</span></div>
+        <div class="hbc-bal" id="hbc-bal-grow">$2,509,500</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:78%"></div></div>
+        <div class="hbc-desc">Long-term compounded investing</div>
+      </div>
+    </div>
+
+    <!-- Other Assets — read-only, from balance sheet -->
+    <div class="hbc-card hbc-other">
+      <div class="hbc-slab"></div>
+      <div class="hbc-body">
+        <div class="hbc-header"><span class="hbc-name">Other Assets</span></div>
+        <div class="hbc-bal">$2,945,100</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:92%"></div></div>
+        <div class="hbc-desc">Real estate · alternatives · other holdings</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Step stub rows — shown when that step is NOT active -->
+<div id="step-stub-1" style="display:none;align-items:center;gap:12px;padding:11px 32px;background:var(--card);border-bottom:1px solid var(--border);cursor:default">
+  <div class="step-stub-num" id="step-stub-num-1">1</div>
+  <span class="step-stub-lbl" id="step-stub-lbl-1">Asset Allocation Rebalancing</span>
+</div>
+<div id="step-stub-2" style="display:none;align-items:center;gap:12px;padding:11px 32px;background:var(--card);border-bottom:1px solid var(--border);cursor:default">
+  <div class="step-stub-num" id="step-stub-num-2">2</div>
+  <span class="step-stub-lbl" id="step-stub-lbl-2">Product Selection</span>
+</div>
+<div id="step-stub-3" style="display:none;align-items:center;gap:12px;padding:11px 32px;background:var(--card);border-bottom:1px solid var(--border);cursor:default">
+  <div class="step-stub-num" id="step-stub-num-3">3</div>
+  <span class="step-stub-lbl" id="step-stub-lbl-3">Confirm &amp; Execute</span>
+</div>
+
+<div class="body">
+
+<!-- ════════ STEP 1: CAPITAL REALLOCATION ════════ -->
+<div id="step-1-panel">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+    <div class="step-inline-num active" id="step-inline-num-1">1</div>
+    <div class="section-lbl" style="margin:0">Asset Allocation Rebalancing</div>
+  </div>
+
+  <!-- ACCORDION CARDS -->
+  <div class="ba-stack" id="ba-stack">
+
+    <!-- ── Operating Capital ── (starts expanded) -->
+    <div class="ba-card ba-card-op" id="ba-card-0">
+      <div class="ba-header" onclick="toggleAccordion(0)">
+        <div class="ba-hdr-slab"></div>
+        <div class="ba-hdr-left">
+          <span class="ba-hdr-eyebrow">Liquidity Tier 1</span>
+          <span class="ba-hdr-name">Operating Cash</span>
+          <span class="ba-hdr-bal" id="ba-hdr-bal-0">$132,050</span>
+        </div>
+        <div class="ba-hdr-right">
+          <span class="ba-hdr-status ba-s-pending" id="ba-hdr-status-0">Pending</span>
+          <span class="ba-chevron" id="ba-chev-0">▼</span>
+        </div>
+      </div>
+      <div class="ba-body">
+        <div class="ba-left">
+          <div class="ba-left-lbl">Accounts</div>
+          <div class="ba-acct-row">
+            <span class="ba-acct-name">Chase Checking ··2680</span>
+            <span class="ba-acct-bal">$48,200</span>
+          </div>
+          <div class="ba-acct-row">
+            <span class="ba-acct-name">Fidelity CMA ··7782</span>
+            <span class="ba-acct-bal">$83,850</span>
+          </div>
+          <div class="ba-acct-total">
+            <span class="ba-acct-total-lbl">Current Balance</span>
+            <span class="ba-acct-total-val" style="color:var(--navy)" id="ba-bal-display-0">$132,050</span>
+          </div>
+        </div>
+        <div class="ba-right">
+          <!-- Left col: stepper + target balance side by side -->
+          <div class="ba-col">
+            <!-- invisible spacer matches the "Transfer Details" eyebrow height in right col -->
+            <div class="ba-cov-eyebrow" style="visibility:hidden">x</div>
+            <div class="ba-stepper-row">
+              <div class="ba-field" style="margin-bottom:0">
+                <label class="ba-field-lbl" style="color:rgba(26,46,74,0.60)">Set Coverage Target</label>
+                <div class="cov-stepper">
+                  <button class="cov-step-btn" onclick="stepCard(0,-1,event)">−</button>
+                  <div class="cov-months-display">
+                    <div class="cov-months-num" id="ba-months-0" style="color:var(--navy)">2</div>
+                    <div class="cov-months-unit">mos. expenses</div>
+                  </div>
+                  <button class="cov-step-btn" onclick="stepCard(0,+1,event)">+</button>
+                </div>
+              </div>
+              <div class="ba-field">
+                <label class="ba-field-lbl" style="color:rgba(26,46,74,0.60)">Target Balance</label>
+                <input type="text" class="ba-input tint-op" id="ba-target-0" value="$41,878" oninput="onTargetInput(0,this.value)" />
+              </div>
+            </div>
+            <div class="ba-metric-note" id="ba-metric-0">Monthly cash expense · <em>$20,939</em> median</div>
+          </div>
+          <!-- Right col: amount to transfer + set transfer + skip inline, transfer to below -->
+          <div class="ba-col">
+            <div class="ba-cov-eyebrow">Transfer Details</div>
+            <div class="ba-amt-row">
+              <div class="ba-field" style="margin-bottom:0">
+                <label class="ba-field-lbl" style="color:rgba(26,46,74,0.60)">Amount to Transfer</label>
+                <input type="text" class="ba-input tint-op" id="ba-amt-0" value="$90,172" oninput="onAmtInput2(0,this.value)" />
+              </div>
+              <button class="ba-queue-btn" id="ba-q-0" onclick="toggleTransfer(0,event)" style="background:var(--navy)">Set Transfer →</button>
+              <button class="ba-skip-btn" onclick="skipCard(0,event)">Skip this bucket</button>
+            </div>
+            <div class="ba-field" style="margin-top:6px">
+              <label class="ba-field-lbl" style="color:rgba(0,0,0,0.50)">Transfer To</label>
+              <select class="ba-select tint-op" id="ba-dest-0" onchange="onDest2(0,this.value)">
+                <option value="">Select destination…</option>
+                <option value="Reserve Cash">Reserve Cash</option>
+                <option value="Capital Build">Capital Build</option>
+                <option value="Investments">Investments</option>
+              </select>
+            </div>
+          </div>
+          <!-- 3rd col: pro forma -->
+          <div class="ba-proforma" id="ba-pf-0">
+            <div class="pf-lbl">Pro Forma</div>
+            <div class="pf-r"><span class="pf-rlbl" id="ba-pf-src-lbl-0">Operating Cash</span><span><span class="pf-o" id="ba-pf-src-o-0"></span><span class="pf-n red" id="ba-pf-src-n-0"></span></span></div>
+            <div class="pf-r"><span class="pf-rlbl" id="ba-pf-dst-lbl-0">Destination</span><span><span class="pf-o" id="ba-pf-dst-o-0"></span><span class="pf-n grn" id="ba-pf-dst-n-0"></span></span></div>
+          </div>
+        </div><!-- end ba-right -->
+      </div><!-- end ba-body -->
+    </div><!-- end operating card -->
+
+    <!-- ── Reserve ── (collapsed) -->
+    <div class="ba-card ba-card-res collapsed" id="ba-card-1">
+      <div class="ba-header" onclick="toggleAccordion(1)">
+        <div class="ba-hdr-slab"></div>
+        <div class="ba-hdr-left">
+          <span class="ba-hdr-eyebrow">Liquidity Tier 2</span>
+          <span class="ba-hdr-name">Reserve Cash</span>
+          <span class="ba-hdr-bal" id="ba-hdr-bal-1">$426,586</span>
+        </div>
+        <div class="ba-hdr-right">
+          <span class="ba-hdr-status ba-s-pending" id="ba-hdr-status-1">Pending</span>
+          <span class="ba-chevron" id="ba-chev-1">▼</span>
+        </div>
+      </div>
+      <div class="ba-body">
+        <div class="ba-left">
+          <div class="ba-left-lbl">Accounts</div>
+          <div class="ba-acct-row">
+            <span class="ba-acct-name">Citizens MM ··4421</span>
+            <span class="ba-acct-bal">$280,000</span>
+          </div>
+          <div class="ba-acct-row">
+            <span class="ba-acct-name">Fidelity CD ··9031</span>
+            <span class="ba-acct-bal">$146,586</span>
+          </div>
+          <div class="ba-acct-total">
+            <span class="ba-acct-total-lbl">Current Balance</span>
+            <span class="ba-acct-total-val" style="color:var(--gold)" id="ba-bal-display-1">$426,586</span>
+          </div>
+        </div>
+        <div class="ba-right">
+          <div class="ba-col">
+            <div class="ba-cov-eyebrow" style="visibility:hidden">x</div>
+            <div class="ba-stepper-row">
+              <div class="ba-field" style="margin-bottom:0">
+                <label class="ba-field-lbl" style="color:rgba(138,105,32,0.65)">Set Coverage Target</label>
+                <div class="cov-stepper">
+                  <button class="cov-step-btn" onclick="stepCard(1,-1,event)" style="height:52px">−</button>
+                  <div class="cov-months-display" style="min-width:80px;height:52px">
+                    <div class="cov-months-num" id="ba-months-1" style="color:var(--gold)">12</div>
+                    <div class="cov-months-unit" style="font-size:7px;white-space:normal;text-align:center;max-width:72px;line-height:1.3">cumulative net cash flow</div>
+                  </div>
+                  <button class="cov-step-btn" onclick="stepCard(1,+1,event)" style="height:52px">+</button>
+                </div>
+              </div>
+              <div class="ba-field">
+                <label class="ba-field-lbl" style="color:rgba(138,105,32,0.65)">Target Balance</label>
+                <input type="text" class="ba-input tint-res" id="ba-target-1" value="$194,196" oninput="onTargetInput(1,this.value)" />
+              </div>
+            </div>
+            <div class="ba-metric-note" id="ba-metric-1">Min. cumulative net cash flow · trough at <em>month 11</em></div>
+          </div>
+          <div class="ba-col">
+            <!-- extra top margin compensates for taller stepper in left col -->
+            <div class="ba-cov-eyebrow" style="margin-bottom:24px">Transfer Details</div>
+            <div class="ba-amt-row">
+              <div class="ba-field" style="margin-bottom:0">
+                <label class="ba-field-lbl" style="color:rgba(138,105,32,0.65)">Amount to Transfer</label>
+                <input type="text" class="ba-input tint-res" id="ba-amt-1" value="$232,390" oninput="onAmtInput2(1,this.value)" />
+              </div>
+              <button class="ba-queue-btn" id="ba-q-1" onclick="toggleTransfer(1,event)" style="background:var(--navy)">Set Transfer →</button>
+              <button class="ba-skip-btn" onclick="skipCard(1,event)">Skip this bucket</button>
+            </div>
+            <div class="ba-field" style="margin-top:6px">
+              <label class="ba-field-lbl" style="color:rgba(0,0,0,0.50)">Transfer To</label>
+              <select class="ba-select tint-res" id="ba-dest-1" onchange="onDest2(1,this.value)">
+                <option value="">Select destination…</option>
+                <option value="Operating Cash">Operating Cash</option>
+                <option value="Capital Build">Capital Build</option>
+                <option value="Investments">Investments</option>
+              </select>
+            </div>
+          </div>
+          <!-- 3rd col: pro forma -->
+          <div class="ba-proforma" id="ba-pf-1">
+            <div class="pf-lbl">Pro Forma</div>
+            <div class="pf-r"><span class="pf-rlbl" id="ba-pf-src-lbl-1">Reserve Cash</span><span><span class="pf-o" id="ba-pf-src-o-1"></span><span class="pf-n red" id="ba-pf-src-n-1"></span></span></div>
+            <div class="pf-r"><span class="pf-rlbl" id="ba-pf-dst-lbl-1">Destination</span><span><span class="pf-o" id="ba-pf-dst-o-1"></span><span class="pf-n grn" id="ba-pf-dst-n-1"></span></span></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end reserve card -->
+
+    <!-- ── Capital Build ── (collapsed) -->
+    <div class="ba-card ba-card-bld collapsed" id="ba-card-2">
+      <div class="ba-header" onclick="toggleAccordion(2)">
+        <div class="ba-hdr-slab"></div>
+        <div class="ba-hdr-left">
+          <span class="ba-hdr-eyebrow">Liquidity Tier 3</span>
+          <span class="ba-hdr-name">Capital Build</span>
+          <span class="ba-hdr-bal" id="ba-hdr-bal-2">$135,000</span>
+        </div>
+        <div class="ba-hdr-right">
+          <span class="ba-hdr-status ba-s-pending" id="ba-hdr-status-2">Pending</span>
+          <span class="ba-chevron" id="ba-chev-2">▼</span>
+        </div>
+      </div>
+      <div class="ba-body">
+        <div class="ba-left">
+          <div class="ba-left-lbl">Accounts</div>
+          <div class="ba-acct-row">
+            <span class="ba-acct-name">Fidelity Brokerage ··9031</span>
+            <span class="ba-acct-bal">$75,000</span>
+          </div>
+          <div class="ba-acct-row">
+            <span class="ba-acct-name">Goldman Marcus HYSA</span>
+            <span class="ba-acct-bal">$60,000</span>
+          </div>
+          <div class="ba-acct-total">
+            <span class="ba-acct-total-lbl">Current Balance</span>
+            <span class="ba-acct-total-val" style="color:var(--forest)" id="ba-bal-display-2">$135,000</span>
+          </div>
+        </div>
+        <div class="ba-right">
+          <div class="ba-col">
+            <div class="ba-cov-eyebrow">Coverage Target</div>
+            <div class="ba-field">
+              <label class="ba-field-lbl" style="color:rgba(30,77,48,0.65)">Target Balance</label>
+              <input type="text" class="ba-input tint-bld" id="ba-target-2" value="$135,000" oninput="onTargetInput(2,this.value)" />
+            </div>
+            <div class="ba-metric-note" id="ba-metric-2">Set target for large upcoming expenditure</div>
+          </div>
+          <div class="ba-col">
+            <div class="ba-cov-eyebrow">Transfer Details</div>
+            <div class="ba-amt-row">
+              <div class="ba-field" style="margin-bottom:0">
+                <label class="ba-field-lbl" style="color:rgba(30,77,48,0.65)">Amount to Transfer</label>
+                <input type="text" class="ba-input tint-bld" id="ba-amt-2" value="" oninput="onAmtInput2(2,this.value)" placeholder="$0" />
+              </div>
+              <button class="ba-queue-btn" id="ba-q-2" onclick="toggleTransfer(2,event)" style="background:var(--navy)">Set Transfer →</button>
+              <button class="ba-skip-btn" onclick="skipCard(2,event)">Skip this bucket</button>
+            </div>
+            <div class="ba-field" style="margin-top:6px">
+              <label class="ba-field-lbl" style="color:rgba(0,0,0,0.50)">Transfer To</label>
+              <select class="ba-select tint-bld" id="ba-dest-2" onchange="onDest2(2,this.value)">
+                <option value="">Select destination…</option>
+                <option value="Reserve Cash">Reserve Cash</option>
+                <option value="Investments">Investments</option>
+              </select>
+            </div>
+          </div>
+          <!-- 3rd col: pro forma -->
+          <div class="ba-proforma" id="ba-pf-2">
+            <div class="pf-lbl">Pro Forma</div>
+            <div class="pf-r"><span class="pf-rlbl" id="ba-pf-src-lbl-2">Capital Build</span><span><span class="pf-o" id="ba-pf-src-o-2"></span><span class="pf-n red" id="ba-pf-src-n-2"></span></span></div>
+            <div class="pf-r"><span class="pf-rlbl" id="ba-pf-dst-lbl-2">Destination</span><span><span class="pf-o" id="ba-pf-dst-o-2"></span><span class="pf-n grn" id="ba-pf-dst-n-2"></span></span></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end capital build card -->
+
+  </div><!-- end ba-stack -->
+
+  <div class="step-actions">
+    <button class="step-link" onclick="resetCards()">Reset All</button>
+    <button class="btn-continue" onclick="showTransferSummaryInline()">Save &amp; Continue &nbsp;→</button>
+  </div>
+
+  <!-- ── Inline transfer summary (shown after clicking Save & Continue) ── -->
+  <div id="step-1-transfer-wrap" style="display:none;margin-top:28px;padding-top:28px;border-top:1px solid rgba(0,0,0,0.07)">
+    <div class="section-lbl">Step 1 Changes — Asset Allocation &amp; Transfers</div>
+    <div id="transfer-summary" style="margin-bottom:20px">
+      <div style="background:#faf9f7;border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:16px 20px;color:var(--dim);font-size:12px">No transfers queued.</div>
+    </div>
+    <div class="step-actions" style="display:flex;gap:12px;align-items:center">
+      <button style="background:transparent;border:1px solid rgba(0,0,0,0.18);color:var(--text);border-radius:6px;padding:9px 18px;font-size:11px;font-weight:600;cursor:pointer" onclick="hideTransferSummaryInline()">← Edit Allocation</button>
+      <button class="btn-continue" onclick="goToProductSelection()">Continue to Product Selection &nbsp;→</button>
+    </div>
+  </div>
+
+</div><!-- end step-1-panel -->
+
+<!-- ════════ STEP 2: PRODUCT SELECTION ════════ -->
+<div id="step-3-panel" style="display:none;padding-top:32px;border-top:1px solid rgba(0,0,0,0.07);margin-top:32px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+    <div class="step-inline-num" id="step-inline-num-2">2</div>
+    <div class="section-lbl" style="margin:0">Product Selection</div>
+  </div>
+  <p style="font-size:11px;color:var(--mid);margin-bottom:20px;line-height:1.6">Select one or more products per bucket. The entire bucket balance will be reallocated — not just the transfer amount. Allocate 100% across selected products.</p>
+
+  <!-- ── Operating Cash ── -->
+  <div class="pba-card" id="pba-op">
+    <div class="pba-hdr" onclick="togglePba('op')">
+      <div class="pba-slab" style="background:var(--navy)"></div>
+      <div class="pba-hdr-inner">
+        <div class="pba-hdr-stack">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="pba-name">Operating Cash</span>
+            <span class="pba-note">Daily liquidity required</span>
+            <span class="pba-status" id="pba-status-op">Pending</span>
+            <div class="pba-bal-wrap"><span class="pba-bal">$132,050</span><span class="pba-bal-lbl">to allocate</span></div>
+            <span class="pba-chev" id="pba-chev-op">▾</span>
+          </div>
+          <div class="pba-summary-line" id="pba-summary-op" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <div class="pba-body" id="pba-body-op">
+      <div class="prod-cards" id="prod-cards-op">
+
+        <div class="prod-card" id="prod-card-op-0" onclick="toggleProduct('op',0,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">Citizens Private Checking</div>
+            <span class="prod-risk-pill risk-fdic">FDIC</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">0.01%</div><div class="prod-tax-eff">Tax-effected: 0.01%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-op-0">$13/yr</span>
+          </div>
+          <div class="prod-desc">Existing primary checking account · same-day access · FDIC insured</div>
+        </div>
+
+        <div class="prod-card" id="prod-card-op-1" onclick="toggleProduct('op',1,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">SoFi Checking</div>
+            <span class="prod-risk-pill risk-fdic">FDIC</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">0.50%</div><div class="prod-tax-eff">Tax-effected: 0.27%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-op-1">$357/yr</span>
+          </div>
+          <div class="prod-desc">High-yield checking · daily liquidity · competitive rate on deposits</div>
+        </div>
+
+        <div class="prod-card" id="prod-card-op-2" onclick="toggleProduct('op',2,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">CIT Money Market Bank Account</div>
+            <span class="prod-risk-pill risk-fdic">FDIC</span>
+            <span class="prod-badge-inline">Highest Yield</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">4.30%</div><div class="prod-tax-eff">Tax-effected: 2.28%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-op-2">$3,011/yr</span>
+          </div>
+          <div class="prod-desc">FDIC-insured money market · daily access · highest yield for operating tier</div>
+        </div>
+
+      </div>
+      <div class="prod-confirm-row">
+        <button class="prod-confirm-btn" id="pba-confirm-op" onclick="confirmBucket('op',event)" style="opacity:0.4;cursor:default">Confirm &amp; Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Reserve Cash ── -->
+  <div class="pba-card" id="pba-res">
+    <div class="pba-hdr" onclick="togglePba('res')">
+      <div class="pba-slab" style="background:#c49a28"></div>
+      <div class="pba-hdr-inner">
+        <div class="pba-hdr-stack">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="pba-name">Reserve Cash</span>
+            <span class="pba-note">Liquidity within 30–90 days</span>
+            <span class="pba-status" id="pba-status-res">Pending</span>
+            <div class="pba-bal-wrap"><span class="pba-bal">$426,586</span><span class="pba-bal-lbl">to allocate</span></div>
+            <span class="pba-chev" id="pba-chev-res">▸</span>
+          </div>
+          <div class="pba-summary-line" id="pba-summary-res" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <div class="pba-body collapsed" id="pba-body-res">
+      <div class="prod-cards" id="prod-cards-res">
+
+        <div class="prod-card" id="prod-card-res-0" onclick="toggleProduct('res',0,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">JPMorgan 100% Treasuries Money Market Fund</div>
+            <span class="prod-badge-inline">Highest Yield</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">4.30%</div><div class="prod-tax-eff">Tax-effected: 2.80%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-res-0">$11,944/yr</span>
+          </div>
+          <div class="prod-desc">T-bill backed MMF · federal + state tax-exempt · daily liquidity · institutional quality</div>
+        </div>
+
+        <div class="prod-card" id="prod-card-res-1" onclick="toggleProduct('res',1,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">Marcus by Goldman Sachs — 3 Month Time Deposit</div>
+            <span class="prod-risk-pill risk-fdic">FDIC</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">4.50%</div><div class="prod-tax-eff">Tax-effected: 2.39%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-res-1">$10,195/yr</span>
+          </div>
+          <div class="prod-desc">3-month CD · FDIC insured · locked rate · suitable for reserve that isn't immediately needed</div>
+        </div>
+
+        <div class="prod-card" id="prod-card-res-2" onclick="toggleProduct('res',2,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">US Treasury Ladder — 1, 3, 6 and 9 Month</div>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">4.20%</div><div class="prod-tax-eff">Tax-effected: 2.73%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-res-2">$11,646/yr</span>
+          </div>
+          <div class="prod-desc">Rolling T-bill ladder · staggered maturities · state tax-exempt · predictable cash flow</div>
+        </div>
+
+      </div>
+      <div class="prod-confirm-row">
+        <button class="prod-confirm-btn" id="pba-confirm-res" onclick="confirmBucket('res',event)" style="opacity:0.4;cursor:default">Confirm &amp; Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Capital Build ── -->
+  <div class="pba-card" id="pba-bld">
+    <div class="pba-hdr" onclick="togglePba('bld')">
+      <div class="pba-slab" style="background:var(--forest)"></div>
+      <div class="pba-hdr-inner">
+        <div class="pba-hdr-stack">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="pba-name">Capital Build</span>
+            <span class="pba-note">Growth with defined horizon</span>
+            <span class="pba-status" id="pba-status-bld">Pending</span>
+            <div class="pba-bal-wrap"><span class="pba-bal">$135,000</span><span class="pba-bal-lbl">to allocate</span></div>
+            <span class="pba-chev" id="pba-chev-bld">▸</span>
+          </div>
+          <div class="pba-summary-line" id="pba-summary-bld" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <div class="pba-body collapsed" id="pba-body-bld">
+      <div class="prod-cards" id="prod-cards-bld">
+
+        <div class="prod-card" id="prod-card-bld-0" onclick="toggleProduct('bld',0,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">US Treasury Ladder — 1, 2 &amp; 3-Year Notes</div>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">4.01%</div><div class="prod-tax-eff">Tax-effected: 2.61%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-bld-0">$3,524/yr</span>
+          </div>
+          <div class="prod-desc">Medium-term T-note ladder · state tax-exempt · predictable income · capital preservation</div>
+        </div>
+
+        <div class="prod-card" id="prod-card-bld-1" onclick="toggleProduct('bld',1,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">The City of New York Muni Bonds Due 02/2028</div>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">2.67%</div><div class="prod-tax-eff">Tax-effected: 2.67%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-bld-1">$3,605/yr</span>
+          </div>
+          <div class="prod-desc">AAA-rated municipal bond · federal + state tax-exempt in NY · defined maturity 2028</div>
+        </div>
+
+        <div class="prod-card" id="prod-card-bld-2" onclick="toggleProduct('bld',2,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">S&amp;P Low Volatility Index</div>
+            <span class="prod-risk-pill risk-mkt">Market</span>
+            <span class="prod-badge-inline">Highest Yield</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">~6.50%</div><div class="prod-tax-eff">Tax-effected: ~5.20%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">After-Tax Annual Income</span>
+            <span class="prod-income-val" id="prod-income-val-bld-2">$7,020/yr</span>
+          </div>
+          <div class="prod-desc">Low-volatility equity index · higher yield potential · suitable for 3–5 year horizon</div>
+        </div>
+
+      </div>
+      <div class="prod-confirm-row">
+        <button class="prod-confirm-btn" id="pba-confirm-bld" onclick="confirmBucket('bld',event)" style="opacity:0.4;cursor:default">Confirm &amp; Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Investments ── -->
+  <div class="pba-card" id="pba-grow">
+    <div class="pba-hdr" onclick="togglePba('grow')">
+      <div class="pba-slab" style="background:rgba(91,143,204,0.8)"></div>
+      <div class="pba-hdr-inner">
+        <div class="pba-hdr-stack">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="pba-name">Investments</span>
+            <span class="pba-note">Long-term compounded investing · other</span>
+            <span class="pba-status" id="pba-status-grow">Pending</span>
+            <div class="pba-bal-wrap"><span class="pba-bal" id="pba-bal-grow-hdr">$2,509,500</span><span class="pba-bal-lbl">incoming to allocate</span></div>
+            <span class="pba-chev" id="pba-chev-grow">▸</span>
+          </div>
+          <div class="pba-summary-line" id="pba-summary-grow" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+    <div class="pba-body collapsed" id="pba-body-grow">
+      <div class="prod-cards" id="prod-cards-grow">
+
+        <div class="prod-card" id="prod-card-grow-0" onclick="toggleProduct('grow',0,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">S&amp;P 500 / Total Market ETF (VOO/VTI)</div>
+            <span class="prod-risk-pill risk-mkt">Market</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">~10%</div><div class="prod-tax-eff">Tax-effected: ~8%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">Est. Annual Return</span>
+            <span class="prod-income-val" id="prod-income-val-grow-0">—</span>
+          </div>
+          <div class="prod-desc">Broad US market exposure · ultra-low cost · most liquid equity vehicle · core holding</div>
+        </div>
+
+        <div class="prod-card" id="prod-card-grow-1" onclick="toggleProduct('grow',1,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">MSCI World ETF (VT)</div>
+            <span class="prod-risk-pill risk-mkt">Market</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">~8%</div><div class="prod-tax-eff">Tax-effected: ~6%</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">Est. Annual Return</span>
+            <span class="prod-income-val" id="prod-income-val-grow-1">—</span>
+          </div>
+          <div class="prod-desc">Global diversification · 45+ countries · reduces US concentration risk · low cost</div>
+        </div>
+
+        <div class="prod-card" id="prod-card-grow-2" onclick="toggleProduct('grow',2,this)">
+          <span class="prod-sel-chk">✓</span>
+          <div class="prod-card-hdr">
+            <div class="prod-card-name">PE Co-Investment</div>
+            <span class="prod-risk-pill risk-illiq">Illiquid</span>
+            <span class="prod-badge-inline">Highest Return</span>
+          </div>
+          <div class="prod-yield-row"><div class="prod-at-yield">~18%</div><div class="prod-tax-eff">Target IRR</div></div>
+          <div class="prod-card-div"></div>
+          <div class="prod-income-row">
+            <span class="prod-income-lbl">Target Annual Return</span>
+            <span class="prod-income-val" id="prod-income-val-grow-2">—</span>
+          </div>
+          <div class="prod-desc">Direct co-investment alongside GURU deal flow · illiquid · accredited investors only · 7–10yr horizon</div>
+        </div>
+
+      </div>
+      <div class="prod-confirm-row">
+        <button class="prod-confirm-btn" id="pba-confirm-grow" onclick="confirmBucket('grow',event)" style="opacity:0.4;cursor:default">Confirm &amp; Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Ledger — shown after finalize -->
+  <div class="change-ledger" id="change-ledger" style="display:none">
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px;margin-bottom:4px">
+      <div class="step-inline-num active" id="step-inline-num-3">3</div>
+      <div class="section-lbl" style="margin:0">Confirm &amp; Execute</div>
+    </div>
+    <div id="ledger-body"></div>
+  </div>
+
+  <!-- Send to Team — shown only after finalize, below the final ledger -->
+  <div id="send-team-row" style="display:none;margin-top:24px;padding-top:20px;border-top:1px solid rgba(0,0,0,0.07);display:none;justify-content:flex-end">
+    <button id="btn-send-team" onclick="sendToTeam()" style="
+      background: linear-gradient(135deg, #1a3f8f, #2a5ec0);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 28px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 10px rgba(26,63,143,0.30);
+      transition: filter 0.15s, transform 0.1s;
+    " onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      Send to Team for Execution
+    </button>
+  </div>
+
+  <div class="step-actions" style="display:flex;gap:12px;align-items:center;justify-content:flex-end">
+    <button class="btn-continue" id="btn-finalize" style="background:rgba(0,0,0,0.25);cursor:default" onclick="finalizeChanges()">Finalize &amp; Apply Changes ✓</button>
+  </div>
+</div>
+
+</div>
+
+</div><!-- end body -->
+
+<!-- hidden calc inputs — values updated by syncCalcAmount() -->
+<input type="hidden" id="ii-amt"   value="0" />
+<input type="hidden" id="ii-gross" value="4.30" />
+<input type="hidden" id="ii-tax"   value="37" />
+
+<!-- ── INCOME IMPACT STICKY BAR ── -->
+<div id="ii-bar">
+  <div class="ii-header-strip">
+    <div class="ii-header-dot"></div>
+    <span class="ii-header-txt">Income Impact · live · after-tax</span>
+  </div>
+  <div class="ii-outputs">
+    <div class="ii-stat gold">
+      <span class="ii-stat-lbl">After-Tax Income</span>
+      <span class="ii-stat-val" id="ii-atinc-val">—</span>
+      <span class="ii-stat-sub" id="ii-atinc-sub">per year</span>
+    </div>
+    <div class="ii-stat">
+      <span class="ii-stat-lbl">A-T Yield △</span>
+      <span class="ii-stat-val" id="ii-delta-val">—</span>
+      <span class="ii-stat-sub" id="ii-delta-sub">after-tax yield</span>
+    </div>
+    <div class="ii-stat">
+      <span class="ii-stat-lbl">AUM Increase</span>
+      <span class="ii-stat-val" id="ii-aum-val">—</span>
+      <span class="ii-stat-sub">assets deployed</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHLY_EXP = 20939;
+const BALANCES = [132050, 426586, 135000];
+const NAMES = ['Operating Cash', 'Reserve Cash', 'Capital Build'];
+const LTI_BAL = 2509500;
+const HBC_KEYS = ['op', 'res', 'bld'];
+const ORIG_YIELDS = { op: '0.01%', res: '4.60%', bld: '4.85%', grow: '3.95%' };
+
+// AT yields per bucket/product for weighted-avg calc after finalize
+const PROD_AT_YIELDS = {
+  op:   [0.01, 0.27, 2.28],
+  res:  [2.80, 2.39, 2.73],
+  bld:  [2.61, 2.67, 5.20],
+  grow: [8.00, 6.00, 18.00]
+};
+
+// Gross yields per bucket/product (for ledger display)
+const PROD_GROSS_YIELDS = {
+  op:   ['0.01%', '0.50%', '4.30%'],
+  res:  ['4.30%', '4.50%', '4.20%'],
+  bld:  ['4.01%', '2.67%', '~6.50%'],
+  grow: ['~10%',  '~8%',   '~18%'],  // gross returns
+};
+
+// Current account names per bucket (for ledger "before" section)
+const ACCT_NAMES = {
+  op:   ['Chase Checking ··2680', 'Fidelity CMA ··7782'],
+  res:  ['Citizens MM ··4421',    'Fidelity CD ··9031'],
+  bld:  ['Fidelity Brokerage ··9031', 'Goldman Marcus HYSA'],
+  grow: ['Fidelity Brokerage ··9031', '(other managed holdings)'],
+};
+
+// Original gross yields per bucket (for ledger strikethrough)
+const ORIG_GROSS_YIELDS = { op: '0.01%', res: '4.60%', bld: '4.85%', grow: '3.95%' };
+
+// Original AT yields per bucket (for footer strikethrough)
+const ORIG_AT_YIELDS = { op: '0.01%', res: '2.24%', bld: '2.71%', grow: '—' };
+
+const MONTHLY_NCF = [-32000, 8000, -35000, -45000, 28000, -28000, -18000, -32000, 5000, -22000, -23196, 150000];
+
+function calcResTarget(months) {
+  let cum = 0, runMin = 0;
+  for (let i = 0; i < months; i++) {
+    cum += (i < MONTHLY_NCF.length ? MONTHLY_NCF[i] : MONTHLY_NCF[11]);
+    if (cum < runMin) runMin = cum;
+  }
+  return Math.abs(runMin);
+}
+
+let stepMonths = [2, 12, 4];
+let queued  = [null, null, null];
+let skipped = [false, false, false];
+
+function fmt(n) {
+  const abs = Math.round(Math.abs(n));
+  const s = abs.toLocaleString('en-US', {style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0});
+  return n < 0 ? '(' + s + ')' : s;
+}
+function parseCurrency(s) { return parseFloat((s||'').replace(/[$,()]/g,'')) || 0; }
+
+/* Accordion */
+function toggleAccordion(idx) {
+  const card = document.getElementById('ba-card-' + idx);
+  card.classList.toggle('collapsed', !card.classList.contains('collapsed'));
+}
+
+/* Step up/down */
+function stepCard(idx, dir, e) {
+  if (e) e.stopPropagation();
+  stepMonths[idx] = Math.max(1, Math.min(36, stepMonths[idx] + dir));
+  const monthsEl = document.getElementById('ba-months-' + idx);
+  if (monthsEl) monthsEl.textContent = stepMonths[idx];
+  const target = (idx === 1) ? calcResTarget(stepMonths[idx]) : stepMonths[idx] * MONTHLY_EXP;
+  const tgtEl = document.getElementById('ba-target-' + idx);
+  if (tgtEl) tgtEl.value = fmt(target);
+  const diff = BALANCES[idx] - target;
+  const amtEl = document.getElementById('ba-amt-' + idx);
+  if (amtEl) amtEl.value = Math.abs(diff) > 0 ? fmt(Math.abs(diff)) : '';
+  updateProforma2(idx);
+}
+
+function onTargetInput(idx, val) {
+  const tgt = parseCurrency(val);
+  const diff = BALANCES[idx] - tgt;
+  const amtEl = document.getElementById('ba-amt-' + idx);
+  if (amtEl) amtEl.value = Math.abs(diff) > 0 ? fmt(Math.abs(diff)) : '';
+  updateProforma2(idx);
+}
+
+function onAmtInput2(idx, val) { updateProforma2(idx); }
+function onDest2(idx, val)     { updateProforma2(idx); }
+
+function updateProforma2(idx) {
+  const amt  = parseCurrency(document.getElementById('ba-amt-' + idx).value);
+  const dest = document.getElementById('ba-dest-' + idx).value;
+  const pf   = document.getElementById('ba-pf-' + idx);
+  if (amt > 0 && dest) {
+    pf.classList.add('visible');
+    const srcNew = BALANCES[idx] - amt;
+    const isLTI  = dest === 'Investments';
+    const dstIdx = NAMES.findIndex(n => n === dest);
+    const dstOld = isLTI ? LTI_BAL : (dstIdx >= 0 ? BALANCES[dstIdx] : 0);
+    document.getElementById('ba-pf-src-lbl-' + idx).textContent = NAMES[idx];
+    document.getElementById('ba-pf-src-o-' + idx).textContent   = fmt(BALANCES[idx]);
+    document.getElementById('ba-pf-src-n-' + idx).textContent   = ' ' + fmt(srcNew);
+    document.getElementById('ba-pf-src-n-' + idx).className     = 'pf-n ' + (srcNew < 0 ? 'red' : '');
+    document.getElementById('ba-pf-dst-lbl-' + idx).textContent = isLTI ? 'Investments' : dest;
+    document.getElementById('ba-pf-dst-o-' + idx).textContent   = fmt(dstOld);
+    document.getElementById('ba-pf-dst-n-' + idx).textContent   = ' ' + fmt(dstOld + amt);
+    document.getElementById('ba-pf-dst-n-' + idx).className     = 'pf-n grn';
+  } else {
+    pf.classList.remove('visible');
+  }
+}
+
+/* ── TRANSFER: toggle queue / undo ─────────────────── */
+function toggleTransfer(idx, e) {
+  if (e) e.stopPropagation();
+  if (queued[idx]) { undoCard(idx); } else { queueCard(idx, e); }
+}
+
+function queueCard(idx, e) {
+  if (e) e.stopPropagation();
+  const amt  = parseCurrency(document.getElementById('ba-amt-' + idx).value);
+  const dest = document.getElementById('ba-dest-' + idx).value;
+  if (amt <= 0 || !dest) {
+    const inp = document.getElementById('ba-amt-' + idx);
+    inp.style.outline = '2px solid rgba(139,58,42,0.5)';
+    setTimeout(() => inp.style.outline = '', 1200);
+    return;
+  }
+  queued[idx]  = { amount: amt, dest };
+  skipped[idx] = false;
+  updateCardStatus(idx);
+  // Collapse this card
+  document.getElementById('ba-card-' + idx).classList.add('collapsed');
+  syncCalcAmount();
+  // Auto-expand next pending card
+  for (let i = 0; i < 3; i++) {
+    if (!queued[i] && !skipped[i] && i !== idx) {
+      const c = document.getElementById('ba-card-' + i);
+      if (c.classList.contains('collapsed')) c.classList.remove('collapsed');
+      break;
+    }
+  }
+}
+
+function undoCard(idx) {
+  queued[idx]  = null;
+  skipped[idx] = false;
+  document.getElementById('ba-card-' + idx).classList.remove('collapsed');
+  updateCardStatus(idx);
+  syncCalcAmount();
+}
+
+function skipCard(idx, e) {
+  if (e) e.stopPropagation();
+  skipped[idx] = true; queued[idx] = null;
+  // Collapse the skipped card
+  document.getElementById('ba-card-' + idx).classList.add('collapsed');
+  updateCardStatus(idx);
+  syncCalcAmount();
+  if (idx < 2) {
+    const c = document.getElementById('ba-card-' + (idx + 1));
+    if (c.classList.contains('collapsed')) c.classList.remove('collapsed');
+  }
+}
+
+function updateCardStatus(idx) {
+  const statusEl = document.getElementById('ba-hdr-status-' + idx);
+  const btn      = document.getElementById('ba-q-' + idx);
+  if (queued[idx]) {
+    statusEl.className   = 'ba-hdr-status ba-s-queued';
+    statusEl.textContent = 'Queued ✓';
+    btn.className        = 'ba-queue-btn ba-undo-btn';
+    btn.textContent      = 'Undo Transfer';
+    // Update balance in sidebar + hbc cards
+    const newBal = BALANCES[idx] - queued[idx].amount;
+    updateBalanceDisplay(idx, newBal);
+  } else if (skipped[idx]) {
+    statusEl.className   = 'ba-hdr-status ba-s-done';
+    statusEl.textContent = 'Skipped';
+    btn.className        = 'ba-queue-btn';
+    btn.textContent      = 'Set Transfer →';
+    restoreBalanceDisplay(idx);
+  } else {
+    statusEl.className   = 'ba-hdr-status ba-s-pending';
+    statusEl.textContent = 'Pending';
+    btn.className        = 'ba-queue-btn';
+    btn.textContent      = 'Set Transfer →';
+    restoreBalanceDisplay(idx);
+  }
+}
+
+/* ── BALANCE DISPLAY UPDATES ─────────────────────── */
+function updateBalanceDisplay(idx, newBal) {
+  const colors = ['var(--navy)', 'var(--gold)', 'var(--forest)'];
+  const strikeStyle = 'text-decoration:line-through;color:rgba(0,0,0,0.28);font-size:14px;font-weight:400;margin-right:6px';
+  // Left sidebar current balance
+  const sideEl = document.getElementById('ba-bal-display-' + idx);
+  if (sideEl) {
+    sideEl.innerHTML = `<span style="${strikeStyle}">${fmt(BALANCES[idx])}</span><span style="color:${colors[idx]}">${fmt(newBal)}</span>`;
+  }
+  // Header balance (shown when collapsed)
+  const hdrEl = document.getElementById('ba-hdr-bal-' + idx);
+  if (hdrEl) {
+    hdrEl.innerHTML = `<span style="text-decoration:line-through;opacity:0.38;font-size:14px;margin-right:5px">${fmt(BALANCES[idx])}</span>${fmt(newBal)}`;
+  }
+  // Horizontal bucket card balance
+  const hbcEl = document.getElementById('hbc-bal-' + HBC_KEYS[idx]);
+  if (hbcEl) {
+    hbcEl.innerHTML = `<span style="text-decoration:line-through;opacity:0.38;font-size:13px;margin-right:5px">${fmt(BALANCES[idx])}</span>${fmt(newBal)}`;
+  }
+  // Notify parent React app
+  window.parent.postMessage({ type: 'GURU_BUCKET_UPDATE', key: HBC_KEYS[idx], newBal, origBal: BALANCES[idx] }, '*');
+}
+
+function restoreBalanceDisplay(idx) {
+  const sideEl = document.getElementById('ba-bal-display-' + idx);
+  if (sideEl) sideEl.textContent = fmt(BALANCES[idx]);
+  const hdrEl = document.getElementById('ba-hdr-bal-' + idx);
+  if (hdrEl) hdrEl.textContent = fmt(BALANCES[idx]);
+  const hbcEl = document.getElementById('hbc-bal-' + HBC_KEYS[idx]);
+  if (hbcEl) hbcEl.textContent = fmt(BALANCES[idx]);
+  // Notify parent React app of restore
+  window.parent.postMessage({ type: 'GURU_BUCKET_RESTORE', key: HBC_KEYS[idx] }, '*');
+}
+
+function updateGrowBalance() {
+  const totalIn = getGrowIncoming();
+  const hbcEl = document.getElementById('hbc-bal-grow');
+  const growCard = document.querySelector('.hbc-card.hbc-grow');
+  if (!hbcEl) return;
+  if (totalIn > 0) {
+    const newBal = LTI_BAL + totalIn;
+    hbcEl.innerHTML = '<span style="text-decoration:line-through;opacity:0.38;font-size:13px;margin-right:5px">' + fmt(LTI_BAL) + '</span>' + fmt(newBal);
+    if (growCard) growCard.style.opacity = '0.85';
+    window.parent.postMessage({ type: 'GURU_BUCKET_UPDATE', key: 'grow', newBal, origBal: LTI_BAL }, '*');
+  } else {
+    hbcEl.textContent = fmt(LTI_BAL);
+    if (growCard) growCard.style.opacity = '';
+    window.parent.postMessage({ type: 'GURU_BUCKET_RESTORE', key: 'grow' }, '*');
+  }
+}
+
+function resetCards() {
+  queued = [null, null, null]; skipped = [false, false, false];
+  [0, 1, 2].forEach(i => updateCardStatus(i));
+}
+
+/* Step navigation */
+function showTransferSummaryInline() {
+  renderTransferSummary();
+  const wrap = document.getElementById('step-1-transfer-wrap');
+  if (wrap) { wrap.style.display = 'block'; }
+  setStepBubble(1);
+  setTimeout(() => { if (wrap) wrap.scrollIntoView({behavior:'smooth', block:'start'}); }, 60);
+}
+function hideTransferSummaryInline() {
+  const wrap = document.getElementById('step-1-transfer-wrap');
+  if (wrap) wrap.style.display = 'none';
+  setStepBubble(1);
+}
+function goToStep1() {
+  const p3 = document.getElementById('step-3-panel');
+  if (p3) p3.style.display = 'none';
+  const wrap = document.getElementById('step-1-transfer-wrap');
+  if (wrap) wrap.style.display = 'none';
+  const p1 = document.getElementById('step-1-panel');
+  p1.style.display = 'block';
+  setStepBubble(1);
+  setTimeout(() => p1.scrollIntoView({behavior:'smooth', block:'start'}), 60);
+}
+function goToProductSelection() {
+  document.getElementById('step-1-panel').style.display = 'none';
+  const p3 = document.getElementById('step-3-panel');
+  p3.style.display = 'block';
+  setStepBubble(2);
+  updatePbaHeaders();
+  updateCardIncomes();
+  updateProductSelectionFlags();
+  setTimeout(() => p3.scrollIntoView({behavior:'smooth', block:'start'}), 60);
+}
+function updateProductSelectionFlags() {
+  // Map transfer destinations to bucket keys
+  const DEST_TO_KEY = {
+    'Operating Cash': 'op',
+    'Reserve Cash':   'res',
+    'Capital Build':  'bld',
+    'Investments':    'grow'
+  };
+  // Collect buckets that have incoming transfers
+  const incomingBuckets = new Set();
+  queued.forEach(t => {
+    if (t) {
+      const bKey = DEST_TO_KEY[t.dest];
+      if (bKey) incomingBuckets.add(bKey);
+    }
+  });
+  // Inject (or remove) the "MUST SELECT" flag badge for each bucket
+  ['op', 'res', 'bld', 'grow'].forEach(bKey => {
+    const card = document.getElementById('pba-' + bKey);
+    if (!card) return;
+    // Remove any previous flag
+    const prev = card.querySelector('.pba-req-flag');
+    if (prev) prev.remove();
+    if (!incomingBuckets.has(bKey)) return;
+    // Build the flag badge
+    const flag = document.createElement('span');
+    flag.className = 'pba-req-flag';
+    flag.textContent = '⚑ MUST SELECT';
+    flag.style.cssText = [
+      'display:inline-flex',
+      'align-items:center',
+      'padding:2px 9px 2px 7px',
+      'border-radius:4px',
+      'background:rgba(215,80,60,0.14)',
+      'border:1px solid rgba(215,80,60,0.42)',
+      'color:#d7503c',
+      'font-size:9.5px',
+      'font-weight:700',
+      'text-transform:uppercase',
+      'letter-spacing:0.06em',
+      'white-space:nowrap',
+      'flex-shrink:0',
+      'animation:alertDot 1.8s ease-in-out infinite',
+    ].join(';');
+    // Insert before the chevron inside the first flex row of this card's header
+    const row = card.querySelector('.pba-hdr .pba-hdr-stack > div');
+    if (!row) return;
+    const chev = row.querySelector('.pba-chev');
+    if (chev) row.insertBefore(flag, chev);
+    else row.appendChild(flag);
+  });
+}
+function setStepBubble(active) {
+  // Hide insight-row once workflow is underway
+  const ir = document.getElementById('insight-row');
+  if (ir) ir.style.display = 'none';
+
+  [1,2,3].forEach(i => {
+    // Inline number bubbles inside each step's own header
+    const inlineNum = document.getElementById('step-inline-num-' + i);
+    if (inlineNum) {
+      if (i < active) inlineNum.className = 'step-inline-num done';
+      else if (i === active) inlineNum.className = 'step-inline-num active';
+      else inlineNum.className = 'step-inline-num';
+    }
+
+    // Stub rows (collapsed context shown when step is not active)
+    const stub = document.getElementById('step-stub-' + i);
+    const stubNum = document.getElementById('step-stub-num-' + i);
+    const stubLbl = document.getElementById('step-stub-lbl-' + i);
+    if (stub) {
+      if (i === active) {
+        stub.style.display = 'none';
+      } else {
+        stub.style.display = 'flex';
+        if (stubNum) stubNum.className = i < active ? 'step-stub-num done' : 'step-stub-num dim';
+        if (stubLbl) stubLbl.className = i < active ? 'step-stub-lbl done' : 'step-stub-lbl dim';
+        if (stubNum && i < active) stubNum.textContent = '✓';
+      }
+    }
+  });
+}
+
+/* ── PRODUCT SELECTION (Step 3) ──────────────────────── */
+
+// State: { bucketKey → [{name, pct}] }
+const prodSelections = { op: [], res: [], bld: [], grow: [] };
+
+// Product names per bucket
+const PROD_NAMES = {
+  op:   ['Citizens Private Checking', 'SoFi Checking', 'CIT Money Market Bank Account'],
+  res:  ['JPMorgan 100% Treasuries MMF', 'Marcus Goldman Sachs 3M TD', 'US Treasury Ladder 1,3,6,9mo'],
+  bld:  ['US Treasury Ladder 1,2,3-Yr', 'NYC Muni Bonds 02/2028', 'S&P Low Volatility Index'],
+  grow: ['S&P 500 / Total Market ETF', 'MSCI World ETF (VT)', 'PE Co-Investment'],
+};
+
+const BUCKET_ORDER  = ['op', 'res', 'bld', 'grow'];
+const prodConfirmed = { op: false, res: false, bld: false, grow: false };
+
+// Portfolio-level AT yield for Investments when no product selected
+const INVEST_PORTFOLIO_AT_YIELD = 8.0; // ~10% gross × 80% LTCG
+
+function getGrowIncoming() {
+  return queued.reduce((s, t) => s + (t && t.dest === 'Investments' ? t.amount : 0), 0);
+}
+
+// Pro-forma balance for each bucket after all queued transfers
+function getProFormaBal(bucket) {
+  const orig = { op: 132050, res: 426586, bld: 135000, grow: 2509500 };
+  const destMap = { 'Operating Cash': 'op', 'Reserve Cash': 'res', 'Capital Build': 'bld', 'Investments': 'grow' };
+  let bal = orig[bucket] || 0;
+  queued.forEach((t, i) => {
+    if (!t) return;
+    const srcKey = HBC_KEYS[i]; // op / res / bld
+    if (srcKey === bucket) bal -= t.amount;                   // money leaving this bucket
+    if (destMap[t.dest] === bucket) bal += t.amount;          // money arriving into this bucket
+  });
+  return Math.max(bal, 0);
+}
+
+// Update every product card's "Annual Income" to: AT yield × pro-forma bucket balance
+function updateCardIncomes() {
+  ['op', 'res', 'bld', 'grow'].forEach(bucket => {
+    const bal = bucket === 'grow' ? getGrowIncoming() : getProFormaBal(bucket);
+    const ats = PROD_AT_YIELDS[bucket] || [];
+    ats.forEach((atYield, idx) => {
+      const el = document.getElementById('prod-income-val-' + bucket + '-' + idx);
+      if (!el) return;
+      if (bal > 0) {
+        const annual = Math.round(bal * atYield / 100);
+        el.textContent = '$' + annual.toLocaleString() + '/yr';
+      } else {
+        el.textContent = bucket === 'grow' ? '—' : '$' + Math.round((PROD_AT_YIELDS[bucket][idx] / 100) * (getProFormaBal(bucket) || 0)).toLocaleString() + '/yr';
+      }
+    });
+  });
+}
+
+function updateGrowPbaHeader() {
+  const incoming = getGrowIncoming();
+  const balEl = document.querySelector('#pba-grow .pba-bal');
+  const noteEl = document.querySelector('#pba-grow .pba-note');
+  if (balEl) {
+    if (incoming > 0) {
+      balEl.textContent = fmt(incoming) + ' incoming to allocate';
+      if (noteEl) noteEl.textContent = 'New funds only · existing portfolio unchanged';
+    } else {
+      balEl.textContent = 'No incoming transfers yet';
+      if (noteEl) noteEl.textContent = 'Long-term compounded investing · other';
+    }
+  }
+  updateCardIncomes();
+}
+
+function toggleProduct(bucket, idx, cardEl) {
+  // If bucket was already confirmed, reopen it
+  if (prodConfirmed[bucket]) {
+    prodConfirmed[bucket] = false;
+    const stEl = document.getElementById('pba-status-' + bucket);
+    if (stEl) { stEl.textContent = 'Pending'; stEl.className = 'pba-status'; }
+    const smEl = document.getElementById('pba-summary-' + bucket);
+    if (smEl) smEl.style.display = 'none';
+  }
+  const sel = prodSelections[bucket];
+  const existing = sel.findIndex(s => s.idx === idx);
+  if (existing >= 0) {
+    sel.splice(existing, 1);
+    cardEl.classList.remove('selected', 'res-sel', 'bld-sel');
+    const wrap = cardEl.querySelector('.prod-pct-wrap');
+    if (wrap) wrap.style.display = 'none';
+  } else {
+    const evenPct = sel.length === 0 ? 100 : Math.floor(100 / (sel.length + 1));
+    sel.forEach(s => s.pct = evenPct);
+    sel.push({ idx, pct: 100 - evenPct * sel.length });
+    const total = sel.reduce((s, x) => s + x.pct, 0);
+    if (total !== 100) sel[sel.length - 1].pct += 100 - total;
+    cardEl.classList.add('selected');
+    if (bucket === 'res') cardEl.classList.add('res-sel');
+    if (bucket === 'bld') cardEl.classList.add('bld-sel');
+    // Show % input inside card
+    let wrap = cardEl.querySelector('.prod-pct-wrap');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'prod-pct-wrap';
+      wrap.innerHTML = `<label class="prod-pct-lbl">Allocation %</label>
+        <input class="prod-pct-inp" type="text" value="100%"
+          onclick="event.stopPropagation()"
+          onchange="event.stopPropagation(); onCardPctInput('${bucket}',${idx},this.value)" />`;
+      cardEl.appendChild(wrap);
+    }
+    wrap.style.display = 'block';
+    // Update input value to reflect even split
+    const entry = sel[sel.length - 1];
+    const inp = wrap.querySelector('.prod-pct-inp');
+    if (inp) inp.value = entry.pct + '%';
+    // Update other selected cards in bucket
+    sel.forEach(s => {
+      if (s.idx === idx) return;
+      const c = document.getElementById('prod-card-' + bucket + '-' + s.idx);
+      if (!c) return;
+      const i2 = c.querySelector('.prod-pct-inp');
+      if (i2) i2.value = s.pct + '%';
+    });
+  }
+  renderAllocRow(bucket);
+  updateConfirmBtn(bucket);
+  updateCardIncomes();
+  syncCalcYield();
+  calcIcf();
+  checkFinalize();
+}
+
+function renderAllocRow(bucket) {
+  // % allocation is now shown inside each product card — this row is removed
+}
+
+function onPctChange(bucket, selIdx, val) {
+  const num = parseInt(val.replace(/[^0-9]/g,'')) || 0;
+  prodSelections[bucket][selIdx].pct = num;
+  renderAllocRow(bucket);
+  updateConfirmBtn(bucket);
+  syncCalcYield();
+  calcIcf();
+  checkFinalize();
+}
+
+function onCardPctInput(bucket, cardIdx, val) {
+  const num = parseInt((val || '').replace(/[^0-9]/g, '')) || 0;
+  const sel = prodSelections[bucket];
+  const entry = sel.find(s => s.idx === cardIdx);
+  if (entry) entry.pct = num;
+  // Re-sync all inputs for this bucket
+  sel.forEach(s => {
+    const c = document.getElementById('prod-card-' + bucket + '-' + s.idx);
+    if (!c) return;
+    const inp = c.querySelector('.prod-pct-inp');
+    if (inp) inp.value = s.pct + '%';
+  });
+  renderAllocRow(bucket);
+  updateConfirmBtn(bucket);
+  updateCardIncomes();
+  syncCalcYield();
+  calcIcf();
+  checkFinalize();
+}
+
+function checkFinalize() {
+  const btn = document.getElementById('btn-finalize');
+  if (!btn) return;
+  const allConfirmed = BUCKET_ORDER.every(b => prodConfirmed[b]);
+  btn.style.background = allConfirmed ? 'var(--forest)' : 'rgba(0,0,0,0.25)';
+  btn.style.cursor     = allConfirmed ? 'pointer' : 'default';
+}
+
+/* ── FINALIZE & APPLY ─────────────────────────────── */
+function finalizeChanges() {
+  const btn = document.getElementById('btn-finalize');
+  if (!btn || btn.style.cursor === 'default') return;
+
+  // Update yields in hbc cards (weighted avg AT yield per bucket)
+  ['op', 'res', 'bld', 'grow'].forEach(key => {
+    const sel = prodSelections[key];
+    if (!sel || sel.length === 0) return;
+    const totalPct = sel.reduce((s, x) => s + x.pct, 0);
+    if (totalPct === 0) return;
+    const wtd = sel.reduce((s, x) => {
+      const y = (PROD_AT_YIELDS[key] && PROD_AT_YIELDS[key][x.idx] != null) ? PROD_AT_YIELDS[key][x.idx] : 0;
+      return s + y * x.pct / totalPct;
+    }, 0);
+    const yieldEl = document.getElementById('hbc-yield-' + key);
+    if (!yieldEl) return;
+    const origOrig = ORIG_GROSS_YIELDS[key] || yieldEl.textContent;
+    // Compute weighted GROSS yield
+    const wtdGross = sel.reduce((s, x) => {
+      const g = parseFloat(((PROD_GROSS_YIELDS[key] && PROD_GROSS_YIELDS[key][x.idx]) || '0').replace(/[^0-9.]/g,'')) || 0;
+      return s + g * x.pct / totalPct;
+    }, 0);
+    const hasApproxK = sel.some(x => ((PROD_GROSS_YIELDS[key] && PROD_GROSS_YIELDS[key][x.idx]) || '').startsWith('~'));
+    const newGrossStr = (hasApproxK ? '~' : '') + wtdGross.toFixed(2) + '%';
+    yieldEl.innerHTML = `<span style="text-decoration:line-through;opacity:0.40;font-size:9px;margin-right:4px">${origOrig}</span><span style="color:var(--forest)">${newGrossStr}</span>`;
+  });
+
+  // Show ledger
+  renderLedger();
+  setStepBubble(3);
+
+  // Lock button
+  btn.style.background = '#1a3a1a';
+  btn.textContent      = 'Changes Applied ✓';
+  btn.style.cursor     = 'default';
+}
+
+function sendToTeam() {
+  const btn = document.getElementById('btn-send-team');
+  if (!btn) return;
+  btn.textContent = '✓ Sent to Team';
+  btn.style.background = 'linear-gradient(135deg,#0f5132,#1a7a46)';
+  btn.style.pointerEvents = 'none';
+  // Flash confirmation
+  const flash = document.createElement('div');
+  flash.textContent = 'Allocation plan sent to operations team for execution';
+  flash.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a3f8f;color:#fff;font-size:13px;font-weight:600;padding:10px 24px;border-radius:8px;z-index:9999;box-shadow:0 4px 16px rgba(26,63,143,0.30);letter-spacing:0.02em;white-space:nowrap';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 3000);
+}
+
+function renderLedger() {
+  const ledger = document.getElementById('change-ledger');
+  const body   = document.getElementById('ledger-body');
+  if (!ledger || !body) return;
+
+  // Static account data per bucket (matches mock data in the UI)
+  const ACCT_DATA = {
+    op: [
+      { name: 'Chase Checking', last4: '··2680', bal: 48200,  gross: '0.01%', at: '0.01%' },
+      { name: 'Fidelity CMA',   last4: '··7782', bal: 83850,  gross: '0.01%', at: '0.01%' },
+    ],
+    res: [
+      { name: 'Citizens MM',    last4: '··4421', bal: 280000, gross: '3.78%', at: '2.00%' },
+      { name: 'Fidelity CD',    last4: '··9031', bal: 146586, gross: '2.50%', at: '1.63%' },
+    ],
+    bld: [
+      { name: 'Fidelity Brokerage', last4: '··9031', bal: 75000, gross: '4.01%', at: '2.61%' },
+      { name: 'Goldman Marcus HYSA',last4: '',        bal: 60000, gross: '4.50%', at: '2.93%' },
+    ],
+    grow: [
+      // Shown by asset class group
+      { group: 'EQUITIES', name: 'International',       last4: '··3146', bal: 244685, ret5: '7.9%' },
+      { name: 'US Total Market',   last4: '··7678', bal: 779878, ret5: '14.1%' },
+      { name: 'US Large Cap',      last4: '··4683', bal: 535000, ret5: '15.2%' },
+      { name: 'US Small Cap',      last4: '··3879', bal: 323582, ret5: '9.1%' },
+      { name: 'US Dividend/Value', last4: '··9065', bal: 94369,  ret5: '10.3%' },
+      { name: 'Single Stock',      last4: '··9782', bal: 238311, ret5: '~20%+' },
+      { group: 'FIXED INCOME', name: 'Bonds', last4: '··1112', bal: 61210, ret5: '0.2%' },
+      { group: 'ALTERNATIVES', name: 'Crypto', last4: '··9561', bal: 9500, ret5: '~30%+' },
+    ],
+  };
+
+  const BUCKET_META = {
+    op:   { name:'Operating Cash',  sub:'Cash for upcoming expenditures',       right:'2–3 months of cash',     grad:'linear-gradient(135deg,#142238,#1a2e4a)', yieldHdr:'TAX-EFF. YIELD',  isGrow:false },
+    res:  { name:'Reserve Cash',    sub:'Active cash management for what\'s next',right:'12 months of anticipated outflow', grad:'linear-gradient(135deg,#7a5a10,#c49a28)', yieldHdr:'TAX-EFF. YIELD', isGrow:false },
+    bld:  { name:'Capital Build',   sub:'Disciplined saving for goals on the horizon', right:'3–5 year horizon',  grad:'linear-gradient(135deg,#0f2e1a,#1e4d30)', yieldHdr:'TAX-EFF. YIELD',  isGrow:false },
+    grow: { name:'Investments',     sub:'Long-term compounded investing',         right:'5 years +\naggressive\ninvestment portfolio', grad:'linear-gradient(135deg,#142238,#1a2e4a)', yieldHdr:'5YR RETURN', isGrow:true },
+  };
+
+  const BUCKET_LIST = ['op','res','bld','grow'];
+
+  let cards = '';
+
+  BUCKET_LIST.forEach(bKey => {
+    const sel  = prodSelections[bKey];
+    const meta = BUCKET_META[bKey];
+    const acctRows = ACCT_DATA[bKey] || [];
+
+    // Determine balances and transfers
+    const bIdx  = ['op','res','bld'].indexOf(bKey);
+    const oldBal = bIdx >= 0 ? BALANCES[bIdx] : LTI_BAL;
+
+    // Outgoing transfer from this bucket
+    const outAmt = bIdx >= 0 && queued[bIdx] ? queued[bIdx].amount : 0;
+    const outDest = bIdx >= 0 && queued[bIdx] ? queued[bIdx].dest : null;
+
+    // Incoming transfers to this bucket
+    const incomingXfers = [];
+    queued.forEach((t, i) => {
+      if (!t) return;
+      const srcName = NAMES[i];
+      if (t.dest === meta.name) incomingXfers.push({ from: srcName, amt: t.amount });
+      if (bKey === 'grow' && t.dest === 'Investments') incomingXfers.push({ from: srcName, amt: t.amount });
+    });
+    // Deduplicate (grow check adds duplicates)
+    const seenXfer = new Set();
+    const inXfers = incomingXfers.filter(x => {
+      const k = x.from + x.amt;
+      if (seenXfer.has(k)) return false;
+      seenXfer.add(k); return true;
+    });
+
+    const totalIn = inXfers.reduce((s, x) => s + x.amt, 0);
+    let newBal = oldBal - outAmt + totalIn;
+
+    // For grow: new bal = old + incoming
+    if (bKey === 'grow') newBal = LTI_BAL + getGrowIncoming();
+
+    const hasAnything = outAmt > 0 || inXfers.length > 0 || (sel && sel.length > 0);
+    if (!hasAnything) return; // skip buckets with nothing happening
+
+    // ── Weighted yield for footer
+    const totalPct = sel && sel.length > 0 ? (sel.reduce((s, x) => s + x.pct, 0) || 1) : 1;
+    const wtdAt = sel && sel.length > 0 ? sel.reduce((s, x) => {
+      const y = (PROD_AT_YIELDS[bKey] && PROD_AT_YIELDS[bKey][x.idx] != null) ? PROD_AT_YIELDS[bKey][x.idx] : 0;
+      return s + y * x.pct / totalPct;
+    }, 0) : null;
+    const wtdGross = sel && sel.length > 0 ? sel.reduce((s, x) => {
+      const g = parseFloat(((PROD_GROSS_YIELDS[bKey] && PROD_GROSS_YIELDS[bKey][x.idx]) || '0').replace(/[^0-9.]/g,'')) || 0;
+      return s + g * x.pct / totalPct;
+    }, 0) : null;
+    const hasApprox = sel && sel.some(x => ((PROD_GROSS_YIELDS[bKey] && PROD_GROSS_YIELDS[bKey][x.idx]) || '').startsWith('~'));
+    const footerGross = wtdGross !== null ? (hasApprox ? '~' : '') + wtdGross.toFixed(2) + '%' : '—';
+    const footerAt    = wtdAt    !== null ? wtdAt.toFixed(2) + '%' : '—';
+    const posCount    = sel ? sel.length : 0;
+
+    // ── Column widths
+    const cols = meta.isGrow
+      ? 'grid-template-columns:3fr 80px 58px'
+      : 'grid-template-columns:3fr 72px 46px 64px';
+
+    // ── Table header row
+    const tblHdr = meta.isGrow
+      ? `<span>ACCOUNT</span><span>BALANCE</span><span>5YR RETURN</span>`
+      : `<span>ACCOUNT</span><span>BALANCE</span><span>YIELD</span><span>${meta.yieldHdr}</span>`;
+
+    // ── Old account rows (skip for Investments — we're only adding incrementally, not replacing)
+    let acctRowsHtml = '';
+    if (!meta.isGrow) {
+      let curGroup = null;
+      acctRows.forEach(a => {
+        if (a.group && a.group !== curGroup) {
+          curGroup = a.group;
+          acctRowsHtml += `<div class="cl-row cl-row-grp" style="${cols}"><span>${a.group}</span></div>`;
+        }
+        const label = a.last4 ? `${a.name} ${a.last4}` : a.name;
+        const yieldCols = `<span>${a.gross || ''}</span><span>${a.at || ''}</span>`;
+        acctRowsHtml += `<div class="cl-row cl-row-old" style="${cols}">
+          <span class="cl-name"><span class="cl-dot cl-dot-old"></span>${label}</span>
+          <span>${fmt(a.bal)}</span>
+          ${yieldCols}
+        </div>`;
+      });
+    } else {
+      // For Investments: show full existing holdings breakdown (grayed, not crossed out)
+      acctRowsHtml = '';
+      let curGroup = null;
+      acctRows.forEach(a => {
+        if (a.group && a.group !== curGroup) {
+          curGroup = a.group;
+          acctRowsHtml += `<div class="cl-row cl-row-grp" style="${cols}"><span>${a.group}</span></div>`;
+        }
+        const label = a.last4 ? `${a.name} ${a.last4}` : a.name;
+        acctRowsHtml += `<div class="cl-row" style="${cols};opacity:0.52">
+          <span class="cl-name"><span class="cl-dot" style="background:rgba(255,255,255,0.25)"></span>${label}</span>
+          <span>${fmt(a.bal)}</span>
+          <span style="color:rgba(255,255,255,0.45)">${a.ret5 || '—'}</span>
+        </div>`;
+      });
+      if (!acctRowsHtml) {
+        acctRowsHtml = `<div class="cl-row" style="${cols};padding:7px 14px;font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">
+          <span>Existing holdings unchanged</span>
+        </div>`;
+      }
+    }
+
+    // ── New product rows
+    let prodRowsHtml = '';
+    if (sel && sel.length > 0) {
+      sel.forEach(s => {
+        const pName  = PROD_NAMES[bKey][s.idx];
+        const atY    = (PROD_AT_YIELDS[bKey] && PROD_AT_YIELDS[bKey][s.idx] != null) ? PROD_AT_YIELDS[bKey][s.idx] : 0;
+        const grossY = parseFloat(((PROD_GROSS_YIELDS[bKey] && PROD_GROSS_YIELDS[bKey][s.idx]) || '0').replace(/[^0-9.]/g,'')) || 0;
+        // Balance = new bucket balance × pct / 100
+        // For grow: use incoming amount × pct
+        const bucketForBal = bKey === 'grow' ? getGrowIncoming() : newBal;
+        const prodBal = bucketForBal * s.pct / 100;
+        const grossStr = ((PROD_GROSS_YIELDS[bKey] && PROD_GROSS_YIELDS[bKey][s.idx]) || '').startsWith('~')
+          ? PROD_GROSS_YIELDS[bKey][s.idx]
+          : grossY.toFixed(2) + '%';
+        const atStr   = ((PROD_GROSS_YIELDS[bKey] && PROD_GROSS_YIELDS[bKey][s.idx]) || '').startsWith('~')
+          ? '[' + atY.toFixed(1) + '%+]'
+          : atY.toFixed(2) + '%';
+        const yieldCols = meta.isGrow
+          ? `<span class="cl-at-val">${atStr}</span>`
+          : `<span class="cl-yield-val">${grossStr}</span><span class="cl-at-val">${atStr}</span>`;
+        prodRowsHtml += `<div class="cl-row cl-row-new" style="${cols}">
+          <span class="cl-name"><span class="cl-dot cl-dot-new"></span>${pName}</span>
+          <span>${prodBal > 0 ? fmt(Math.round(prodBal)) : '—'}</span>
+          ${yieldCols}
+        </div>`;
+      });
+    } else if (bKey === 'grow' && getGrowIncoming() > 0) {
+      // Grow has incoming but no product selected — prompt
+      prodRowsHtml += `<div style="padding:9px 14px;background:rgba(138,105,32,0.04);border-bottom:1px solid rgba(138,105,32,0.10)">
+        <span style="font-size:10px;color:var(--gold);font-weight:600">⊙ SELECT A PRODUCT FOR INCOMING FUNDS →</span>
+      </div>`;
+    }
+
+    // ── Transfer rows
+    let xferRowsHtml = '';
+    if (outAmt > 0 && outDest) {
+      const emptyYield = meta.isGrow ? '<span></span>' : '<span></span><span></span>';
+      xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}">
+        <span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer out → ${outDest}</span>
+        <span></span>
+        ${emptyYield}
+        <span class="cl-xfer-neg">−${fmt(outAmt)}</span>
+      </div>`.replace('<span></span>\n        <span class="cl-xfer-neg">', '<span class="cl-xfer-neg">');
+      // Simpler: redo
+      xferRowsHtml = '';
+      if (meta.isGrow) {
+        xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}">
+          <span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer out → ${outDest}</span>
+          <span></span>
+          <span class="cl-xfer-neg">−${fmt(outAmt)}</span>
+        </div>`;
+      } else {
+        xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}">
+          <span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer out → ${outDest}</span>
+          <span></span><span></span>
+          <span class="cl-xfer-neg">−${fmt(outAmt)}</span>
+        </div>`;
+      }
+    }
+    inXfers.forEach(x => {
+      if (meta.isGrow) {
+        xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}">
+          <span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer from ${x.from}</span>
+          <span></span>
+          <span class="cl-xfer-pos">+${fmt(x.amt)}</span>
+        </div>`;
+      } else {
+        xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}">
+          <span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer from ${x.from}</span>
+          <span></span><span></span>
+          <span class="cl-xfer-pos">+${fmt(x.amt)}</span>
+        </div>`;
+      }
+    });
+
+    // ── Footer
+    const footerCols = meta.isGrow
+      ? `grid-template-columns:3fr 80px 58px`
+      : `grid-template-columns:3fr 72px 46px 64px`;
+    const origGrossYield = ORIG_GROSS_YIELDS[bKey] || '—';
+    const origAtYield    = ORIG_AT_YIELDS[bKey] || '—';
+    const footerYieldCols = meta.isGrow
+      ? `<span class="cl-footer-yield"><span style="text-decoration:line-through;opacity:0.40;font-size:9px;margin-right:3px">${origGrossYield}</span>${footerAt}</span>`
+      : `<span class="cl-footer-yield"><span style="text-decoration:line-through;opacity:0.40;font-size:9px;margin-right:3px">${origGrossYield}</span>${footerGross !== '—' ? footerGross : '—'}</span><span class="cl-footer-yield"><span style="text-decoration:line-through;opacity:0.40;font-size:9px;margin-right:3px">${origAtYield}</span>${footerAt !== '—' ? footerAt : '—'}</span>`;
+
+    const footer = `<div class="cl-card-footer" style="${footerCols}">
+      <span class="cl-footer-pos">${posCount} position${posCount!==1?'s':''}</span>
+      <div>
+        <div class="cl-footer-bal-old">${fmt(oldBal)}</div>
+        <div class="cl-footer-bal-new">${fmt(newBal)}</div>
+      </div>
+      ${footerYieldCols}
+    </div>`;
+
+    cards += `
+    <div class="cl-card">
+      <div class="cl-card-hd" style="background:${meta.grad}">
+        <div>
+          <div class="cl-card-hd-title">${meta.name}</div>
+          <div class="cl-card-hd-sub">${meta.sub}</div>
+        </div>
+        <div class="cl-card-hd-right">${meta.right.replace(/\n/g,'<br>')}</div>
+      </div>
+      <div class="cl-tbl-hdr" style="${cols}">${tblHdr}</div>
+      ${acctRowsHtml}
+      ${prodRowsHtml}
+      ${xferRowsHtml}
+      ${footer}
+    </div>`;
+  });
+
+  if (!cards) {
+    body.innerHTML = '<p style="color:var(--dim);font-size:12px;padding:12px 0">No changes to display yet.</p>';
+  } else {
+    body.innerHTML = `<div class="cl-grid cl-grid-2">${cards}</div>`;
+  }
+  ledger.style.display = 'block';
+  // Show "Send to Team" button below the final ledger
+  const str = document.getElementById('send-team-row');
+  if (str) str.style.display = 'flex';
+  setTimeout(() => ledger.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+}
+
+/* ── INCOME IMPACT CALCULATOR ─────────────────────────── */
+
+// Compute blended gross yield from product selections and queue
+function syncCalcYield() {
+  const grossEl = document.getElementById('ii-gross');
+  if (!grossEl) return;
+
+  // Check what's been selected across all buckets
+  let totalAmt = 0, weightedGross = 0;
+  const bucketATs = { op: 0.01, res: 4.60, bld: 4.85 }; // current bucket yields
+
+  queued.forEach((t, i) => {
+    if (!t) return;
+    const bKey = HBC_KEYS[i]; // 'op','res','bld'
+    const sel = prodSelections[bKey];
+    if (sel && sel.length > 0) {
+      const totalPct = sel.reduce((s, x) => s + x.pct, 0) || 1;
+      const wtd = sel.reduce((s, x) => {
+        const gStr = (PROD_GROSS_YIELDS[bKey] && PROD_GROSS_YIELDS[bKey][x.idx]) || '0%';
+        const g = parseFloat(gStr.replace(/[^0-9.]/g, '')) || 0;
+        return s + g * x.pct / totalPct;
+      }, 0);
+      totalAmt += t.amount;
+      weightedGross += wtd * t.amount;
+    } else if (t.dest === 'Investments') {
+      // No product selected yet for Investments — use portfolio AT yield
+      totalAmt += t.amount;
+      weightedGross += (INVEST_PORTFOLIO_AT_YIELD / 0.63 * t.amount); // gross equiv at 37% tax
+    } else {
+      // No product selected for this bucket yet — use current bucket yield
+      const defaultGross = bucketATs[bKey] || 0;
+      totalAmt += t.amount;
+      weightedGross += defaultGross * t.amount;
+    }
+  });
+
+  // Also factor in Investments transfers even when dest is Investments
+  queued.forEach((t, i) => {
+    if (!t || t.dest !== 'Investments') return;
+    const growSel = prodSelections['grow'];
+    if (growSel && growSel.length > 0) {
+      const totalPct = growSel.reduce((s, x) => s + x.pct, 0) || 1;
+      const wtd = growSel.reduce((s, x) => {
+        const gStr = (PROD_GROSS_YIELDS['grow'] && PROD_GROSS_YIELDS['grow'][x.idx]) || '0%';
+        const g = parseFloat(gStr.replace(/[^0-9.]/g, '')) || 0;
+        return s + g * x.pct / totalPct;
+      }, 0);
+      // Override the earlier entry for this bucket
+      const idx = queued.indexOf(t);
+      if (idx >= 0) {
+        const prevGross = (INVEST_PORTFOLIO_AT_YIELD / 0.63) * t.amount;
+        weightedGross = weightedGross - prevGross + wtd * t.amount;
+      }
+    }
+  });
+
+  if (totalAmt > 0) {
+    grossEl.value = (weightedGross / totalAmt).toFixed(2);
+  }
+}
+
+function calcIcf() {
+  // ── Baseline: what the client earns TODAY (before any GURU reallocation) ──
+  // These are the weighted AT yields on their current account mix per bucket.
+  // op: checking accounts (essentially 0); res: Citizens MM + Fidelity CD weighted;
+  // bld: Fidelity Brokerage + Goldman HYSA weighted; grow: current equity portfolio
+  const CUR_AT  = { op: 0.01, res: 1.87, bld: 2.75, grow: 8.00 };
+  const CUR_BAL = { op: BALANCES[0], res: BALANCES[1], bld: BALANCES[2], grow: LTI_BAL };
+
+  let totalCurIncome = 0;
+  let totalNewIncome = 0;
+
+  ['op', 'res', 'bld', 'grow'].forEach(bKey => {
+    const curBal     = CUR_BAL[bKey];
+    const proFormaBal = bKey === 'grow'
+      ? LTI_BAL + getGrowIncoming()
+      : getProFormaBal(bKey);
+
+    // Current annual AT income from this bucket
+    totalCurIncome += curBal * CUR_AT[bKey] / 100;
+
+    // New annual AT income: use selected product weighted AT yield if any,
+    // otherwise assume yield stays the same as today (no change for that bucket)
+    const sel = prodSelections[bKey];
+    let newATYield;
+    if (sel && sel.length > 0) {
+      const totalPct = sel.reduce((s, x) => s + x.pct, 0) || 1;
+      newATYield = sel.reduce((s, x) => {
+        const y = (PROD_AT_YIELDS[bKey] && PROD_AT_YIELDS[bKey][x.idx] != null)
+          ? PROD_AT_YIELDS[bKey][x.idx] : 0;
+        return s + y * x.pct / totalPct;
+      }, 0);
+    } else {
+      newATYield = CUR_AT[bKey]; // no product selected = yield unchanged
+    }
+
+    // For grow: only the INCOMING amount is newly allocated — the rest stays at current
+    if (bKey === 'grow') {
+      const incoming = getGrowIncoming();
+      // Existing balance stays at current yield; only incoming new allocation earns new yield
+      totalNewIncome += LTI_BAL * CUR_AT[bKey] / 100
+                      + incoming * (sel && sel.length > 0 ? newATYield : CUR_AT[bKey]) / 100;
+    } else {
+      totalNewIncome += proFormaBal * newATYield / 100;
+    }
+  });
+
+  const pickup = totalNewIncome - totalCurIncome;
+  const aumRedeployed = queued.reduce((s, t) => s + (t ? t.amount : 0), 0);
+  // % increase = pickup as a % of the baseline AT income (not AUM)
+  const yieldDeltaPct = totalCurIncome > 0 ? (pickup / totalCurIncome) * 100 : 0;
+
+  const clear = () => {
+    document.getElementById('ii-aum-val').textContent   = '—';
+    document.getElementById('ii-atinc-val').textContent = '—';
+    document.getElementById('ii-delta-val').textContent = '—';
+    document.getElementById('ii-atinc-sub').textContent = 'per year';
+    document.getElementById('ii-delta-sub').textContent = 'after-tax yield';
+  };
+
+  if (pickup === 0 && aumRedeployed === 0) { clear(); return; }
+
+  document.getElementById('ii-aum-val').textContent   = aumRedeployed > 0 ? '+$' + Math.round(aumRedeployed).toLocaleString() : '—';
+  document.getElementById('ii-atinc-val').textContent = (pickup >= 0 ? '+' : '') + '$' + Math.round(Math.abs(pickup)).toLocaleString() + '/yr';
+  document.getElementById('ii-atinc-sub').textContent = '$' + Math.round(totalNewIncome).toLocaleString() + ' projected total AT income/yr';
+  document.getElementById('ii-delta-val').textContent = (yieldDeltaPct >= 0 ? '+' : '') + yieldDeltaPct.toFixed(1) + '%';
+  document.getElementById('ii-delta-sub').textContent = '$' + Math.round(totalCurIncome).toLocaleString() + ' → $' + Math.round(totalNewIncome).toLocaleString() + '/yr';
+  // Notify parent React app with live income impact data
+  window.parent.postMessage({
+    type: 'GURU_INCOME_IMPACT',
+    atIncome: (pickup >= 0 ? '+' : '') + '$' + Math.round(Math.abs(pickup)).toLocaleString() + '/yr',
+    atIncomeSub: '$' + Math.round(totalNewIncome).toLocaleString() + ' projected AT income/yr',
+    yieldDelta: (yieldDeltaPct >= 0 ? '+' : '') + yieldDeltaPct.toFixed(1) + '%',
+    yieldDeltaSub: '$' + Math.round(totalCurIncome).toLocaleString() + ' → $' + Math.round(totalNewIncome).toLocaleString() + '/yr',
+    aumIncrease: aumRedeployed > 0 ? '+$' + Math.round(aumRedeployed).toLocaleString() : '—',
+  }, '*');
+}
+
+function updatePbaHeaders() {
+  // Update the "to allocate" balance in each product selection bucket header
+  ['op', 'res', 'bld'].forEach(bucket => {
+    const bal = getProFormaBal(bucket);
+    const el = document.querySelector('#pba-' + bucket + ' .pba-bal');
+    if (el) el.textContent = '$' + Math.round(bal).toLocaleString();
+  });
+  // Grow handled separately by updateGrowPbaHeader
+  updateGrowPbaHeader();
+}
+
+function syncCalcAmount() {
+  const total = queued.reduce((s, t) => s + (t ? t.amount : 0), 0);
+  const el = document.getElementById('ii-amt');
+  if (el) el.value = total > 0 ? '$' + Math.round(total).toLocaleString() : '0';
+  updatePbaHeaders();
+  updateGrowBalance();
+  updateCardIncomes();
+  syncCalcYield();
+  calcIcf();
+}
+
+function renderTransferSummary() {
+  const any = queued.some(t => t);
+  const el = document.getElementById('transfer-summary');
+  if (!any) {
+    el.innerHTML = '<div style="background:#faf9f7;border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:16px 20px;color:var(--dim);font-size:12px">No transfers queued. Return to Step 1.</div>';
+    return;
+  }
+
+  // ── Same cl-card format as the final ledger, but transfer-only (no product rows yet)
+  const ACCT_DATA = {
+    op: [
+      { name: 'Chase Checking',     last4: '··2680', bal: 48200,  gross: '0.01%', at: '0.01%' },
+      { name: 'Fidelity CMA',       last4: '··7782', bal: 83850,  gross: '0.01%', at: '0.01%' },
+    ],
+    res: [
+      { name: 'Citizens MM',        last4: '··4421', bal: 280000, gross: '3.78%', at: '2.00%' },
+      { name: 'Fidelity CD',        last4: '··9031', bal: 146586, gross: '2.50%', at: '1.63%' },
+    ],
+    bld: [
+      { name: 'Fidelity Brokerage', last4: '··9031', bal: 75000,  gross: '4.01%', at: '2.61%' },
+      { name: 'Goldman Marcus HYSA',last4: '',        bal: 60000,  gross: '4.50%', at: '2.93%' },
+    ],
+    grow: [
+      { group: 'EQUITIES',    name: 'International',       last4: '··3146', bal: 244685, ret5: '7.9%' },
+      { name: 'US Total Market',    last4: '··7678', bal: 779878, ret5: '14.1%' },
+      { name: 'US Large Cap',       last4: '··4683', bal: 535000, ret5: '15.2%' },
+      { name: 'US Small Cap',       last4: '··3879', bal: 323582, ret5: '9.1%' },
+      { name: 'US Dividend/Value',  last4: '··9065', bal: 94369,  ret5: '10.3%' },
+      { name: 'Single Stock',       last4: '··9782', bal: 238311, ret5: '~20%+' },
+      { group: 'FIXED INCOME', name: 'Bonds',       last4: '··1112', bal: 61210, ret5: '0.2%' },
+      { group: 'ALTERNATIVES', name: 'Crypto',      last4: '··9561', bal: 9500,  ret5: '~30%+' },
+    ],
+  };
+
+  const BUCKET_META = {
+    op:   { name:'Operating Cash',  sub:'Cash for upcoming expenditures',            right:'2–3 months of cash',     grad:'linear-gradient(135deg,#142238,#1a2e4a)', yieldHdr:'TAX-EFF. YIELD', isGrow:false },
+    res:  { name:'Reserve Cash',    sub:'Active cash management for what\'s next',   right:'12 months of anticipated outflow', grad:'linear-gradient(135deg,#7a5a10,#c49a28)', yieldHdr:'TAX-EFF. YIELD', isGrow:false },
+    bld:  { name:'Capital Build',   sub:'Disciplined saving for goals on the horizon',right:'3–5 year horizon',       grad:'linear-gradient(135deg,#0f2e1a,#1e4d30)', yieldHdr:'TAX-EFF. YIELD', isGrow:false },
+    grow: { name:'Investments',     sub:'Long-term compounded investing',             right:'5 years +\naggressive\ninvestment portfolio', grad:'linear-gradient(135deg,#142238,#1a2e4a)', yieldHdr:'5YR RETURN', isGrow:true },
+  };
+
+  let cards = '';
+
+  ['op','res','bld','grow'].forEach(bKey => {
+    const meta     = BUCKET_META[bKey];
+    const acctRows = ACCT_DATA[bKey] || [];
+    const bIdx     = ['op','res','bld'].indexOf(bKey);
+    const oldBal   = bIdx >= 0 ? BALANCES[bIdx] : LTI_BAL;
+    const outAmt   = bIdx >= 0 && queued[bIdx] ? queued[bIdx].amount : 0;
+    const outDest  = bIdx >= 0 && queued[bIdx] ? queued[bIdx].dest   : null;
+
+    // Incoming transfers
+    const seenXfer = new Set();
+    const inXfers = [];
+    queued.forEach((t, i) => {
+      if (!t) return;
+      const key = NAMES[i] + t.amount;
+      if (seenXfer.has(key)) return;
+      if (t.dest === meta.name || (bKey === 'grow' && t.dest === 'Investments')) {
+        inXfers.push({ from: NAMES[i], amt: t.amount });
+        seenXfer.add(key);
+      }
+    });
+
+    const totalIn = inXfers.reduce((s, x) => s + x.amt, 0);
+    const newBal  = bKey === 'grow' ? LTI_BAL + getGrowIncoming() : (oldBal - outAmt + totalIn);
+
+    // Only show buckets where a transfer is happening
+    if (outAmt === 0 && inXfers.length === 0) return;
+
+    const cols       = meta.isGrow ? 'grid-template-columns:3fr 80px 58px'    : 'grid-template-columns:3fr 72px 46px 64px';
+    const footerCols = meta.isGrow ? 'grid-template-columns:3fr 80px 58px'    : 'grid-template-columns:3fr 72px 46px 64px';
+    const tblHdr     = meta.isGrow
+      ? `<span>ACCOUNT</span><span>BALANCE</span><span>5YR RETURN</span>`
+      : `<span>ACCOUNT</span><span>BALANCE</span><span>YIELD</span><span>${meta.yieldHdr}</span>`;
+
+    // ── Existing account rows
+    let acctRowsHtml = '';
+    if (!meta.isGrow) {
+      let curGroup = null;
+      acctRows.forEach(a => {
+        if (a.group && a.group !== curGroup) { curGroup = a.group; acctRowsHtml += `<div class="cl-row cl-row-grp" style="${cols}"><span>${a.group}</span></div>`; }
+        const label = a.last4 ? `${a.name} ${a.last4}` : a.name;
+        acctRowsHtml += `<div class="cl-row cl-row-old" style="${cols}">
+          <span class="cl-name"><span class="cl-dot cl-dot-old"></span>${label}</span>
+          <span>${fmt(a.bal)}</span>
+          <span>${a.gross || ''}</span><span>${a.at || ''}</span>
+        </div>`;
+      });
+    } else {
+      // For Investments: show full existing holdings breakdown (grayed, not crossed out)
+      acctRowsHtml = '';
+      let curGroup = null;
+      acctRows.forEach(a => {
+        if (a.group && a.group !== curGroup) {
+          curGroup = a.group;
+          acctRowsHtml += `<div class="cl-row cl-row-grp" style="${cols}"><span>${a.group}</span></div>`;
+        }
+        const label = a.last4 ? `${a.name} ${a.last4}` : a.name;
+        acctRowsHtml += `<div class="cl-row" style="${cols};opacity:0.52">
+          <span class="cl-name"><span class="cl-dot" style="background:rgba(255,255,255,0.25)"></span>${label}</span>
+          <span>${fmt(a.bal)}</span>
+          <span style="color:rgba(255,255,255,0.45)">${a.ret5 || '—'}</span>
+        </div>`;
+      });
+      if (!acctRowsHtml) {
+        acctRowsHtml = `<div class="cl-row" style="${cols};padding:7px 14px;font-size:11px;color:rgba(255,255,255,0.45);font-style:italic">
+          <span>Existing holdings unchanged</span>
+        </div>`;
+      }
+    }
+
+    // ── "Product selection pending" placeholder row (for buckets receiving funds)
+    let pendingRowHtml = '';
+    if (inXfers.length > 0) {
+      pendingRowHtml = `<div style="${cols};display:grid;padding:9px 14px;background:rgba(196,154,40,0.06);border-top:1px solid rgba(196,154,40,0.15);border-bottom:1px solid rgba(196,154,40,0.15)">
+        <span style="font-size:10px;color:#c49a28;font-weight:700;letter-spacing:0.04em;grid-column:1/-1">⊙ &nbsp;PRODUCT SELECTION REQUIRED IN STEP 3 — ${fmt(totalIn)} incoming</span>
+      </div>`;
+    }
+
+    // ── Transfer rows
+    let xferRowsHtml = '';
+    if (outAmt > 0 && outDest) {
+      if (meta.isGrow) {
+        xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}"><span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer out → ${outDest}</span><span></span><span class="cl-xfer-neg">−${fmt(outAmt)}</span></div>`;
+      } else {
+        xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}"><span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer out → ${outDest}</span><span></span><span></span><span class="cl-xfer-neg">−${fmt(outAmt)}</span></div>`;
+      }
+    }
+    inXfers.forEach(x => {
+      if (meta.isGrow) {
+        xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}"><span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer from ${x.from}</span><span></span><span class="cl-xfer-pos">+${fmt(x.amt)}</span></div>`;
+      } else {
+        xferRowsHtml += `<div class="cl-row cl-row-xfer" style="${cols}"><span class="cl-name"><span class="cl-dot cl-dot-xfer"></span>Transfer from ${x.from}</span><span></span><span></span><span class="cl-xfer-pos">+${fmt(x.amt)}</span></div>`;
+      }
+    });
+
+    // ── Footer (no product yield in step 2 — show crossed-out old yields, then "—" for new)
+    const origGrossYield = ORIG_GROSS_YIELDS[bKey] || '—';
+    const origAtYield    = ORIG_AT_YIELDS[bKey] || '—';
+    const footerYieldCols = meta.isGrow
+      ? `<span class="cl-footer-yield" style="color:rgba(255,255,255,0.3)"><span style="text-decoration:line-through;opacity:0.5;font-size:9px;margin-right:3px">${origGrossYield}</span>—</span>`
+      : `<span class="cl-footer-yield" style="color:rgba(255,255,255,0.3)"><span style="text-decoration:line-through;opacity:0.5;font-size:9px;margin-right:3px">${origGrossYield}</span>—</span><span class="cl-footer-yield" style="color:rgba(255,255,255,0.3)"><span style="text-decoration:line-through;opacity:0.5;font-size:9px;margin-right:3px">${origAtYield}</span>—</span>`;
+
+    const footer = `<div class="cl-card-footer" style="${footerCols}">
+      <span class="cl-footer-pos" style="color:rgba(255,255,255,0.4);font-style:italic">product TBD</span>
+      <div>
+        <div class="cl-footer-bal-old">${fmt(oldBal)}</div>
+        <div class="cl-footer-bal-new">${fmt(newBal)}</div>
+      </div>
+      ${footerYieldCols}
+    </div>`;
+
+    cards += `
+    <div class="cl-card">
+      <div class="cl-card-hd" style="background:${meta.grad}">
+        <div>
+          <div class="cl-card-hd-title">${meta.name}</div>
+          <div class="cl-card-hd-sub">${meta.sub}</div>
+        </div>
+        <div class="cl-card-hd-right">${meta.right.replace(/\n/g,'<br>')}</div>
+      </div>
+      <div class="cl-tbl-hdr" style="${cols}">${tblHdr}</div>
+      ${acctRowsHtml}
+      ${pendingRowHtml}
+      ${xferRowsHtml}
+      ${footer}
+    </div>`;
+  });
+
+  el.innerHTML = cards
+    ? `<div class="cl-grid">${cards}</div>`
+    : '<div style="background:#faf9f7;border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:16px 20px;color:var(--dim);font-size:12px">No transfers queued.</div>';
+}
+
+/* ── PRODUCT BUCKET ACCORDION ─────────────────────────── */
+function togglePba(bucket) {
+  const body = document.getElementById('pba-body-' + bucket);
+  const chev = document.getElementById('pba-chev-' + bucket);
+  const isOpen = !body.classList.contains('collapsed');
+  body.classList.toggle('collapsed', isOpen);
+  chev.textContent = isOpen ? '▸' : '▾';
+}
+
+function updateConfirmBtn(bucket) {
+  const btn = document.getElementById('pba-confirm-' + bucket);
+  if (!btn) return;
+  const sel   = prodSelections[bucket];
+  const total = sel.reduce((s, x) => s + x.pct, 0);
+  const valid = sel.length > 0 && total === 100;
+  btn.style.opacity = valid ? '1' : '0.4';
+  btn.style.cursor  = valid ? 'pointer' : 'default';
+}
+
+function confirmBucket(bucket, e) {
+  if (e) e.stopPropagation();
+  const btn = document.getElementById('pba-confirm-' + bucket);
+  if (!btn || btn.style.cursor === 'default') return;
+
+  prodConfirmed[bucket] = true;
+
+  // Update status badge
+  const stEl = document.getElementById('pba-status-' + bucket);
+  if (stEl) { stEl.textContent = 'Confirmed ✓'; stEl.className = 'pba-status pba-confirmed'; }
+
+  // Show summary line
+  const smEl = document.getElementById('pba-summary-' + bucket);
+  if (smEl) {
+    const names = PROD_NAMES[bucket];
+    const sel   = prodSelections[bucket];
+    smEl.textContent = sel.map(s => names[s.idx] + (sel.length > 1 ? ' ' + s.pct + '%' : '')).join(' · ');
+    smEl.style.display = '';
+  }
+
+  // Collapse this bucket
+  const body = document.getElementById('pba-body-' + bucket);
+  const chev = document.getElementById('pba-chev-' + bucket);
+  body.classList.add('collapsed');
+  chev.textContent = '▸';
+
+  // Open next bucket
+  const idx = BUCKET_ORDER.indexOf(bucket);
+  if (idx < BUCKET_ORDER.length - 1) {
+    const next     = BUCKET_ORDER[idx + 1];
+    const nextBody = document.getElementById('pba-body-' + next);
+    const nextChev = document.getElementById('pba-chev-' + next);
+    if (nextBody.classList.contains('collapsed')) {
+      nextBody.classList.remove('collapsed');
+      nextChev.textContent = '▾';
+    }
+    setTimeout(() => {
+      document.getElementById('pba-' + next).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 80);
+  }
+
+  checkFinalize();
+}
+
+</script>
+</body>
+</html>

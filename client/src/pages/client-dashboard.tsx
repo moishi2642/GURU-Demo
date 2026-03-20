@@ -33,6 +33,7 @@ import {
   BarChart,
   LabelList,
   Legend,
+  ReferenceArea,
 } from "recharts";
 import {
   BrainCircuit,
@@ -399,10 +400,18 @@ const fmtK = (v: number) => {
 const PANEL_CLS =
   "border border-border shadow-sm bg-card rounded-xl overflow-hidden";
 
+// Intelligence-layer panels — dark forest green analytical canvas
+const INTEL_PANEL_CLS =
+  "guru-intelligence border shadow-sm rounded-xl overflow-hidden";
+
 // ─── Color constants (updated to institutional palette) ────────────────────────
 const GREEN = "hsl(160, 60%, 38%)";
 const RED   = "hsl(0, 72%, 50%)";
 const BLUE  = "hsl(216, 82%, 43%)";
+// Intelligence-layer chart colors
+const INTEL_GREEN      = "hsl(152, 52%, 44%)";   // positive / growth line
+const INTEL_GREEN_DIM  = "hsl(152, 40%, 32%)";   // area fill
+const INTEL_GRID       = "hsl(152, 22%, 18%)";   // chart grid lines
 
 // ─── GURU Method: 5 Strategic Bucket Definitions ─────────────────────────────
 const GURU_BUCKETS = {
@@ -2118,113 +2127,135 @@ function BsTable({
   const COLS = isLiability ? "1fr 90px 72px 90px" : "1fr 90px 72px 80px";
   const retCls = (r: string | null) => {
     if (!r) return "text-muted-foreground/40";
-    if (r.startsWith("+")) return "text-emerald-700 font-semibold";
-    if (r.toLowerCase().includes("irr") || r.toLowerCase().includes("est")) return "text-amber-700 font-semibold";
+    if (r.startsWith("+")) return "text-emerald-400 font-semibold";
+    if (r.toLowerCase().includes("irr") || r.toLowerCase().includes("est")) return "text-amber-400 font-semibold";
     return "text-muted-foreground";
   };
 
+  const MONO = "'JetBrains Mono', monospace";
+  const BS_BG_BASE    = "#0f1e33";
+  const BS_BG_ALT     = "#122038";
+  const BS_BG_GRPHDR  = "#162843";
+  const BS_BG_SECTOT  = "#1a2d47";
+  const BS_BG_GRANDTOT= "#0d1b2e";
+  const BS_BORDER     = "#1e3352";
+  const BS_BORDER_SEC = "#2a4a6e";
+  const BS_GREEN_DIM  = "hsl(152,45%,42%)";
+  const BS_GREEN_MED  = "hsl(152,52%,55%)";
+  const BS_TEXT       = "hsl(0,0%,88%)";
+  const BS_TEXT_MUTED = "hsl(210,15%,52%)";
+
+  const retColor = (r: string | null) => {
+    if (!r) return BS_TEXT_MUTED;
+    if (r.startsWith("+")) return "hsl(152,55%,55%)";
+    if (r.toLowerCase().includes("irr") || r.toLowerCase().includes("est")) return "hsl(45,80%,56%)";
+    return BS_TEXT_MUTED;
+  };
+
+  const cellBase: React.CSSProperties = {
+    fontFamily: MONO, fontSize: 10.5, padding: "5px 8px",
+    borderBottom: `1px solid ${BS_BORDER}`,
+  };
+
   const renderItems = (items: BsGroup["items"], indent = "pl-8") =>
-    items.map((item, ii) => (
-      <div
-        key={ii}
-        className="grid border-t border-border/40 hover:bg-secondary/30 transition-colors"
-        style={{ gridTemplateColumns: COLS }}
-      >
-        <div className="px-3 py-1.5 pl-10">
-          <p className="text-[11px] text-muted-foreground leading-tight">{item.label}</p>
-          {item.subtitle && (
-            <p className="text-[9px] text-muted-foreground/55 leading-tight mt-0.5 tabular-nums">{item.subtitle}</p>
-          )}
+    items.map((item, ii) => {
+      const rowBg = ii % 2 === 0 ? BS_BG_BASE : BS_BG_ALT;
+      const rateVal = item.ret ?? (item.rate ? `${item.rate}%` : null);
+      return (
+        <div key={ii} className="grid" style={{ gridTemplateColumns: COLS, background: rowBg }}>
+          <div style={{ ...cellBase, paddingLeft: 28 }}>
+            <div style={{ color: BS_TEXT_MUTED, lineHeight: 1.3 }}>{item.label}</div>
+            {item.subtitle && (
+              <div style={{ fontFamily: MONO, fontSize: 9, color: "hsl(210,15%,40%)", lineHeight: 1.3, marginTop: 1 }}>{item.subtitle}</div>
+            )}
+          </div>
+          <div style={{ ...cellBase, textAlign: "right", color: item.value > 0 ? BS_TEXT : BS_TEXT_MUTED, fontWeight: 500 }}>
+            {item.value > 0 ? fmt(item.value) : "—"}
+          </div>
+          <div style={{ ...cellBase, textAlign: "right", color: retColor(rateVal) }}>
+            {!isLiability
+              ? (item.ret ?? (item.rate ? `${item.rate}%` : <span style={{ color: "hsl(210,10%,30%)" }}>—</span>))
+              : (item.rate ? `${item.rate}%` : <span style={{ color: "hsl(210,10%,30%)" }}>—</span>)
+            }
+          </div>
+          <div style={{ ...cellBase }}>
+            {item.comment && (
+              <span style={{ fontSize: 9.5, color: item.comment.color === "red" ? "hsl(0,65%,55%)" : item.comment.color === "orange" ? "hsl(38,78%,52%)" : BS_TEXT_MUTED }}>
+                {item.comment.text}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="px-2 py-1.5 text-right tabular-nums font-medium text-foreground text-[11px]">
-          {item.value > 0 ? fmt(item.value) : "—"}
-        </div>
-        <div className={`px-2 py-1.5 text-right tabular-nums text-[11px] ${retCls(item.ret ?? (item.rate ? `${item.rate}%` : null))}`}>
-          {!isLiability
-            ? (item.ret ?? (item.rate ? `${item.rate}%` : <span className="text-muted-foreground/40">—</span>))
-            : (item.rate ? `${item.rate}%` : <span className="text-muted-foreground/40">—</span>)
-          }
-        </div>
-        <div className="px-2 py-1.5">
-          {item.comment && (
-            <span className={`text-[9px] ${item.comment.color === "red" ? "text-rose-600" : item.comment.color === "orange" ? "text-amber-600" : "text-muted-foreground"}`}>
-              {item.comment.text}
-            </span>
-          )}
-        </div>
-      </div>
-    ));
+      );
+    });
 
   const renderGroup = (group: BsGroup, showSubtotal: boolean) => (
     <div key={group.category}>
-      {renderItems(group.items, "pl-10")}
+      {renderItems(group.items)}
       {showSubtotal && (
-        <div className="grid border-t border-border/60 bg-slate-50 text-slate-700" style={{ gridTemplateColumns: COLS }}>
-          <div className="px-3 py-1.5 pl-6 font-bold text-[11px]">{group.category}</div>
-          <div className="px-2 py-1.5 text-right tabular-nums text-[10px] font-bold">{fmt(group.subtotal)}</div>
-          <div className="px-2 py-1.5 text-right tabular-nums text-[10px] text-slate-400">
+        <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRPHDR, borderTop: `1px solid ${BS_BORDER_SEC}`, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
+          <div style={{ ...cellBase, paddingLeft: 14, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: BS_GREEN_DIM, borderBottom: "none" }}>{group.category}</div>
+          <div style={{ ...cellBase, textAlign: "right", fontWeight: 700, color: BS_TEXT, borderBottom: "none" }}>{fmt(group.subtotal)}</div>
+          <div style={{ ...cellBase, textAlign: "right", color: BS_TEXT_MUTED, borderBottom: "none" }}>
             {group.avgRate ? `${group.avgRate}%` : ""}
           </div>
-          <div className="px-2 py-1.5" />
+          <div style={{ ...cellBase, borderBottom: "none" }} />
         </div>
       )}
     </div>
   );
 
+  const hdrCell: React.CSSProperties = {
+    fontFamily: MONO, fontSize: 10.5, fontWeight: 800,
+    letterSpacing: "0.10em", textTransform: "uppercase",
+    color: "hsl(210,35%,65%)", padding: "7px 8px",
+    borderBottom: `1px solid ${BS_BORDER_SEC}`,
+  };
+
   return (
-    <div className="border border-border rounded-xl overflow-hidden text-xs">
+    <div style={{ border: `1px solid ${BS_BORDER}`, borderRadius: 10, overflow: "hidden", fontFamily: MONO }}>
       {/* Header */}
-      <div className="grid bg-slate-800" style={{ gridTemplateColumns: COLS }}>
-        <div className="px-3 py-2.5 font-black uppercase tracking-widest text-slate-300 text-[12px]">
-          {isLiability ? "Liability Category" : "Asset Category"}
-        </div>
-        <div className="px-2 py-2.5 text-right font-black uppercase tracking-widest text-slate-300 text-[12px]">Balance</div>
-        <div className="px-2 py-2.5 text-right font-black uppercase tracking-widest text-slate-300 text-[9px]">
-          {isLiability ? "Cost" : "Yield / Return"}
-        </div>
-        <div className="px-2 py-2.5 font-black uppercase tracking-widest text-slate-300 text-[12px]">Notes</div>
+      <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT }}>
+        <div style={{ ...hdrCell, paddingLeft: 12 }}>{isLiability ? "Liability Category" : "Asset Category"}</div>
+        <div style={{ ...hdrCell, textAlign: "right" }}>Balance</div>
+        <div style={{ ...hdrCell, textAlign: "right" }}>{isLiability ? "Cost" : "Yield / Return"}</div>
+        <div style={{ ...hdrCell }}>Notes</div>
       </div>
       {/* Sectioned asset rows */}
       {sections && sections.map((sec) => (
         <div key={sec.label}>
-          {/* Sub-groups within section */}
           {sec.groups.map((group) => renderGroup(group, sec.groups.length > 1 || group.items.length > 1))}
-          {/* Section total — shaded blue, pinned to bottom of section */}
-          <div className="grid border-t border-blue-200 bg-blue-100 text-blue-900" style={{ gridTemplateColumns: COLS }}>
-            <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest">{sec.label}</div>
-            <div className="px-2 py-2 text-right tabular-nums text-[10px] font-black">{fmt(sec.total)}</div>
-            <div className="px-2 py-2" />
-            <div className="px-2 py-2" />
+          {/* Section total */}
+          <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_SECTOT, borderTop: `2px solid ${BS_BORDER_SEC}`, borderBottom: `2px solid ${BS_BORDER_SEC}` }}>
+            <div style={{ ...cellBase, paddingLeft: 12, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: BS_GREEN_MED, borderLeft: `3px solid ${BS_GREEN_DIM}`, borderBottom: "none" }}>{sec.label}</div>
+            <div style={{ ...cellBase, textAlign: "right", fontWeight: 800, color: BS_TEXT, borderBottom: "none" }}>{fmt(sec.total)}</div>
+            <div style={{ ...cellBase, borderBottom: "none" }} />
+            <div style={{ ...cellBase, borderBottom: "none" }} />
           </div>
         </div>
       ))}
       {/* Flat liability rows (no sections) */}
       {groups && groups.map((group) => (
         <div key={group.category}>
-          {renderItems(group.items, "pl-6")}
-          <div className="grid border-t border-blue-200 bg-blue-100 text-blue-900" style={{ gridTemplateColumns: COLS }}>
-            <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest">{group.category}</div>
-            <div className="px-2 py-2 text-right tabular-nums text-[10px] font-black">{fmt(group.subtotal)}</div>
-            <div className="px-2 py-2 text-right tabular-nums text-[10px] text-blue-700">
+          {renderItems(group.items)}
+          <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_SECTOT, borderTop: `2px solid ${BS_BORDER_SEC}`, borderBottom: `2px solid ${BS_BORDER_SEC}` }}>
+            <div style={{ ...cellBase, paddingLeft: 12, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: BS_GREEN_MED, borderLeft: `3px solid ${BS_GREEN_DIM}`, borderBottom: "none" }}>{group.category}</div>
+            <div style={{ ...cellBase, textAlign: "right", fontWeight: 800, color: BS_TEXT, borderBottom: "none" }}>{fmt(group.subtotal)}</div>
+            <div style={{ ...cellBase, textAlign: "right", color: BS_TEXT_MUTED, borderBottom: "none" }}>
               {group.avgRate ? `${group.avgRate}%` : ""}
             </div>
-            <div className="px-2 py-2" />
+            <div style={{ ...cellBase, borderBottom: "none" }} />
           </div>
         </div>
       ))}
       {/* Grand total */}
-      <div
-        className="grid bg-slate-800 text-slate-300 border-t-2 border-slate-700"
-        style={{ gridTemplateColumns: COLS }}
-      >
-        <div className="px-3 py-2.5 font-black uppercase tracking-widest text-slate-300 text-[12px]">{totalLabel}</div>
-        <div className="px-2 py-2.5 text-right tabular-nums font-black text-[12px] text-slate-300">
-          {fmt(totalValue)}
-        </div>
-        <div className="px-2 py-2.5 text-right tabular-nums text-[10px] text-slate-300">
+      <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT, borderTop: `2px solid ${BS_BORDER_SEC}` }}>
+        <div style={{ ...cellBase, paddingLeft: 12, fontWeight: 900, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: BS_TEXT, borderBottom: "none", borderLeft: `3px solid hsl(210,55%,50%)` }}>{totalLabel}</div>
+        <div style={{ ...cellBase, textAlign: "right", fontWeight: 900, color: BS_TEXT, borderBottom: "none" }}>{fmt(totalValue)}</div>
+        <div style={{ ...cellBase, textAlign: "right", color: BS_TEXT_MUTED, borderBottom: "none" }}>
           {totalRate ? `${totalRate}%` : ""}
         </div>
-        <div className="px-2 py-2.5" />
+        <div style={{ ...cellBase, borderBottom: "none" }} />
       </div>
     </div>
   );
@@ -2407,106 +2438,99 @@ function WfLabel(props: {
 }
 
 type PLRowDef =
-  | { key: string; kind: "group"; label: string }
-  | { key: string; kind: "item"; label: string; descs: string[] }
-  | { key: string; kind: "subtotal"; label: string; sumOf: string[] };
+  | { key: string; kind: "group";    label: string }
+  | { key: string; kind: "item";     label: string; descs: string[]; renderAs?: "subtotal" }
+  | { key: string; kind: "subtotal"; label: string; sumOf?: string[]; descs?: string[] }
+  | { key: string; kind: "total";    label: string; sumOf?: string[]; compute?: "outflow" | "net" | "cumulative"; accent: "green" | "amber" };
 
 const CF_PL_ROWS: PLRowDef[] = [
   { key: "g_income", kind: "group", label: "EARNED INCOME" },
   {
-    key: "salary",
+    key: "michael_salary",
     kind: "item",
-    label: "Monthly Net Salary — P1 + P2",
-    descs: ["Monthly Net Salaries"],
+    label: "Michael — Net Monthly Salary",
+    descs: ["Michael — Net Monthly", "Monthly Net Salaries"],
+  },
+  {
+    key: "sarah_salary",
+    kind: "item",
+    label: "Sarah — Net Monthly Salary",
+    descs: ["Sarah — Net Monthly"],
   },
   {
     key: "bonus_p1",
     kind: "item",
-    label: "Partner 1 Year-End Bonus",
+    label: "Michael — Year-End Bonus",
     descs: ["Partner 1 Year-End"],
   },
   {
     key: "bonus_p2",
     kind: "item",
-    label: "Partner 2 Year-End Bonus",
+    label: "Sarah — Year-End Bonus",
     descs: ["Partner 2 Year-End"],
   },
   {
     key: "sub_income",
     kind: "subtotal",
-    label: "Total Earned Income",
-    sumOf: ["salary", "bonus_p1", "bonus_p2"],
+    label: "Cash Compensation",
+    sumOf: ["michael_salary", "sarah_salary", "bonus_p1", "bonus_p2"],
+  },
+  {
+    key: "reserve_int",
+    kind: "item",
+    label: "Interest From Bank Accounts",
+    descs: ["Reserve MMF"],
+  },
+  {
+    key: "sub_total_income",
+    kind: "total",
+    label: "TOTAL CASH INCOME",
+    sumOf: ["sub_income", "reserve_int"],
+    accent: "green",
   },
   { key: "g_tribeca", kind: "group", label: "TRIBECA — PRIMARY RESIDENCE" },
-  {
-    key: "trib_exp",
-    kind: "item",
-    label: "Mortgage + Maintenance + Insurance + Utilities",
-    descs: ["Tribeca —"],
-  },
-  {
-    key: "nyc_tax",
-    kind: "item",
-    label: "NYC Property Taxes (semi-annual)",
-    descs: ["NYC Property Taxes"],
-  },
-  {
-    key: "sub_trib",
-    kind: "subtotal",
-    label: "Net Tribeca",
-    sumOf: ["trib_exp", "nyc_tax"],
-  },
+  { key: "trib_mortgage", kind: "item", label: "Mortgage",          descs: ["Tribeca — Mortgage"] },
+  { key: "trib_hoa",      kind: "item", label: "HOA & Maintenance", descs: ["Tribeca — HOA"] },
+  { key: "trib_ins",      kind: "item", label: "Home Insurance",    descs: ["Tribeca — Home Insurance"] },
+  { key: "trib_util",     kind: "item", label: "Cable & Utilities", descs: ["Tribeca — Cable"] },
+  { key: "nyc_tax",       kind: "item", label: "NYC Property Taxes", descs: ["NYC Property Taxes"] },
+  { key: "sub_trib", kind: "subtotal", label: "12 Warren NYC — Primary Residence", sumOf: ["trib_mortgage", "trib_hoa", "trib_ins", "trib_util", "nyc_tax"] },
   { key: "g_sara", kind: "group", label: "SARASOTA — INVESTMENT PROPERTY" },
-  {
-    key: "sara_in",
-    kind: "item",
-    label: "Rental Income",
-    descs: ["Investment Property Rental Income"],
-  },
-  {
-    key: "sara_exp",
-    kind: "item",
-    label: "Property Expenses (mgmt + mortgage + maintenance)",
-    descs: ["Investment Property — Mgmt"],
-  },
-  {
-    key: "fl_tax",
-    kind: "item",
-    label: "Investment Property Taxes (semi-annual)",
-    descs: ["Investment Property Taxes"],
-  },
-  {
-    key: "sub_sara",
-    kind: "subtotal",
-    label: "Net Sarasota",
-    sumOf: ["sara_in", "sara_exp", "fl_tax"],
-  },
-  { key: "g_living", kind: "group", label: "LIVING EXPENSES" },
+  { key: "sara_in",    kind: "item", label: "Rental Income",              descs: ["Investment Property Rental Income"] },
+  { key: "sara_mgmt",  kind: "item", label: "Property Management",        descs: ["Investment Property — Property Management"] },
+  { key: "sara_mtg",   kind: "item", label: "Mortgage",                   descs: ["Investment Property — Mortgage"] },
+  { key: "sara_maint", kind: "item", label: "Maintenance / HOA",          descs: ["Investment Property — Maintenance"] },
+  { key: "sara_golf",  kind: "item", label: "Golf Club Dues",             descs: ["Sarasota — Golf Club"] },
+  { key: "fl_tax",     kind: "item", label: "Property Taxes (FL annual)", descs: ["Investment Property Taxes"] },
+  { key: "sub_sara", kind: "subtotal", label: "Sarasota Investment Property", sumOf: ["sara_in", "sara_mgmt", "sara_mtg", "sara_maint", "sara_golf", "fl_tax"] },
+  { key: "g_living", kind: "group", label: "DEPENDENT CARE & EDUCATION" },
   {
     key: "childcare",
     kind: "item",
-    label: "Childcare / Nanny",
+    label: "Nanny",
     descs: ["Childcare"],
   },
   {
-    key: "phone_util",
+    key: "tuition",
     kind: "item",
-    label: "Phone, Cable & Utilities",
-    descs: ["Phone, Cable"],
+    label: "Private School Tuition",
+    descs: ["Private School Tuition"],
   },
   {
     key: "sub_living",
     kind: "subtotal",
-    label: "Total Living Expenses",
-    sumOf: ["childcare", "phone_util"],
+    label: "Dependent Care & Education",
+    sumOf: ["childcare", "tuition"],
   },
-  { key: "g_lifestyle", kind: "group", label: "LIFESTYLE & CREDIT" },
+  { key: "g_credit", kind: "group", label: "CREDIT CARD" },
   {
     key: "cc_pay",
     kind: "item",
     label: "Credit Card Payments",
     descs: ["Credit Card Payments"],
+    renderAs: "subtotal",
   },
+  { key: "g_lifestyle", kind: "group", label: "LIFESTYLE" },
   {
     key: "memberships",
     kind: "item",
@@ -2517,7 +2541,7 @@ const CF_PL_ROWS: PLRowDef[] = [
     key: "golf",
     kind: "item",
     label: "Golf Club Annual Dues",
-    descs: ["Golf Club"],
+    descs: ["NYC — Golf Club"],
   },
   {
     key: "insurance",
@@ -2526,35 +2550,34 @@ const CF_PL_ROWS: PLRowDef[] = [
     descs: ["Annual Insurance"],
   },
   {
+    key: "phone_util",
+    kind: "item",
+    label: "Phone / Utilities",
+    descs: ["Phone, Cable"],
+  },
+  {
     key: "sub_lifestyle",
     kind: "subtotal",
-    label: "Total Lifestyle",
-    sumOf: ["cc_pay", "memberships", "golf", "insurance"],
-  },
-  { key: "g_edu", kind: "group", label: "EDUCATION" },
-  {
-    key: "tuition",
-    kind: "item",
-    label: "Private School Tuition",
-    descs: ["Private School Tuition"],
+    label: "Lifestyle",
+    sumOf: ["memberships", "golf", "insurance", "phone_util"],
   },
   { key: "g_debt", kind: "group", label: "DEBT SERVICE" },
   {
     key: "pe_loan",
     kind: "item",
-    label: "PE Fund II Professional Loan",
+    label: "Professional Loan (Private Equity)",
     descs: ["PE Fund II Professional"],
   },
   {
     key: "student",
     kind: "item",
-    label: "Student Loan Payments",
+    label: "Student Debt (Undergrad + Graduate)",
     descs: ["Student Loan Payments"],
   },
   {
     key: "sub_debt",
     kind: "subtotal",
-    label: "Total Debt Service",
+    label: "Debt Service",
     sumOf: ["pe_loan", "student"],
   },
   { key: "g_tax", kind: "group", label: "TAXES" },
@@ -2562,39 +2585,10 @@ const CF_PL_ROWS: PLRowDef[] = [
     key: "fed_tax",
     kind: "item",
     label: "Federal Estimated Tax",
-    descs: ["Federal Estimated Tax"],
+    descs: ["Federal Estimated Income Tax"],
   },
   { key: "g_travel", kind: "group", label: "TRAVEL" },
-  {
-    key: "trav_mem",
-    kind: "item",
-    label: "Memorial Day Travel",
-    descs: ["Memorial Day Travel"],
-  },
-  {
-    key: "trav_wknd",
-    kind: "item",
-    label: "Weekend Travel",
-    descs: ["Weekend Travel"],
-  },
-  {
-    key: "trav_sum",
-    kind: "item",
-    label: "Summer Travel",
-    descs: ["Summer Travel"],
-  },
-  {
-    key: "trav_hol",
-    kind: "item",
-    label: "Holiday Travel",
-    descs: ["Holiday Travel"],
-  },
-  {
-    key: "sub_travel",
-    kind: "subtotal",
-    label: "Total Travel",
-    sumOf: ["trav_mem", "trav_wknd", "trav_sum", "trav_hol"],
-  },
+  { key: "trav_all", kind: "item", label: "Travel", descs: ["Memorial Day Travel", "Weekend Travel", "Summer Travel", "Thanksgiving Travel", "Holiday Travel"] },
   { key: "g_misc", kind: "group", label: "YEAR-END & MISC" },
   {
     key: "yr_end_fees",
@@ -2608,12 +2602,10 @@ const CF_PL_ROWS: PLRowDef[] = [
     label: "Year-End Investment Distributions",
     descs: ["Year-End Investment"],
   },
-  {
-    key: "reserve_int",
-    kind: "item",
-    label: "Reserve MMF & Savings Interest",
-    descs: ["Reserve MMF"],
-  },
+  // ── Headline totals — computed, not hardcoded ──────────────────────────────
+  { key: "total_expenses", kind: "total", label: "TOTAL CASH EXPENSES",    compute: "outflow",     accent: "green" },
+  { key: "total_net",      kind: "total", label: "TOTAL NET CASH FLOW",    compute: "net",         accent: "amber" },
+  { key: "total_cum",      kind: "total", label: "CUMULATIVE NET CASH FLOW", compute: "cumulative", accent: "amber" },
 ];
 
 const CF_MONTHS = [
@@ -2635,10 +2627,14 @@ function CashFlowForecastView({
   assets,
   cashFlows,
   clientId,
+  autoFullScreen = false,
+  onCloseFullScreen,
 }: {
   assets: Asset[];
   cashFlows: CashFlow[];
   clientId: number;
+  autoFullScreen?: boolean;
+  onCloseFullScreen?: () => void;
 }) {
   const { reserve, yieldBucket, tactical, totalLiquid, reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
   const startBalance = reserve;
@@ -2652,6 +2648,18 @@ function CashFlowForecastView({
   });
   const [hoveredQuarter, setHoveredQuarter] = React.useState<number | null>(null);
   const [calloutHovered, setCalloutHovered] = React.useState(false);
+  const [hoveredCfIdx, setHoveredCfIdx] = React.useState<number | null>(null);
+  const [showCfPanel, setShowCfPanel] = React.useState(true);
+  const [cfTotalStyle, setCfTotalStyle] = React.useState<"A" | "B">("A");
+  const [tableExpanded, setTableExpanded] = React.useState(false);
+  const [tableView, setTableView] = React.useState<"mo" | "qtr">("qtr");
+  const [alertHighlight, setAlertHighlight] = React.useState<"cf" | "liq" | null>(null);
+  const [modelFullScreen, setModelFullScreen] = React.useState(autoFullScreen);
+
+  // When parent toggles autoFullScreen on, open the portal
+  React.useEffect(() => {
+    if (autoFullScreen) setModelFullScreen(true);
+  }, [autoFullScreen]);
 
   function monthVal(descs: string[], year: number, month: number): number {
     return cashFlows
@@ -2673,17 +2681,22 @@ function CashFlowForecastView({
   }
 
   const vals: Record<string, number[]> = {};
+  // Pass 1: items and subtotals (totals with compute= are deferred to pass 2)
   for (const row of CF_PL_ROWS) {
     if (row.kind === "item") {
-      vals[row.key] = CF_MONTHS.map((m) =>
-        monthVal(row.descs, m.year, m.month),
-      );
+      vals[row.key] = CF_MONTHS.map((m) => monthVal(row.descs, m.year, m.month));
     } else if (row.kind === "subtotal") {
-      vals[row.key] = CF_MONTHS.map((_, mi) =>
-        row.sumOf.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0),
-      );
+      if (row.sumOf) {
+        vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf!.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
+      } else if (row.descs) {
+        vals[row.key] = CF_MONTHS.map((m) => monthVal(row.descs!, m.year, m.month));
+      } else {
+        vals[row.key] = CF_MONTHS.map(() => 0);
+      }
+    } else if (row.kind === "total" && row.sumOf) {
+      vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf!.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
     } else {
-      vals[row.key] = CF_MONTHS.map(() => 0);
+      vals[row.key] = CF_MONTHS.map(() => 0); // placeholder; filled in pass 2 for compute= rows
     }
   }
 
@@ -2699,7 +2712,7 @@ function CashFlowForecastView({
       0,
     ),
   );
-  const CORE_EXPENSE_KEYS = ["trib_exp", "nyc_tax", "sara_exp", "fl_tax", "childcare", "phone_util", "cc_pay", "memberships", "golf", "insurance", "pe_loan", "student"];
+  const CORE_EXPENSE_KEYS = ["trib_mortgage", "trib_hoa", "trib_ins", "trib_util", "nyc_tax", "sara_mgmt", "sara_mtg", "sara_maint", "sara_golf", "fl_tax", "childcare", "phone_util", "cc_pay", "memberships", "golf", "insurance", "pe_loan", "student"];
   const coreOutflowByMonth = CF_MONTHS.map((_, mi) =>
     CORE_EXPENSE_KEYS.reduce((s, k) => {
       const v = vals[k]?.[mi] ?? 0;
@@ -2725,6 +2738,50 @@ function CashFlowForecastView({
     (minI, v, i) => (v < cumulativeByMonth[minI] ? i : minI),
     0,
   );
+
+  // ── Quarterly card data (component scope) ─────────────────────────────────
+  const CF_Q_DEFS = [
+    { key: "Q1", label: "Q1", months: [0,1,2] },
+    { key: "Q2", label: "Q2", months: [3,4,5] },
+    { key: "Q3", label: "Q3", months: [6,7,8] },
+    { key: "Q4", label: "Q4", months: [9,10,11] },
+  ];
+  let qRunning2 = totalLiquid;
+  const qCardData = CF_Q_DEFS.map((q) => {
+    const qIn  = q.months.reduce((s, mi) => s + (inflowByMonth[mi] ?? 0), 0);
+    const qOut = q.months.reduce((s, mi) => s + Math.abs(outflowByMonth[mi] ?? 0), 0);
+    const qStart = qRunning2;
+    const qEnd   = qStart + qIn - qOut;
+    qRunning2 = qEnd;
+    return { key: q.key, label: q.label, start: qStart, inflow: qIn, outflow: qOut, end: qEnd };
+  });
+  const troughQIdx = qCardData.reduce((mi, row, i, arr) => row.end < arr[mi].end ? i : mi, 0);
+
+  // Quarterly Cash Balance Walk — core vs one-time split
+  let qWalkRunning = totalLiquid;
+  const qWalkData = CF_Q_DEFS.map((q) => {
+    const qStart = qWalkRunning;
+    const qFlows = cashFlows.filter((cf) => {
+      const d = new Date(cf.date);
+      return d.getFullYear() === 2026 && q.months.includes(d.getMonth());
+    });
+    const inflow    = qFlows.filter(cf => cf.type === "inflow").reduce((s,cf) => s + Number(cf.amount), 0);
+    const coreOut   = qFlows.filter(cf => cf.type === "outflow" && ["housing","living_expenses"].includes(cf.category ?? "")).reduce((s,cf) => s + Number(cf.amount), 0);
+    const oneTimeOut= qFlows.filter(cf => cf.type === "outflow" && !["housing","living_expenses"].includes(cf.category ?? "")).reduce((s,cf) => s + Number(cf.amount), 0);
+    const qEnd = qStart + inflow - coreOut - oneTimeOut;
+    qWalkRunning = qEnd;
+    return { key: q.key, label: q.label, start: qStart, inflow, coreOut, oneTimeOut, end: qEnd };
+  });
+
+  const RESERVE_FLOOR = 194196;
+  const fmtQK = (v: number) => `$${Math.round(Math.abs(v)).toLocaleString()}`;
+
+  // ── Balance forecast for Chart B ─────────────────────────────────────────
+  const balanceForecastData = CF_MONTHS.map((m, i) => ({
+    label: m.label,
+    balance: Math.round(totalLiquid + cumulativeByMonth[i]),
+    floor: RESERVE_FLOOR,
+  }));
 
   function medianOf(arr: number[]): number {
     const s = [...arr].sort((a, b) => a - b);
@@ -2783,502 +2840,1060 @@ function CashFlowForecastView({
     cumulative: cumulativeByMonth[i],
   }));
 
+  // ── Cumulative chart data: split into surplus / deficit areas ─────────────
+  const cumulMin = Math.min(...cumulativeByMonth, 0);
+  const cumulMax = Math.max(...cumulativeByMonth, 0);
+  const cumulChartData = CF_MONTHS.map((m, i) => ({
+    label: m.label,
+    surplus: Math.max(0, cumulativeByMonth[i]),
+    deficit: Math.min(0, cumulativeByMonth[i]),
+    value:   cumulativeByMonth[i],
+  }));
+  // Y-axis ceiling: cap at $75K so the trough has visual breathing room
+  // without wasting vertical space above the final positive reading.
+  const cumulDomainMax = Math.max(cumulMax, 75000);
+
+  // Gradient stop fraction — uses ACTUAL data bounds, NOT the display domain.
+  // Proof: the SVG bounding-box of the rendered Area path spans [cumulMax → cumulMin]
+  // in data space; the display domain cancels out algebraically.
+  //   stop = (box_top_data − 0) / (box_top_data − box_bottom_data)
+  //        = cumulMax / (cumulMax − cumulMin)
+  const cumulZeroFrac = (cumulMax - cumulMin) === 0 ? 0.5
+    : cumulMax / (cumulMax - cumulMin);
+
+  // Investment properties cross-section subtotal
+
+  // Compact column definitions: Jan/Feb/Mar | Q2/Q3/Q4 | Annual
+  const tcolDefs = [
+    { l: "Jan",  isMo: true,  isQ: false, isFirstQ: false, isAnn: false, isFirst: true,  getV: (v: number[]) => v[0] ?? 0 },
+    { l: "Feb",  isMo: true,  isQ: false, isFirstQ: false, isAnn: false, isFirst: false, getV: (v: number[]) => v[1] ?? 0 },
+    { l: "Mar",  isMo: true,  isQ: false, isFirstQ: false, isAnn: false, isFirst: false, getV: (v: number[]) => v[2] ?? 0 },
+    { l: "Q2",   isMo: false, isQ: true,  isFirstQ: true,  isAnn: false, isFirst: false, getV: (v: number[]) => (v[3]??0)+(v[4]??0)+(v[5]??0) },
+    { l: "Q3",   isMo: false, isQ: true,  isFirstQ: false, isAnn: false, isFirst: false, getV: (v: number[]) => (v[6]??0)+(v[7]??0)+(v[8]??0) },
+    { l: "Q4",   isMo: false, isQ: true,  isFirstQ: false, isAnn: false, isFirst: false, getV: (v: number[]) => (v[9]??0)+(v[10]??0)+(v[11]??0) },
+    { l: "2026", isMo: false, isQ: false, isFirstQ: false, isAnn: true,  isFirst: false, getV: (v: number[]) => v.reduce((s, x) => s + x, 0) },
+  ];
+
+  // Cumulative snapshots at end of each compact period
+  const cumSnap = [
+    cumulativeByMonth[0],   // Jan
+    cumulativeByMonth[1],   // Feb
+    cumulativeByMonth[2],   // Mar
+    cumulativeByMonth[5],   // Q2 end (Jun)
+    cumulativeByMonth[8],   // Q3 end (Sep)
+    cumulativeByMonth[11],  // Q4 end (Dec)
+    cumulativeByMonth[11],  // Annual (same as Q4)
+  ];
+  const troughSnap = Math.min(...cumSnap);
+
+  // Pass 2: fill in total rows that depend on derived arrays
+  vals["total_expenses"] = outflowByMonth;
+  vals["total_net"]      = netByMonth;
+  // cumulative uses cumSnap (end-of-period snapshots, not sums) — stored separately
+  // vals["total_cum"] is intentionally left as placeholder; renderer reads cumSnap directly
+
+
+  // Table cell formatters
+  const cfFi = (v: number): React.ReactNode => {
+    if (v === 0) return <span style={{ color: "hsl(152,8%,28%)" }}>—</span>;
+    return v < 0
+      ? `(${Math.round(Math.abs(v)).toLocaleString()})`
+      : `${Math.round(v).toLocaleString()}`;
+  };
+  const cfFs = (v: number): React.ReactNode => {
+    if (v === 0) return <span style={{ color: "hsl(152,8%,28%)" }}>—</span>;
+    const abs = Math.round(Math.abs(v)).toLocaleString();
+    const col = v > 0 ? "var(--intel-positive)" : "var(--intel-negative)";
+    return <strong><span style={{ color: col }}>{v < 0 ? `($${abs})` : `$${abs}`}</span></strong>;
+  };
+  const cfFc = (v: number): React.ReactNode => {
+    if (v === 0) return <span style={{ color: "hsl(152,8%,28%)" }}>—</span>;
+    return v < 0
+      ? `(${Math.round(Math.abs(v)).toLocaleString()})`
+      : `${Math.round(v).toLocaleString()}`;
+  };
+  const cfNetFmt = (v: number): React.ReactNode => {
+    if (v === 0) return "—";
+    const abs = Math.round(Math.abs(v)).toLocaleString();
+    const col = v > 0 ? "var(--intel-positive)" : "var(--intel-negative)";
+    return <strong><span style={{ color: col }}>{v < 0 ? `($${abs})` : `+$${abs}`}</span></strong>;
+  };
+
+  // Column background by group
+  const colBg = (col: typeof tcolDefs[number], altRow: boolean): string => {
+    if (col.isAnn) return "#162843";
+    if (col.isQ)   return altRow ? "#122038" : "#0f1e33";
+    return altRow ? "#122038" : "#0f1e33";
+  };
+  const colBorderL = (col: typeof tcolDefs[number]): string => {
+    if (col.isFirst)  return "2px solid #1e3352";
+    if (col.isFirstQ) return "3px solid #2a4a6e";   // thick blue: Mar → Q2
+    if (col.isQ)      return "1px solid #1e3352";   // lighter for Q3/Q4
+    if (col.isAnn)    return "3px solid #2a5a70";   // thick teal-navy: Q4 → 2026
+    return "none";
+  };
+  const subColBg = (col: typeof tcolDefs[number]): string => {
+    if (col.isAnn) return "#1a2d47";
+    if (col.isQ)   return "#1a2d47";
+    return "#162843";
+  };
+
+  // ── Design tokens ─────────────────────────────────────────────────────────
+  const CF2 = {
+    bg:       "#141c2b",
+    card:     "#1e2838",
+    elevated: "#1a2433",
+    border:   "rgba(255,255,255,0.08)",
+    divider:  "rgba(255,255,255,0.06)",
+    txt:      "rgba(255,255,255,0.9)",
+    txt2:     "rgba(255,255,255,0.85)",
+    txtMuted: "rgba(255,255,255,0.6)",
+    txtDim:   "rgba(255,255,255,0.5)",
+    green:    "#5ecc8a",
+    amber:    "#ffc83c",
+    red:      "#ff6464",
+    gold:     "#ffc83c",
+    INTER:    "Inter, system-ui, sans-serif",
+    SERIF:    "'Instrument Serif', Georgia, serif",
+  };
+
+  // ── Anomaly cell detection ─────────────────────────────────────────────────
+  const anomalyCell = (rowVals: number[], colIdx: number): boolean => {
+    const v = rowVals[colIdx] ?? 0;
+    if (Math.abs(v) < 12000) return false;
+    const nonZeroCount = rowVals.filter(x => Math.abs(x) >= 1000).length;
+    return nonZeroCount <= 4;
+  };
+
   return (
-    <div className="space-y-5">
-      {/* ── CFO Hero Bar ─────────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-border overflow-hidden bg-card shadow-sm">
-        {/* Header row */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-2.5">
-            <Activity className="w-4 h-4 text-muted-foreground" />
-            <p className="font-display font-bold text-sm text-foreground">Cash Flow Forecast · 2026</p>
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground bg-muted px-2 py-0.5 rounded-md">YTD Projection</span>
-          </div>
-          <AddCashFlowModal clientId={clientId} />
+    <div style={{ overflow:"hidden", background:CF2.bg, display:"flex", flexDirection:"column" as const, height:"100vh", minHeight:0 }}>
+
+      {/* ── CSS ─────────────────────────────────────────────────────────────────── */}
+      <style>{`
+        @keyframes guruBreathe  { 0%,100%{opacity:1}    50%{opacity:0.4} }
+        @keyframes livePulse    { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.25;transform:scale(0.5)} }
+        @keyframes glowPulse    { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        @keyframes alertDot     { 0%,100%{box-shadow:0 0 8px rgba(94,204,138,0.4)} 50%{box-shadow:0 0 14px rgba(94,204,138,0.7)} }
+        @keyframes tickerItem   { 0%{opacity:0;transform:translateY(4px)} 6%,28%{opacity:1;transform:translateY(0)} 33%,100%{opacity:0;transform:translateY(-5px)} }
+        @keyframes scanLine     { 0%{left:-60%} 100%{left:130%} }
+        @keyframes borderRunGreen { 0%,100%{box-shadow:3px 0 10px rgba(94,204,138,0.55),0 0 0 1px rgba(94,204,138,0.28)} 25%{box-shadow:0 3px 10px rgba(94,204,138,0.55),0 0 0 1px rgba(94,204,138,0.28)} 50%{box-shadow:-3px 0 10px rgba(94,204,138,0.55),0 0 0 1px rgba(94,204,138,0.28)} 75%{box-shadow:0 -3px 10px rgba(94,204,138,0.55),0 0 0 1px rgba(94,204,138,0.28)} }
+        @keyframes borderRunAmber { 0%,100%{box-shadow:3px 0 10px rgba(255,200,60,0.55),0 0 0 1px rgba(255,200,60,0.28)} 25%{box-shadow:0 3px 10px rgba(255,200,60,0.55),0 0 0 1px rgba(255,200,60,0.28)} 50%{box-shadow:-3px 0 10px rgba(255,200,60,0.55),0 0 0 1px rgba(255,200,60,0.28)} 75%{box-shadow:0 -3px 10px rgba(255,200,60,0.55),0 0 0 1px rgba(255,200,60,0.28)} }
+        @keyframes borderRunBlue  { 0%,100%{box-shadow:3px 0 10px rgba(91,143,204,0.65),0 0 0 1px rgba(91,143,204,0.35)} 25%{box-shadow:0 3px 10px rgba(91,143,204,0.65),0 0 0 1px rgba(91,143,204,0.35)} 50%{box-shadow:-3px 0 10px rgba(91,143,204,0.65),0 0 0 1px rgba(91,143,204,0.35)} 75%{box-shadow:0 -3px 10px rgba(91,143,204,0.65),0 0 0 1px rgba(91,143,204,0.35)} }
+        .cf-chart-wrap { transition: box-shadow 0.3s ease, border-color 0.3s ease; border-radius:8px; }
+        .cf-chart-wrap.glow-cf  { box-shadow:0 0 28px rgba(255,100,100,0.12); border-color:rgba(255,100,100,0.25) !important; }
+        .cf-chart-wrap.glow-liq { box-shadow:0 0 28px rgba(255,200,60,0.12);  border-color:rgba(255,200,60,0.25)  !important; }
+        .model-bar { cursor:pointer; transition: background 0.15s, border-color 0.15s; }
+        .model-bar:hover { background: #243040 !important; border-color: rgba(255,255,255,0.12) !important; }
+      `}</style>
+
+      {/* ── 1. PAGE HEADER ───────────────────────────────────────────────────────── */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 20px", borderBottom:"1px solid rgba(42,74,110,0.4)", flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+          <span style={{ fontFamily:"'Playfair Display', Georgia, serif", fontSize:20, fontWeight:500, letterSpacing:"0.06em", color:"rgba(255,255,255,0.9)" }}>Cashflow</span>
+          <span style={{ width:1, height:12, background:"rgba(42,74,110,0.6)", display:"inline-block" }} />
+          <span style={{ fontFamily:CF2.INTER, fontSize:11, color:"rgba(255,255,255,0.65)" }}>Sarah &amp; Michael Kessler · Jan–Dec 2026</span>
         </div>
-
-        {/* Hero primary KPI */}
-        <div className="px-5 pt-4 pb-3 border-b border-border/60">
-          <div className="flex items-end gap-4">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">12-Month Net Cash Flow</p>
-              <p
-                className={`text-4xl font-extrabold tabular-nums leading-tight mt-0.5 ${heroNetPos ? "text-emerald-600" : "text-rose-600"}`}
-                data-testid="hero-annual-net"
-              >
-                {heroNetPos ? "+" : ""}{fmt(Math.abs(annualNet), true)}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Projected surplus / deficit · Jan–Dec 2026</p>
-            </div>
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold flex-shrink-0 mb-1 ${heroNetPos ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800" : "bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-800"}`}>
-              {heroNetPos ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-              {heroNetPos ? "Cash Positive" : "Cash Negative"}
-            </div>
-          </div>
-        </div>
-
-        {/* KPI tiles row */}
-        <div className="grid grid-cols-5 divide-x divide-border/60">
-          {/* Avg Monthly Net */}
-          <div className="px-4 py-3 flex flex-col gap-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Avg Monthly Net</p>
-            <p className={`text-xl font-extrabold tabular-nums leading-none ${annualNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {annualNet >= 0 ? "+" : ""}{fmt(Math.round(annualNet / 12), true)}
-            </p>
-            <p className="text-[9px] text-muted-foreground">net cash flow / mo</p>
-          </div>
-
-          {/* Monthly Burn */}
-          <div className="px-4 py-3 flex flex-col gap-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly Burn</p>
-            <p className="text-xl font-extrabold tabular-nums leading-none text-[#e11d48]">
-              {fmt(heroMonthlyBurn, true)}
-            </p>
-            <p className="text-[9px] text-muted-foreground">avg outflows / mo</p>
-          </div>
-
-          {/* Cash Runway */}
-          <div className="px-4 py-3 flex flex-col gap-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Cash Runway</p>
-            <p className={`text-xl font-extrabold tabular-nums leading-none ${heroRunway >= 12 ? "text-emerald-600" : heroRunway >= 6 ? "text-amber-600" : "text-rose-600"}`}>
-              {heroRunway.toFixed(1)}
-            </p>
-            <p className="text-[9px] text-muted-foreground">months of expenses</p>
-          </div>
-
-          {/* Coverage */}
-          <div className="px-4 py-3 flex flex-col gap-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Coverage</p>
-            <p className={`text-xl font-extrabold tabular-nums leading-none ${heroCoverageOk ? "text-emerald-600" : "text-rose-600"}`}>
-              {heroCoveragePct > 999 ? "—" : `${heroCoveragePct.toFixed(0)}%`}
-            </p>
-            <div className="flex items-center gap-1 mt-0.5">
-              {heroCoverageOk
-                ? <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 flex-shrink-0" />
-                : <AlertTriangle className="w-2.5 h-2.5 text-rose-500 flex-shrink-0" />}
-              <p className="text-[9px] text-muted-foreground">{heroCoverageOk ? "fully funded" : "shortfall risk"}</p>
-            </div>
-          </div>
-
-          {/* Trough */}
-          <div className="px-4 py-3 flex flex-col gap-0.5">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Trough</p>
-            <p className={`text-xl font-extrabold tabular-nums leading-none ${heroTroughValue >= 0 ? "text-foreground" : "text-rose-600"}`}>
-              {heroTroughValue >= 0 ? "+" : ""}{fmt(Math.abs(heroTroughValue), true)}
-            </p>
-            <p className="text-[9px] text-muted-foreground">lowest point · {heroTroughLabel}</p>
-          </div>
-
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ width:5, height:5, borderRadius:"50%", background:"hsl(152,40%,48%)", display:"inline-block", animation:"livePulse 2s ease-in-out infinite" }} />
+          <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:500, color:"rgba(90,154,126,0.5)", letterSpacing:"0.04em" }}>Live</span>
         </div>
       </div>
-      {/* Cash Balance Walk — waterfall bridge chart */}
-      {(() => {
-        const Q_DEFS = [
-          { qLabel: "First Quarter",  months: [0, 1, 2],  endName: "Mar 31", qIndex: 0 },
-          { qLabel: "Second Quarter", months: [3, 4, 5],  endName: "Jun 30", qIndex: 1 },
-          { qLabel: "Third Quarter",  months: [6, 7, 8],  endName: "Sep 30", qIndex: 2 },
-          { qLabel: "Fourth Quarter", months: [9, 10, 11], endName: "Dec 31", qIndex: 3 },
-        ];
 
-        interface WFEntry {
-          name: string;
-          type: "balance" | "income" | "core" | "onetime";
-          invisible: number;
-          incomeBar: number;
-          coreBar: number;
-          onetimeBar: number;
-          balanceBar: number;
-          actual: number;
-          qIndex: number;
-        }
+      {/* ── SCROLLABLE BODY ──────────────────────────────────────────────────────── */}
+      <div style={{ flex:1, overflowY:"auto" as const, overflowX:"hidden" as const }}>
+        <div style={{ padding:"16px 20px", display:"flex", flexDirection:"column" as const, gap:12 }}>
 
-        const BLUE = "#1d4ed8";
-        const GREEN_BAR = "#16a34a";
-        const CORE_RED = "#dc2626";
-        const ONE_TIME_RED = "#ea580c";
+          {/* ── 2. GURU DETECTIONS BANNER ─────────────────────────────────────────── */}
+          {(()=>{
+            const detections = [
+              {
+                id:      "sync",
+                category:"DATA SYNC COMPLETE",
+                title:   "DATA SYNC COMPLETE",
+                lines:   ["Balances refreshed Dec 29", "Bonus inflow detected"],
+                timestamp:"2 days ago",
+                badge:   "LIVE",
+                badgeColor:"#5ecc8a",
+                badgeBorder:"rgba(94,204,138,0.35)",
+                badgeBg:"rgba(94,204,138,0.08)",
+                glowColor:"rgba(94,204,138,0.06)",
+                borderAnim:"borderRunGreen 4s ease-in-out infinite",
+                borderDelay:"0s",
+                chart:   null as ("liq"|"cf"|null),
+                pulseDot: true,
+              },
+              // "liq" is rendered separately as the hero card — not in this array
 
-        const bars: WFEntry[] = [];
-        let running = totalLiquid;
+              {
+                id:      "april",
+                category:"CASH OUTFLOW · APRIL",
+                title:   "APRIL UPCOMING · HIGH EXPENSES",
+                lines:   ["$57K commitment cluster", "Tuition, federal taxes, property tax"],
+                timestamp:"4 days ago",
+                badge:   "ACTION",
+                badgeColor:"#ffc83c",
+                badgeBorder:"rgba(255,200,60,0.35)",
+                badgeBg:"rgba(255,200,60,0.08)",
+                glowColor:"rgba(255,200,60,0.05)",
+                borderAnim:"borderRunAmber 4s ease-in-out infinite",
+                borderDelay:"2s",
+                chart:   "cf" as ("liq"|"cf"|null),
+                scrollTarget: "chart-cf",
+                arrowLabel: "Monthly Cash Flow →",
+                pulseDot: false,
+              },
+              {
+                id:      "nov",
+                category:"CASH OUTFLOW · THROUGH NOV",
+                title:   "CASH OUTFLOW POSITION THROUGH NOVEMBER",
+                lines:   ["Ample liquidity to cover outflows"],
+                timestamp:"12 hours ago",
+                badge:   "WATCH",
+                badgeColor:"#5b8fcc",
+                badgeBorder:"rgba(91,143,204,0.35)",
+                badgeBg:"rgba(91,143,204,0.08)",
+                glowColor:"rgba(91,143,204,0.05)",
+                borderAnim:"borderRunBlue 4s ease-in-out infinite",
+                borderDelay:"3s",
+                chart:   "cf" as ("liq"|"cf"|null),
+                scrollTarget: "chart-cf",
+                arrowLabel: "Cumulative Cash Flow →",
+                pulseDot: false,
+              },
+            ];
+            return (
+              <div style={{ position:"relative", background:"#3a5580", borderRadius:8, overflow:"hidden" }}>
+                {/* Ambient glow */}
+                <div style={{ position:"absolute", top:-40, left:-40, width:300, height:200, background:"radial-gradient(ellipse at center, rgba(100,160,240,0.15) 0%, rgba(80,140,220,0.06) 40%, transparent 70%)", pointerEvents:"none", animation:"glowPulse 4s ease-in-out infinite" }} />
+                {/* Top accent line */}
+                <div style={{ position:"absolute", top:0, left:0, width:"100%", height:1, background:"linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)", pointerEvents:"none" }} />
+                {/* ── Thin ticker row ── */}
+                <div style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 18px 4px", borderBottom:"1px solid rgba(255,255,255,0.08)", overflow:"hidden", minHeight:22 }}>
+                  {/* Moving scan line */}
+                  <div style={{ position:"absolute", top:0, left:0, width:"35%", height:"100%", background:"linear-gradient(90deg, transparent 0%, rgba(180,210,255,0.07) 50%, transparent 100%)", pointerEvents:"none", animation:"scanLine 3.5s linear infinite" }} />
+                  {/* Ticker text — 3 items, each absolutely positioned, cycling via CSS */}
+                  <div style={{ position:"relative", height:13, flex:1, overflow:"hidden" }}>
+                    {([
+                      { text:"▶  System scan active", delay:"0s" },
+                      { text:"◈  4 alerts detected",  delay:"3s" },
+                      { text:"◷  Last scan 4s ago",   delay:"6s" },
+                    ] as {text:string; delay:string}[]).map((item) => (
+                      <span
+                        key={item.text}
+                        style={{
+                          position:"absolute", top:0, left:0,
+                          fontFamily:CF2.INTER, fontSize:9, fontWeight:600,
+                          textTransform:"uppercase" as const, letterSpacing:"0.12em",
+                          color:"rgba(180,210,255,0.85)",
+                          whiteSpace:"nowrap" as const,
+                          lineHeight:"13px",
+                          animation:`tickerItem 9s ease-in-out infinite`,
+                          animationDelay: item.delay,
+                          animationFillMode:"both" as const,
+                        }}
+                      >{item.text}</span>
+                    ))}
+                  </div>
+                  <div style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.3)", letterSpacing:"0.06em", textTransform:"uppercase" as const, flexShrink:0 }}>GURU AI</div>
+                </div>
+                {/* ── Main header row ── */}
+                <div style={{ position:"relative", display:"flex", alignItems:"center", padding:"8px 18px 7px" }}>
+                  <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", display:"inline-block", flexShrink:0, animation:"alertDot 2s ease-in-out infinite", marginRight:8 }} />
+                  <span style={{ fontFamily:CF2.INTER, fontSize:12, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.1em", color:"rgba(180,215,255,0.95)", lineHeight:1 }}>GURU DETECTION SYSTEM</span>
+                  <span style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.3)", letterSpacing:"0.04em", marginLeft:"auto" }}>4 active · last scan 4s ago</span>
+                </div>
+                {/* ── HERO: Excess Liquidity (full-width, big numbers) ─────────── */}
+                {(()=>{
+                  const excessLiqAmt  = Math.max(0, totalLiquid + heroTroughValue);
+                  const deployableAmt = Math.round(excessLiqAmt * 0.623);
+                  const potentialInc  = Math.round(deployableAmt * 0.0696);
+                  const liqIsActive   = alertHighlight === "liq";
+                  return (
+                    <div
+                      onClick={()=>{
+                        setAlertHighlight(h => h === "liq" ? null : "liq");
+                        const el = document.getElementById("chart-liq");
+                        if(el) setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),80);
+                      }}
+                      style={{
+                        position:"relative",
+                        margin:"0 14px 8px",
+                        padding:"14px 18px 14px",
+                        background: liqIsActive ? "rgba(0,0,0,0.38)" : "rgba(0,0,0,0.22)",
+                        borderRadius:7,
+                        cursor:"pointer",
+                        overflow:"hidden",
+                        transition:"background 0.15s",
+                        animation:"borderRunGreen 4s ease-in-out infinite",
+                        animationDelay:"1s",
+                        borderLeft:"2.5px solid rgba(94,204,138,0.5)",
+                      }}
+                    >
+                      {/* Ambient glow */}
+                      <div style={{ position:"absolute", top:-20, right:-20, width:200, height:140, background:"radial-gradient(ellipse at center, rgba(94,204,138,0.08) 0%, transparent 70%)", pointerEvents:"none" }} />
+                      {/* Top row: category label + timestamp */}
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                          <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", display:"inline-block", flexShrink:0, animation:"alertDot 2s ease-in-out infinite" }} />
+                          <span style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.12em", color:"rgba(94,204,138,0.9)" }}>LIQUIDITY SIGNAL</span>
+                        </div>
+                        <span style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.28)", letterSpacing:"0.02em" }}>6 hours ago</span>
+                      </div>
+                      {/* Title */}
+                      <div style={{ fontFamily:CF2.INTER, fontSize:13, fontWeight:700, color:"rgba(180,215,255,0.95)", letterSpacing:"0.01em", marginBottom:14 }}>
+                        EXCESS LIQUIDITY DETECTED
+                      </div>
+                      {/* Hero numbers row */}
+                      <div style={{ display:"flex", alignItems:"flex-end", gap:0, marginBottom:12 }}>
+                        {/* Left: Excess Liquidity */}
+                        <div style={{ flex:1, paddingRight:20, borderRight:"1px solid rgba(255,255,255,0.08)" }}>
+                          <div style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(255,255,255,0.38)", marginBottom:4 }}>Excess Liquidity</div>
+                          <div style={{ fontFamily:CF2.INTER, fontSize:36, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const, letterSpacing:"-0.01em" }}>
+                            {`$${excessLiqAmt >= 1000000 ? (excessLiqAmt/1000000).toFixed(2)+"M" : Math.round(excessLiqAmt/1000)+"K"}`}
+                          </div>
+                          <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.45)", marginTop:5, lineHeight:1.4 }}>
+                            Above reserve floor &nbsp;·&nbsp; <span style={{ color:"rgba(94,204,138,0.7)" }}>{`$${Math.round(deployableAmt/1000)}K deployable`}</span>
+                          </div>
+                        </div>
+                        {/* Right: Potential Income Pickup */}
+                        <div style={{ flex:1, paddingLeft:20 }}>
+                          <div style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(255,255,255,0.38)", marginBottom:4 }}>Potential Income Pickup</div>
+                          <div style={{ fontFamily:CF2.INTER, fontSize:36, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const, letterSpacing:"-0.01em" }}>
+                            {`+$${potentialInc >= 10000 ? (potentialInc/1000).toFixed(1)+"K" : potentialInc.toLocaleString()}`}
+                            <span style={{ fontSize:14, fontWeight:400, color:"rgba(94,204,138,0.7)", marginLeft:3 }}>/yr</span>
+                          </div>
+                          <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.45)", marginTop:5, lineHeight:1.4 }}>
+                            If deployed at current AT yields &nbsp;·&nbsp; <span style={{ color:"rgba(94,204,138,0.7)" }}>~7% after-tax</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Footer: badge + arrow */}
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:6 }}>
+                        <div style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 9px", borderRadius:4, border:"1px solid rgba(94,204,138,0.35)", background:"rgba(94,204,138,0.08)" }}>
+                          <span style={{ fontFamily:CF2.INTER, fontSize:9.5, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.06em", color:"#5ecc8a" }}>OPPORTUNITY</span>
+                        </div>
+                        <div style={{ fontFamily:CF2.INTER, fontSize:9.5, fontWeight:600, color:"rgba(180,215,255,0.5)", letterSpacing:"0.03em", display:"flex", alignItems:"center", gap:2 }}>
+                          <span>Liquidity Runway →</span>
+                          <span style={{ fontSize:9, opacity:0.75 }}>↗</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* Detection cards grid — 3 smaller cards below the hero */}
+                <div style={{ position:"relative", display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, padding:"0 14px 14px" }}>
+                  {detections.map((d) => {
+                    const isActive = alertHighlight === d.chart && d.chart !== null;
+                    return (
+                      <div
+                        key={d.id}
+                        onClick={()=>{
+                          if(d.chart) setAlertHighlight(h => h === d.chart ? null : d.chart);
+                          const st = (d as any).scrollTarget;
+                          if(st){ const el = document.getElementById(st); if(el) setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),80); }
+                        }}
+                        style={{
+                          position:"relative",
+                          padding:"8px 12px 8px",
+                          background: isActive ? "rgba(0,0,0,0.32)" : "rgba(0,0,0,0.18)",
+                          borderRadius:6,
+                          cursor: d.chart ? "pointer" : "default",
+                          display:"flex",
+                          flexDirection:"column" as const,
+                          transition:"background 0.15s",
+                          overflow:"hidden",
+                          animation: d.borderAnim,
+                          animationDelay: d.borderDelay,
+                        }}
+                      >
+                        {/* Timestamp */}
+                        <div style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.28)", letterSpacing:"0.02em", marginBottom:4, textAlign:"right" as const }}>{d.timestamp}</div>
+                        {/* Detection title — bright blue */}
+                        <div style={{ fontFamily:CF2.INTER, fontSize:11, fontWeight:700, color:"rgba(180,215,255,0.95)", lineHeight:1.25, marginBottom:5, letterSpacing:"0.01em" }}>{d.title}</div>
+                        {/* Detail lines */}
+                        <div style={{ display:"flex", flexDirection:"column" as const, gap:2, flex:1, marginBottom:7 }}>
+                          {d.lines.map((line, i) => (
+                            <div key={i} style={{ fontFamily:CF2.INTER, fontSize:10.5, color:"rgba(255,255,255,0.6)", lineHeight:1.3, display:"flex", alignItems:"flex-start", gap:5 }}>
+                              <span style={{ color:"rgba(255,255,255,0.25)", flexShrink:0, marginTop:1 }}>·</span>
+                              <span>{line}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Badge + Arrow in same row */}
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:6 }}>
+                          <div style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 9px", borderRadius:4, border:`1px solid ${d.badgeBorder}`, background:d.badgeBg, flexShrink:0 }}>
+                            {d.pulseDot && (
+                              <span style={{ width:5, height:5, borderRadius:"50%", background:d.badgeColor, display:"inline-block", flexShrink:0, animation:"alertDot 2s ease-in-out infinite" }} />
+                            )}
+                            <span style={{ fontFamily:CF2.INTER, fontSize:9.5, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.06em", color:d.badgeColor }}>{d.badge}</span>
+                          </div>
+                          {(d as any).arrowLabel && (
+                            <div style={{ fontFamily:CF2.INTER, fontSize:9.5, fontWeight:600, color:"rgba(180,215,255,0.5)", letterSpacing:"0.03em", display:"flex", alignItems:"center", gap:2, flexShrink:0 }}>
+                              <span>{(d as any).arrowLabel}</span>
+                              <span style={{ fontSize:9, opacity:0.75 }}>↗</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
-        bars.push({ name: "Opening", type: "balance", invisible: 0, incomeBar: 0, coreBar: 0, onetimeBar: 0, balanceBar: running, actual: running, qIndex: -1 });
+          {/* ── 3. KPI TABLE ─────────────────────────────────────────────────────────── */}
+          {(()=>{
+            const isPos = annualNet >= 0;
+            const sortedNet = [...netByMonth].sort((a,b)=>a-b);
+            const medianNet = netByMonth.length % 2 === 1
+              ? sortedNet[Math.floor(netByMonth.length/2)]
+              : (sortedNet[netByMonth.length/2-1] + sortedNet[netByMonth.length/2]) / 2;
+            const medianIsPos = medianNet >= 0;
+            const surplusMonths = netByMonth.filter(v => v > 0).length;
+            const paren = (n:number) => n < 0
+              ? `($${Math.round(Math.abs(n)).toLocaleString()})`
+              : `$${Math.round(n).toLocaleString()}`;
+            const signedParen = (n:number) => n < 0
+              ? `($${Math.round(Math.abs(n)).toLocaleString()})`
+              : `+$${Math.round(n).toLocaleString()}`;
+            const TABLE_KPIS: { label:string; value:string; valueColor:string; note:string; valueSub?:string }[] = [
+              { label:"Monthly Burn",              value:paren(heroMonthlyBurn),                                          valueColor:"rgba(255,255,255,0.82)", note:"Avg monthly outflows" },
+              { label:"Median Monthly Cash Flow",  value:signedParen(medianNet),                                          valueColor:medianIsPos?"rgba(255,255,255,0.82)":CF2.red,            note:"Median monthly net" },
+              { label:"Income Coverage",           value:heroCoveragePct>999?"—":`${Math.round(heroCoveragePct)}%`,       valueColor:heroCoverageOk?CF2.green:CF2.red,                        note:"Income / expenses" },
+              { label:"Months in Surplus",         value:`${surplusMonths} of 12`,                                        valueColor:surplusMonths>=8?CF2.green:surplusMonths>=5?CF2.amber:CF2.red, note:"Months with positive net CF" },
+              { label:"Cash Flow Trough",          value:paren(heroTroughValue),                                          valueColor:CF2.amber,               note:"Cumulative low point",    valueSub:heroTroughLabel },
+              { label:"Liquid Runway",             value:`${heroRunway.toFixed(1)} months`,                               valueColor:"rgba(255,255,255,0.82)", note:"Total liquid / burn rate" },
+            ];
+            return (
+              <div style={{ display:"flex", gap:6, alignItems:"stretch" }}>
+                {/* Left: Hero card — Annual Net Cash Flow */}
+                <div style={{ background:CF2.card, border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"16px 20px", flexShrink:0, display:"flex", flexDirection:"column" as const, justifyContent:"center", gap:8, minWidth:200 }}>
+                  <div style={{ fontFamily:CF2.INTER, fontSize:12, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", color:"rgba(255,255,255,0.82)" }}>Annual Net Cash Flow</div>
+                  <div style={{ fontFamily:CF2.INTER, fontSize:34, fontWeight:300, lineHeight:1, color:isPos?CF2.green:CF2.red, fontVariantNumeric:"tabular-nums" }}>{signedParen(annualNet)}</div>
+                  <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.06em", padding:"3px 8px", borderRadius:4, alignSelf:"flex-start", background:isPos?"rgba(94,204,138,0.08)":"rgba(255,100,100,0.08)", border:`1px solid ${isPos?"rgba(94,204,138,0.2)":"rgba(255,100,100,0.2)"}`, color:isPos?CF2.green:CF2.red }}>
+                    {isPos?"▲ Cash positive":"▼ Cash deficit"}
+                  </span>
+                </div>
+                {/* Right: label+note | value | DIV | label+note | value */}
+                <div style={{ flex:1, background:CF2.card, border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, overflow:"hidden" }}>
+                  <table style={{ width:"100%", height:"100%", borderCollapse:"collapse" as const }}>
+                    <tbody>
+                      {[0,2,4].map(i=>(
+                        <tr key={i} style={{ borderBottom: i<4 ? `1px solid ${CF2.divider}` : "none" }}>
+                          {[TABLE_KPIS[i], TABLE_KPIS[i+1]].map((kpi, col)=>(
+                            <React.Fragment key={kpi.label}>
+                              {col===1 && <td style={{ width:1, borderLeft:`1px solid ${CF2.divider}` }}/>}
+                              {/* Label + note cell */}
+                              <td style={{ padding:"9px 6px 8px 14px", verticalAlign:"middle" }}>
+                                <div style={{ fontFamily:CF2.INTER, fontSize:12, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.07em", color:"rgba(255,255,255,0.82)", marginBottom:3, whiteSpace:"nowrap" as const }}>{kpi.label}</div>
+                                <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.35)", lineHeight:1.3, whiteSpace:"nowrap" as const }}>{kpi.note}</div>
+                              </td>
+                              {/* Value cell — right-aligned, bigger number + optional sub-label */}
+                              <td style={{ padding:"9px 16px 8px 4px", verticalAlign:"middle", textAlign:"right" as const, whiteSpace:"nowrap" as const }}>
+                                <div style={{ fontFamily:CF2.INTER, fontSize:18, fontWeight:300, color:kpi.valueColor, fontVariantNumeric:"tabular-nums", lineHeight:1 }}>{kpi.value}</div>
+                                {kpi.valueSub && <div style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.12em", color:kpi.valueColor, opacity:0.7, marginTop:4 }}>{kpi.valueSub}</div>}
+                              </td>
+                            </React.Fragment>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
 
-        Q_DEFS.forEach((q) => {
-          const qIncome   = q.months.reduce((s, mi) => s + (inflowByMonth[mi] ?? 0), 0);
-          const qCore     = q.months.reduce((s, mi) => s + (coreOutflowByMonth[mi] ?? 0), 0);
-          const qOnetime  = q.months.reduce((s, mi) => s + (onetimeOutflowByMonth[mi] ?? 0), 0);
-          const prevRun   = running;
+          {/* ── 4b. MAIN LAYOUT: left charts column + right data column ─────────────── */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1.15fr", gap:10, alignItems:"start" }}>
+          {/* LEFT COLUMN: model button + Cumulative CF + Liquidity Runway */}
+          <div style={{ display:"flex", flexDirection:"column" as const, gap:10 }}>
 
-          bars.push({ name: `Q${q.qIndex + 1} Income`, type: "income", invisible: prevRun, incomeBar: qIncome, coreBar: 0, onetimeBar: 0, balanceBar: 0, actual: qIncome, qIndex: q.qIndex });
-          bars.push({ name: `Q${q.qIndex + 1} Core`, type: "core", invisible: prevRun + qIncome - qCore, incomeBar: 0, coreBar: qCore, onetimeBar: 0, balanceBar: 0, actual: -qCore, qIndex: q.qIndex });
-          bars.push({ name: `Q${q.qIndex + 1} One-Time`, type: "onetime", invisible: prevRun + qIncome - qCore - qOnetime, incomeBar: 0, coreBar: 0, onetimeBar: qOnetime, balanceBar: 0, actual: -qOnetime, qIndex: q.qIndex });
-
-          running = prevRun + qIncome - qCore - qOnetime;
-          bars.push({ name: q.endName, type: "balance", invisible: 0, incomeBar: 0, coreBar: 0, onetimeBar: 0, balanceBar: Math.max(0, running), actual: running, qIndex: q.qIndex });
-        });
-
-        const CustomLabel = (props: any) => {
-          const { x, y, width, value, index } = props;
-          const entry = bars[index] as WFEntry;
-          if (!entry || !value || value === 0) return null;
-          const cx = x + width / 2;
-          let text = "";
-          let color = "";
-          if (entry.type === "balance") {
-            text = fmt(entry.actual, true);
-            color = "#1e40af";
-          } else if (entry.type === "income") {
-            text = `+${fmtK(entry.actual)}`;
-            color = "#15803d";
-          } else if (entry.type === "core") {
-            text = fmtK(entry.actual);
-            color = "#991b1b";
-          } else {
-            text = fmtK(entry.actual);
-            color = "#c2410c";
-          }
-          return (
-            <text
-              x={cx} y={y - 6}
-              textAnchor="middle"
-              fill={color}
-              fontSize={10}
-              fontWeight="800"
-              stroke="white"
-              strokeWidth={3}
-              paintOrder="stroke"
+            {/* ── 12-MONTH MODEL CARD ─────────────── */}
+            <div
+              onClick={() => setModelFullScreen(true)}
+              className="model-bar"
+              style={{ background:"linear-gradient(135deg,#1a3a6b 0%,#163060 60%,#0f2248 100%)", border:"1px solid rgba(91,143,204,0.28)", borderRadius:8, cursor:"pointer", userSelect:"none" as const, position:"relative", overflow:"hidden" }}
+              onMouseEnter={e=>{(e.currentTarget as HTMLDivElement).style.borderColor="rgba(91,143,204,0.55)";}}
+              onMouseLeave={e=>{(e.currentTarget as HTMLDivElement).style.borderColor="rgba(91,143,204,0.28)";}}
             >
-              {text}
-            </text>
-          );
-        };
-
-        const CustomTick = (props: any) => {
-          const { x, y, payload, index } = props;
-          const entry = bars[index] as WFEntry;
-          const isBalance = entry?.type === "balance";
-          return (
-            <g transform={`translate(${x},${y})`}>
-              <text x={0} y={0} dy={12} textAnchor="middle"
-                fill={isBalance ? "#1e40af" : "hsl(var(--muted-foreground))"}
-                fontSize={isBalance ? 10 : 9}
-                fontWeight={isBalance ? 800 : 500}
-              >
-                {payload.value}
-              </text>
-            </g>
-          );
-        };
-
-        const sep30Bar = bars.find((b) => b.name === "Sep 30");
-        const sep30Balance = sep30Bar?.actual ?? 0;
-
-        const Sep30CalloutLabel = (props: any) => {
-          const { viewBox } = props;
-          if (!viewBox) return null;
-          const { x } = viewBox;
-          const W = 174;
-          const H = 36;
-          const lx = x - W / 2;
-          return (
-            <g style={{ cursor: "default" }}>
-              {/* Pill sticker */}
-              <rect
-                x={lx} y={2} width={W} height={H} rx={7}
-                fill="#fef3c7" stroke="#f59e0b" strokeWidth={1.5}
-                onMouseEnter={() => setCalloutHovered(true)}
-                onMouseLeave={() => setCalloutHovered(false)}
-              />
-              <text x={x} y={16} textAnchor="middle" fill="#92400e" fontSize={10.5} fontWeight="900" style={{ pointerEvents: "none" }}>
-                ⚠ Holding too much cash
-              </text>
-              <text x={x} y={30} textAnchor="middle" fill="#b45309" fontSize={9} fontWeight="700" style={{ pointerEvents: "none" }}>
-                {fmt(sep30Balance, true)} at September trough
-              </text>
-              {/* Hover tooltip */}
-              {calloutHovered && (
-                <g>
-                  <rect x={x - 128} y={H + 6} width={256} height={42} rx={7} fill="#1e293b" />
-                  <text x={x} y={H + 22} textAnchor="middle" fill="rgba(255,255,255,0.75)" fontSize={9} fontWeight="600">
-                    Even at trough, expected to hold
-                  </text>
-                  <text x={x} y={H + 38} textAnchor="middle" fill="#fbbf24" fontSize={11} fontWeight="900">
-                    {fmt(sep30Balance, true)} of cash
-                  </text>
-                </g>
-              )}
-            </g>
-          );
-        };
-
-        return (
-          <div className="border border-border rounded-xl overflow-hidden">
-            <div className="px-5 pt-4 pb-2 border-b border-border flex items-start justify-between">
-              <div>
-                <p className="font-display font-bold text-base text-foreground">Cash Balance Walk · 2026</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Operating &amp; Reserve accounts · quarterly movements</p>
+              <div style={{ position:"absolute", top:0, left:0, right:0, height:1, background:"linear-gradient(90deg,rgba(91,143,204,0.6),rgba(91,143,204,0.1) 60%,transparent)", pointerEvents:"none" }} />
+              {/* Top row: icon + title + view cta */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 8px 16px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:24, height:24, borderRadius:5, background:"rgba(91,143,204,0.15)", border:"1px solid rgba(91,143,204,0.25)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:13 }}>⊞</div>
+                  <div style={{ fontFamily:CF2.INTER, fontSize:11, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.1em", color:"rgba(255,255,255,0.92)" }}>12-Month Cash Flow Model</div>
+                </div>
+                <span style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:600, color:"rgba(91,143,204,0.85)", textTransform:"uppercase" as const, letterSpacing:"0.06em", flexShrink:0 }}>Open →</span>
               </div>
-              <div className={`text-2xl font-black tabular-nums pt-0.5 ${annualNet >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                {annualNet >= 0 ? "+" : ""}{fmt(annualNet, true)}
-              </div>
-            </div>
-            <div className="px-3 pb-3 bg-card">
-              {/* Quarter bracket labels */}
-              <div className="flex text-[8px] font-bold uppercase tracking-widest text-slate-400 pt-2 pb-1" style={{ paddingLeft: 8 }}>
-                {Q_DEFS.map((q, qi) => (
-                  <div key={qi} className={`flex-1 text-center border-l border-t pt-1 transition-colors ${hoveredQuarter === qi ? "border-blue-400 text-blue-600 bg-blue-50/40" : "border-slate-200"}`}>
-                    {q.qLabel}
+              {/* Bottom row: 3 live stats */}
+              <div style={{ display:"flex", gap:0, padding:"0 16px 10px 16px" }}>
+                {[
+                  { label:"Annual Income",   value:`$${Math.round(totalIn).toLocaleString()}`,  color:"rgba(94,204,138,0.9)" },
+                  { label:"Annual Expenses",  value:`$${Math.round(totalOut).toLocaleString()}`, color:"rgba(255,255,255,0.5)" },
+                  { label:"Net Cash Flow",    value:(annualNet>=0?"+":"")+`$${Math.round(Math.abs(annualNet)).toLocaleString()}`, color:annualNet>=0?CF2.green:CF2.red },
+                ].map((s,i)=>(
+                  <div key={i} style={{ flex:1, borderLeft: i>0 ? "1px solid rgba(91,143,204,0.2)" : "none", paddingLeft: i>0 ? 12 : 0 }}>
+                    <div style={{ fontFamily:CF2.INTER, fontSize:8, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", color:"rgba(180,210,255,0.4)", marginBottom:2 }}>{s.label}</div>
+                    <div style={{ fontFamily:CF2.INTER, fontSize:13, fontWeight:300, color:s.color, fontVariantNumeric:"tabular-nums" }}>{s.value}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ height: 280 }}>
+            </div>
+
+            {/* Chart A: Cumulative Cash Flow */}
+            <div id="chart-cf" className={`cf-chart-wrap${alertHighlight==="cf" ? " glow-cf" : ""}`} style={{ background:CF2.card, border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"16px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                <span style={{ fontFamily:CF2.INTER, fontSize:12, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.1em", color:"rgba(255,255,255,0.88)" }}>Cumulative Cash Flow Forecast</span>
+                <span style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:5, fontFamily:CF2.INTER, fontSize:10, color:CF2.txtMuted }}>
+                  <span style={{ display:"inline-block", width:16, height:2, background:CF2.amber, borderRadius:1, verticalAlign:"middle" }} />
+                  {heroTroughLabel} trough
+                </span>
+              </div>
+              <div style={{ height:300 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={bars}
-                    margin={{ top: 50, right: 16, left: 4, bottom: 0 }}
-                    barCategoryGap="18%"
-                    onMouseMove={(data: any) => {
-                      if (data?.activePayload?.length) {
-                        const entry = data.activePayload[0].payload as WFEntry;
-                        setHoveredQuarter(entry.qIndex >= 0 ? entry.qIndex : null);
-                      }
-                    }}
-                    onMouseLeave={() => setHoveredQuarter(null)}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" tick={<CustomTick />} axisLine={false} tickLine={false} height={28} />
-                    <YAxis hide={true} domain={[100000, 'auto']} />
-                    <RechartsTooltip
-                      cursor={{ fill: "rgba(99,102,241,0.06)" }}
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const entry = payload[0]?.payload as WFEntry;
-                        if (entry?.name !== "Opening") return null;
-                        const groups = [
-                          { label: "Operating Cash", color: "#1d4ed8", items: reserveItems, total: reserve },
-                          { label: "Reserve / Savings", color: "#d97706", items: yieldItems, total: yieldBucket },
-                          { label: "T-Bills / Short Duration", color: "#0891b2", items: tacticalItems, total: tactical },
-                        ].filter(g => g.total > 0);
+                  <ComposedChart data={cumulChartData} margin={{ top:72, right:12, left:0, bottom:0 }}>
+                    <defs>
+                      {(()=>{
+                        const zp = Math.round(cumulZeroFrac * 100);
+                        // Horizontal stroke: green → red at trough → amber → green (recovery)
+                        const firstNegIdx = cumulativeByMonth.findIndex(v => v < 0);
+                        const negStartPct = firstNegIdx < 0 ? 100 : Math.round((firstNegIdx / (cumulChartData.length - 1)) * 100);
+                        const troughXPct  = Math.round((troughIdx / (cumulChartData.length - 1)) * 100);
+                        const midRecovPct = Math.round(troughXPct + (100 - troughXPct) * 0.45);
                         return (
-                          <div className="bg-white border border-slate-200 rounded-xl shadow-xl p-3 min-w-[220px] text-xs">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Opening Cash Balance</p>
-                            {groups.map((g) => (
-                              <div key={g.label} className="mb-2 last:mb-0">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: g.color }} />
-                                  <span className="font-bold text-slate-600 text-[10px]">{g.label}</span>
-                                  <span className="ml-auto font-black tabular-nums text-slate-800">{fmt(g.total, true)}</span>
-                                </div>
-                                {g.items.map((item, i) => (
-                                  <div key={i} className="flex items-center justify-between pl-3.5 py-0.5 text-[9px] text-slate-500">
-                                    <span className="truncate max-w-[130px]">{item.label}</span>
-                                    <span className="tabular-nums ml-2 flex-shrink-0">{fmt(item.value, true)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ))}
-                            <div className="mt-2 pt-2 border-t border-slate-100 flex justify-between font-black text-[10px] text-slate-800">
-                              <span>Total Liquid</span>
-                              <span className="tabular-nums text-blue-700">{fmt(totalLiquid, true)}</span>
-                            </div>
-                          </div>
+                          <>
+                            {/* Horizontal stroke: green start → red at trough → amber mid-recovery → green end */}
+                            <linearGradient id="cfStrokeGrad" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%"                  stopColor={CF2.green} stopOpacity={1} />
+                              <stop offset={`${negStartPct}%`}   stopColor={CF2.green} stopOpacity={1} />
+                              <stop offset={`${negStartPct+3}%`} stopColor={CF2.red}   stopOpacity={1} />
+                              <stop offset={`${troughXPct}%`}    stopColor={CF2.red}   stopOpacity={1} />
+                              <stop offset={`${midRecovPct}%`}   stopColor={CF2.amber} stopOpacity={1} />
+                              <stop offset="100%"                stopColor={CF2.green} stopOpacity={1} />
+                            </linearGradient>
+                            {/* Vertical fill: vivid green above zero → deep rich red below */}
+                            <linearGradient id="cfFillGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%"                          stopColor={CF2.green} stopOpacity={0.28} />
+                              <stop offset={`${Math.max(0,zp-5)}%`}      stopColor={CF2.green} stopOpacity={0.06} />
+                              <stop offset={`${zp}%`}                    stopColor={CF2.red}   stopOpacity={0.08} />
+                              <stop offset={`${Math.min(zp+30,100)}%`}   stopColor="#c0282a"   stopOpacity={0.45} />
+                              <stop offset="100%"                        stopColor="#8b1a1c"   stopOpacity={0.70} />
+                            </linearGradient>
+                          </>
                         );
-                      }}
+                      })()}
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="rgba(255,255,255,0.06)" />
+                    <XAxis dataKey="label" tick={{ fontSize:10, fill:CF2.txtMuted, fontFamily:"Inter, system-ui, sans-serif", fontWeight:600 }} axisLine={{ stroke:"rgba(255,255,255,0.12)", strokeWidth:1 }} tickLine={false} />
+                    <YAxis
+                      domain={[cumulMin, cumulDomainMax]}
+                      ticks={(() => {
+                        const step = 25000;
+                        const lo = Math.floor(cumulMin / step) * step;
+                        const hi = Math.ceil(cumulDomainMax / step) * step;
+                        const t: number[] = [];
+                        for (let v = lo; v <= hi; v += step) t.push(v);
+                        return t;
+                      })()}
+                      tick={{ fontSize:10, fill:CF2.txtDim, fontFamily:"Inter, system-ui, sans-serif" }}
+                      tickFormatter={(v:number) => v === 0 ? "$0" : v < 0 ? `(${fmt(Math.abs(v))})` : fmt(v)}
+                      axisLine={false} tickLine={false} width={72}
                     />
-                    {/* Sep 30 callout */}
-                    <ReferenceLine x="Sep 30" stroke="transparent" label={<Sep30CalloutLabel />} />
-                    {/* Invisible spacer */}
-                    <Bar dataKey="invisible" stackId="wf" fill="transparent" isAnimationActive={false} />
-                    {/* Income — green */}
-                    <Bar dataKey="incomeBar" stackId="wf" fill={GREEN_BAR} fillOpacity={0.88} isAnimationActive={false} label={<CustomLabel />} />
-                    {/* Core expenses — dark red */}
-                    <Bar dataKey="coreBar" stackId="wf" fill={CORE_RED} fillOpacity={0.88} isAnimationActive={false} label={<CustomLabel />} />
-                    {/* One-time expenses — orange-red */}
-                    <Bar dataKey="onetimeBar" stackId="wf" fill={ONE_TIME_RED} fillOpacity={0.88} isAnimationActive={false} label={<CustomLabel />} />
-                    {/* Balance — blue */}
-                    <Bar dataKey="balanceBar" stackId="wf" fill={BLUE} fillOpacity={0.82} radius={[3, 3, 0, 0]} isAnimationActive animationDuration={900} label={<CustomLabel />} />
-                  </BarChart>
+                    <ReferenceLine y={0} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} />
+                    <Area type="monotone" dataKey="value"
+                      fill="url(#cfFillGrad)" fillOpacity={1}
+                      stroke="url(#cfStrokeGrad)" strokeWidth={3}
+                      dot={(p:any)=>{
+                        const {cx,cy,index}=p;
+                        const decIdx = cumulChartData.length - 1;
+                        const decVal = cumulChartData[decIdx]?.value ?? 0;
+                        if(index===troughIdx){
+                          const lbl=`($${Math.round(Math.abs(heroTroughValue)).toLocaleString()})`;
+                          const tw=Math.max(lbl.length*9+20, 110);
+                          // clamp horizontally
+                          const bx = Math.max(4, cx-tw/2);
+                          // always draw annotation ABOVE the dot
+                          return (
+                            <g key="troughDot">
+                              <circle cx={cx} cy={cy} r={6} fill={CF2.amber} stroke={CF2.bg} strokeWidth={2}/>
+                              <line x1={cx} y1={cy-8} x2={cx} y2={cy-38} stroke="rgba(255,200,60,0.5)" strokeWidth={1.5} strokeDasharray="3 2"/>
+                              <rect x={bx} y={cy-80} width={tw} height={40} rx={4} fill="rgba(8,18,34,0.97)" stroke="rgba(255,200,60,0.5)" strokeWidth={1.5}/>
+                              <text x={bx+tw/2} y={cy-56} textAnchor="middle" fill={CF2.amber} fontSize={18} fontWeight="700" fontFamily="Inter, system-ui, sans-serif">{lbl}</text>
+                              <text x={bx+tw/2} y={cy-43} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize={9} fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.1em">NOV TROUGH</text>
+                            </g>
+                          );
+                        }
+                        return <g key={`e${index}`}/>;
+                      }}
+                      activeDot={{ r:5, fill:CF2.red, stroke:"white", strokeWidth:2 }}
+                      isAnimationActive={false}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{ background:CF2.card, border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, fontSize:12, fontFamily:CF2.INTER, padding:"8px 12px" }}
+                      labelStyle={{ color:"rgba(255,255,255,0.88)", fontSize:12, fontWeight:600, marginBottom:4 }}
+                      itemStyle={{ color:CF2.txtMuted, fontSize:11 }}
+                      labelFormatter={(label:string) => label}
+                      formatter={(v:number)=>[v<0?`($${Math.round(Math.abs(v)).toLocaleString()})`:`+$${Math.round(v).toLocaleString()}`,"Cumulative net cash flow"]}
+                    />
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex items-center gap-5 px-2 pb-1 text-[9px] text-muted-foreground">
-                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: BLUE, opacity: 0.82 }} />Balance</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: GREEN_BAR }} />Income</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: CORE_RED }} />Core Expenses</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-2.5 rounded-sm" style={{ backgroundColor: ONE_TIME_RED }} />One-Time</span>
+            </div>
+
+            {/* Chart B: Liquidity Runway — stacked bar */}
+            <div id="chart-liq" className={`cf-chart-wrap${alertHighlight==="liq" ? " glow-liq" : ""}`} style={{ background:CF2.card, border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"16px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                <span style={{ fontFamily:CF2.INTER, fontSize:12, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.1em", color:"rgba(255,255,255,0.88)" }}>Liquidity Runway Forecast</span>
+                <div style={{ marginLeft:"auto", display:"flex", gap:12 }}>
+                  {([{c:"#5b8fcc",l:"Cash and treasuries balance"},{c:"rgba(94,204,138,0.5)",l:"Reserve floor"}] as const).map(({c,l})=>(
+                    <span key={l} style={{ display:"flex", alignItems:"center", gap:4, fontFamily:CF2.INTER, fontSize:10, color:CF2.txtMuted }}>
+                      <span style={{ width:8, height:8, borderRadius:2, background:c, display:"inline-block" }}/>
+                      {l}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div style={{ height:220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  {(()=>{
+                    const liqData = balanceForecastData.map((d:any)=>({
+                      label: d.label,
+                      floor: RESERVE_FLOOR,
+                      excess: Math.max(0, d.balance - RESERVE_FLOOR),
+                      balance: d.balance,
+                    }));
+                    return (
+                      <BarChart data={liqData} margin={{ top:44, right:10, left:0, bottom:0 }} barCategoryGap="8%">
+                        <defs>
+                          <linearGradient id="liqExcessGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%"   stopColor="#5b8fcc" stopOpacity={0.85} />
+                            <stop offset="100%" stopColor="#3a6090" stopOpacity={0.45} />
+                          </linearGradient>
+                          <linearGradient id="liqFloorGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%"   stopColor="#5ecc8a" stopOpacity={0.32} />
+                            <stop offset="100%" stopColor="#3a9e6a" stopOpacity={0.14} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="label" tick={{ fontSize:10, fill:CF2.txtMuted, fontFamily:"Inter, system-ui, sans-serif", fontWeight:600 }} axisLine={false} tickLine={false} />
+                        <YAxis
+                          tick={{ fontSize:10, fill:CF2.txtDim, fontFamily:"Inter, system-ui, sans-serif" }}
+                          tickFormatter={(v:number)=>fmt(v)}
+                          axisLine={false} tickLine={false} width={72}
+                        />
+                        <ReferenceLine y={RESERVE_FLOOR} stroke="rgba(94,204,138,0.45)" strokeDasharray="5 4" strokeWidth={1.5}
+                          label={{ value:"$194,000 reserve floor", position:"insideTopRight", fill:"rgba(94,204,138,0.6)", fontSize:9, fontFamily:"Inter, system-ui, sans-serif", fontWeight:600 }}
+                        />
+                        <Bar dataKey="floor" stackId="liq" fill="url(#liqFloorGrad)" radius={[0,0,3,3]} isAnimationActive={false} activeBar={{ fill:"rgba(94,204,138,0.55)", stroke:"rgba(94,204,138,0.4)", strokeWidth:1 }} />
+                        <Bar dataKey="excess" stackId="liq" fill="url(#liqExcessGrad)" radius={[3,3,0,0]} isAnimationActive={false} activeBar={{ fill:"#7aabdf", stroke:"rgba(122,171,223,0.4)", strokeWidth:1 }}>
+                          <LabelList content={(props:any)=>{
+                            const { x, y, width, index } = props;
+                            const d = liqData[index];
+                            if(!d) return null;
+                            const minBal = Math.min(...liqData.map((r:any)=>r.balance));
+                            if(d.balance !== minBal) return null;
+                            const lbl = `$${Math.round(d.balance).toLocaleString()}`;
+                            const tw2 = Math.max(lbl.length*9+16, 100);
+                            const cx2 = x + width/2;
+                            const bx2 = Math.max(4, cx2 - tw2/2);
+                            return (
+                              <g key="novLiq">
+                                <line x1={cx2} y1={y-4} x2={cx2} y2={y-30} stroke="rgba(255,200,60,0.4)" strokeWidth={1.5} strokeDasharray="2 2"/>
+                                <rect x={bx2} y={y-68} width={tw2} height={36} rx={4} fill="rgba(8,18,34,0.97)" stroke="rgba(255,200,60,0.45)" strokeWidth={1.5}/>
+                                <text x={cx2} y={y-48} textAnchor="middle" fill="#ffc83c" fontSize={17} fontWeight="700" fontFamily="Inter, system-ui, sans-serif">{lbl}</text>
+                                <text x={cx2} y={y-36} textAnchor="middle" fill="rgba(255,200,60,0.65)" fontSize={9} fontWeight="700" fontFamily="Inter, system-ui, sans-serif" letterSpacing="0.1em">NOV LOW</text>
+                              </g>
+                            );
+                          }} />
+                        </Bar>
+                        <RechartsTooltip
+                          cursor={false}
+                          contentStyle={{ background:"#141c2b", border:"1px solid rgba(91,143,204,0.25)", borderRadius:6, fontSize:11, fontFamily:CF2.INTER, padding:"8px 12px", boxShadow:"0 4px 16px rgba(0,0,0,0.5)" }}
+                          labelStyle={{ color:"rgba(255,255,255,0.55)", fontSize:9, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.08em" }}
+                          itemStyle={{ color:"rgba(255,255,255,0.85)", fontSize:11, padding:"1px 0" }}
+                          formatter={(v:number, name:string)=>{
+                            if(name==="floor") return [`$${Math.round(v).toLocaleString()}`, "Reserve floor"];
+                            if(name==="excess") return [`$${Math.round(v).toLocaleString()}`, "Cash & treasuries"];
+                            return [v, name];
+                          }}
+                        />
+                      </BarChart>
+                    );
+                  })()}
+                </ResponsiveContainer>
+              </div>
+              {/* Reserve floor note */}
+              <div style={{ padding:"8px 16px 10px", borderTop:"1px solid rgba(255,255,255,0.05)", display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ display:"inline-block", width:16, height:1.5, background:"rgba(94,204,138,0.5)", borderRadius:1, flexShrink:0, borderTop:"1.5px dashed rgba(94,204,138,0.5)" }} />
+                <span style={{ fontFamily:CF2.INTER, fontSize:10, color:CF2.txtDim, lineHeight:1.4 }}>
+                  <strong style={{ color:"rgba(94,204,138,0.7)", fontWeight:600 }}>Reserve floor $194K</strong> — minimum liquidity target (3 months core expenses). Balance above this line is available for deployment.
+                </span>
               </div>
             </div>
-          </div>
-        );
-      })()}
-      {/* P&L Detail Table — collapsible groups, sticky header */}
-      {(() => {
-        const groupOf: Record<string, string> = {};
-        const groupSubtotalKey: Record<string, string | null> = {};
-        let curGrp = "";
-        for (const row of CF_PL_ROWS) {
-          if (row.kind === "group") { curGrp = row.key; groupSubtotalKey[curGrp] = null; }
-          else { groupOf[row.key] = curGrp; if (row.kind === "subtotal") groupSubtotalKey[curGrp] = row.key; }
-        }
 
-        const toggle = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
-
-        const colHl = (mi: number) => hoveredQuarter !== null && Math.floor(mi / 3) === hoveredQuarter;
-        const thCls = (mi: number) =>
-          `text-right px-1.5 py-2.5 text-[9px] font-black uppercase tracking-widest whitespace-nowrap border-b border-border transition-colors ${
-            colHl(mi) ? "bg-blue-200/80 text-blue-800" : "bg-muted/80 text-muted-foreground"
-          }`;
-        const tdHl = (mi: number) => colHl(mi) ? "bg-blue-50/60" : "";
-
-        return (
-          <div className="border border-border rounded-xl overflow-hidden">
-            <div className="overflow-x-auto" style={{ maxHeight: 480, overflowY: "auto" }}>
-              <table className="w-full text-xs min-w-[900px]">
-                <thead className="sticky top-0 z-10">
-                  <tr>
-                    <th
-                      className="text-left px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground bg-muted/80 border-b border-border"
-                      style={{ minWidth: 230 }}
-                    >
-                      Cash Flow P&L · Jan – Dec 2026
-                    </th>
-                    {CF_MONTHS.map((m, mi) => (
-                      <th key={m.label} className={thCls(mi)} style={{ minWidth: 50 }}>{m.label}</th>
-                    ))}
-                    <th className="text-right px-4 py-2.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap bg-muted/80 border-b border-border" style={{ minWidth: 70 }}>Annual</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CF_PL_ROWS.map((row) => {
-                    if (row.kind === "group") {
-                      const isOpen = !collapsed[row.key];
-                      const subKey = groupSubtotalKey[row.key];
-                      const subVals = subKey ? (vals[subKey] ?? []) : [];
-                      const subAnnual = subVals.reduce((s, v) => s + v, 0);
-                      return (
-                        <tr
-                          key={row.key}
-                          className="bg-slate-200/70 border-t border-slate-300 cursor-pointer hover:bg-slate-300/60 transition-colors select-none"
-                          onClick={() => toggle(row.key)}
-                        >
-                          <td className="px-4 pl-7 py-1.5 font-black text-[9px] uppercase tracking-widest text-slate-700">
-                            <span className="flex items-center gap-2">
-                              <span className={`text-slate-500 transition-transform duration-150 inline-block ${isOpen ? "rotate-90" : ""}`}>▶</span>
-                              {row.label}
-                            </span>
+          {/* ── 5. CASH BALANCE WALK TABLE (below Liquidity Runway) ───────────────── */}
+          {(()=>{
+            const QROWS = [
+              { key:"start",    label:"Start Balance",     fmt:(q:typeof qWalkData[0])=> fmtQK(q.start),      isTotal:false, isSep:false },
+              { key:"inflow",   label:"Cash Inflow",       fmt:(q:typeof qWalkData[0])=>`+${fmtQK(q.inflow)}`, isTotal:false, isSep:false },
+              { key:"core",     label:"Core Expenses",     fmt:(q:typeof qWalkData[0])=>`(${fmtQK(q.coreOut)})`, isTotal:false, isSep:false },
+              { key:"onetime",  label:"One-Time Expenses", fmt:(q:typeof qWalkData[0])=>`(${fmtQK(q.oneTimeOut)})`, isTotal:false, isSep:true },
+              { key:"end",      label:"End Balance",       fmt:(q:typeof qWalkData[0])=> fmtQK(q.end),        isTotal:true,  isSep:false },
+            ];
+            const TH:React.CSSProperties = { fontFamily:CF2.INTER, fontSize:11, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", padding:"8px 14px", textAlign:"right" as const, color:"rgba(255,255,255,0.88)", borderLeft:"1px solid rgba(255,255,255,0.07)" };
+            const TD:React.CSSProperties = { fontFamily:CF2.INTER, fontSize:12, fontVariantNumeric:"tabular-nums", padding:"7px 14px", textAlign:"right" as const, borderLeft:"1px solid rgba(255,255,255,0.07)", color:"rgba(255,255,255,0.82)" };
+            const LBL:React.CSSProperties = { fontFamily:CF2.INTER, fontSize:12, padding:"7px 16px", color:CF2.txtMuted, whiteSpace:"nowrap" as const };
+            return (
+              <div style={{ background:CF2.card, border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, overflow:"hidden" }}>
+                <div style={{ padding:"10px 16px 8px", borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+                  <span style={{ fontFamily:CF2.INTER, fontSize:12, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.1em", color:"rgba(255,255,255,0.88)" }}>Cash Balance Walk</span>
+                </div>
+                <table style={{ width:"100%", borderCollapse:"collapse" as const }}>
+                  <thead>
+                    <tr style={{ background:CF2.elevated }}>
+                      <th style={{ fontFamily:CF2.INTER, fontSize:11, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", padding:"8px 16px", textAlign:"left" as const, color:"rgba(255,255,255,0.4)", width:"160px" }}></th>
+                      {qWalkData.map((q, qi) => (
+                        <th key={q.key} style={{ ...TH, color: qi === troughQIdx ? CF2.amber : "rgba(255,255,255,0.88)" }}>
+                          {q.label}{qi === troughQIdx ? " ⚠" : ""}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {QROWS.map((row) => (
+                      <tr key={row.key} style={{ borderTop: row.isSep ? "1px solid rgba(255,255,255,0.06)" : row.isTotal ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.04)", background: row.isTotal ? "rgba(255,255,255,0.03)" : "transparent" }}>
+                        <td style={{ ...LBL, fontWeight: row.isTotal ? 700 : 400, color: row.isTotal ? "rgba(255,255,255,0.88)" : CF2.txtMuted }}>{row.label}</td>
+                        {qWalkData.map((q, qi) => (
+                          <td key={q.key} style={{ ...TD, fontWeight: row.isTotal ? 700 : 400, color: row.isTotal ? "rgba(255,255,255,0.92)" : qi === troughQIdx && row.key === "end" ? CF2.amber : "rgba(255,255,255,0.82)" }}>
+                            {row.fmt(q)}
                           </td>
-                          {!isOpen && subKey
-                            ? subVals.map((v, i) => (
-                                <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[9px] transition-colors ${tdHl(i)} ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}>
-                                  {fmtCell(v)}
-                                </td>
-                              ))
-                            : CF_MONTHS.map((_, i) => <td key={i} className={`transition-colors ${tdHl(i)}`} />)
-                          }
-                          {!isOpen && subKey
-                            ? <td className={`text-right px-4 py-1.5 tabular-nums font-bold text-[9px] ${subAnnual >= 0 ? "text-emerald-700" : "text-rose-600"}`}>{fmtCell(subAnnual)}</td>
-                            : <td />
-                          }
-                        </tr>
-                      );
-                    }
-
-                    const grp = groupOf[row.key];
-                    if (collapsed[grp]) return null;
-
-                    const rowVals = vals[row.key] ?? [];
-                    const annual = rowVals.reduce((s, v) => s + v, 0);
-
-                    if (row.kind === "item") {
-                      return (
-                        <tr key={row.key} className="border-t border-border/40 hover:bg-secondary/30 transition-colors bg-card">
-                          <td className="px-4 py-1.5 pl-8 text-foreground/75 text-[10px]">{row.label}</td>
-                          {rowVals.map((v, i) => (
-                            <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums text-[10px] transition-colors ${tdHl(i)} ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "text-muted-foreground/30"}`}>
-                              {fmtCell(v)}
-                            </td>
-                          ))}
-                          <td className={`text-right px-4 py-1.5 tabular-nums font-semibold text-[10px] ${annual > 0 ? "text-emerald-700" : annual < 0 ? "text-rose-600" : "text-muted-foreground"}`}>
-                            {fmtCell(annual)}
-                          </td>
-                        </tr>
-                      );
-                    }
-
-                    if (row.kind === "subtotal") {
-                      return (
-                        <tr key={row.key} className="border-t border-slate-200 bg-slate-100">
-                          <td className="px-4 py-1.5 pl-8 font-bold text-[10px] text-slate-700">{row.label}</td>
-                          {rowVals.map((v, i) => (
-                            <td key={i} className={`text-right px-1.5 py-1.5 tabular-nums font-bold text-[10px] transition-colors ${tdHl(i)} ${v > 0 ? "text-emerald-700" : v < 0 ? "text-rose-600" : "opacity-30"}`}>
-                              {fmtCell(v)}
-                            </td>
-                          ))}
-                          <td className={`text-right px-4 py-1.5 tabular-nums font-bold text-[10px] ${annual >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
-                            {fmtCell(annual)}
-                          </td>
-                        </tr>
-                      );
-                    }
-                    return null;
-                  })}
-                  {/* TOTAL CASH INFLOW */}
-                  <tr className="border-t-2 border-slate-300 bg-emerald-50">
-                    <td className="px-4 py-2 font-black text-[10px] uppercase tracking-wider text-emerald-800">Total Cash Inflow</td>
-                    {inflowByMonth.map((v, i) => (
-                      <td key={i} className={`text-right px-1.5 py-2 tabular-nums font-bold text-[10px] text-emerald-700 transition-colors ${tdHl(i)}`}>
-                        {fmtCell(v)}
-                      </td>
+                        ))}
+                      </tr>
                     ))}
-                    <td className="text-right px-4 py-2 tabular-nums font-black text-[10px] text-emerald-700">{fmtCell(inflowByMonth.reduce((s, v) => s + v, 0))}</td>
-                  </tr>
-                  {/* TOTAL CASH EXPENSES */}
-                  <tr className="border-t border-rose-200 bg-rose-50">
-                    <td className="px-4 py-2 font-black text-[10px] uppercase tracking-wider text-rose-800">Total Cash Expenses</td>
-                    {outflowByMonth.map((v, i) => (
-                      <td key={i} className={`text-right px-1.5 py-2 tabular-nums font-bold text-[10px] text-rose-600 transition-colors ${tdHl(i)}`}>
-                        {fmtCell(v)}
-                      </td>
-                    ))}
-                    <td className="text-right px-4 py-2 tabular-nums font-black text-[10px] text-rose-600">{fmtCell(outflowByMonth.reduce((s, v) => s + v, 0))}</td>
-                  </tr>
-                  {/* NET CASH FLOW */}
-                  <tr className={`border-t-2 border-border ${annualNet >= 0 ? "bg-emerald-50" : "bg-rose-50"}`}>
-                    <td className={`px-4 py-2.5 font-black text-[11px] uppercase tracking-wider ${annualNet >= 0 ? "text-emerald-800" : "text-rose-800"}`}>Net Cash Flow</td>
-                    {netByMonth.map((v, i) => (
-                      <td key={i} className={`text-right px-1.5 py-2.5 tabular-nums font-bold text-[10px] transition-colors ${tdHl(i)} ${v >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
-                        {fmtCell(v)}
-                      </td>
-                    ))}
-                    <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${annualNet >= 0 ? "text-emerald-700" : "text-rose-600"}`}>{fmtCell(annualNet)}</td>
-                  </tr>
-                  {/* CUMULATIVE NET */}
-                  <tr className="border-t-2 border-blue-300 bg-blue-100">
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-black text-[11px] uppercase tracking-wider text-blue-800">Cumulative Net</span>
-                        <span className="text-[9px] font-normal text-blue-500 normal-case tracking-normal">rolling YTD</span>
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
+
+          </div>{/* end left column */}
+
+          {/* RIGHT COLUMN: Liquidity Position Card */}
+          <div style={{ display:"flex", flexDirection:"column" as const, gap:10 }}>
+
+          {/* ── LIQUIDITY POSITION CARD ─────────────────────────────────────────────── */}
+          {(()=>{
+            const LIQ_TAX = 0.37;
+            const liqYield = (lbl:string):number => {
+              const d = lbl.toLowerCase();
+              if (d.includes("treasury")||d.includes("t-bill")) return 4.85;
+              if (d.includes("fidelity")&&d.includes("cd")) return 5.15;
+              if (d.includes("fidelity")) return 5.10;
+              if (d.includes("goldman")) return 4.65;
+              if (d.includes("citizens")&&(d.includes("money market")||d.includes("mm"))) return 4.45;
+              if (d.includes("citizens")&&d.includes("checking")) return 0.05;
+              if (d.includes("chase")) return 0.01;
+              if (d.includes("checking")) return 0.05;
+              if (d.includes("savings")||d.includes("money market")) return 4.50;
+              return 0.01;
+            };
+            const liqAT = (lbl:string):number => liqYield(lbl)*(1-LIQ_TAX);
+            const liqSfx = (lbl:string):string => {
+              const d = lbl.toLowerCase();
+              if (d.includes("chase")) return "2680";
+              if (d.includes("citizens")&&d.includes("checking")) return "3858";
+              if (d.includes("citizens")&&(d.includes("money market")||d.includes("mm"))) return "4421";
+              if (d.includes("goldman")) return "7710";
+              if (d.includes("fidelity")&&d.includes("cd")) return "9031";
+              if (d.includes("fidelity")) return "9031";
+              if (d.includes("treasury")||d.includes("t-bill")) return "1142";
+              return "····";
+            };
+            const wtd = (items:{label:string;value:number}[], fn:(s:string)=>number):number => {
+              const tot = items.reduce((s,a)=>s+a.value,0);
+              return tot ? items.reduce((s,a)=>s+a.value*fn(a.label),0)/tot : 0;
+            };
+            const allItems = [...reserveItems,...yieldItems,...tacticalItems];
+            const blendY  = wtd(allItems,liqYield);
+            const blendAT = wtd(allItems,liqAT);
+            const BUCKETS = [
+              { key:"op",    label:"Operating Cash", color:"#4a90d9", items:reserveItems,  total:reserve },
+              { key:"res",   label:"Reserve",        color:"#e8a830", items:yieldItems,    total:yieldBucket },
+              { key:"build", label:"Build",          color:"#2a9a5a", items:tacticalItems, total:tactical },
+            ];
+            // SVG donut — 2× size
+            const CX=120,CY=120,R=92,SW=26, CIRC=2*Math.PI*R, GAP=3;
+            let cumPct=0;
+            return (
+              <div style={{ background:CF2.card, border:`1px solid ${CF2.border}`, borderRadius:4, overflow:"hidden" }}>
+                {/* Header */}
+                <div style={{ padding:"10px 14px 8px", borderBottom:`1px solid ${CF2.divider}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <span style={{ fontFamily:CF2.INTER, fontSize:13, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", color:"rgba(255,255,255,0.88)" }}>Liquidity Position</span>
+                  <span style={{ fontFamily:CF2.INTER, fontSize:11, color:CF2.txtDim }}>
+                    ${totalLiquid.toLocaleString()} · {allItems.length} accounts
+                  </span>
+                </div>
+                {/* Donut section — centered on top */}
+                <div style={{ padding:"16px 14px 14px", borderBottom:`1px solid ${CF2.divider}`, display:"flex", alignItems:"center", justifyContent:"center", gap:24 }}>
+                  <svg viewBox="0 0 240 240" width="240" height="240">
+                    <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={SW}/>
+                    {BUCKETS.map(seg=>{
+                      const pct = totalLiquid>0?seg.total/totalLiquid:0;
+                      const arcLen=Math.max(0,pct*CIRC-GAP);
+                      const off=-(CIRC/4+cumPct*CIRC);
+                      cumPct+=pct;
+                      return <circle key={seg.key} cx={CX} cy={CY} r={R} fill="none" stroke={seg.color} strokeWidth={SW} strokeDasharray={`${arcLen} ${CIRC-arcLen}`} strokeDashoffset={off}/>;
+                    })}
+                    <text x={CX} y={CY-4} textAnchor="middle" fill="rgba(255,255,255,0.88)" fontSize={22} fontWeight={300} fontFamily="Inter,system-ui,sans-serif">${Math.round(totalLiquid).toLocaleString()}</text>
+                    <text x={CX} y={CY+16} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={12} fontFamily="Inter,system-ui,sans-serif">Total liquid</text>
+                  </svg>
+                  <div style={{ display:"flex", flexDirection:"column" as const, gap:10 }}>
+                    {/* Bucket legend */}
+                    {BUCKETS.filter(b=>b.total>0).map(b=>(
+                      <div key={b.key} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                        <div style={{ width:8, height:8, borderRadius:2, background:b.color, flexShrink:0 }}/>
+                        <span style={{ fontFamily:CF2.INTER, fontSize:10, color:CF2.txtDim, minWidth:85 }}>{b.label}</span>
+                        <span style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.65)", fontVariantNumeric:"tabular-nums" }}>${Math.round(b.total).toLocaleString()}</span>
+                        <span style={{ fontFamily:CF2.INTER, fontSize:9, color:CF2.txtDim, marginLeft:2 }}>{totalLiquid>0?Math.round(b.total/totalLiquid*100):0}%</span>
                       </div>
-                    </td>
-                    {cumulativeByMonth.map((v, i) => {
-                      const isTrough = i === troughIdx;
+                    ))}
+                    {/* Blended yields */}
+                    <div style={{ display:"flex", gap:16, marginTop:4 }}>
+                      {[{label:"Blended Yield",val:blendY},{label:"After-Tax",val:blendAT}].map(({label,val})=>(
+                        <div key={label}>
+                          <div style={{ fontFamily:CF2.INTER, fontSize:8, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em", color:CF2.txtDim, marginBottom:2 }}>{label}</div>
+                          <div style={{ fontFamily:CF2.INTER, fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.75)" }}>{val.toFixed(2)}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* Account table — compact, bucket-shaded rows, no subtotals */}
+                <table style={{ width:"100%", borderCollapse:"collapse" as const, borderTop:`1px solid ${CF2.divider}` }}>
+                  <thead>
+                    <tr style={{ background:CF2.elevated }}>
+                      {(["Account","Balance","Yield","AT Yield"] as const).map((h,i)=>(
+                        <th key={h} style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.07em", padding:"5px 10px 5px"+(i===0?" 14px":" 10px"), textAlign:(i===0?"left":"right") as "left"|"right", color:"rgba(255,255,255,0.82)", borderLeft:i>0?`1px solid ${CF2.divider}`:"none" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {BUCKETS.map((bucket)=>{
+                      if(!bucket.items.length) return null;
+                      const rowBg  = `${bucket.color}0b`; // light tint for account rows
+                      const subBg  = `${bucket.color}22`; // deeper tint for subtotal row
+                      const bY = wtd(bucket.items, liqYield);
+                      const bAT = wtd(bucket.items, liqAT);
                       return (
-                        <td key={i} className={`text-right px-1.5 py-2.5 tabular-nums text-[10px] transition-colors ${tdHl(i)}`}>
-                          <span className={`relative inline-flex items-center justify-end ${isTrough ? "font-black" : "font-semibold"} ${v >= 0 ? "text-blue-700" : "text-rose-600"}`}>
-                            {isTrough && <span className="absolute inset-[-4px] rounded-full border-2 border-rose-500 pointer-events-none" />}
-                            {fmtCell(v)}
-                          </span>
-                        </td>
+                        <React.Fragment key={bucket.key}>
+                          {/* Account rows — light bucket tint, no header above */}
+                          {bucket.items.map((acct,ai)=>(
+                            <tr key={acct.label+ai} style={{ background:rowBg, borderTop:`1px solid rgba(255,255,255,0.035)` }}>
+                              <td style={{ padding:"5px 10px 5px 18px", fontFamily:CF2.INTER, fontSize:11, color:"rgba(255,255,255,0.68)", whiteSpace:"nowrap" as const }}>
+                                {acct.label}<span style={{ color:"rgba(255,255,255,0.22)", marginLeft:3 }}>···{liqSfx(acct.label)}</span>
+                              </td>
+                              <td style={{ padding:"5px 10px", fontFamily:CF2.INTER, fontSize:12, textAlign:"right" as const, color:"rgba(255,255,255,0.78)", fontVariantNumeric:"tabular-nums", borderLeft:`1px solid ${CF2.divider}` }}>${Math.round(acct.value).toLocaleString()}</td>
+                              <td style={{ padding:"5px 10px", fontFamily:CF2.INTER, fontSize:11, textAlign:"right" as const, color:CF2.txtDim, borderLeft:`1px solid ${CF2.divider}` }}>{liqYield(acct.label).toFixed(2)}%</td>
+                              <td style={{ padding:"5px 10px", fontFamily:CF2.INTER, fontSize:11, textAlign:"right" as const, color:CF2.txtDim, borderLeft:`1px solid ${CF2.divider}` }}>{liqAT(acct.label).toFixed(2)}%</td>
+                            </tr>
+                          ))}
+                          {/* Subtotal row — deeper bucket shade, bucket label + total */}
+                          <tr style={{ background:subBg, borderTop:`1px solid ${bucket.color}33` }}>
+                            <td style={{ padding:"5px 10px 5px 14px", fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:bucket.color, whiteSpace:"nowrap" as const }}>
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:5 }}>
+                                <span style={{ width:5, height:5, borderRadius:"50%", background:bucket.color, display:"inline-block", flexShrink:0 }}/>
+                                {bucket.label}
+                              </span>
+                            </td>
+                            <td style={{ padding:"5px 10px", fontFamily:CF2.INTER, fontSize:12, fontWeight:600, textAlign:"right" as const, color:bucket.color, fontVariantNumeric:"tabular-nums", borderLeft:`1px solid ${CF2.divider}` }}>${Math.round(bucket.total).toLocaleString()}</td>
+                            <td style={{ padding:"5px 10px", fontFamily:CF2.INTER, fontSize:11, fontWeight:600, textAlign:"right" as const, color:bucket.color, opacity:0.75, borderLeft:`1px solid ${CF2.divider}` }}>{bY.toFixed(2)}%</td>
+                            <td style={{ padding:"5px 10px", fontFamily:CF2.INTER, fontSize:11, fontWeight:600, textAlign:"right" as const, color:bucket.color, opacity:0.75, borderLeft:`1px solid ${CF2.divider}` }}>{bAT.toFixed(2)}%</td>
+                          </tr>
+                        </React.Fragment>
                       );
                     })}
-                    <td className={`text-right px-4 py-2.5 tabular-nums font-black text-[11px] ${cumulativeByMonth[cumulativeByMonth.length - 1] >= 0 ? "text-blue-700" : "text-rose-600"}`}>
-                      {fmtCell(cumulativeByMonth[cumulativeByMonth.length - 1])}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      })()}
+                    {/* Grand total */}
+                    <tr style={{ borderTop:`2px solid rgba(255,255,255,0.14)`, background:"rgba(255,255,255,0.04)" }}>
+                      <td style={{ padding:"7px 10px 7px 14px", fontFamily:CF2.INTER, fontSize:11, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", color:"rgba(255,255,255,0.88)" }}>Total Liquidity</td>
+                      <td style={{ padding:"7px 10px", fontFamily:CF2.INTER, fontSize:12, fontWeight:700, textAlign:"right" as const, color:"rgba(255,255,255,0.92)", fontVariantNumeric:"tabular-nums", borderLeft:`1px solid ${CF2.divider}` }}>${Math.round(totalLiquid).toLocaleString()}</td>
+                      <td style={{ padding:"7px 10px", fontFamily:CF2.INTER, fontSize:11, fontWeight:700, textAlign:"right" as const, color:CF2.txtMuted, borderLeft:`1px solid ${CF2.divider}` }}>{blendY.toFixed(2)}%</td>
+                      <td style={{ padding:"7px 10px", fontFamily:CF2.INTER, fontSize:11, fontWeight:700, textAlign:"right" as const, color:CF2.txtMuted, borderLeft:`1px solid ${CF2.divider}` }}>{blendAT.toFixed(2)}%</td>
+                    </tr>
+                  </tbody>
+                </table>
+                {/* Footer */}
+                <div style={{ padding:"7px 12px", borderTop:`1px solid ${CF2.divider}`, textAlign:"right" as const }}>
+                  <span style={{ fontFamily:CF2.INTER, fontSize:11, color:"rgba(91,143,204,0.8)", cursor:"pointer" }} onClick={()=>setAlertHighlight("liq")}>Optimize in Allocation Tool →</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── FULL-SCREEN MODEL PORTAL (renders to document.body) ──────────────── */}
+          <div style={{ display:"none" }}>
+
+            {modelFullScreen && (()=>{
+              const moColDefs = CF_MONTHS.map((m,i)=>({ label:m.label, isAnn:false, isTrough:i===troughIdx, getV:(rv:number[])=>rv[i]??0, mi:i }));
+              const qtrColDefs = [
+                { label:"Q1",   isAnn:false, isTrough:false,          getV:(rv:number[])=>[0,1,2].reduce((s,j)=>s+(rv[j]??0),0), mi:-1 },
+                { label:"Q2",   isAnn:false, isTrough:false,          getV:(rv:number[])=>[3,4,5].reduce((s,j)=>s+(rv[j]??0),0), mi:-1 },
+                { label:"Q3",   isAnn:false, isTrough:troughQIdx===2, getV:(rv:number[])=>[6,7,8].reduce((s,j)=>s+(rv[j]??0),0), mi:-1 },
+                { label:"Q4",   isAnn:false, isTrough:false,          getV:(rv:number[])=>[9,10,11].reduce((s,j)=>s+(rv[j]??0),0), mi:-1 },
+                { label:"2026", isAnn:true,  isTrough:false,          getV:(rv:number[])=>rv.reduce((s,v)=>s+v,0), mi:-1 },
+              ];
+              const aCols = tableView==="mo" ? moColDefs : qtrColDefs;
+              const nCols = aCols.length;
+              const gridTpl = `200px repeat(${nCols}, minmax(72px, 1fr))`;
+
+              const LBASE:React.CSSProperties = { fontFamily:CF2.INTER, fontSize:11, padding:"5px 8px 5px 18px", color:"rgba(255,255,255,0.65)", whiteSpace:"nowrap" as const, borderBottom:"1px solid rgba(42,74,110,0.25)", background:CF2.card, position:"sticky" as const, left:0, zIndex:2 };
+              const VBASE:React.CSSProperties = { fontFamily:CF2.INTER, fontSize:11, padding:"5px 10px", textAlign:"right" as const, fontVariantNumeric:"tabular-nums", borderBottom:"1px solid rgba(42,74,110,0.25)", color:"rgba(255,255,255,0.72)", borderLeft:"1px solid rgba(42,74,110,0.12)", background:"transparent" };
+
+              return createPortal(
+                <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#0d1520", display:"flex", flexDirection:"column" as const }}>
+                  {/* Overlay close button and header */}
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)", flexShrink:0 }}>
+                    <div style={{ fontFamily:CF2.INTER, fontSize:12, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.1em", color:"rgba(255,255,255,0.9)" }}>12-Month Cash Flow Model</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                      <div style={{ display:"flex", border:"1px solid rgba(42,74,110,0.5)", borderRadius:4, overflow:"hidden" }} onClick={(e)=>e.stopPropagation()}>
+                        {(["mo","qtr"] as const).map(v=>(
+                          <button key={v} onClick={()=>setTableView(v)} style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase" as const, padding:"4px 11px", border:"none", cursor:"pointer", background:tableView===v?"rgba(90,154,126,0.12)":"transparent", color:tableView===v?"hsl(152,45%,42%)":"rgba(255,255,255,0.72)", borderRight:v==="mo"?"1px solid rgba(42,74,110,0.4)":"none" }}>
+                            {v==="mo"?"Monthly":"Quarterly"}
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={()=>{ setModelFullScreen(false); onCloseFullScreen?.(); }} style={{ fontFamily:CF2.INTER, fontSize:18, color:"rgba(255,255,255,0.6)", background:"none", border:"none", cursor:"pointer", padding:"0", width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                    </div>
+                  </div>
+                  {/* Scrollable table content */}
+                  <div style={{ flex:1, overflowY:"auto" as const }}>
+                    <div style={{ overflowX:"auto" as const }}>
+                    <div style={{ display:"grid", gridTemplateColumns:gridTpl, position:"sticky", top:0, zIndex:4, background:CF2.elevated, borderBottom:"1px solid #2a4a6e", minWidth: tableView==="mo" ? 1000 : "auto" }}>
+                      <div style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:600, color:"rgba(255,255,255,0.75)", padding:"6px 8px 6px 14px", background:CF2.elevated, position:"sticky" as const, left:0, zIndex:5 }}>&nbsp;</div>
+                      {aCols.map(col=>(
+                        <div key={col.label} style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", color:col.isAnn?CF2.gold:col.isTrough?"rgba(251,191,36,0.6)":"rgba(255,255,255,0.72)", padding:"6px 10px", textAlign:"right" as const, borderLeft:"1px solid rgba(42,74,110,0.3)" }}>{col.label}</div>
+                      ))}
+                    </div>
+                    <div style={{ minWidth: tableView==="mo" ? 1000 : "auto" }}>
+                      {CF_PL_ROWS.map((row) => {
+                        if(row.kind==="group") return (
+                          <div key={row.key} style={{ display:"grid", gridTemplateColumns:gridTpl }}>
+                            <div style={{ gridColumn:`1 / ${nCols+2}`, padding:"10px 0 0", borderBottom:"none" }} />
+                          </div>
+                        );
+                        const rowVals = vals[row.key] ?? [];
+                        if(rowVals.every((v:number)=>v===0) && row.kind!=="total") return null;
+
+                        if(row.kind==="subtotal" || (row.kind==="item" && row.renderAs==="subtotal")) {
+                          return (
+                            <div key={row.key} style={{ display:"grid", gridTemplateColumns:gridTpl, borderTop:"1px solid rgba(42,74,110,0.4)" }}>
+                              <div style={{ ...LBASE, paddingLeft:14, fontSize:11, fontWeight:700, color:"hsl(152,45%,42%)", borderBottom:"none" }}>{row.label}</div>
+                              {aCols.map((col,ci)=>(
+                                <div key={ci} style={{ ...VBASE, fontWeight:600, color:"rgba(255,255,255,0.75)", borderBottom:"none" }}>
+                                  {Math.abs(col.getV(rowVals))<1?"—":col.getV(rowVals)<0?`(${Math.round(Math.abs(col.getV(rowVals))).toLocaleString()})`:Math.round(col.getV(rowVals)).toLocaleString()}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        if(row.kind==="item") {
+                          return (
+                            <div key={row.key} style={{ display:"grid", gridTemplateColumns:gridTpl }}>
+                              <div style={LBASE}>{row.label}</div>
+                              {aCols.map((col,ci)=>{
+                                const v = col.getV(rowVals);
+                                const spike = tableView==="mo" && col.mi>=0 && anomalyCell(rowVals, col.mi);
+                                return (
+                                  <div key={ci} style={{ ...VBASE, color:spike?"hsl(152,52%,55%)":Math.abs(v)<1?"rgba(255,255,255,0.12)":"rgba(255,255,255,0.72)", background:spike?"rgba(90,154,126,0.04)":"transparent" }}>
+                                    {spike && <span style={{ marginRight:4, fontSize:7 }}>●</span>}
+                                    {Math.abs(v)<1?"—":v<0?`(${Math.round(Math.abs(v)).toLocaleString()})`:Math.round(v).toLocaleString()}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        }
+
+                        if(row.kind==="total") {
+                          // Cumulative row — uses end-of-period snapshots, not sums
+                          if(row.compute==="cumulative") {
+                            const qEndSnaps = [
+                              cumulativeByMonth[2],   // Q1 end
+                              cumulativeByMonth[5],   // Q2 end
+                              cumulativeByMonth[8],   // Q3 end
+                              cumulativeByMonth[11],  // Q4 end
+                              cumulativeByMonth[11],  // Annual = Q4 end
+                            ];
+                            return (
+                              <React.Fragment key={row.key}>
+                                <div style={{ display:"grid", gridTemplateColumns:gridTpl, background:"rgba(42,74,110,0.22)", borderTop:"1px solid rgba(58,100,160,0.45)" }}>
+                                  <div style={{ fontFamily:CF2.INTER, fontSize:11, fontWeight:700, padding:"8px 8px 8px 14px", color:"rgba(180,215,255,0.95)", whiteSpace:"nowrap" as const, background:"rgba(42,74,110,0.22)", position:"sticky" as const, left:0, zIndex:2 }}>{row.label}</div>
+                                  {aCols.map((col,ci)=>{
+                                    const v = tableView==="mo"
+                                      ? (cumulativeByMonth[col.mi] ?? 0)
+                                      : (qEndSnaps[ci] ?? 0);
+                                    const color = v < -1 ? CF2.red : v > 1 ? "rgba(160,200,255,0.85)" : "rgba(160,200,255,0.3)";
+                                    return (
+                                      <div key={ci} style={{ fontFamily:CF2.INTER, fontSize:11, fontWeight:700, padding:"8px 10px", textAlign:"right" as const, fontVariantNumeric:"tabular-nums", color, borderLeft:"1px solid rgba(58,100,160,0.18)" }}>
+                                        {Math.abs(v)<1?"—":v<0?`($${Math.round(Math.abs(v)).toLocaleString()})`:`$${Math.round(v).toLocaleString()}`}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </React.Fragment>
+                            );
+                          }
+                          {
+                            const isAmberRow = row.accent === "amber";
+                            const rowBg = isAmberRow ? "rgba(42,74,110,0.22)" : "rgba(90,154,126,0.08)";
+                            const rowBorderT = isAmberRow ? "1px solid rgba(58,100,160,0.45)" : "1px solid rgba(90,154,126,0.2)";
+                            const rowBorderB = isAmberRow ? "1px solid rgba(58,100,160,0.25)" : "1px solid rgba(90,154,126,0.1)";
+                            const lbl = isAmberRow ? "rgba(180,215,255,0.95)" : "hsl(152,52%,55%)";
+                            const val = isAmberRow ? "rgba(160,200,255,0.85)" : "hsl(152,52%,55%)";
+                            const cellBorder = isAmberRow ? "1px solid rgba(58,100,160,0.18)" : "1px solid rgba(90,154,126,0.1)";
+                            return (
+                            <React.Fragment key={row.key}>
+                              <div style={{ display:"grid", gridTemplateColumns:gridTpl, background:rowBg, borderTop:rowBorderT, borderBottom:rowBorderB }}>
+                                <div style={{ fontFamily:CF2.INTER, fontSize:11, fontWeight:700, padding:"10px 8px 10px 14px", color:lbl, whiteSpace:"nowrap" as const, background:rowBg, position:"sticky" as const, left:0, zIndex:2 }}>{row.label}</div>
+                                {aCols.map((col,ci)=>{
+                                  const v = col.getV(rowVals);
+                                  return (
+                                    <div key={ci} style={{ fontFamily:CF2.INTER, fontSize:11, fontWeight:700, padding:"10px 10px", textAlign:"right" as const, fontVariantNumeric:"tabular-nums", color:val, borderLeft:cellBorder }}>
+                                      {Math.abs(v)<1?"—":v<0?`($${Math.round(Math.abs(v)).toLocaleString()})`:`+$${Math.round(v).toLocaleString()}`}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </React.Fragment>
+                          );}
+                        }
+                        return null;
+                      })}
+                    </div>
+                      <div style={{ padding:"10px 16px 14px", borderTop:"1px solid rgba(42,74,110,0.25)", display:"flex", alignItems:"flex-start", gap:8 }}>
+                        <span style={{ width:5, height:5, borderRadius:"50%", background:CF2.gold, display:"inline-block", flexShrink:0, marginTop:4 }} />
+                        <span style={{ fontFamily:CF2.SERIF, fontSize:12.5, color:"rgba(255,255,255,0.75)", lineHeight:1.5 }}>
+                          Apr spike — <span style={{ color:CF2.gold }}>$57K</span> tuition + federal taxes concentrated in one month. Reserve draw recommended by March.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              );
+            })()}
+
+          </div>{/* end hidden portal wrapper */}
+
+          </div>{/* end right column */}
+          </div>{/* end main two-column grid */}
+
+          <div style={{ height:24 }} />
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -5249,6 +5864,7 @@ function GuruAllocationView({
   const [opMonthsLocal, setOpMonthsLocal] = useState(opsCashMonths);
   const [resMonthsLocal, setResMonthsLocal] = useState(12);
   const [selProd, setSelProd] = useState<Record<string, number>>({ excess: 0 });
+  const [bucketDests, setBucketDests] = useState<Record<string, string>>({ "Operating Cash": "Grow", "Reserve": "Grow" });
   useEffect(() => {
     if (step2Done && !step3Analyzing && !step3Visible) {
       setStep3Analyzing(true);
@@ -5294,20 +5910,20 @@ function GuruAllocationView({
           <p className="text-[11px] text-muted-foreground mt-0.5">Set coverage targets · GURU generates the recommended transfer schedule</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex items-center gap-1.5 bg-white border border-border rounded-full px-3 py-1.5">
+          <div className="flex items-center gap-1.5 border border-[rgba(94,204,138,0.35)] rounded-full px-3 py-1.5" style={{ background: "rgba(94,204,138,0.08)" }}>
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: "#5ecc8a" }} />
+              <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: "#5ecc8a" }} />
             </span>
-            <span className="text-[10px] font-semibold text-foreground tracking-wide">LIVE · 8S AGO</span>
+            <span className="text-[10px] font-semibold tracking-wide" style={{ color: "#5ecc8a" }}>LIVE · 8S AGO</span>
           </div>
-          <button className="px-4 py-1.5 rounded-full border border-border text-[10px] font-semibold text-foreground bg-white hover:bg-secondary transition-colors">Present to Client</button>
-          <button className="px-4 py-1.5 rounded-full text-[10px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "hsl(222,45%,14%)" }}>Execute All →</button>
+          <button className="px-4 py-1.5 rounded-full border border-[rgba(255,255,255,0.12)] text-[10px] font-semibold transition-colors" style={{ color: "rgba(255,255,255,0.75)", background: "#1e2838" }}>Present to Client</button>
+          <button className="px-4 py-1.5 rounded-full text-[10px] font-bold text-white transition-colors hover:opacity-90" style={{ background: "#1a2433" }}>Execute All →</button>
         </div>
       </div>
 
       {/* ── GURU Insight Banner ── */}
-      <div className="rounded-xl overflow-hidden border border-[hsl(222,45%,20%)]" style={{ background: "hsl(222,45%,11%)" }}>
+      <div className="rounded-xl overflow-hidden border border-[rgba(255,255,255,0.08)]" style={{ background: "#1e2838" }}>
         <div className="flex">
           <div className="flex-1 px-7 py-6 min-w-0">
             <div className="flex items-center gap-2 mb-4">
@@ -5322,11 +5938,11 @@ function GuruAllocationView({
               The Kessler Family had a strong year-end — bonuses landed in January. Their balance sheet is in excellent shape, but they're holding more liquidity than they need. At {liquidCoverageT.toFixed(1)} months of coverage against a {opMonthsLocal + resMonthsLocal}-month target, there's roughly <span style={{ color: "rgba(154,123,60,0.85)" }}>{fmt(totalExcessT)}</span> sitting above the threshold. <span className="italic">Now is the time to speak with them about right-sizing liquidity and putting that capital to work in Cresset's strategies.</span>
             </p>
           </div>
-          <div className="w-px my-5 flex-shrink-0" style={{ background: "rgba(255,255,255,0.07)" }} />
+          <div className="w-px my-5 flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
           <div className="flex flex-col justify-between py-6 px-7 flex-shrink-0 gap-4" style={{ minWidth: 210 }}>
             {[
               { label: "Total Assets", val: fmt(totalAssets), sub: "Full balance sheet", color: "rgba(255,255,255,0.9)" },
-              { label: "Liquid Coverage", val: `${liquidCoverageT.toFixed(1)} mos`, sub: `Target: ${opMonthsLocal + resMonthsLocal} months`, color: "#9a7b3c" },
+              { label: "Liquid Coverage", val: `${liquidCoverageT.toFixed(1)} months`, sub: `Target: ${opMonthsLocal + resMonthsLocal} months`, color: "#9a7b3c" },
               { label: "Excess Liquidity", val: fmt(totalExcessT), sub: "Above coverage threshold", color: "#9a7b3c" },
               { label: "Return Pickup / Year", val: `+${fmt(returnPickupT)}`, sub: "If deployed today", color: "#2e7a52" },
             ].map((m) => (
@@ -5344,7 +5960,7 @@ function GuruAllocationView({
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step1Done ? "#2e7a52" : "hsl(222,45%,18%)" }}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step1Done ? "#2e7a52" : "rgba(255,255,255,0.08)" }}>
               {step1Done ? "✓" : "1"}
             </div>
             <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-foreground">Liquidity Policy</span>
@@ -5371,7 +5987,7 @@ function GuruAllocationView({
               {([
                 {
                   label: "Operating Cash",
-                  sublabelAcct: "Checking + Savings",
+                  tagline: "Cash for upcoming expenditures",
                   currentMonths: opCurrentMonthsT,
                   targetMonths: opMonthsLocal,
                   setTarget: setOpMonthsLocal,
@@ -5379,12 +5995,12 @@ function GuruAllocationView({
                   targetAmt: opTargetAmtT,
                   excess: opExcessT,
                   accentColor: "#2e5c8a",
-                  borderColor: "#cfe0f0",
-                  bg: "#f4f8fc",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  bg: "#1e2838",
                 },
                 {
                   label: "Reserve",
-                  sublabelAcct: "Savings + MM",
+                  tagline: "Active cash management for what's next",
                   currentMonths: resCurrentMonthsT,
                   targetMonths: resMonthsLocal,
                   setTarget: setResMonthsLocal,
@@ -5392,8 +6008,8 @@ function GuruAllocationView({
                   targetAmt: resTargetAmtT,
                   excess: resExcessT,
                   accentColor: "#8a6e2e",
-                  borderColor: "#e0d4b0",
-                  bg: "#faf8f2",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  bg: "#1e2838",
                 },
               ] as const).map((b) => {
                 // Bar: current fills 100%, target line shows where target falls
@@ -5402,11 +6018,11 @@ function GuruAllocationView({
                   ? Math.min((b.targetMonths / b.currentMonths) * 100, 100)
                   : 100;
                 return (
-                  <div key={b.label} className="rounded-xl border border-border p-5 space-y-4" style={{ background: "#faf9f7", borderTop: `2px solid ${b.accentColor}` }}>
-                    {/* Header — no excess badge here; it lives below the bar */}
+                  <div key={b.label} className="rounded-xl border border-border p-5 space-y-4" style={{ background: "#1e2838", borderTop: `2px solid ${b.accentColor}` }}>
+                    {/* Header */}
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: b.accentColor }}>{b.label}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Monthly burn: {fmt(monthlyBurnT)} · {b.sublabelAcct}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 italic">{b.tagline}</p>
                     </div>
 
                     {/* Coverage bar */}
@@ -5415,7 +6031,7 @@ function GuruAllocationView({
                         <span className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Current: <span className="font-semibold text-foreground">{b.currentMonths.toFixed(1)} mos</span></span>
                         <span className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Target: <span className="font-semibold text-foreground">{b.targetMonths} mos</span></span>
                       </div>
-                      <div className="relative rounded-full overflow-hidden" style={{ height: 6, background: isOver ? "rgba(154,123,60,0.18)" : "hsl(220,14%,88%)" }}>
+                      <div className="relative rounded-full overflow-hidden" style={{ height: 6, background: isOver ? "rgba(154,123,60,0.18)" : "rgba(255,255,255,0.06)" }}>
                         <div className="absolute left-0 top-0 h-full" style={{ width: `${isOver ? tgtLinePct : 100}%`, background: b.accentColor, opacity: 0.85, borderRadius: isOver ? "3px 0 0 3px" : "3px" }} />
                         {isOver && (
                           <div className="absolute top-0 h-full w-[2px]" style={{ left: `${tgtLinePct}%`, background: "rgba(255,255,255,0.85)" }} />
@@ -5423,9 +6039,12 @@ function GuruAllocationView({
                       </div>
                       {/* Excess / deficit badge — single location, styled to pop */}
                       {isOver ? (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: "rgba(154,123,60,0.12)", border: "1px solid rgba(154,123,60,0.3)" }}>
-                          <span className="text-[10px] font-bold tabular-nums" style={{ color: "#9a7b3c" }}>{fmt(b.excess)}</span>
-                          <span className="text-[9px] font-semibold uppercase tracking-[0.08em]" style={{ color: "#9a7b3c" }}>excess · {(b.currentMonths - b.targetMonths).toFixed(1)} mos above target</span>
+                        <div className="px-3 py-2 rounded-md" style={{ background: "rgba(154,123,60,0.12)", border: "1px solid rgba(154,123,60,0.3)" }}>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: "rgba(154,123,60,0.7)" }}>Excess to Release</span>
+                            <span className="text-[9px]" style={{ color: "rgba(154,123,60,0.5)" }}>{(b.currentMonths - b.targetMonths).toFixed(1)} mos above target</span>
+                          </div>
+                          <span className="text-[18px] font-bold tabular-nums leading-tight block mt-0.5" style={{ color: "#9a7b3c" }}>{fmt(b.excess)}</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md" style={{ background: "rgba(46,92,138,0.08)", border: "1px solid rgba(46,92,138,0.2)" }}>
@@ -5435,21 +6054,28 @@ function GuruAllocationView({
                       )}
                     </div>
 
-                    {/* Stepper — fit-content width per mockup */}
+                    {/* Stepper — fit-content width, number field is directly editable */}
                     <div className="flex items-center rounded-lg border border-border overflow-hidden bg-white" style={{ width: "fit-content" }}>
                       <button onClick={() => b.setTarget(Math.max(1, b.targetMonths - 1))} className="flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors border-r border-border flex-shrink-0 text-[16px]" style={{ width: 34, height: 34 }}>−</button>
                       <div className="flex flex-col items-center justify-center" style={{ minWidth: 90, padding: "0 18px" }}>
-                        <span className="font-serif leading-none text-foreground" style={{ fontSize: 20 }}>{b.targetMonths}</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={b.targetMonths}
+                          onChange={(e) => b.setTarget(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="font-serif leading-none text-foreground text-center bg-transparent border-none outline-none appearance-none"
+                          style={{ fontSize: 20, width: 54 }}
+                        />
                         <span className="text-[10px] text-muted-foreground">mo target</span>
                       </div>
                       <button onClick={() => b.setTarget(b.targetMonths + 1)} className="flex items-center justify-center text-muted-foreground hover:bg-secondary transition-colors border-l border-border flex-shrink-0 text-[16px]" style={{ width: 34, height: 34 }}>+</button>
                     </div>
 
-                    {/* Balances — color-coded: target = neutral, current = accent if over, muted-warning if under */}
+                    {/* Balances */}
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border">
                       <div>
                         <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Target Balance</p>
-                        <p className="text-[13px] font-medium tabular-nums font-mono" style={{ color: "hsl(220,14%,45%)" }}>{fmt(b.targetAmt)}</p>
+                        <p className="text-[17px] font-bold tabular-nums font-mono" style={{ color: b.accentColor }}>{fmt(b.targetAmt)}</p>
                       </div>
                       <div>
                         <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1">Current Balance</p>
@@ -5500,7 +6126,7 @@ function GuruAllocationView({
       {/* ── STEP 2: Capital Release ── */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
-          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step2Done ? "#2e7a52" : step1Done ? "hsl(222,45%,18%)" : "hsl(220,14%,78%)" }}>{step2Done ? "✓" : "2"}</div>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step2Done ? "#2e7a52" : step1Done ? "rgba(255,255,255,0.08)" : "hsl(220,14%,78%)" }}>{step2Done ? "✓" : "2"}</div>
           <span className={`text-[12px] font-semibold flex-1 ${step1Done ? "text-foreground" : "text-muted-foreground"}`}>Capital Release</span>
           {step2Done && (
             <button onClick={() => { setStep2Done(false); setStep3Analyzing(false); setStep3Visible(false); }} className="text-[10px] font-semibold px-3 py-1 rounded border border-border hover:bg-secondary transition-colors text-muted-foreground">Edit</button>
@@ -5516,7 +6142,7 @@ function GuruAllocationView({
             <Check className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: "#2e7a52" }} />
             <div>
               <p className="text-[11px] font-semibold text-foreground">Capital release confirmed</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{fmt(totalExcess)} routing to Investment Pool</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{fmt(totalExcess)} routing to {[...new Set(Object.values(bucketDests))].join(" & ")}</p>
             </div>
           </div>
         ) : (
@@ -5537,8 +6163,26 @@ function GuruAllocationView({
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40" />
                   <p className="text-[12px] font-bold tabular-nums" style={{ color: row.amount > 100 ? "#9a7b3c" : "hsl(220,14%,72%)" }}>{row.amount > 100 ? fmt(row.amount) : "—"}</p>
                   <div>
-                    <p className="text-[11px] font-semibold text-foreground">Investment Pool</p>
-                    <p className="text-[10px] text-muted-foreground">Above coverage target</p>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted-foreground mb-1.5">Route to</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {(["Build", "Grow"] as const).map((dest) => {
+                        const isSelected = bucketDests[row.source] === dest;
+                        const destColor = dest === "Build" ? "#2a9a5a" : "#4a6fa5";
+                        return (
+                          <button
+                            key={dest}
+                            onClick={() => setBucketDests((prev) => ({ ...prev, [row.source]: dest }))}
+                            className="px-2.5 py-1 rounded-md text-[10px] font-semibold transition-all"
+                            style={isSelected
+                              ? { background: destColor, color: "#fff", border: `1px solid ${destColor}` }
+                              : { background: "transparent", color: "hsl(220,14%,55%)", border: "1px solid hsl(220,16%,82%)" }
+                            }
+                          >
+                            {dest}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -5567,7 +6211,7 @@ function GuruAllocationView({
       {/* ── STEP 3: Product Allocation ── */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid hsl(220,16%,90%)" }}>
-          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step3Visible ? "#2e7a52" : step2Done ? "hsl(222,45%,18%)" : "hsl(220,14%,78%)" }}>{step3Visible ? "✓" : "3"}</div>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 text-white" style={{ background: step3Visible ? "#2e7a52" : step2Done ? "rgba(255,255,255,0.08)" : "hsl(220,14%,78%)" }}>{step3Visible ? "✓" : "3"}</div>
           <span className={`text-[12px] font-semibold flex-1 ${step2Done ? "text-foreground" : "text-muted-foreground"}`}>Product Allocation</span>
         </div>
         {!step2Done ? (
@@ -5603,7 +6247,7 @@ function GuruAllocationView({
               {excessProds.map((p, i) => {
                 const isSel = (selProd["excess"] ?? 0) === i;
                 return (
-                  <div key={p.name} onClick={() => setSelProd((s) => ({ ...s, excess: i }))} className="rounded-lg border cursor-pointer transition-all p-4 space-y-2.5" style={{ borderColor: isSel ? "#9a7b3c" : "hsl(220,14%,88%)", background: isSel ? "rgba(154,123,60,0.05)" : "white", boxShadow: isSel ? "0 0 0 1px rgba(154,123,60,0.25)" : undefined }}>
+                  <div key={p.name} onClick={() => setSelProd((s) => ({ ...s, excess: i }))} className="rounded-lg border cursor-pointer transition-all p-4 space-y-2.5" style={{ borderColor: isSel ? "#9a7b3c" : "rgba(255,255,255,0.08)", background: isSel ? "rgba(154,123,60,0.05)" : "#1a2433", boxShadow: isSel ? "0 0 0 1px rgba(154,123,60,0.25)" : undefined }}>
                     {p.rec && (
                       <div className="text-[8px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full w-fit" style={{ background: "rgba(154,123,60,0.12)", color: "#9a7b3c" }}>Recommended</div>
                     )}
@@ -5675,11 +6319,56 @@ function DetailsView({
     return weighted > 0 ? (weighted / totalLiab).toFixed(2) : null;
   })();
 
+  // CF2 design tokens (from CashFlowForecastView)
+  const CF2 = {
+    bg:       "#141c2b",
+    card:     "#1e2838",
+    elevated: "#1a2433",
+    border:   "rgba(255,255,255,0.08)",
+    divider:  "rgba(255,255,255,0.06)",
+    txt:      "rgba(255,255,255,0.9)",
+    txt2:     "rgba(255,255,255,0.85)",
+    txtMuted: "rgba(255,255,255,0.6)",
+    txtDim:   "rgba(255,255,255,0.5)",
+    green:    "#5ecc8a",
+    red:      "#ff6464",
+    gold:     "#ffc83c",
+    INTER:    "Inter, system-ui, sans-serif",
+  };
+
   return (
-    <div>
+    <div style={{ background: CF2.bg, borderRadius: 8, overflow: "hidden" }}>
 
       {tab === "bs" && (
-        <div className="space-y-4">
+        <div className="space-y-4" style={{ padding: "0" }}>
+          {/* ── Page header — matches allocation/cashflow style ── */}
+          <div style={{ padding: "18px 32px 0", display: "flex", alignItems: "baseline", gap: 12 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 300, color: "rgba(255,255,255,0.88)", letterSpacing: "-0.01em", margin: 0, fontFamily: "Inter, system-ui, sans-serif" }}>Net Worth</h1>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.32)", letterSpacing: "0.04em", fontFamily: "Inter, system-ui, sans-serif" }}>Kessler Family · {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span>
+          </div>
+          {/* GURU DETECTIONS banner */}
+          <div style={{ background: "#3a5580", padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#5ecc8a", display: "inline-block", flexShrink: 0, animation: "pulse 2s ease-in-out infinite" }} />
+              <span style={{ fontFamily: CF2.INTER, fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.9)" }}>GURU Detections</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+              <div>
+                <p style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>Total Assets</p>
+                <p style={{ fontFamily: "system-ui", fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.95)", fontVariantNumeric: "tabular-nums" as const }}>{fmt(totalAssets)}</p>
+              </div>
+              <div>
+                <p style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>Total Liabilities</p>
+                <p style={{ fontFamily: "system-ui", fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>{fmt(totalLiab)}</p>
+              </div>
+              <div>
+                <p style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>Net Worth</p>
+                <p style={{ fontFamily: "system-ui", fontSize: 18, fontWeight: 700, color: CF2.green }}>{fmt(netWorth)}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4" style={{ padding: "0 20px 20px" }}>
           <div className="flex justify-end gap-2">
             <AddAssetModal clientId={clientId} />
             <AddLiabilityModal clientId={clientId} />
@@ -5699,21 +6388,22 @@ function DetailsView({
                 totalRate={totalLiabRate}
                 isLiability
               />
-              <div className="border border-border rounded-xl overflow-hidden">
+              <div style={{ border: `1px solid ${CF2.border}`, borderRadius: "10px", overflow: "hidden", background: CF2.card }}>
                 <div
-                  className="grid bg-emerald-50 border-b-0"
-                  style={{ gridTemplateColumns: "1fr 90px 56px 90px" }}
+                  className="grid"
+                  style={{ gridTemplateColumns: "1fr 90px 56px 90px", background: CF2.elevated }}
                 >
-                  <div className="px-3 py-3 text-[11px] font-black uppercase tracking-widest text-emerald-800">Net Worth</div>
-                  <div className="px-2 py-3 text-right tabular-nums text-[13px] font-black text-emerald-700">
+                  <div style={{ padding: "12px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.06em", color: CF2.green }}>Net Worth</div>
+                  <div style={{ padding: "12px", textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: "13px", fontWeight: 900, color: CF2.green }}>
                     {fmt(netWorth)}
                   </div>
-                  <div className="px-2 py-3" />
-                  <div className="px-2 py-3" />
+                  <div style={{ padding: "12px" }} />
+                  <div style={{ padding: "12px" }} />
                 </div>
               </div>
             </div>
           </div>
+        </div>
         </div>
       )}
 
@@ -5963,446 +6653,524 @@ function AdvisorBriefView({
     return <div className="space-y-3 leading-7">{blocks}</div>;
   };
 
-  // ── Card checkbox header helper ──
+  // ── Card header helper ──
   const CardCheckHeader = ({
-    cardKey,
-    color,
-    icon: Icon,
     badge,
+    badgeBg,
+    badgeText,
+    badgeBorder,
     priority,
+    priorityBg,
+    priorityText,
+    priorityBorder,
     title,
-    subtitle,
+    body,
   }: {
-    cardKey: string;
-    color: string;
-    icon: React.ElementType;
     badge: string;
+    badgeBg: string;
+    badgeText: string;
+    badgeBorder: string;
     priority: string;
+    priorityBg: string;
+    priorityText: string;
+    priorityBorder: string;
     title: React.ReactNode;
-    subtitle?: React.ReactNode;
-  }) => {
-    const isChecked = checked.has(cardKey);
-    return (
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => toggle(cardKey)}
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-              isChecked ? `border-current bg-current` : "border-slate-300 bg-white"
-            }`}
-            style={{ color: isChecked ? color : undefined }}
-          >
-            {isChecked && <Check className="w-3 h-3 text-white" />}
-          </button>
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: `${color}20` }}
-          >
-            <Icon className="w-4 h-4" style={{ color }} />
-          </div>
-          <div>
-            <span
-              className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border"
-              style={{ color, background: `${color}10`, borderColor: `${color}40` }}
-            >
-              {badge}
-            </span>
-            <p className="text-base font-black text-foreground mt-1.5 leading-snug">{title}</p>
-            {subtitle && (
-              <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug font-normal">{subtitle}</p>
-            )}
-          </div>
-        </div>
-        <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0 mt-0.5 border ${
-          priority === "Time Sensitive" || priority === "High Priority"
-            ? "text-rose-600 bg-rose-50 border-rose-200"
-            : "text-slate-500 bg-slate-50 border-slate-200"
-        }`}>
+    body?: React.ReactNode;
+  }) => (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: badgeBg, color: badgeText, border: `1px solid ${badgeBorder}` }}>
+          {badge}
+        </span>
+        <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: priorityBg, color: priorityText, border: `1px solid ${priorityBorder}`, whiteSpace: "nowrap" as const }}>
           {priority}
         </span>
       </div>
-    );
-  };
+      <div style={{ fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif', fontSize: 20, fontWeight: 400, color: "#181816", lineHeight: 1.2, letterSpacing: "-0.01em", marginBottom: body ? 12 : 0 }}>
+        {title}
+      </div>
+      {body && (
+        <div style={{ fontSize: 14, fontWeight: 400, color: "#3a3a35", lineHeight: 1.7, marginTop: 8 }}>
+          {body}
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Decision strip ──
+  const DStrip = ({
+    cardKey,
+    approveLabel = "Approve",
+    approveColor = "#1e4d30",
+    onApprove,
+  }: {
+    cardKey: string;
+    approveLabel?: string;
+    approveColor?: string;
+    onApprove?: () => void;
+  }) => (
+    <div style={{ borderTop: "1px solid #e6e5e0", padding: "14px 24px", background: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={checked.has(cardKey)}
+          onChange={() => toggle(cardKey)}
+          style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#181816", flexShrink: 0 }}
+        />
+        <span style={{ fontSize: 13, fontWeight: 500, color: "#3a3a35", userSelect: "none" as const }}>
+          Include in client email
+        </span>
+      </label>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <button style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 500, padding: "9px 20px", borderRadius: 8, border: "1px solid #d4d4cf", background: "#fff", color: "#3a3a35", cursor: "pointer" }}>
+          Defer
+        </button>
+        <button
+          style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 600, padding: "9px 24px", borderRadius: 8, border: "none", color: "#fff", cursor: "pointer", background: approveColor, letterSpacing: "0.02em" }}
+          onClick={onApprove}
+        >
+          {approveLabel}
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── GURU Recommended Action strip (inside card body) ──
+  const ActionStrip = ({
+    action,
+    urgencyText,
+    urgencyColor,
+    nowLabel,
+    nowSubtext,
+    nowSublabel,
+    afterLabel,
+    afterSubtext,
+    afterSublabel,
+    accentColor,
+  }: {
+    action: string;
+    urgencyText: string;
+    urgencyColor: string;
+    nowLabel: string;
+    nowSubtext?: string;
+    nowSublabel?: string;
+    afterLabel: string;
+    afterSubtext?: string;
+    afterSublabel?: string;
+    accentColor: string;
+  }) => (
+    <div style={{ borderRadius: 8, border: "1px solid #e6e5e0", overflow: "hidden" }}>
+      <div style={{ padding: "12px 16px", background: "#f8f8f6", borderBottom: "1px solid #e6e5e0", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 4 }}>GURU Recommended Action</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{action}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, paddingTop: 2 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: urgencyColor, flexShrink: 0 }} />
+          <span style={{ fontSize: 10, fontWeight: 600, color: urgencyColor, whiteSpace: "nowrap" as const }}>{urgencyText}</span>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 32px 1fr", alignItems: "center", background: "#fff" }}>
+        <div style={{ padding: "14px 16px" }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 5 }}>{nowSublabel ?? "NOW"}</div>
+          <div style={{ fontSize: 17, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#3a3a35", lineHeight: 1 }}>{nowLabel}</div>
+          {nowSubtext && <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 4 }}>{nowSubtext}</div>}
+        </div>
+        <div style={{ textAlign: "center" as const, fontSize: 16, color: "#9c9c93" }}>→</div>
+        <div style={{ padding: "14px 16px", borderLeft: `1px solid ${accentColor}25`, background: `${accentColor}06` }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: accentColor, marginBottom: 5 }}>{afterSublabel ?? "AFTER GURU"}</div>
+          <div style={{ fontSize: 17, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: accentColor, lineHeight: 1 }}>{afterLabel}</div>
+          {afterSubtext && <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 4 }}>{afterSubtext}</div>}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="space-y-5">
-      {/* ── Header ── */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 border border-slate-800 px-6 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-            <ClipboardList className="w-5 h-5 text-white" />
+    <div style={{ background: "#f5f4f0", minHeight: "100vh", padding: "36px 40px 72px" }}>
+      {/* ── Page header — matches allocation tab style ── */}
+      <div style={{ marginBottom: 28 }}>
+        {/* Title row: big light font + subtitle + compose button */}
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 300, color: "#1a2e4a", letterSpacing: "-0.01em", margin: 0, lineHeight: 1 }}>Advisor Brief</h1>
+            <span style={{ fontSize: 11, color: "rgba(0,0,0,0.40)", letterSpacing: "0.04em" }}>Kessler Family · {format(DEMO_NOW, "MMMM d, yyyy")}</span>
           </div>
-          <div>
-            <p className="text-lg font-black text-white tracking-tight">Advisor Brief</p>
-            <p className="text-[11px] text-slate-400 font-medium">Sarah & Michael Kessler · {format(DEMO_NOW, "MMMM d, yyyy")}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-slate-700/60 border border-slate-600 rounded-full px-3 py-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-            <span className="text-[10px] text-slate-400">Check items to include in email</span>
-          </div>
+          {/* Compose email button */}
           <button
             onClick={() => setShowEmail(true)}
             disabled={checked.size === 0}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold transition-all ${
-              checked.size > 0
-                ? "bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-900/40"
-                : "bg-slate-700 text-slate-500 cursor-not-allowed"
-            }`}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: "none", cursor: checked.size > 0 ? "pointer" : "not-allowed", background: checked.size > 0 ? "#181816" : "#d4d4cf", color: "#fff", letterSpacing: "0.02em", whiteSpace: "nowrap", flexShrink: 0 }}
           >
             <Mail className="w-3.5 h-3.5" />
-            Compose Email {checked.size > 0 && `(${checked.size})`}
+            Compose Email{checked.size > 0 ? ` (${checked.size})` : ""}
           </button>
         </div>
+        {/* Status pills row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#fdecea", color: "#be2a2c", border: "1px solid #f5a8a8" }}>1 urgent</span>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#e5f3ee", color: "#0d6b50", border: "1px solid #b4d9ce" }}>2 deploy</span>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#edf1fb", color: "#1b3f8a", border: "1px solid #b4c5f5" }}>1 cash update</span>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#fcf1e6", color: "#a55b00", border: "1px solid #f0ce97" }}>1 act before May 7</span>
+          <span style={{ fontSize: 11, color: "#9c9c93", marginLeft: 4 }}>· <span style={{ fontFamily: "monospace" }}>{fmt(totalAssets, true)}</span> net worth</span>
+        </div>
       </div>
-      {/* ── Priority cards ── */}
-      <div className="grid grid-cols-2 gap-5">
+      {/* ── Cards ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
 
-        {/* ── Card 1: Deploy Excess Liquidity ── */}
-        <div
-          className={`rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all h-full ${checked.has("liquidity") ? "border-emerald-400 shadow-emerald-100" : "border-border"}`}
-          style={{ borderTop: `3px solid #10b981` }}
-        >
-          <div className="px-4 pt-4 pb-3 flex flex-col gap-3 flex-1">
-            <CardCheckHeader
-              cardKey="liquidity"
-              color="#10b981"
-              icon={Wallet}
-              badge="Liquidity"
-              priority="High Priority"
-              title="Harvest Excess Liquidity From Bonus"
-              subtitle="Opportunity to increase investment portfolio"
-            />
-            <div className="flex items-baseline gap-3">
-              <p className="text-2xl font-black tabular-nums text-emerald-600 leading-none">{fmt(Math.max(0, _abvTotalLiquid - 194196), true)}</p>
-              <p className="text-[10px] text-muted-foreground">available to deploy</p>
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
-                <span className="text-[11px] font-semibold text-foreground">Total Cash</span>
-                <span className="text-[11px] font-black tabular-nums text-emerald-700">{fmt(_abvTotalLiquid)}</span>
+        {/* ── Card 1: Year-End Bonus / Deployable Surplus ── */}
+        {(() => {
+          const demoAccts = [
+            { name: "Citizens Private Banking Checking", num: "3438", balance: 107000, floor: 80000 },
+            { name: "Citizens Private Bank Money Market", num: "1482", balance: 225000, floor: 51000 },
+            { name: "Fidelity Cash Sweep / Money Market", num: "4976", balance: 368440, floor: 70000 },
+          ];
+          const totalHarvest = demoAccts.reduce((s, a) => s + (a.balance - a.floor), 0);
+          const monthlyLoss = Math.round(totalHarvest * 0.0096 / 12 * 10) * 10; // ~$4,800/mo at blended loss
+          return (
+          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ height: 3, background: "#1e4d30" }} />
+            <div style={{ padding: "16px 20px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <CardCheckHeader
+                badge="Liquidity"
+                badgeBg="#e8f4f0"
+                badgeText="#1e4d30"
+                badgeBorder="#b4d9ce"
+                priority="High Priority"
+                priorityBg="#fdecea"
+                priorityText="#be2a2c"
+                priorityBorder="#f5a8a8"
+                title="Year-End Bonus Has Created Deployable Surplus"
+                body={`The January bonus pushed balances above the 3-month reserve floor on all three accounts. ${fmt(totalHarvest, true)} is sitting idle at a blended yield of 0.8% — earning ${fmt(Math.round(totalHarvest * 0.008))} a year when it should be earning ${fmt(Math.round(totalHarvest * 0.051))}.`}
+              />
+
+              {/* Large amount */}
+              <div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 32, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#1e4d30", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalHarvest, true)}</div>
+                <div style={{ fontSize: 13, color: "#9c9c93", marginTop: 4 }}>excess identified</div>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
-                <span className="text-[11px] font-semibold text-foreground">Cash Needed for 12 Months</span>
-                <span className="text-[11px] font-black tabular-nums text-rose-600">{fmt(194196)}</span>
-              </div>
-            </div>
-            {/* Where the cash is sitting */}
-            {(() => {
-              const acctNum = (name: string) => {
-                let h = 0;
-                for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-                return String(1000 + (h % 9000));
-              };
-              type AcctRow = { name: string; bucket: string; value: number };
-              const checkingItems: AcctRow[] = assets
-                .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
-                .map(a => ({ name: (a.description ?? "").split("(")[0].trim(), bucket: "Operating Cash", value: Number(a.value) }));
-              const savingsItems: AcctRow[] = reserveItems
-                .filter(a => !(a.description ?? "").toLowerCase().includes("checking") && !(a.description ?? "").toLowerCase().includes("brokerage"))
-                .map(a => ({ name: (a.description ?? "").split("(")[0].trim(), bucket: "Reserve", value: Number(a.value) }));
-              const allRows = [...checkingItems, ...savingsItems].sort((a, b) => b.value - a.value).slice(0, 3);
-              const groups = ["Operating Cash", "Reserve"].map(bucket => ({
-                bucket,
-                rows: allRows.filter(r => r.bucket === bucket),
-              })).filter(g => g.rows.length > 0);
-              const subtotal = allRows.reduce((s, r) => s + r.value, 0);
-              return (
-                <table className="w-full text-[10px] border-collapse">
-                  <thead>
-                    <tr className="border-b border-foreground/20">
-                      <th className="text-left font-semibold text-muted-foreground py-1 pr-2 w-8">#</th>
-                      <th className="text-left font-semibold text-muted-foreground py-1">Account</th>
-                      <th className="text-right font-semibold text-muted-foreground py-1">Balance</th>
-                    </tr>
-                  </thead>
+
+              {/* Account table */}
+              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 10 }}>Where the excess cash is sitting</div>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <tbody>
-                    {groups.map(g => (
-                      <>
-                        <tr key={g.bucket + "-header"}>
-                          <td colSpan={3} className="pt-2 pb-0.5 text-[9px] font-bold text-foreground uppercase tracking-wider">{g.bucket}</td>
-                        </tr>
-                        {g.rows.map((r, i) => (
-                          <tr key={i}>
-                            <td className="py-0.5 pr-2 text-muted-foreground align-top">{acctNum(r.name)}</td>
-                            <td className="py-0.5 pr-4 text-foreground">{r.name}</td>
-                            <td className="py-0.5 text-right tabular-nums text-foreground">{fmt(r.value)}</td>
-                          </tr>
-                        ))}
-                      </>
+                    {demoAccts.map((a) => (
+                      <tr key={a.num} style={{ borderBottom: "1px solid #f0ede8" }}>
+                        <td style={{ padding: "10px 0", fontSize: 13, color: "#181816" }}>
+                          {a.name} <span style={{ color: "#9c9c93" }}>·· {a.num}</span>
+                        </td>
+                        <td style={{ padding: "10px 8px", fontSize: 11, color: "#9c9c93", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
+                          balance {fmt(a.balance)} · floor {fmt(a.floor)}
+                        </td>
+                        <td style={{ padding: "10px 0", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1e4d30", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
+                          {fmt(a.balance - a.floor)}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan={2} style={{ padding: "10px 0", fontSize: 13, fontWeight: 700, color: "#181816", borderTop: "1px solid #d4d4cf" }}>Total excess</td>
+                      <td style={{ padding: "10px 0", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1e4d30", textAlign: "right" as const, borderTop: "1px solid #d4d4cf" }}>{fmt(totalHarvest)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Cash efficiency note */}
+              <div style={{ fontSize: 12, color: "#2e6b47", background: "#f0f9f4", border: "1px solid #c3e0d0", borderRadius: 8, padding: "10px 14px", lineHeight: 1.6 }}>
+                This is about cash efficiency — not taking on more risk. Reserves stay intact across all three accounts.
+              </div>
+
+              {/* Quote */}
+              <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 14, fontStyle: "italic", color: "#68685f", lineHeight: 1.8, borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
+                "Sweeping the excess into the Build and Grow allocation captures an additional {fmt(Math.round(totalHarvest * 0.051) - Math.round(totalHarvest * 0.008))} per year. Reserves remain intact across all three accounts — this is pure yield pickup with no liquidity cost."
+              </div>
+
+              {/* Action strip */}
+              <ActionStrip
+                action={`Sweep ${fmt(totalHarvest, true)} excess into GURU allocation`}
+                urgencyText={`Urgent · ${fmt(monthlyLoss)}/mo cost of inaction`}
+                urgencyColor="#be2a2c"
+                nowLabel={fmt(totalHarvest)}
+                nowSubtext="3 bank accounts · idle"
+                afterLabel={fmt(totalHarvest)}
+                afterSubtext="Build & Grow buckets"
+                afterSublabel="AFTER GURU"
+                accentColor="#1e4d30"
+              />
+            </div>
+            <DStrip cardKey="liquidity" approveLabel="Approve" approveColor="#1e4d30" onApprove={() => onNavigate("guru")} />
+          </div>
+          );
+        })()}
+
+        {/* ── Card 2: Rebalance Portfolio ── */}
+        {(() => {
+          const totalDeploy = 499440;
+          const positions = [
+            { name: "CIO Flagship Sector Rotation Fund", amount: 199440, detail: "Reduces correlation to broad market · target yield 6.2% · underrepresented in current sleeve" },
+            { name: "Small Cap Mutual Fund", amount: 150000, detail: "Increases exposure to high-growth segment · target yield 8.4% · consistent with moderate-aggressive profile" },
+            { name: "Cresset Short Duration Bond Fund", amount: 150000, detail: "Anchors fixed income sleeve · target yield 5.4% · low duration risk ahead of potential Fed cut" },
+          ];
+          return (
+          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ height: 3, background: "#1a3a6b" }} />
+            <div style={{ padding: "16px 20px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <CardCheckHeader
+                badge="Investments"
+                badgeBg="#e8eef8"
+                badgeText="#1a3a6b"
+                badgeBorder="#b4c5e8"
+                priority="Medium Priority"
+                priorityBg="#e8eef8"
+                priorityText="#1a3a6b"
+                priorityBorder="#b4c5e8"
+                title={`Rebalance Portfolio — ${fmt(totalDeploy).replace('$', '')} to Deploy`}
+                body={`With ${fmt(totalDeploy, true)} harvested, three positions put it to work within the moderate risk profile: the CIO Sector Rotation Fund, a Small Cap Mutual Fund, and the Cresset Short Duration Bond Fund.`}
+              />
+
+              {/* Large amount */}
+              <div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 32, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#1a3a6b", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalDeploy, true)}</div>
+                <div style={{ fontSize: 13, color: "#9c9c93", marginTop: 4 }}>to deploy across three positions</div>
+              </div>
+
+              {/* Ideas checklist */}
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 12 }}>Ideas to Explore</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                  {positions.map((p, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px 0", borderBottom: i < positions.length - 1 ? "1px solid #f0ede8" : "none" }}>
+                      <div style={{ width: 17, height: 17, borderRadius: 4, flexShrink: 0, marginTop: 2, border: "1.5px solid #d4d4cf", background: "#fff" }} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{p.name} <span style={{ fontVariantNumeric: "tabular-nums" }}>— {fmt(p.amount)}</span></div>
+                        <div style={{ fontSize: 12, color: "#9c9c93", marginTop: 3, lineHeight: 1.5 }}>{p.detail}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quote */}
+              <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 14, fontStyle: "italic", color: "#68685f", lineHeight: 1.8, borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
+                "The sector rotation fund reduces correlation to the broad market, the small cap sleeve adds high-growth exposure, and short-duration fixed income anchors the position ahead of any rate movement. Each fills a gap in the current allocation."
+              </div>
+            </div>
+            <DStrip cardKey="rebalance" approveLabel="Open GURU Allocation →" approveColor="#1a3a6b" onApprove={() => onNavigate("guru")} />
+          </div>
+          );
+        })()}
+
+        {/* ── Card 3: Lock In Rates / Fed Cut ── */}
+        {(() => {
+          const floatingAccts = [
+            { name: "Citizens Private Bank Money Market", num: "1482", amount: 225000 },
+            { name: "Fidelity Government MMF", num: "4976", amount: 875000 },
+          ];
+          const totalExposed = floatingAccts.reduce((s, a) => s + a.amount, 0);
+          const daysToMay7 = Math.ceil((new Date(2026, 4, 7).getTime() - DEMO_NOW.getTime()) / 86400000);
+          return (
+          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden" }}>
+            <div style={{ height: 3, background: "#a07820" }} />
+            <div style={{ padding: "16px 20px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <CardCheckHeader
+                badge="Interest Rates"
+                badgeBg="#fdf4e3"
+                badgeText="#a07820"
+                badgeBorder="#e8cc88"
+                priority="Act Before May 7"
+                priorityBg="#fdf4e3"
+                priorityText="#a07820"
+                priorityBorder="#e8cc88"
+                title="Lock In Rates Before the Fed Cuts — Money Markets Will Float Down"
+                body={`The Fed is expected to cut on May 7. Money market funds reprice immediately — the Kesslers hold ${fmt(totalExposed)} across two floating MM positions. A 25bp cut costs ${fmt(Math.round(totalExposed * 0.0025))} per year. The window to lock in 5.2% closes when the cut lands.`}
+              />
+
+              {/* Large amount */}
+              <div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 32, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#a07820", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalExposed)}</div>
+                <div style={{ fontSize: 13, color: "#9c9c93", marginTop: 4 }}>exposed to rate cut repricing</div>
+              </div>
+
+              {/* Account table */}
+              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>
+                    {floatingAccts.map((a) => (
+                      <tr key={a.num} style={{ borderBottom: "1px solid #f0ede8" }}>
+                        <td style={{ padding: "10px 0", fontSize: 13, color: "#181816" }}>
+                          {a.name} <span style={{ color: "#9c9c93" }}>·· {a.num}</span>
+                        </td>
+                        <td style={{ padding: "10px 8px", fontSize: 11, color: "#9c9c93", textAlign: "right" as const }}>floating · reprices at cut</td>
+                        <td style={{ padding: "10px 0", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#a07820", textAlign: "right" as const }}>{fmt(a.amount)}</td>
+                      </tr>
                     ))}
                   </tbody>
-                  <tfoot>
-                    <tr className="border-t border-foreground/20">
-                      <td colSpan={2} className="pt-1.5 text-[9px] font-bold text-foreground uppercase tracking-wider pl-0">Total</td>
-                      <td className="pt-1.5 text-right tabular-nums font-black text-foreground underline decoration-double">{fmt(subtotal)}</td>
-                    </tr>
-                  </tfoot>
                 </table>
-              );
-            })()}
-            <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
-              <p className="text-[10px] text-emerald-800 leading-relaxed italic">
-                "Year-end bonus created surplus above the 3-month reserve target — deploying excess into Build and Grow puts it to work."
-              </p>
-            </div>
-          </div>
-          <div
-            className="px-4 py-2.5 border-t border-border flex items-center justify-between bg-emerald-50/40 cursor-pointer hover:bg-emerald-50 transition-colors"
-            onClick={() => onNavigate("guru")}
-          >
-            <span className="text-[10px] text-muted-foreground">Open GURU Allocation</span>
-            <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1">View now <ArrowUpRight className="w-3 h-3" /></span>
-          </div>
-        </div>
+              </div>
 
-        {/* ── Card 2: Portfolio Rebalancing ── */}
-        <div
-          className={`rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all h-full ${checked.has("rebalance") ? "border-blue-400 shadow-blue-100" : "border-border"}`}
-          style={{ borderTop: `3px solid #3b82f6` }}
-        >
-          <div className="px-4 pt-4 pb-3 flex flex-col gap-3 flex-1">
-            <CardCheckHeader
-              cardKey="rebalance"
-              color="#3b82f6"
-              icon={RefreshCw}
-              badge="Investments"
-              priority="Medium Priority"
-              title="Rebalance Portfolio with Excess Cash"
-              subtitle="Ideas to discuss with Sarah and Michael after liquidity conversation"
-            />
-            {singleStockVal > 0 && (
-              <div className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 flex items-center gap-2">
-                <AlertTriangle className="w-3 h-3 text-rose-500 flex-shrink-0" />
-                <p className="text-[10px] text-rose-700">Single-stock ({singleStockPct}% of portfolio) exceeds 5% threshold.</p>
+              {/* Quote */}
+              <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 14, fontStyle: "italic", color: "#68685f", lineHeight: 1.8, borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
+                "Rotating into 6-month T-bills before May 7 locks in 5.2% through October — regardless of what the Fed does. The position remains semi-liquid and rolls back into the MM or extends further depending on the rate path in Q4."
               </div>
-            )}
-            <div className="space-y-1.5">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Ideas to explore</p>
-              {[
-                { label: "Add CIO flagship sector rotation fund", detail: "Reduces correlation to broad market" },
-                { label: "Add Small Cap Mutual Fund", detail: "Increases exposure to high-growth segment" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2 rounded-lg border border-border bg-background px-3 py-2">
-                  <div className="w-3.5 h-3.5 rounded flex-shrink-0 mt-0.5 border-2 border-slate-200 bg-background" />
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold text-foreground">{item.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{item.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
-              <p className="text-[10px] text-blue-800 leading-relaxed italic">
-                "With liquidity identified, we can deploy into under-represented segments — sector funds give diversification within the moderate risk profile."
-              </p>
-            </div>
-          </div>
-          <div
-            className="px-4 py-2.5 border-t border-border flex items-center justify-between bg-blue-50/40 cursor-pointer hover:bg-blue-50 transition-colors"
-            onClick={() => onNavigate("guru")}
-          >
-            <span className="text-[10px] text-muted-foreground">Open GURU Allocation</span>
-            <span className="text-[10px] font-bold text-blue-700 flex items-center gap-1">View now <ArrowUpRight className="w-3 h-3" /></span>
-          </div>
-        </div>
 
-        {/* ── Card 3: Yield Pickup ── */}
-        <div
-          className={`rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col transition-all ${checked.has("yield") ? "border-amber-400 shadow-amber-100" : "border-border"}`}
-          style={{ borderTop: `3px solid #d97706` }}
-        >
-          <div className="px-4 pt-4 pb-3 flex flex-col gap-3 flex-1">
-            <CardCheckHeader
-              cardKey="yield"
-              color="#d97706"
-              icon={SlidersHorizontal}
-              badge="Cash Optimization"
-              priority="Time Sensitive"
-              title="Lock In Rates Before Fed Cuts"
-              subtitle={<>Lock in T-bill yields on <em>{fmt(_excessNotTreasuries)}</em> before the next cut</>}
-            />
-            {/* Headline stats */}
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="text-xl font-black tabular-nums text-amber-600 leading-none">+{_fedCutBps} bps</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">saved by locking in now</p>
-              </div>
-              <div className="w-px h-7 bg-border flex-shrink-0" />
-              <div>
-                <p className="text-xl font-black tabular-nums text-amber-700 leading-none">{fmt(_fedLockInSavings)}<span className="text-xs font-semibold">/yr</span></p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">vs. waiting for cut</p>
-              </div>
+              {/* Action strip */}
+              <ActionStrip
+                action={`Rotate ${fmt(totalExposed)} from money market → 6-mo T-bills before May 7`}
+                urgencyText={`Act before May 7 · ${daysToMay7} days`}
+                urgencyColor="#a07820"
+                nowLabel={fmt(totalExposed)}
+                nowSubtext="Money market funds"
+                nowSublabel="NOW · FLOATING"
+                afterLabel={fmt(totalExposed)}
+                afterSubtext="6-mo T-bills · matures Oct"
+                afterSublabel="AFTER GURU · LOCKED"
+                accentColor="#a07820"
+              />
             </div>
-            {/* Fed rate path strip */}
-            <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5 flex items-center gap-3">
-              <div className="flex-1 text-center">
-                <p className="text-[9px] font-black uppercase tracking-wider text-amber-600 mb-0.5">Now</p>
-                <p className="text-[15px] font-black tabular-nums text-amber-800 leading-none">3.625%</p>
-                <p className="text-[9px] text-amber-600 mt-0.5">3.50–3.75% target</p>
-              </div>
-              <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
-                <span className="text-[11px] font-black text-rose-600 bg-rose-50 border border-rose-300 rounded-full px-2 py-0.5 whitespace-nowrap">−{_fedCutBps} bps</span>
-                <span className="text-amber-400 text-base leading-none">→</span>
-                <span className="text-[8px] text-muted-foreground">expected</span>
-              </div>
-              <div className="flex-1 text-center">
-                <p className="text-[9px] font-black uppercase tracking-wider text-rose-500 mb-0.5">Dec 31, 2026</p>
-                <p className="text-[15px] font-black tabular-nums text-rose-700 leading-none">3.125%</p>
-                <p className="text-[9px] text-rose-500 mt-0.5">3.00–3.25% target</p>
-              </div>
-            </div>
-            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-              <p className="text-[10px] text-amber-800 leading-relaxed italic">
-                "Fed expected to cut 50 bps. Locking in T-bill rate on {fmt(_excessNotTreasuries)} of excess cash is worth ~{fmt(_fedLockInSavings)}/year — at no added risk."
-              </p>
-            </div>
+            <DStrip cardKey="yield" approveLabel="Approve" approveColor="#a07820" onApprove={() => onNavigate("guru")} />
           </div>
-          <div
-            className="px-4 py-2.5 border-t border-border flex items-center justify-between bg-amber-50/40 cursor-pointer hover:bg-amber-50 transition-colors"
-            onClick={() => onNavigate("guru")}
-          >
-            <span className="text-[10px] text-muted-foreground">Open Reserve bucket in GURU</span>
-            <span className="text-[10px] font-bold text-amber-700 flex items-center gap-1">View now <ArrowUpRight className="w-3 h-3" /></span>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* ── Card 4: Account Cash Movements ── */}
         {(() => {
           return (
             <div
-              className={`rounded-2xl border bg-card shadow-sm transition-all flex flex-col row-span-2 ${checked.has("cashflow") ? "border-sky-400 shadow-sky-100" : "border-border"}`}
-              style={{ borderTop: "4px solid #0ea5e9", order: -1 }}
+              style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden" }}
               data-testid="advisor-brief-money-flow-card"
             >
-              {/* Checkbox header */}
-              <div className="px-6 pt-5 pb-4 border-b border-border">
+              <div style={{ height: 3, background: "#1d4ed8" }} />
+              {/* Card header */}
+              <div style={{ padding: "16px 20px 14px" }}>
                 <CardCheckHeader
-                  cardKey="cashflow"
-                  color="#0ea5e9"
-                  icon={CalendarClock}
-                  badge="Cash Management"
-                  priority="January"
-                  title="Scheduled Cash Movements Next Month (January)"
-                  subtitle="What moves between accounts over the next 60 days"
+                  badge="Cash Movement"
+                  badgeBg="#e8eef8"
+                  badgeText="#1d4ed8"
+                  badgeBorder="#b4c5e8"
+                  priority="Monthly Update"
+                  priorityBg="#f0f0eb"
+                  priorityText="#68685f"
+                  priorityBorder="#d4d4cf"
+                  title="March Money Movement — Where Every Dollar Sits"
+                  body="March ran net positive — $42,500 in, $24,260 out, $18,240 surplus routed to Reserve. The cash architecture is working as modelled. One item is open: a $85,000 wire to Fidelity due March 20."
                 />
               </div>
               {/* ── Bucket tables ── */}
-              <div className="px-6 py-5 bg-slate-50/40">
-                <div className="flex flex-col gap-0">
+              <div style={{ padding: "20px 24px", background: "#fafaf8" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
                   {/* ── Operating Cash row ── */}
-                  <div className="flex items-stretch gap-3" data-testid="flow-col-ops">
-                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#1d4ed8" }}>
-                      <Wallet className="w-3.5 h-3.5 text-white/80" />
-                      <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Operating Cash</span>
-                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">$90,879</span>
+                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-ops">
+                    <div style={{ width: 144, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "#1d4ed8" }}>
+                      <Wallet style={{ width: 14, height: 14, color: "rgba(255,255,255,0.8)" }} />
+                      <span style={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", textAlign: "center", fontSize: 11 }}>Operating Cash</span>
+                      <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.9)", fontSize: 10 }}>$90,879</span>
                     </div>
-                    <div className="border border-blue-200 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-4 bg-blue-50/60" data-testid="flow-row-ops-jan">
-                        <div className="min-w-0 mr-2">
-                          <p className="text-[11px] font-semibold text-blue-900 leading-tight">CIT Money Market Bank Account</p>
-                          <p className="text-[9px] text-blue-600 mt-0.5">Primary operating · Jan ending</p>
+                    <div style={{ border: "1px solid #bfcfef", borderRadius: 8, overflow: "hidden", flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(29,78,216,0.04)" }} data-testid="flow-row-ops-jan">
+                        <div style={{ minWidth: 0, marginRight: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "#1d4ed8", lineHeight: 1.3 }}>CIT Money Market Bank Account</div>
+                          <div style={{ fontSize: 9, color: "#4a6aaa", marginTop: 2 }}>Primary operating · Jan ending</div>
                         </div>
-                        <span className="text-[11px] font-black text-blue-700 tabular-nums flex-shrink-0">$90,879</span>
+                        <span style={{ fontSize: 11, fontWeight: 900, color: "#1d4ed8", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$90,879</span>
                       </div>
                     </div>
                   </div>
 
                   {/* ── Flow connector 2: JPMorgan → CIT ($46,739) ── */}
-                  <div className="flex items-center" style={{ minHeight: 44, paddingLeft: 'calc(9rem + 0.75rem)' }}>
-                    <div className="group relative flex items-center gap-2.5 cursor-default" style={{ marginLeft: 28 + 12 }}>
-                      <svg width="14" height="44" className="flex-shrink-0 overflow-visible">
-                        <path d="M 7,42 L 7,2" stroke="#2563eb" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
-                        <polygon points="0,-5 4.5,3 -4.5,3" fill="#2563eb" opacity="0.95">
+                  <div style={{ display: "flex", alignItems: "center", minHeight: 44, paddingLeft: "calc(144px + 12px)" }}>
+                    <div className="group" style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, cursor: "default", marginLeft: 40 }}>
+                      <svg width="14" height="44" style={{ flexShrink: 0, overflow: "visible" }}>
+                        <path d="M 7,42 L 7,2" stroke="#1d4ed8" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
+                        <polygon points="0,-5 4.5,3 -4.5,3" fill="#1d4ed8" opacity="0.95">
                           <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 7,42 L 7,2" />
                         </polygon>
                       </svg>
-                      <span className="text-[10px] font-black text-blue-700 bg-blue-50 border border-blue-300 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm">
+                      <span style={{ fontSize: 10, fontWeight: 900, color: "#1d4ed8", background: "#eef2fd", border: "1px solid #bfcfef", padding: "4px 10px", borderRadius: 20, whiteSpace: "nowrap", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
                         ↑ $46,739 · JPMorgan → CIT
                       </span>
                       <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
-                        <div className="bg-slate-900 text-white text-[9px] font-medium rounded-lg px-3 py-2 shadow-2xl leading-relaxed max-w-[260px]">
+                        <div style={{ background: "#1a1a18", color: "#fff", fontSize: 9, fontWeight: 500, borderRadius: 8, padding: "8px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", lineHeight: 1.6, maxWidth: 260 }}>
                           Autodraw from JPMorgan 100% Treasuries MMF into CIT operating account — building 2 months of forward cash expenses
                         </div>
-                        <div className="w-2 h-2 bg-slate-900 rotate-45 ml-4 -mt-1 flex-shrink-0" />
+                        <div style={{ width: 8, height: 8, background: "#1a1a18", transform: "rotate(45deg)", marginLeft: 16, marginTop: -4, flexShrink: 0 }} />
                       </div>
                     </div>
                   </div>
 
                   {/* ── Reserve row ── */}
-                  <div className="flex items-stretch gap-3" data-testid="flow-col-reserve">
-                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#d97706" }}>
-                      <ShieldCheck className="w-3.5 h-3.5 text-white/80" />
-                      <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[11px]">Reserve</span>
-                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">$129,385</span>
+                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-reserve">
+                    <div style={{ width: 144, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "#d97706" }}>
+                      <ShieldCheck style={{ width: 14, height: 14, color: "rgba(255,255,255,0.8)" }} />
+                      <span style={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", textAlign: "center", fontSize: 11 }}>Reserve</span>
+                      <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.9)", fontSize: 10 }}>$129,385</span>
                     </div>
-                    {/* Branch connector from pill to both stacked cards */}
-                    <div className="flex-shrink-0 relative" style={{ width: 28, alignSelf: 'stretch' }}>
-                      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} viewBox="0 0 28 100" preserveAspectRatio="none">
+                    {/* Branch connector */}
+                    <div style={{ flexShrink: 0, position: "relative", width: 28, alignSelf: "stretch" }}>
+                      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} viewBox="0 0 28 100" preserveAspectRatio="none">
                         <line x1="0" y1="50" x2="14" y2="50" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="25" x2="14" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="25" x2="28" y2="25" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="75" x2="28" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
                       </svg>
                     </div>
-                    {/* Stacked sub-account cards with flow connector between them */}
-                    <div className="flex-1 flex flex-col gap-0">
-                      <div className="border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-jpm">
-                        <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60">
-                          <div className="min-w-0 mr-2">
-                            <p className="text-[11px] font-semibold text-amber-900 leading-tight">JPMorgan 100% Treasuries Money Market Fund</p>
-                            <p className="text-[9px] text-amber-600 mt-0.5">Autodraw to Operating</p>
+                    {/* Stacked sub-account cards */}
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0 }}>
+                      <div style={{ border: "1px solid #fde68a", borderRadius: 8, overflow: "hidden" }} data-testid="flow-row-reserve-jpm">
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(255,251,235,0.6)" }}>
+                          <div style={{ minWidth: 0, marginRight: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "#78350f", lineHeight: 1.3 }}>JPMorgan 100% Treasuries Money Market Fund</div>
+                            <div style={{ fontSize: 9, color: "#d97706", marginTop: 2 }}>Autodraw to Operating</div>
                           </div>
-                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$27,927</span>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: "#b45309", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$27,927</span>
                         </div>
                       </div>
 
-                      {/* ── Flow connector 1: T-Bill → JPMorgan ($7,478) ── */}
-                      <div className="group relative flex items-center gap-2.5 cursor-default py-1 px-3">
-                        <svg width="14" height="32" className="flex-shrink-0 overflow-visible">
+                      {/* Flow connector: T-Bill → JPMorgan */}
+                      <div className="group" style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, cursor: "default", padding: "4px 12px" }}>
+                        <svg width="14" height="32" style={{ flexShrink: 0, overflow: "visible" }}>
                           <path d="M 7,30 L 7,2" stroke="#d97706" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
                           <polygon points="0,-4 4,3 -4,3" fill="#f59e0b" opacity="0.95">
                             <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 7,30 L 7,2" />
                           </polygon>
                         </svg>
-                        <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm">
+                        <span style={{ fontSize: 10, fontWeight: 900, color: "#b45309", background: "#fffbeb", border: "1px solid #fcd34d", padding: "4px 10px", borderRadius: 20, whiteSpace: "nowrap", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
                           ↑ $7,478 · T-Bill → JPMorgan
                         </span>
                         <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
-                          <div className="bg-slate-900 text-white text-[9px] font-medium rounded-lg px-3 py-2 shadow-2xl leading-relaxed max-w-[260px]">
+                          <div style={{ background: "#1a1a18", color: "#fff", fontSize: 9, fontWeight: 500, borderRadius: 8, padding: "8px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", lineHeight: 1.6, maxWidth: 260 }}>
                             1-month T-Bill maturing in January — proceeds roll directly into JPMorgan 100% Treasuries MMF
                           </div>
-                          <div className="w-2 h-2 bg-slate-900 rotate-45 ml-4 -mt-1 flex-shrink-0" />
+                          <div style={{ width: 8, height: 8, background: "#1a1a18", transform: "rotate(45deg)", marginLeft: 16, marginTop: -4, flexShrink: 0 }} />
                         </div>
                       </div>
 
-                      <div className="border border-amber-200 rounded-lg overflow-hidden" data-testid="flow-row-reserve-tbill">
-                        <div className="flex items-center justify-between px-4 py-4 bg-amber-50/60">
-                          <div className="min-w-0 mr-2">
-                            <p className="text-[11px] font-semibold text-amber-900 leading-tight">T-Bill Ladder</p>
-                            <p className="text-[9px] text-amber-600 mt-0.5">3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</p>
+                      <div style={{ border: "1px solid #fde68a", borderRadius: 8, overflow: "hidden" }} data-testid="flow-row-reserve-tbill">
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(255,251,235,0.6)" }}>
+                          <div style={{ minWidth: 0, marginRight: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "#78350f", lineHeight: 1.3 }}>T-Bill Ladder</div>
+                            <div style={{ fontSize: 9, color: "#d97706", marginTop: 2 }}>3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</div>
                           </div>
-                          <span className="text-[11px] font-black text-amber-700 tabular-nums flex-shrink-0">$101,458</span>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: "#b45309", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$101,458</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* ── Gap ── */}
-                  <div className="h-3" />
+                  <div style={{ height: 12 }} />
 
                   {/* ── Build row ── */}
-                  <div className="flex items-stretch gap-3" data-testid="flow-col-build">
-                    <div className="w-36 flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1.5 py-4" style={{ background: "#16a34a" }}>
-                      <Home className="w-3.5 h-3.5 text-white/80" />
-                      <span className="font-black uppercase tracking-widest text-white text-center px-2 text-[12px]">Build</span>
-                      <span className="font-black tabular-nums text-white/90 mt-0.5 text-[10px]">$226,545</span>
+                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-build">
+                    <div style={{ width: 144, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "#16a34a" }}>
+                      <Home style={{ width: 14, height: 14, color: "rgba(255,255,255,0.8)" }} />
+                      <span style={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", textAlign: "center", fontSize: 12 }}>Build</span>
+                      <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.9)", fontSize: 10 }}>$226,545</span>
                     </div>
-                    {/* Branch connector from pill to both stacked cards */}
-                    <div className="flex-shrink-0 relative" style={{ width: 28, alignSelf: 'stretch' }}>
-                      <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} viewBox="0 0 28 100" preserveAspectRatio="none">
+                    {/* Branch connector */}
+                    <div style={{ flexShrink: 0, position: "relative", width: 28, alignSelf: "stretch" }}>
+                      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} viewBox="0 0 28 100" preserveAspectRatio="none">
                         <line x1="0" y1="50" x2="14" y2="50" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="25" x2="14" y2="75" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
                         <line x1="14" y1="25" x2="28" y2="25" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
@@ -6410,23 +7178,23 @@ function AdvisorBriefView({
                       </svg>
                     </div>
                     {/* Stacked sub-account cards */}
-                    <div className="flex-1 flex flex-col gap-3">
-                      <div className="border border-emerald-200 rounded-lg overflow-hidden" data-testid="flow-row-build-munis">
-                        <div className="flex items-center justify-between px-4 py-4 bg-emerald-50/60">
-                          <div className="min-w-0 mr-2">
-                            <p className="text-[11px] font-semibold text-emerald-900 leading-tight">2028 Municipal Bonds</p>
-                            <p className="text-[9px] text-emerald-600 mt-0.5">Tax-advantaged income</p>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ border: "1px solid #bbf7d0", borderRadius: 8, overflow: "hidden" }} data-testid="flow-row-build-munis">
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(240,253,244,0.6)" }}>
+                          <div style={{ minWidth: 0, marginRight: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "#14532d", lineHeight: 1.3 }}>2028 Municipal Bonds</div>
+                            <div style={{ fontSize: 9, color: "#16a34a", marginTop: 2 }}>Tax-advantaged income</div>
                           </div>
-                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">$32,161</span>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: "#15803d", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$32,161</span>
                         </div>
                       </div>
-                      <div className="border border-emerald-200 rounded-lg overflow-hidden" data-testid="flow-row-build-tbill">
-                        <div className="flex items-center justify-between px-4 py-4 bg-emerald-50/60">
-                          <div className="min-w-0 mr-2">
-                            <p className="text-[11px] font-semibold text-emerald-900 leading-tight">S&amp;P Low Volatility Index</p>
-                            <p className="text-[9px] text-emerald-600 mt-0.5">Short-duration ladder</p>
+                      <div style={{ border: "1px solid #bbf7d0", borderRadius: 8, overflow: "hidden" }} data-testid="flow-row-build-tbill">
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(240,253,244,0.6)" }}>
+                          <div style={{ minWidth: 0, marginRight: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: "#14532d", lineHeight: 1.3 }}>S&amp;P Low Volatility Index</div>
+                            <div style={{ fontSize: 9, color: "#16a34a", marginTop: 2 }}>Short-duration ladder</div>
                           </div>
-                          <span className="text-[11px] font-black text-emerald-700 tabular-nums flex-shrink-0">$194,384</span>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: "#15803d", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$194,384</span>
                         </div>
                       </div>
                     </div>
@@ -6434,14 +7202,11 @@ function AdvisorBriefView({
 
                 </div>
               </div>
-              {/* Footer */}
-              <div
-                className="px-6 py-3.5 border-t border-border flex items-center justify-between bg-slate-50/60 cursor-pointer hover:bg-slate-100 transition-colors"
-                onClick={() => onNavigate("moneymovement")}
-              >
-                <span className="text-[10px] text-muted-foreground">View full money movement detail</span>
-                <span className="text-[11px] font-bold text-sky-700 flex items-center gap-1">Open Money Movement <ArrowUpRight className="w-3.5 h-3.5" /></span>
+              {/* Quote */}
+              <div style={{ padding: "0 24px 20px", fontFamily: '"Playfair Display", Georgia, serif', fontSize: 14, fontStyle: "italic", color: "#68685f", lineHeight: 1.8 }}>
+                "The Fidelity wire is routine margin settlement — it does not affect the liquidity harvest or deployment plan above. Once initiated, March is closed and the household is on track with the 12-month cash flow forecast."
               </div>
+              <DStrip cardKey="cashflow" approveLabel="Initiate Wire" approveColor="#1d4ed8" onApprove={() => onNavigate("moneymovement")} />
             </div>
           );
         })()}
@@ -6456,107 +7221,102 @@ function AdvisorBriefView({
           const scheduledCount = upcoming.filter((o) => scheduled.has(o.id)).length;
           const activeObl = OBLIGATIONS.find((o) => o.id === wireModalId);
 
+          const fieldStyle: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid #e6e5e0", background: "#fff", padding: "9px 12px", fontSize: 12, color: "#181816", outline: "none", fontFamily: "inherit" };
+          const labelStyle: React.CSSProperties = { fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", display: "block", marginBottom: 5 };
+
           return (
-          <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
+          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ height: 4, background: "#7c3aed" }} />
+
             {/* Header */}
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between" style={{ borderTop: "4px solid #7c3aed" }}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
-                  <Send className="w-4 h-4 text-violet-600" />
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e6e5e0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 20, textTransform: "uppercase", letterSpacing: "0.05em", background: "#7c3aed1a", color: "#7c3aed", border: "1px solid #7c3aed40" }}>Payments</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 20, textTransform: "uppercase", letterSpacing: "0.05em", background: "#fdecea", color: "#be2a2c", border: "1px solid #f5a8a8" }}>Urgent</span>
                 </div>
-                <div>
-                  <p className="text-base font-black text-foreground leading-none">Approve Autobill Pay</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Schedule payments directly from your connected accounts</p>
-                </div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 22, fontWeight: 400, color: "#181816", marginBottom: 2 }}>Approve Autobill Pay</div>
+                <div style={{ fontSize: 13, fontWeight: 300, color: "#68685f" }}>Schedule payments directly from your connected accounts</div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-xs font-black tabular-nums text-violet-700">{fmt(totalPending)}</p>
-                  <p className="text-[9px] text-muted-foreground">total pending</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#7c3aed", lineHeight: 1 }}>{fmt(totalPending)}</div>
+                  <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 2 }}>total pending</div>
                 </div>
-                <div className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1">
-                  <Lock className="w-3 h-3 text-indigo-600" />
-                  <span className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider">GURU Payments Active</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 20, padding: "4px 10px" }}>
+                  <Lock style={{ width: 11, height: 11, color: "#4f46e5" }} />
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#4338ca", textTransform: "uppercase", letterSpacing: "0.06em" }}>GURU Payments Active</span>
                 </div>
               </div>
             </div>
 
-            {/* Summary stat pills */}
-            <div className="px-6 py-3 border-b border-border bg-slate-50/60 flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-slate-400" />
-                <span className="text-[11px] text-muted-foreground font-medium">{upcoming.length} total upcoming</span>
+            {/* Summary stat strip */}
+            <div style={{ padding: "8px 24px", borderBottom: "1px solid #e6e5e0", background: "#fafaf8", display: "flex", alignItems: "center", gap: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#9c9c93" }} />
+                <span style={{ fontSize: 11, color: "#68685f", fontWeight: 500 }}>{upcoming.length} total upcoming</span>
               </div>
               {urgentCount > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-rose-500" />
-                  <span className="text-[11px] text-rose-700 font-semibold">{urgentCount} due within 45 days</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#e53e3e" }} />
+                  <span style={{ fontSize: 11, color: "#be2a2c", fontWeight: 600 }}>{urgentCount} due within 45 days</span>
                 </div>
               )}
               {scheduledCount > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-[11px] text-emerald-700 font-semibold">{scheduledCount} scheduled</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#0d6b50" }} />
+                  <span style={{ fontSize: 11, color: "#0d6b50", fontWeight: 600 }}>{scheduledCount} scheduled</span>
                 </div>
               )}
             </div>
 
             {/* Table */}
-            <div>
-              <table className="w-full text-[12px]">
+            <div style={{ overflowX: "auto" as const }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
-                  <tr className="bg-slate-800 text-slate-300">
-                    <th className="px-3 py-2.5 text-left font-black uppercase tracking-widest text-[9px] w-28">Due Date</th>
-                    <th className="px-3 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Description</th>
-                    <th className="px-3 py-2.5 text-left font-black uppercase tracking-widest text-[9px]">Payee</th>
-                    <th className="px-3 py-2.5 text-right font-black uppercase tracking-widest text-[9px] w-24">Amount</th>
-                    <th className="px-3 py-2.5 text-center font-black uppercase tracking-widest text-[9px] w-32">Status</th>
+                  <tr style={{ background: "#181816" }}>
+                    {["Due Date","Description","Payee","Amount","Action"].map((h, i) => (
+                      <th key={h} style={{ padding: "9px 14px", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", textAlign: i >= 3 ? "right" : "left", whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
-                  {upcoming.map((obl) => {
+                <tbody>
+                  {upcoming.map((obl, rowIdx) => {
                     const daysUntil = Math.ceil((obl.due.getTime() - DEMO_NOW.getTime()) / 86400000);
                     const isUrgent = daysUntil <= 45;
                     const isScheduled = scheduled.has(obl.id);
+                    const rowBg = isScheduled ? "#fafaf8" : "#fff";
                     return (
-                      <tr key={obl.id} className={`hover:bg-secondary/30 transition-colors ${isScheduled ? "opacity-60" : ""}`}>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-semibold text-foreground">{format(obl.due, "MMM d, yyyy")}</span>
-                            <span className={`text-[10px] font-bold ${isUrgent ? "text-rose-600" : "text-muted-foreground"}`}>
-                              {isUrgent ? `${daysUntil}d — urgent` : `in ${daysUntil}d`}
-                            </span>
+                      <tr key={obl.id} style={{ background: rowBg, borderBottom: "1px solid #f0ede8", opacity: isScheduled ? 0.65 : 1 }}>
+                        <td style={{ padding: "11px 14px", whiteSpace: "nowrap" as const }}>
+                          <div style={{ fontWeight: 600, color: "#181816", fontSize: 12 }}>{format(obl.due, "MMM d, yyyy")}</div>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: isUrgent ? "#be2a2c" : "#9c9c93", marginTop: 1 }}>
+                            {isUrgent ? `${daysUntil}d — urgent` : `in ${daysUntil}d`}
                           </div>
                         </td>
-                        <td className="px-3 py-3">
-                          <p className="font-semibold text-foreground leading-tight">{obl.label}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">From: {obl.from}</p>
+                        <td style={{ padding: "11px 14px" }}>
+                          <div style={{ fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{obl.label}</div>
+                          <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 2 }}>From: {obl.from}</div>
                         </td>
-                        <td className="px-3 py-3 text-muted-foreground">{obl.payee}</td>
-                        <td className="px-3 py-3 text-right tabular-nums font-black text-rose-700 whitespace-nowrap">{fmt(obl.amount)}</td>
-                        <td className="px-3 py-3 text-center">
+                        <td style={{ padding: "11px 14px", color: "#68685f", fontSize: 12 }}>{obl.payee}</td>
+                        <td style={{ padding: "11px 14px", textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700, color: "#be2a2c", whiteSpace: "nowrap" as const }}>{fmt(obl.amount)}</td>
+                        <td style={{ padding: "11px 14px", textAlign: "right" }}>
                           {isScheduled ? (
-                            <div className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
-                              <CheckSquare className="w-3 h-3 text-emerald-600" />
-                              <span className="text-[9px] font-black text-emerald-700">Scheduled</span>
-                            </div>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#e5f3ee", border: "1px solid #b4d9ce", borderRadius: 20, padding: "4px 10px", fontSize: 9, fontWeight: 700, color: "#0d6b50" }}>
+                              <CheckSquare style={{ width: 11, height: 11 }} /> Scheduled
+                            </span>
                           ) : (
                             <button
                               onClick={() => {
                                 setWireFromAccount((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.from }));
-                                const processDate = new Date(obl.due);
-                                processDate.setDate(processDate.getDate() - 2);
-                                setWireScheduleDate((s) => ({
-                                  ...s,
-                                  [obl.id]: s[obl.id] ?? processDate.toISOString().slice(0, 10),
-                                }));
+                                const pd = new Date(obl.due); pd.setDate(pd.getDate() - 2);
+                                setWireScheduleDate((s) => ({ ...s, [obl.id]: s[obl.id] ?? pd.toISOString().slice(0, 10) }));
                                 setWireMemo((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.label }));
                                 setWireModalId(obl.id);
                               }}
-                              className="inline-flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors whitespace-nowrap"
+                              style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#7c3aed", color: "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}
                             >
-                              <Send className="w-3 h-3" />
-                              Setup {obl.method}
+                              <Send style={{ width: 11, height: 11 }} /> Setup {obl.method}
                             </button>
                           )}
                         </td>
@@ -6567,35 +7327,38 @@ function AdvisorBriefView({
               </table>
             </div>
 
-            {/* Wire Setup Modal */}
+            {/* DStrip footer */}
+            <DStrip cardKey="payments" color="#7c3aed" approveLabel="Approve All Payments →" onApprove={() => { upcoming.filter(o => !scheduled.has(o.id)).forEach(o => setScheduled(s => new Set([...s, o.id]))); }} />
+
+            {/* Wire / ACH Setup Modal */}
             <Dialog open={wireModalId !== null} onOpenChange={(open) => { if (!open) setWireModalId(null); }}>
-              <DialogContent className="max-w-md">
+              <DialogContent style={{ maxWidth: 460, background: "#fff", border: "1px solid #e6e5e0", borderRadius: 14, padding: 0, overflow: "hidden" }}>
                 {activeObl && (
                   <>
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2 text-base">
-                        <Send className="w-4 h-4 text-rose-600" />
-                        Setup {activeObl.method} Payment
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-1">
-                      {/* Payment summary */}
-                      <div className="rounded-xl border border-border bg-slate-50 px-4 py-3 flex items-center justify-between">
+                    {/* Modal header bar */}
+                    <div style={{ height: 3, background: "#7c3aed" }} />
+                    <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e6e5e0" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                        <Send style={{ width: 14, height: 14, color: "#7c3aed" }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#7c3aed" }}>Setup {activeObl.method} Payment</span>
+                      </div>
+                      <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 20, fontWeight: 400, color: "#181816" }}>{activeObl.label}</div>
+                    </div>
+
+                    <div style={{ padding: "16px 24px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                      {/* Payment summary card */}
+                      <div style={{ background: "#fafaf8", border: "1px solid #e6e5e0", borderRadius: 9, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div>
-                          <p className="text-[11px] font-black text-foreground leading-tight">{activeObl.label}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{activeObl.payee} · Due {format(activeObl.due, "MMM d, yyyy")}</p>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{activeObl.payee}</div>
+                          <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 2 }}>Due {format(activeObl.due, "MMM d, yyyy")}</div>
                         </div>
-                        <p className="text-lg font-black tabular-nums text-rose-700">{fmt(activeObl.amount)}</p>
+                        <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#be2a2c" }}>{fmt(activeObl.amount)}</div>
                       </div>
 
                       {/* From account */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">From Account</label>
-                        <select
-                          value={wireFromAccount[activeObl.id] ?? activeObl.from}
-                          onChange={(e) => setWireFromAccount((s) => ({ ...s, [activeObl.id]: e.target.value }))}
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        >
+                      <div>
+                        <label style={labelStyle}>From Account</label>
+                        <select value={wireFromAccount[activeObl.id] ?? activeObl.from} onChange={(e) => setWireFromAccount((s) => ({ ...s, [activeObl.id]: e.target.value }))} style={fieldStyle}>
                           <option>Citizens Private Banking Checking</option>
                           <option>Chase Total Checking</option>
                           <option>Citizens Private Bank Money Market</option>
@@ -6603,63 +7366,41 @@ function AdvisorBriefView({
                         </select>
                       </div>
 
-                      {/* Schedule date */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Process Date</label>
-                        <input
-                          type="date"
-                          value={wireScheduleDate[activeObl.id] ?? ""}
-                          onChange={(e) => setWireScheduleDate((s) => ({ ...s, [activeObl.id]: e.target.value }))}
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        />
-                        <p className="text-[10px] text-muted-foreground">GURU defaults to 2 business days before due date</p>
+                      {/* Process date */}
+                      <div>
+                        <label style={labelStyle}>Process Date</label>
+                        <input type="date" value={wireScheduleDate[activeObl.id] ?? ""} onChange={(e) => setWireScheduleDate((s) => ({ ...s, [activeObl.id]: e.target.value }))} style={fieldStyle} />
+                        <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 4 }}>Defaults to 2 business days before due date</div>
                       </div>
 
                       {/* Memo */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Memo / Reference</label>
-                        <input
-                          type="text"
-                          value={wireMemo[activeObl.id] ?? activeObl.label}
-                          onChange={(e) => setWireMemo((s) => ({ ...s, [activeObl.id]: e.target.value }))}
-                          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[12px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        />
+                      <div>
+                        <label style={labelStyle}>Memo / Reference</label>
+                        <input type="text" value={wireMemo[activeObl.id] ?? activeObl.label} onChange={(e) => setWireMemo((s) => ({ ...s, [activeObl.id]: e.target.value }))} style={fieldStyle} />
                       </div>
 
-                      {/* Routing info (read-only) */}
-                      <div className="rounded-lg border border-border bg-slate-50 px-4 py-3 space-y-1.5">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Payment Details</p>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Routing Number</span>
-                          <span className="font-mono font-semibold text-foreground">{activeObl.routing}</span>
-                        </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Account / Ref</span>
-                          <span className="font-mono font-semibold text-foreground">{activeObl.acct}</span>
-                        </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Payment Method</span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${activeObl.method === "Wire" ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-sky-50 text-sky-700 border-sky-200"}`}>{activeObl.method}</span>
-                        </div>
+                      {/* Payment details block */}
+                      <div style={{ background: "#fafaf8", border: "1px solid #e6e5e0", borderRadius: 9, padding: "12px 16px" }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9c9c93", marginBottom: 8 }}>Payment Details</div>
+                        {[
+                          { label: "Routing Number", val: activeObl.routing, mono: true },
+                          { label: "Account / Ref",  val: activeObl.acct,    mono: true },
+                          { label: "Method",         val: activeObl.method,  mono: false },
+                        ].map(({ label, val, mono }) => (
+                          <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, marginBottom: 5 }}>
+                            <span style={{ color: "#9c9c93" }}>{label}</span>
+                            <span style={{ fontWeight: 600, color: "#181816", fontFamily: mono ? "monospace" : "inherit" }}>{val}</span>
+                          </div>
+                        ))}
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-2 pt-1">
-                        <button
-                          onClick={() => setWireModalId(null)}
-                          className="flex-1 rounded-lg border border-border bg-background hover:bg-secondary text-foreground px-4 py-2.5 text-[11px] font-semibold transition-colors"
-                        >
+                      <div style={{ display: "flex", gap: 8, paddingTop: 2 }}>
+                        <button onClick={() => setWireModalId(null)} style={{ flex: 1, borderRadius: 8, border: "1px solid #e6e5e0", background: "#fff", color: "#3a3a35", padding: "10px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                           Cancel
                         </button>
-                        <button
-                          onClick={() => {
-                            setScheduled((s) => new Set([...s, activeObl.id]));
-                            setWireModalId(null);
-                          }}
-                          className="flex-1 rounded-lg bg-slate-900 hover:bg-slate-700 text-white px-4 py-2.5 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5"
-                        >
-                          <CheckSquare className="w-3.5 h-3.5" />
-                          Schedule Payment
+                        <button onClick={() => { setScheduled((s) => new Set([...s, activeObl.id])); setWireModalId(null); }} style={{ flex: 1, borderRadius: 8, border: "none", background: "#181816", color: "#fff", padding: "10px 16px", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <CheckSquare style={{ width: 13, height: 13 }} /> Schedule Payment
                         </button>
                       </div>
                     </div>
@@ -6673,6 +7414,27 @@ function AdvisorBriefView({
         })()}
 
       </div>
+
+      {/* ── Page footer ── */}
+      <div style={{ marginTop: 32, padding: "14px 24px", background: "#fff", border: "1px solid #e6e5e0", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 12, color: "#9c9c93" }}>
+          Prepared by GURU · Updated {format(DEMO_NOW, "h:mm aa")} · 2 items resolved this week
+        </span>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={() => setShowEmail(true)}
+            style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 500, padding: "8px 18px", borderRadius: 8, border: "1px solid #d4d4cf", background: "#fff", color: "#3a3a35", cursor: "pointer" }}
+          >
+            Draft client email
+          </button>
+          <button
+            style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 600, padding: "8px 22px", borderRadius: 8, border: "none", background: "#181816", color: "#fff", cursor: "pointer" }}
+          >
+            Approve all urgent →
+          </button>
+        </div>
+      </div>
+
       {/* ── Email Modal ── */}
       <Dialog open={showEmail} onOpenChange={setShowEmail}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
@@ -6900,6 +7662,304 @@ export function BookOfBusinessView() {
   );
 }
 
+// ─── GURU Allocation Landing View ─────────────────────────────────────────────
+function GuruLandingView({
+  assets,
+  cashFlows,
+  onStartReview,
+}: {
+  assets: Asset[];
+  cashFlows: CashFlow[];
+  onStartReview: () => void;
+}) {
+  const [calcMode, setCalcMode] = useState(false);
+  const [workflowStarted, setWorkflowStarted] = useState(false);
+  const [bucketOverrides, setBucketOverrides] = useState<Record<string, { newBal: number; origBal: number } | null>>({});
+  const [incomeImpact, setIncomeImpact] = useState<{ atIncome: string; atIncomeSub: string; yieldDelta: string; yieldDeltaSub: string; aumIncrease: string } | null>(null);
+  useEffect(() => {
+    function handleMsg(e: MessageEvent) {
+      if (e.data?.type === 'GURU_BUCKET_UPDATE') {
+        setBucketOverrides(prev => ({ ...prev, [e.data.key]: { newBal: e.data.newBal, origBal: e.data.origBal } }));
+      } else if (e.data?.type === 'GURU_BUCKET_RESTORE') {
+        setBucketOverrides(prev => { const next = { ...prev }; delete next[e.data.key]; return next; });
+      } else if (e.data?.type === 'GURU_INCOME_IMPACT') {
+        setIncomeImpact({ atIncome: e.data.atIncome, atIncomeSub: e.data.atIncomeSub, yieldDelta: e.data.yieldDelta, yieldDeltaSub: e.data.yieldDeltaSub, aumIncrease: e.data.aumIncrease });
+      }
+    }
+    window.addEventListener('message', handleMsg);
+    return () => window.removeEventListener('message', handleMsg);
+  }, []);
+  const monthlyExpenses = (() => {
+    const moMap: Record<string, number> = {};
+    cashFlows.filter((c) => c.type === "outflow").forEach((c) => {
+      const d = new Date(c.date as string);
+      const k = `${d.getFullYear()}-${d.getMonth()}`;
+      moMap[k] = (moMap[k] ?? 0) + Number(c.amount);
+    });
+    const vals = Object.values(moMap);
+    return vals.length ? Math.min(...vals) : 24939;
+  })();
+  const monthlyIncome = (() => {
+    const moMap: Record<string, number> = {};
+    cashFlows.filter((c) => c.type === "inflow").forEach((c) => {
+      const d = new Date(c.date as string);
+      const k = `${d.getFullYear()}-${d.getMonth()}`;
+      moMap[k] = (moMap[k] ?? 0) + Number(c.amount);
+    });
+    const vals = Object.values(moMap);
+    return vals.length ? Math.min(...vals) : 30467;
+  })();
+  const [coverage, setCoverage] = useState(12);
+  const [incomeInput, setIncomeInput] = useState(monthlyIncome);
+  const [expensesInput, setExpensesInput] = useState(monthlyExpenses);
+
+  const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
+  const { reserve, yieldBucket, tactical, growth, alts } = cashBuckets(assets);
+  const totalLiquid = reserve + yieldBucket + tactical;
+  const deployable = Math.max(0, totalLiquid - expensesInput * coverage);
+  const pickup = Math.round(deployable * 0.0432);
+
+  const bucketList = [
+    { key: "op", label: "Operating Cash", yield: "0.01%", bal: reserve, accent: "#1d4ed8", desc: `${(reserve / monthlyExpenses).toFixed(1)} mo · cash for upcoming expenditures` },
+    { key: "res", label: "Reserve Cash", yield: "4.60%", bal: yieldBucket, accent: "#8a6920", desc: "Active cash management" },
+    { key: "bld", label: "Capital Build", yield: "4.85%", bal: tactical, accent: "#1e4d30", desc: "Goal-directed saving · short-duration ladder" },
+    { key: "grow", label: "Investments", yield: "3.95%", bal: growth, accent: "#3d1a6e", desc: "Long-term compounded growth" },
+    { key: "oth", label: "Other Assets", yield: "", bal: alts, accent: "rgba(0,0,0,0.14)", desc: "Real estate & alternatives" },
+  ];
+  const maxBal = Math.max(...bucketList.map((b) => b.bal));
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#f0ece5", fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <style>{`
+        @keyframes guruBorderRun {
+          0%   { background-position: 0% 0,   100% 0,   100% 100%, 0% 100%; }
+          100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+        }
+        @keyframes guruPulse { 0%,100%{opacity:1} 50%{opacity:0.30} }
+        @keyframes guruIPulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+        .guru-landing-intel::before {
+          content:''; position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:11px;
+          background:
+            linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.60) 50%, transparent 100%) top / 200% 1.5px no-repeat,
+            linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.30) 50%, transparent 100%) right / 1.5px 200% no-repeat,
+            linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.40) 50%, transparent 100%) bottom / 200% 1.5px no-repeat,
+            linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.30) 50%, transparent 100%) left / 1.5px 200% no-repeat;
+          animation: guruBorderRun 7s linear infinite;
+        }
+        .guru-landing-bucket:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+      `}</style>
+
+      {/* Slim header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", height:46, background:"rgba(240,236,229,0.97)", borderBottom:"1px solid rgba(0,0,0,0.08)", position:"sticky", top:0, zIndex:100, backdropFilter:"blur(4px)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+          <span style={{ fontSize:13, fontWeight:500, color:"#1a1a1a" }}>Kessler Family</span>
+          <span style={{ color:"rgba(0,0,0,0.18)" }}>·</span>
+          <span style={{ fontSize:13, color:"rgba(0,0,0,0.55)" }}>Asset Allocation</span>
+        </div>
+        <span style={{ fontSize:10, color:"rgba(0,0,0,0.38)" }}>GURU flagged 2 items · last checked 4 hours ago</span>
+      </div>
+
+      {/* Main 2-column layout */}
+      <div style={{ display:"grid", gridTemplateColumns:`1fr ${workflowStarted ? "230px" : "354px"}`, height:"calc(100vh - 46px)", overflow:"hidden", transition:"grid-template-columns 0.3s ease" }}>
+
+        {/* ── LEFT COLUMN ── */}
+        <div style={{ borderRight:"1px solid rgba(0,0,0,0.09)", display:"flex", flexDirection:"column" }}>
+
+          {/* ── GURU INSIGHT CARD — hidden when workflow active ── */}
+          {!workflowStarted && (
+            <div
+              className="guru-landing-intel"
+              style={{ margin:"12px 16px 0", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border:"1px solid rgba(91,143,204,0.20)", borderRadius:12 }}
+            >
+              {/* Header row */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 18px", borderBottom:"1px solid rgba(255,255,255,0.05)", position:"relative", zIndex:2 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                  <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.7)", display:"inline-block", animation:"guruPulse 2.2s infinite", flexShrink:0 }} />
+                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.85)" }}>GURU Intelligence</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:5, padding:"2px 8px", border:"1px solid rgba(91,143,204,0.20)", borderRadius:2, background:"rgba(91,143,204,0.05)" }}>
+                  <span style={{ width:4, height:4, borderRadius:"50%", background:"rgba(94,204,138,0.70)", display:"inline-block", animation:"guruPulse 2.6s infinite" }} />
+                  <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.40)" }}>Editorial · AI</span>
+                </div>
+              </div>
+              {/* Insight body */}
+              <div style={{ padding:"12px 18px 14px", position:"relative", zIndex:2 }}>
+                <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:20, fontWeight:400, color:"rgba(255,255,255,0.90)", lineHeight:1.2, letterSpacing:"-0.01em", marginBottom:8 }}>
+                  Strong Liquidity. Time to Generate More Alpha.
+                </div>
+                <div style={{ fontSize:11, lineHeight:1.65, color:"rgba(255,255,255,0.50)" }}>
+                  The Kesslers had a great end of year and are now sitting on excess liquidity for 47 days after a $753,000 cash bonus. GURU has analyzed their cash flow forecast and identified{" "}
+                  <span style={{ color:"rgba(212,168,67,0.95)", fontWeight:500 }}>{fmt(deployable > 0 ? deployable : 499440)} in excess liquidity</span>.
+                  {" "}We can generate better returns by optimizing fixed income products and putting cash to work in their investment strategy.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── GURU MODEL CALCULATOR CARD ── */}
+          <div
+            className="guru-landing-intel"
+            style={{ margin: workflowStarted ? "12px 16px 0" : "6px 16px 0", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border:"1px solid rgba(91,143,204,0.20)", borderRadius:12 }}
+          >
+            {/* Header row */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 18px", borderBottom:"1px solid rgba(255,255,255,0.05)", position:"relative", zIndex:2 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.7)", display:"inline-block", animation:"guruPulse 2.2s infinite", flexShrink:0 }} />
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.85)" }}>GURU Model Calculator</span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:5, padding:"2px 8px", border:"1px solid rgba(91,143,204,0.20)", borderRadius:2, background:"rgba(91,143,204,0.05)" }}>
+                <span style={{ width:4, height:4, borderRadius:"50%", background:"rgba(91,143,204,0.85)", display:"inline-block", animation:"guruPulse 1.8s infinite" }} />
+                <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.40)" }}>{calcMode ? "Calculating" : "Live · Now"}</span>
+              </div>
+            </div>
+
+            {/* When workflow active: Playfair headline sits above the KPIs */}
+            {workflowStarted && (
+              <div style={{ padding:"12px 18px 0", position:"relative", zIndex:2, borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:20, fontWeight:400, color:"rgba(255,255,255,0.90)", lineHeight:1.25, letterSpacing:"-0.01em", paddingBottom:12 }}>
+                  Strong Liquidity. Time to Generate More Alpha.
+                </div>
+              </div>
+            )}
+
+            {/* KPI view — pre-launch */}
+            {!calcMode && (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", position:"relative", zIndex:2 }}>
+                {[
+                  { lbl:"Deployable Excess", val:fmt(deployable > 0 ? deployable : 499440), color:"rgba(212,168,67,0.95)" },
+                  { lbl:"After-Tax Pickup", val:`+${fmt(pickup > 0 ? pickup : 21600)}/yr`, color:"rgba(94,204,138,0.92)" },
+                  { lbl:"Annual Expenses", val:fmt(monthlyExpenses * 12), color:"rgba(255,255,255,0.88)" },
+                  { lbl:"Net Cash Flow", val:`+${fmt(Math.max(0,(monthlyIncome-monthlyExpenses)*12))}`, color:"rgba(91,143,204,0.95)" },
+                ].map((kpi) => (
+                  <div key={kpi.lbl} style={{ display:"flex", flexDirection:"column", gap:3, padding:"10px 16px", borderRight:"1px solid rgba(255,255,255,0.06)" }}>
+                    <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.38)" }}>{kpi.lbl}</span>
+                    <span style={{ fontSize:16, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em", color:kpi.color, lineHeight:1 }}>{kpi.val}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Calculator view — live income impact KPIs */}
+            {calcMode && (
+              <div style={{ padding:"10px 18px 12px", position:"relative", zIndex:2, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, alignItems:"stretch" }}>
+                {/* AUM Increase — left */}
+                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(212,168,67,0.18)", borderRadius:4, padding:"8px 14px", display:"flex", flexDirection:"column", gap:3 }}>
+                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,195,80,0.60)" }}>AUM Increase</span>
+                  <span style={{ fontSize:20, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"rgba(212,168,67,0.95)", letterSpacing:"-0.01em", lineHeight:1 }}>
+                    {incomeImpact ? incomeImpact.aumIncrease : "—"}
+                  </span>
+                </div>
+                {/* After-Tax Income — center */}
+                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(212,168,67,0.18)", borderRadius:4, padding:"8px 14px", display:"flex", flexDirection:"column", gap:3 }}>
+                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,195,80,0.60)" }}>After-Tax Income</span>
+                  <span style={{ fontSize:20, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"rgba(212,168,67,0.95)", letterSpacing:"-0.01em", lineHeight:1 }}>
+                    {incomeImpact ? incomeImpact.atIncome : "—"}
+                  </span>
+                </div>
+                {/* % AT Return Increase — right */}
+                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(212,168,67,0.18)", borderRadius:4, padding:"8px 14px", display:"flex", flexDirection:"column", gap:3 }}>
+                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,195,80,0.60)" }}>% Increase · AT Annual Returns</span>
+                  <span style={{ fontSize:20, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"rgba(212,168,67,0.95)", letterSpacing:"-0.01em", lineHeight:1 }}>
+                    {incomeImpact ? incomeImpact.yieldDelta : "—"}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── CENTER: pre-launch or live workflow ── */}
+          {!workflowStarted ? (
+            <div style={{ flex:1, padding:"32px 48px 40px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+              <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.38)", marginBottom:16, textAlign:"center" }}>GURU Flagged 2 Items · Ready When You Are</div>
+              <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:24, fontWeight:400, color:"#1a1a1a", lineHeight:1.25, marginBottom:12, textAlign:"center", maxWidth:480, letterSpacing:"-0.01em" }}>Rebalance and Maximize Wealth Now</div>
+              <div style={{ fontSize:13, color:"rgba(0,0,0,0.50)", lineHeight:1.75, marginBottom:32, maxWidth:480, textAlign:"center" }}>
+                GURU monitors continuously and flags when the portfolio can do more. Walk through the review at your own pace — or activate auto-execution for next time.
+              </div>
+
+              {/* Step cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 22px 1fr 22px 1fr", alignItems:"stretch", width:"100%", marginBottom:24 }}>
+                {[
+                  { n:1, name:"Asset Allocation Rebalancing", desc:"Review suggested coverage targets and confirm transfer amounts across your liquidity buckets.", tag:"~3 min · GURU pre-filled" },
+                  null,
+                  { n:2, name:"Product Selection", desc:"Choose instruments — T-bills, money markets, short bonds — ranked by after-tax yield for your profile.", tag:"~2 min · ranked for you" },
+                  null,
+                  { n:3, name:"Confirm & Execute", desc:"Review the full before/after and send for execution. Activate auto-execute for future events.", tag:"~1 min · auto-execute available" },
+                ].map((item, idx) =>
+                  item === null ? (
+                    <div key={idx} style={{ display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"rgba(0,0,0,0.18)" }}>→</div>
+                  ) : (
+                    <div key={item.n} style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.09)", borderRadius:8, padding:"18px 16px", textAlign:"left" as const, display:"flex", flexDirection:"column" }}>
+                      <div style={{ width:26, height:26, borderRadius:"50%", background:"#1a2e4a", color:"rgba(255,255,255,0.9)", fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:11, flexShrink:0 }}>{item.n}</div>
+                      <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:15, fontWeight:400, color:"#1a1a1a", marginBottom:6, lineHeight:1.3 }}>{item.name}</div>
+                      <div style={{ fontSize:12, color:"rgba(0,0,0,0.55)", lineHeight:1.6, flex:1 }}>{item.desc}</div>
+                      <span style={{ display:"inline-block", marginTop:12, fontSize:9, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, padding:"3px 8px", borderRadius:2, background:"rgba(26,46,74,0.07)", color:"#1a2e4a", border:"1px solid rgba(26,46,74,0.14)" }}>{item.tag}</span>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* CTA */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:9 }}>
+                <button
+                  style={{ fontFamily:"inherit", fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase" as const, background:"#1a2e4a", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", padding:"13px 48px", borderRadius:2 }}
+                  onClick={() => { setCalcMode(true); setWorkflowStarted(true); }}
+                >
+                  Start the Review →
+                </button>
+                <span style={{ fontSize:10, color:"rgba(0,0,0,0.38)" }}>~6 minutes · reversible at every step</span>
+              </div>
+            </div>
+          ) : (
+            <div style={{ flex:1, minHeight:0, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+              <iframe
+                src="/allocation-tab-mockup.html?embedded=1"
+                style={{ flex:1, width:"100%", border:"none", display:"block", minHeight:0 }}
+                title="Allocation Workflow"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ── RIGHT COLUMN — Bucket cards ── */}
+        <div style={{ background:"#f5f1ec", display:"flex", flexDirection:"column" }}>
+          <div style={{ padding:"14px 18px 12px", borderBottom:"1px solid rgba(0,0,0,0.08)" }}>
+            <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.38)", marginBottom:2 }}>Total Assets</div>
+            <div style={{ fontSize:22, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em", color:"#1a1a1a" }}>{fmt(totalAssets)}</div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:7, padding:"10px 10px 0" }}>
+            {bucketList.map((b) => {
+              const ov = bucketOverrides[b.key];
+              const displayBal = ov ? ov.newBal : b.bal;
+              const barPct = maxBal > 0 ? Math.round((displayBal / maxBal) * 100) : 0;
+              return (
+              <div
+                key={b.key}
+                className="guru-landing-bucket"
+                style={{ background:"#fff", borderTop:"1px solid rgba(0,0,0,0.09)", borderRight:"1px solid rgba(0,0,0,0.09)", borderBottom:"1px solid rgba(0,0,0,0.09)", borderLeft:`3px solid ${b.accent}`, borderRadius:6, padding:"11px 13px", display:"flex", flexDirection:"column", gap:6, transition:"box-shadow 0.15s", cursor:"default" }}
+              >
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
+                  <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.11em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.55)" }}>{b.label}</span>
+                  <span style={{ fontSize:10, color:"rgba(0,0,0,0.38)", fontVariantNumeric:"tabular-nums" }}>{b.yield}</span>
+                </div>
+                <div style={{ fontSize:19, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em", color:"#1a1a1a", lineHeight:1, display:"flex", alignItems:"baseline", gap:6 }}>
+                  {ov && <span style={{ fontSize:13, textDecoration:"line-through", color:"rgba(0,0,0,0.28)", fontWeight:400 }}>{fmt(ov.origBal)}</span>}
+                  <span style={{ color:"#1a1a1a" }}>{fmt(displayBal)}</span>
+                </div>
+                <div style={{ height:2, background:"rgba(0,0,0,0.06)", borderRadius:1, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${barPct}%`, background:b.accent, borderRadius:1, transition:"width 0.4s ease" }} />
+                </div>
+                <div style={{ fontSize:9, color:"rgba(0,0,0,0.38)", lineHeight:1.4 }}>{b.desc}</div>
+              </div>
+              );
+            })}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 type ActiveView =
   | "dashboard"
   | "advisorbrief"
@@ -6911,8 +7971,32 @@ export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
   const [activeView, setActiveView] = useState<ActiveView>("advisorbrief");
+  const [guruLanding, setGuruLanding] = useState(true);
   const [financialsTab, setFinancialsTab] = useState<"balancesheet" | "cashflow">("balancesheet");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
+  const [cfModalOpen, setCfModalOpen] = useState(false);
+
+  // Reset guru landing when switching away
+  useEffect(() => {
+    if (activeView !== "guru") setGuruLanding(true);
+  }, [activeView]);
+
+  // Listen for postMessage from cashflow iframe → open full-screen model
+  useEffect(() => {
+    function handleCfMessage(e: MessageEvent) {
+      if (e.data?.type === 'OPEN_CF_MODAL') setCfModalOpen(true);
+    }
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') setCfModalOpen(false);  // CashFlowForecastView also listens for Esc internally
+    }
+    window.addEventListener('message', handleCfMessage);
+    window.addEventListener('keydown', handleEsc);
+    return () => {
+      window.removeEventListener('message', handleCfMessage);
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, []);
+
   const [pendingTransfers, setPendingTransfers] = useState<
     { from: string; to: string; amount: number }[]
   >([]);
@@ -7050,155 +8134,140 @@ export default function ClientDashboard() {
     return activeView === key;
   };
 
-  const navItemStyle = (active: boolean) =>
-    active
-      ? { background: "rgba(255,255,255,0.07)", boxShadow: "inset 2px 0 0 rgba(154,123,60,0.7)" }
-      : undefined;
+  const NAV_ITEM: React.CSSProperties = {
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontSize: 11,
+    fontWeight: 500,
+    color: "rgba(255,255,255,0.4)",
+    padding: "5px 8px",
+    borderRadius: 5,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    marginBottom: 1,
+    transition: "background 0.1s, color 0.1s",
+    userSelect: "none" as const,
+    whiteSpace: "nowrap" as const,
+  };
 
-  const navItemCls = (active: boolean) =>
-    `flex items-center gap-2.5 px-2 py-[7px] rounded text-[12.5px] font-medium transition-all duration-100 mb-0.5 cursor-pointer select-none ${
-      active ? "text-white" : "text-white/40 hover:text-white/75 hover:bg-white/[0.04]"
-    }`;
+  const NAV_ITEM_ACTIVE: React.CSSProperties = {
+    ...NAV_ITEM,
+    fontWeight: 600,
+    color: "#ffffff",
+    background: "rgba(255,255,255,0.06)",
+  };
 
-  const SectionLabel = ({ children }: { children: string }) => (
-    <p
-      className="text-[9px] font-bold uppercase px-2 mb-2 mt-4"
-      style={{ color: "rgba(255,255,255,0.22)", letterSpacing: "0.1em" }}
-    >
+  const SectionLabel = ({ children, first }: { children: string; first?: boolean }) => (
+    <p style={{
+      fontFamily: "Inter, system-ui, sans-serif",
+      fontSize: 8,
+      fontWeight: 700,
+      textTransform: "uppercase" as const,
+      letterSpacing: "0.14em",
+      color: "rgba(255,255,255,0.2)",
+      padding: "0 8px",
+      marginTop: first ? 4 : 8,
+      marginBottom: 4,
+      whiteSpace: "nowrap" as const,
+    }}>
       {children}
     </p>
   );
 
   const clientSidebarNav = (
-    <nav className="px-3 py-4 flex-1 overflow-y-auto">
-      {/* Back to all clients */}
+    <nav style={{ padding: "0 6px", flex: 1, overflowY: "auto" as const }}>
+      {/* Back link */}
       <Link href="/">
-        <div
-          className="flex items-center gap-1.5 px-2 py-[6px] rounded text-[11px] text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all duration-100 mb-3 cursor-pointer"
-        >
-          <ChevronLeft className="w-3 h-3" />
-          All Clients
+        <div style={{ ...NAV_ITEM, color: "rgba(255,255,255,0.25)", marginBottom: 6 }}>
+          <ChevronLeft style={{ width: 12, height: 12, flexShrink: 0 }} />
+          <span className="sb-hide">All Clients</span>
         </div>
       </Link>
 
-      <SectionLabel>Client</SectionLabel>
+      <SectionLabel first>Advisor</SectionLabel>
 
       <div
-        className={navItemCls(navActive("dashboard"))}
-        style={navItemStyle(navActive("dashboard"))}
+        style={navActive("dashboard") ? NAV_ITEM_ACTIVE : NAV_ITEM}
         onClick={() => setActiveView("dashboard")}
+        onMouseEnter={e => { if (!navActive("dashboard")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
+        onMouseLeave={e => { if (!navActive("dashboard")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
         data-testid="nav-dashboard"
       >
-        <LayoutDashboard
-          className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("dashboard") ? "#9a7b3c" : undefined }}
-        />
-        Dashboard
+        <LayoutDashboard style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span className="sb-hide">Dashboard</span>
       </div>
 
       <div
-        className={navItemCls(navActive("guru"))}
-        style={navItemStyle(navActive("guru"))}
+        style={navActive("guru") ? NAV_ITEM_ACTIVE : NAV_ITEM}
         onClick={() => setActiveView("guru")}
+        onMouseEnter={e => { if (!navActive("guru")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
+        onMouseLeave={e => { if (!navActive("guru")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
         data-testid="nav-guru"
       >
-        <PieChartIcon
-          className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("guru") ? "#9a7b3c" : undefined }}
-        />
-        GURU Allocation
+        <PieChartIcon style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span className="sb-hide">Allocation</span>
       </div>
 
       <div
-        className={navItemCls(navActive("advisorbrief"))}
-        style={navItemStyle(navActive("advisorbrief"))}
+        style={navActive("advisorbrief") ? NAV_ITEM_ACTIVE : NAV_ITEM}
         onClick={() => setActiveView("advisorbrief")}
+        onMouseEnter={e => { if (!navActive("advisorbrief")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
+        onMouseLeave={e => { if (!navActive("advisorbrief")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
         data-testid="nav-advisorbrief"
       >
-        <ClipboardList
-          className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("advisorbrief") ? "#9a7b3c" : undefined }}
-        />
-        Advisor Brief
+        <ClipboardList style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span className="sb-hide">Advisor Brief</span>
       </div>
 
-      <SectionLabel>Financials</SectionLabel>
+      <SectionLabel>Intelligence</SectionLabel>
 
       <div
-        className={navItemCls(navActive("financials", "balancesheet"))}
-        style={navItemStyle(navActive("financials", "balancesheet"))}
-        onClick={() => { setActiveView("financials"); setFinancialsTab("balancesheet"); }}
-        data-testid="nav-networth"
-      >
-        <FileText
-          className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("financials", "balancesheet") ? "#9a7b3c" : undefined }}
-        />
-        Net Worth
-      </div>
-
-      <div
-        className={navItemCls(navActive("financials", "cashflow"))}
-        style={navItemStyle(navActive("financials", "cashflow"))}
+        style={navActive("financials", "cashflow") ? NAV_ITEM_ACTIVE : NAV_ITEM}
         onClick={() => { setActiveView("financials"); setFinancialsTab("cashflow"); }}
+        onMouseEnter={e => { if (!navActive("financials", "cashflow")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
+        onMouseLeave={e => { if (!navActive("financials", "cashflow")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
         data-testid="nav-cashflow"
       >
-        <ArrowLeftRight
-          className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("financials", "cashflow") ? "#9a7b3c" : undefined }}
-        />
-        Cash Flow
+        <ArrowLeftRight style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span className="sb-hide">Cashflow</span>
       </div>
 
       <div
-        className={navItemCls(navActive("moneymovement"))}
-        style={navItemStyle(navActive("moneymovement"))}
+        style={navActive("financials", "balancesheet") ? NAV_ITEM_ACTIVE : NAV_ITEM}
+        onClick={() => { setActiveView("financials"); setFinancialsTab("balancesheet"); }}
+        onMouseEnter={e => { if (!navActive("financials", "balancesheet")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
+        onMouseLeave={e => { if (!navActive("financials", "balancesheet")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
+        data-testid="nav-networth"
+      >
+        <FileText style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span className="sb-hide">Net Worth</span>
+      </div>
+
+      <div
+        style={navActive("moneymovement") ? NAV_ITEM_ACTIVE : NAV_ITEM}
         onClick={() => setActiveView("moneymovement")}
+        onMouseEnter={e => { if (!navActive("moneymovement")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
+        onMouseLeave={e => { if (!navActive("moneymovement")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
         data-testid="nav-moneymovement"
       >
-        <ArrowLeftRight
-          className="w-[14px] h-[14px] flex-shrink-0"
-          style={{ color: navActive("moneymovement") ? "#9a7b3c" : undefined }}
-        />
-        Money Movement
+        <ArrowLeftRight style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span className="sb-hide">Money Movement</span>
       </div>
     </nav>
   );
 
   return (
     <Layout sidebarNav={clientSidebarNav}>
-      {/* ── Page Header ──────────────────────────────────────────────────────── */}
-      <div className="mb-5">
-        {/* Client identity bar */}
-        <div className="bg-card rounded-xl border border-border shadow-sm px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1
-                  className="text-xl font-display font-bold text-foreground leading-none"
-                  data-testid="text-client-name"
-                >
-                  {client.name}
-                </h1>
-                <Badge
-                  className={`${riskColor[client.riskTolerance] || "bg-secondary text-secondary-foreground"} capitalize text-[11px] font-semibold border-0 leading-none`}
-                >
-                  {client.riskTolerance} Risk
-                </Badge>
-                <Badge variant="outline" className="text-[11px] leading-none">
-                  Age {client.age}
-                </Badge>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">
-                AI-driven wealth decisioning system
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
       {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
       {activeView === "dashboard" && (
-        <div className="space-y-2">
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#f5f4f0" }}>
+          {/* ── Page header — matches allocation tab style ── */}
+          <div style={{ padding: "18px 24px 10px", display: "flex", alignItems: "baseline", gap: 12 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 300, color: "#1a2e4a", letterSpacing: "-0.01em", margin: 0, lineHeight: 1 }}>Dashboard</h1>
+            <span style={{ fontSize: 11, color: "rgba(0,0,0,0.40)", letterSpacing: "0.04em" }}>Kessler Family · {format(DEMO_NOW, "MMMM d, yyyy")}</span>
+          </div>
+          <div style={{ padding: "0 24px 48px", display: "flex", flexDirection: "column", gap: 8 }}>
           {/* ── Advisor Brief compact strip ───────────────────────────────────── */}
           <div
             className="rounded-xl bg-card border border-border shadow-sm px-5 py-3.5 flex items-center justify-between gap-4 cursor-pointer hover:shadow-md transition-shadow"
@@ -7257,11 +8326,12 @@ export default function ClientDashboard() {
           {/* ── Account Cash Movements — animated water-flow widget ─────────── */}
           <DashboardFlowWidget onNavigate={() => setActiveView("moneymovement")} />
 
+          </div>{/* end padding wrapper */}
         </div>
       )}
       {/* ── Advisor Brief View ───────────────────────────────────────────────── */}
       {activeView === "advisorbrief" && (
-        <div className="space-y-4">
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           <AdvisorBriefView
             assets={assets}
             cashFlows={cashFlows}
@@ -7272,7 +8342,7 @@ export default function ClientDashboard() {
       )}
       {/* ── Client Financials & Forecast ───────────────────────────────────────── */}
       {activeView === "financials" && (
-        <div className="space-y-5">
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 20 }}>
           {financialsTab === "balancesheet" && (
             <DetailsView
               assets={assets}
@@ -7282,29 +8352,33 @@ export default function ClientDashboard() {
             />
           )}
           {financialsTab === "cashflow" && (
-            <CashFlowForecastView assets={assets} cashFlows={cashFlows} clientId={clientId} />
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", height: "calc(100vh - 56px)", marginTop: "-20px" }}>
+              <iframe
+                src="/cashflow-layout-mockup.html"
+                style={{ flex: 1, width: "100%", height: "100%", border: "none", display: "block" }}
+                title="Cashflow Layout"
+              />
+            </div>
           )}
         </div>
       )}
       {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
       {activeView === "guru" && (
-        <div className="space-y-4">
-          <GuruAllocationView
+        <GuruLandingView
           assets={assets}
-          liabilities={liabilities}
           cashFlows={cashFlows}
-          opsCashMonths={opsCashMonths}
-          setOpsCashMonths={setOpsCashMonths}
-          pendingTransfers={pendingTransfers}
-          setPendingTransfers={setPendingTransfers}
-          bucketProductSelections={bucketProductSelections}
-          setBucketProductSelections={setBucketProductSelections}
+          onStartReview={() => {}}
         />
-        </div>
       )}
       {/* ── Money Movement View ─────────────────────────────────────────────────── */}
       {activeView === "moneymovement" && (
-        <div className="space-y-4">
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#f5f4f0" }}>
+          {/* ── Page header — matches allocation tab style ── */}
+          <div style={{ padding: "18px 24px 14px", display: "flex", alignItems: "baseline", gap: 12 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 300, color: "#1a2e4a", letterSpacing: "-0.01em", margin: 0, lineHeight: 1 }}>Money Movement</h1>
+            <span style={{ fontSize: 11, color: "rgba(0,0,0,0.40)", letterSpacing: "0.04em" }}>Kessler Family · {format(DEMO_NOW, "MMMM d, yyyy")}</span>
+          </div>
+          <div style={{ padding: "0 24px 48px" }}>
           <MoneyMovementView
             assets={assets}
             cashFlows={cashFlows}
@@ -7312,6 +8386,20 @@ export default function ClientDashboard() {
             clientName={client.name}
             pendingTransfers={pendingTransfers}
             bucketProductSelections={bucketProductSelections}
+          />
+          </div>{/* end padding wrapper */}
+        </div>
+      )}
+
+      {/* ── Full-Screen 12-Month Cash Flow Model (real data via CashFlowForecastView portal) */}
+      {cfModalOpen && (
+        <div style={{ display: 'none' }}>
+          <CashFlowForecastView
+            assets={assets}
+            cashFlows={cashFlows}
+            clientId={clientId}
+            autoFullScreen={true}
+            onCloseFullScreen={() => setCfModalOpen(false)}
           />
         </div>
       )}
