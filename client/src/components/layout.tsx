@@ -1,113 +1,122 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "wouter";
-import { Users, BrainCircuit, Users2, Bell, Search } from "lucide-react";
 
-export function Layout({ children, sidebarNav }: { children: ReactNode; sidebarNav?: ReactNode }) {
-  const [location] = useLocation();
+export function Layout({ children, sidebarNav, topNav }: { children: ReactNode; sidebarNav?: ReactNode; topNav?: ReactNode }) {
 
-  const navItems = [
-    { label: "Client Portfolios",  href: "/",               icon: Users },
-    { label: "Book of Business",   href: "/bookofbusiness",  icon: Users2 },
-    { label: "AI Insights",        href: "/insights",        icon: BrainCircuit },
-  ];
+  /* ── Top-nav layout (no sidebar) ── */
+  if (topNav) {
+    return (
+      <div className="h-screen overflow-hidden flex flex-col" style={{ background: "#f0ede8" }}>
+        {topNav}
+        <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
+  /* ── Original sidebar layout ── */
   return (
-    <div className="h-screen overflow-hidden bg-background flex flex-col md:flex-row">
+    <div className="h-screen overflow-hidden flex flex-row" style={{ background: "hsl(152,38%,7%)" }}>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        .guru-sb {
+          width: 48px;
+          transition: width 0.2s ease;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+        .guru-sb:hover {
+          width: 170px;
+        }
+        .sb-hide {
+          opacity: 0;
+          transition: opacity 0.15s ease;
+          white-space: nowrap;
+          pointer-events: none;
+        }
+        .guru-sb:hover .sb-hide {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .sb-collapsed-logo {
+          display: flex;
+        }
+        .guru-sb:hover .sb-collapsed-logo {
+          display: none;
+        }
+        .sb-expanded-logo {
+          display: none;
+        }
+        .guru-sb:hover .sb-expanded-logo {
+          display: flex;
+        }
+      `}</style>
 
       {/* ── Sidebar ── */}
       <aside
-        className="w-full md:w-52 flex flex-col z-10 flex-shrink-0 h-full"
-        style={{ background: "hsl(222,45%,8%)", borderRight: "1px solid rgba(255,255,255,0.05)" }}
+        className="guru-sb flex flex-col z-10 h-full"
+        style={{
+          background: "#2c3040",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
+        }}
       >
-
-        {/* ── Logo ── */}
-        <div className="px-6 pt-7 pb-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <span
-                className="font-display text-[20px] text-white leading-none"
-                style={{ letterSpacing: "0.04em" }}
-              >
-                GURU<span style={{ color: "#9a7b3c" }}>.</span>
-              </span>
-              <p className="text-[8.5px] text-white/20 uppercase mt-1.5" style={{ letterSpacing: "0.16em" }}>
-                Wealth Intelligence
-              </p>
-            </div>
-            <div className="flex flex-col gap-1.5 pt-0.5">
-              <button
-                style={{ color: "rgba(255,255,255,0.22)" }}
-                className="hover:text-white/60 transition-colors"
-                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.22)")}
-              >
-                <Search className="w-3.5 h-3.5" />
-              </button>
-              <button
-                style={{ color: "rgba(255,255,255,0.22)" }}
-                className="hover:text-white/60 transition-colors"
-                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.22)")}
-              >
-                <Bell className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+        {/* ── Logo area ── */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "14px 0 12px",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          marginBottom: 10,
+          flexShrink: 0,
+          position: "relative",
+        }}>
+          <span className="sb-collapsed-logo" style={{
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: 20, fontWeight: 700, letterSpacing: "0.12em",
+            lineHeight: 1, alignItems: "center",
+          }}>
+            <span style={{ color: "#ffffff" }}>G</span><span style={{ color: "#5ecc8a" }}>.</span>
+          </span>
+          <span className="sb-expanded-logo" style={{
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontSize: 20, fontWeight: 700, letterSpacing: "0.12em",
+            lineHeight: 1, alignItems: "center", paddingLeft: 14, width: "100%",
+          }}>
+            <span style={{ color: "#ffffff" }}>GURU</span><span style={{ color: "#5ecc8a" }}>.</span>
+          </span>
         </div>
 
         {/* ── Navigation ── */}
-        {sidebarNav ? sidebarNav : (
-          <nav className="px-4 py-5 flex-1">
-            {navItems.map((item) => {
-              const isActive =
-                location === item.href ||
-                (item.href !== "/" && location.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`
-                    flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5
-                    text-[12px] font-medium transition-all duration-100
-                    ${isActive ? "text-white" : "text-white/32 hover:text-white/65 hover:bg-white/[0.03]"}
-                  `}
-                  style={isActive ? {
-                    background: "rgba(255,255,255,0.07)",
-                    boxShadow: "inset 2px 0 0 rgba(154,123,60,0.7)",
-                  } : undefined}
-                >
-                  <item.icon
-                    className="w-[13px] h-[13px] flex-shrink-0"
-                    style={{ color: isActive ? "#9a7b3c" : undefined, opacity: isActive ? 1 : 0.5 }}
-                  />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+        {sidebarNav ?? (
+          <nav className="px-3 py-2 flex-1" />
         )}
 
-        {/* ── Income Calculator portal slot ── */}
-        <div id="guru-calc-slot" className="flex-shrink-0" />
-
-        {/* ── Minimal advisor footer ── */}
-        <div
-          className="px-6 py-4 flex-shrink-0"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
-        >
-          <p className="text-[10px] font-medium text-white/40 leading-none">Wealth Advisor</p>
-          <p className="text-[9px] text-white/18 mt-1" style={{ letterSpacing: "0.05em" }}>Admin</p>
+        {/* ── Advisor footer ── */}
+        <div style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          padding: "10px 0 10px 14px",
+          flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <div style={{
+            width: 20, height: 20, borderRadius: "50%",
+            background: "rgba(255,255,255,0.08)", flexShrink: 0,
+          }} />
+          <span className="sb-hide" style={{
+            fontSize: 9.5, fontWeight: 600,
+            color: "rgba(255,255,255,0.3)", letterSpacing: "0.04em",
+            fontFamily: "Inter, system-ui, sans-serif",
+          }}>
+            Wealth Advisor
+          </span>
         </div>
-
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-h-0 min-w-0">
-        <div className="flex-1 overflow-y-auto p-5 md:p-7">
-          <div className="max-w-7xl mx-auto">
-            {children}
-          </div>
-        </div>
+      <main className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
+        {children}
       </main>
 
     </div>

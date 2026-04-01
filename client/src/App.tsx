@@ -7,6 +7,8 @@ import NotFound from "@/pages/not-found";
 import ClientsPage from "./pages/clients";
 import ClientDashboard from "./pages/client-dashboard";
 import BookOfBusinessPage from "./pages/bookofbusiness";
+import AllocationTool from "./pages/allocation-tool";
+import NewClientPage from "./pages/NewClient";
 
 function Router() {
   return (
@@ -14,6 +16,8 @@ function Router() {
       <Route path="/" component={ClientsPage} />
       <Route path="/client/:id" component={ClientDashboard} />
       <Route path="/bookofbusiness" component={BookOfBusinessPage} />
+      <Route path="/allocation-tool" component={AllocationTool} />
+      <Route path="/new-client" component={NewClientPage} />
       <Route component={NotFound} />
     </Switch>
   );

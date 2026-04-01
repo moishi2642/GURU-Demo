@@ -1,142 +1,135 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Layout } from "@/components/layout";
 import { useClients, useCreateClient } from "@/hooks/use-clients";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Plus, ChevronRight, TrendingUp, Lock, ArrowUpRight } from "lucide-react";
+import { ChevronRight, Lock, Plus } from "lucide-react";
 
-/* ── Placeholder seeded clients (locked / not yet onboarded) ─────────────── */
-const PLACEHOLDER_CLIENTS = [
-  { name: "James & Patricia Harrington", initials: "JH", risk: "conservative", age: 67, aum: "$8.4M",  riskKey: "conservative" },
-  { name: "Olivia Chen",                 initials: "OC", risk: "aggressive",   age: 38, aum: "$3.1M",  riskKey: "aggressive"   },
-  { name: "Robert & Susan Delacroix",    initials: "RD", risk: "moderate",     age: 55, aum: "$12.7M", riskKey: "moderate"     },
-  { name: "Marcus Thornton",             initials: "MT", risk: "aggressive",   age: 42, aum: "$5.9M",  riskKey: "aggressive"   },
+/* ─── Tokens ────────────────────────────────────────────────────────────────── */
+const navy   = "hsl(222,45%,12%)";
+const gold   = "#9a7b3c";
+const green  = "#2e7a52";
+const linen  = "#f0ede8";
+const panel  = "#faf9f7";
+const border = "rgba(0,0,0,0.08)";
+const muted  = "rgba(0,0,0,0.40)";
+const faint  = "rgba(0,0,0,0.22)";
+const INTER  = "Inter, system-ui, sans-serif";
+
+/* ─── Number formatter ──────────────────────────────────────────────────────── */
+function fmt$(n: number | null): string {
+  if (!n) return "—";
+  return "$" + n.toLocaleString("en-US");
+}
+function pct(aum: number, total: number): string {
+  if (!total) return "—";
+  return Math.round((aum / total) * 100) + "%";
+}
+
+/* ─── Avatar palette ────────────────────────────────────────────────────────── */
+const PALETTES = [
+  { bg: "hsl(222,45%,88%)", fg: navy },
+  { bg: "hsl(36,55%,88%)",  fg: "#5a3d10" },
+  { bg: "hsl(160,40%,87%)", fg: "#174030" },
+  { bg: "hsl(196,50%,88%)", fg: "#113045" },
+];
+function pal(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + h * 31;
+  return PALETTES[Math.abs(h) % PALETTES.length];
+}
+
+/* ─── Risk ──────────────────────────────────────────────────────────────────── */
+const RISK_DOT: Record<string, string> = { conservative: green, moderate: gold, aggressive: "#c0392b" };
+const RISK_LBL: Record<string, string> = { conservative: "Conservative", moderate: "Moderate", aggressive: "Aggressive" };
+
+/* ─── Static family data ────────────────────────────────────────────────────── */
+const ACTIVE_FAMILIES = [
+  {
+    id: "kessler", href: "/client/1",
+    name: "Sarah & Michael Kessler", initials: "SK", age: 44,
+    risk: "moderate", aum: 814877, totalAssets: 5912862,
+    onboarding: true, lastActivity: "Today, 2:34 PM",
+    excessLiquidity: 299966, rateExposure: true, upcomingCash: 5511,
+  },
+  {
+    id: "mari", href: "/client/2",
+    name: "Mari Oishi", initials: "MO", age: 29,
+    risk: "moderate", aum: 0, totalAssets: 0,
+    onboarding: false, lastActivity: "3 days ago",
+    excessLiquidity: null, rateExposure: false, upcomingCash: null,
+  },
 ];
 
-/* ── Risk badge styles — border only, no fill ────────────────────────────── */
-const RISK_STYLES: Record<string, { dot: string; text: string; border: string; label: string }> = {
-  conservative: {
-    dot:    "bg-[hsl(216,82%,50%)]",
-    text:   "text-[hsl(216,82%,38%)]",
-    border: "border-[hsl(216,82%,75%)]",
-    label:  "Conservative",
-  },
-  moderate: {
-    dot:    "bg-[hsl(36,70%,48%)]",
-    text:   "text-[hsl(36,70%,36%)]",
-    border: "border-[hsl(36,70%,68%)]",
-    label:  "Moderate",
-  },
-  aggressive: {
-    dot:    "bg-rose-500",
-    text:   "text-rose-700",
-    border: "border-rose-300",
-    label:  "Aggressive",
-  },
+const LOCKED_FAMILIES = [
+  { name: "James & Patricia Harrington", initials: "JH", risk: "conservative", age: 67, aum: 8400000,  totalAssets: 11200000, lastActivity: "2 weeks ago" },
+  { name: "Olivia Chen",                 initials: "OC", risk: "aggressive",   age: 38, aum: 3100000,  totalAssets: 4800000,  lastActivity: "5 days ago"  },
+  { name: "Robert & Susan Delacroix",    initials: "RD", risk: "moderate",     age: 55, aum: 12700000, totalAssets: 18500000, lastActivity: "3 days ago"  },
+  { name: "Marcus Thornton",             initials: "MT", risk: "aggressive",   age: 42, aum: 5900000,  totalAssets: 8100000,  lastActivity: "1 week ago"  },
+];
+
+/* ─── Column template ───────────────────────────────────────────────────────── */
+//  Family  |  Risk  |  Total Assets  |  AUM  |  Excess Liq  |  Rate  |  Upcoming  |  Activity  |  >
+const COLS = "1fr 120px 150px 130px 140px 90px 130px 110px 20px";
+
+const cellStyle: React.CSSProperties = {
+  fontFamily: INTER, fontSize: 13, color: navy, fontVariantNumeric: "tabular-nums",
+};
+const dimStyle: React.CSSProperties = { ...cellStyle, color: muted };
+const hdrStyle: React.CSSProperties = {
+  fontFamily: INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.07em",
+  textTransform: "uppercase", color: faint,
 };
 
-/* ── Initials background colors — muted, institutional ───────────────────── */
-const INITIALS_COLORS = [
-  "bg-[hsl(216,60%,88%)] text-[hsl(216,82%,32%)]",
-  "bg-[hsl(196,55%,88%)] text-[hsl(196,78%,28%)]",
-  "bg-[hsl(160,45%,87%)] text-[hsl(160,60%,26%)]",
-  "bg-[hsl(36,55%,88%)]  text-[hsl(36,70%,32%)]",
-];
-
-function getInitialsColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + hash * 31;
-  return INITIALS_COLORS[Math.abs(hash) % INITIALS_COLORS.length];
-}
-
-/* ── Risk badge component ─────────────────────────────────────────────────── */
-function RiskBadge({ risk }: { risk: string }) {
-  const s = RISK_STYLES[risk] ?? {
-    dot: "bg-muted-foreground", text: "text-muted-foreground",
-    border: "border-border", label: risk,
-  };
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-[10.5px] font-semibold
-                  px-1.5 py-0.5 rounded border ${s.text} ${s.border} bg-transparent
-                  uppercase tracking-wide`}
-    >
-      <span className={`w-1 h-1 rounded-full ${s.dot}`} />
-      {s.label}
-    </span>
-  );
-}
-
-/* ── Add client modal ─────────────────────────────────────────────────────── */
-function CreateClientModal() {
+/* ─── Add-family modal ──────────────────────────────────────────────────────── */
+function AddFamilyModal() {
   const [open, setOpen] = useState(false);
   const mutation = useCreateClient();
-
+  const [, navigate] = useLocation();
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const first = (fd.get("firstName") as string).trim();
+    const last  = (fd.get("lastName")  as string).trim();
     mutation.mutate(
-      {
-        name:          fd.get("name")          as string,
-        email:         fd.get("email")         as string,
-        age:           parseInt(fd.get("age") as string, 10),
-        riskTolerance: fd.get("riskTolerance") as string,
-      },
-      { onSuccess: () => setOpen(false) },
+      { name: last ? `${first} ${last}` : first, email: "", age: 0, riskTolerance: "moderate" },
+      { onSuccess: () => { setOpen(false); navigate("/new-client"); } },
     );
   };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          className="h-8 px-3 text-[12.5px] font-semibold bg-primary text-primary-foreground
-                     border-0 shadow-sm hover:opacity-90 transition-opacity"
+        <button
           data-testid="button-add-client"
+          style={{
+            background: navy, color: "#fff", border: "none",
+            padding: "10px 20px", fontSize: 12, fontWeight: 600,
+            letterSpacing: "0.05em", borderRadius: 4, cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 7,
+            fontFamily: INTER,
+          }}
         >
-          <Plus className="w-3.5 h-3.5 mr-1.5" />
-          Add Client
-        </Button>
+          <Plus style={{ width: 13, height: 13 }} /> Add Family
+        </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle className="text-[14px]">Onboard New Client</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[340px]">
+        <DialogHeader><DialogTitle className="text-[13px]">New Family</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="space-y-1.5">
-            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground" htmlFor="name">Full Name</Label>
-            <Input id="name" name="name" required placeholder="Jane Doe" data-testid="input-client-name" className="h-8 text-sm" />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[11px] uppercase tracking-wide text-muted-foreground" htmlFor="email">Email Address</Label>
-            <Input id="email" name="email" type="email" required placeholder="jane@example.com" data-testid="input-client-email" className="h-8 text-sm" />
-          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground" htmlFor="age">Age</Label>
-              <Input id="age" name="age" type="number" required placeholder="45" min="18" max="100" data-testid="input-client-age" className="h-8 text-sm" />
+              <Label className="text-[10.5px] uppercase tracking-wide text-muted-foreground" htmlFor="firstName">First</Label>
+              <Input id="firstName" name="firstName" required autoFocus placeholder="Jane" data-testid="input-client-first-name" className="h-7 text-sm" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Risk Profile</Label>
-              <Select name="riskTolerance" required defaultValue="moderate">
-                <SelectTrigger className="h-8 text-sm" data-testid="select-risk-tolerance">
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="conservative">Conservative</SelectItem>
-                  <SelectItem value="moderate">Moderate</SelectItem>
-                  <SelectItem value="aggressive">Aggressive</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-[10.5px] uppercase tracking-wide text-muted-foreground" htmlFor="lastName">Last</Label>
+              <Input id="lastName" name="lastName" required placeholder="Morrison" data-testid="input-client-last-name" className="h-7 text-sm" />
             </div>
           </div>
-          <Button type="submit" className="w-full h-8 text-[12.5px]" disabled={mutation.isPending} data-testid="button-submit-client">
-            {mutation.isPending ? "Creating…" : "Create Client Profile"}
+          <Button type="submit" className="w-full h-7 text-[11.5px]" disabled={mutation.isPending} data-testid="button-submit-client">
+            {mutation.isPending ? "Creating…" : "Create & start profile →"}
           </Button>
         </form>
       </DialogContent>
@@ -144,201 +137,253 @@ function CreateClientModal() {
   );
 }
 
-/* ── Client row / card component ─────────────────────────────────────────── */
-function ClientCard({
-  href,
-  name,
-  initials,
-  age,
-  risk,
-  aum,
-  locked = false,
-}: {
-  href?: string;
-  name: string;
-  initials: string;
-  age: number;
-  risk: string;
-  aum: string;
-  locked?: boolean;
-}) {
-  const initClr = getInitialsColor(name);
-  const inner = (
-    <div
-      className={`
-        flex items-center gap-4 px-4 py-3
-        border-b border-border/50 last:border-0
-        transition-colors duration-100
-        ${!locked ? "cursor-pointer hover:bg-secondary/60" : "opacity-55 cursor-not-allowed"}
-      `}
-    >
-      {/* Initials */}
-      <div
-        className={`w-8 h-8 rounded flex items-center justify-center
-                    text-[11px] font-bold flex-shrink-0 ${initClr}`}
-      >
-        {initials}
-      </div>
-
-      {/* Name + meta */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-semibold text-foreground truncate leading-tight">
-            {name}
-          </span>
-          {locked && <Lock className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />}
-        </div>
-        <span className="text-[11px] text-muted-foreground">Age {age}</span>
-      </div>
-
-      {/* AUM */}
-      <div className="text-right flex-shrink-0 hidden sm:block">
-        <p className="text-[12.5px] font-semibold tabular text-foreground">{aum}</p>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">AUM</p>
-      </div>
-
-      {/* Risk badge */}
-      <div className="flex-shrink-0 w-24 flex justify-end">
-        <RiskBadge risk={risk} />
-      </div>
-
-      {/* Arrow */}
-      {!locked ? (
-        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60 flex-shrink-0" />
-      ) : (
-        <div className="w-3.5" />
-      )}
+/* ─── Table header row ──────────────────────────────────────────────────────── */
+function THead() {
+  return (
+    <div style={{
+      display: "grid", gridTemplateColumns: COLS, gap: 0,
+      padding: "0 28px", height: 38,
+      borderBottom: `1px solid ${border}`,
+      alignItems: "center",
+      background: panel,
+    }}>
+      <div style={hdrStyle}>Family</div>
+      <div style={hdrStyle}>Risk</div>
+      <div style={{ ...hdrStyle, textAlign: "right" }}>Total Assets</div>
+      <div style={{ ...hdrStyle, textAlign: "right" }}>AUM</div>
+      <div style={{ ...hdrStyle, textAlign: "right" }}>Excess Liquidity</div>
+      <div style={{ ...hdrStyle, textAlign: "center" }}>Rate</div>
+      <div style={{ ...hdrStyle, textAlign: "right" }}>Upcoming Cash</div>
+      <div style={{ ...hdrStyle, textAlign: "right" }}>Last Active</div>
+      <div />
     </div>
   );
-
-  if (href && !locked) {
-    return (
-      <Link href={href} className="block group" data-testid={`link-client-${href.split("/").pop()}`}>
-        {inner}
-      </Link>
-    );
-  }
-  return <div>{inner}</div>;
 }
 
-/* ── Main page ────────────────────────────────────────────────────────────── */
+/* ─── Active family row ─────────────────────────────────────────────────────── */
+function FamilyRow(f: typeof ACTIVE_FAMILIES[0] & { resolvedHref: string }) {
+  const p = pal(f.name);
+  return (
+    <Link href={f.resolvedHref} className="block" data-testid={`link-client-${f.resolvedHref.split("/").pop()}`}>
+      <div
+        style={{
+          display: "grid", gridTemplateColumns: COLS, gap: 0,
+          padding: "14px 28px", alignItems: "center",
+          borderBottom: `1px solid ${border}`,
+          cursor: "pointer", transition: "background 0.10s",
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = "#fdfaf6")}
+        onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+      >
+        {/* Name */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 6, flexShrink: 0,
+            background: p.bg, color: p.fg,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, fontFamily: INTER,
+          }}>
+            {f.initials}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: navy, fontFamily: INTER, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>
+              {f.name}
+            </div>
+            {!f.onboarding && (
+              <div style={{ fontSize: 10, fontWeight: 600, color: gold, letterSpacing: "0.04em", marginTop: 1, fontFamily: INTER }}>
+                Onboarding in progress
+              </div>
+            )}
+            {f.onboarding && f.age > 0 && (
+              <div style={{ fontSize: 11, color: muted, marginTop: 1, fontFamily: INTER }}>Age {f.age}</div>
+            )}
+          </div>
+        </div>
+
+        {/* Risk */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: RISK_DOT[f.risk] ?? muted, flexShrink: 0 }} />
+          <span style={{ ...cellStyle, fontSize: 12 }}>{RISK_LBL[f.risk] ?? f.risk}</span>
+        </div>
+
+        {/* Total Assets */}
+        <div style={{ textAlign: "right" as const, ...cellStyle }}>{fmt$(f.totalAssets)}</div>
+
+        {/* AUM */}
+        <div style={{ textAlign: "right" as const, ...cellStyle }}>{fmt$(f.aum)}</div>
+
+        {/* Excess Liquidity — gold if flagged */}
+        <div style={{ textAlign: "right" as const }}>
+          {f.excessLiquidity
+            ? <span style={{ ...cellStyle, color: gold, fontWeight: 500 }}>{fmt$(f.excessLiquidity)}</span>
+            : <span style={dimStyle}>—</span>}
+        </div>
+
+        {/* Rate exposure — simple dot indicator */}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          {f.rateExposure
+            ? <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2563eb", display: "inline-block" }} title="Rate exposed" />
+            : <span style={dimStyle}>—</span>}
+        </div>
+
+        {/* Upcoming Cash */}
+        <div style={{ textAlign: "right" as const }}>
+          {f.upcomingCash
+            ? <span style={{ ...cellStyle, color: green, fontWeight: 500 }}>{fmt$(f.upcomingCash)}</span>
+            : <span style={dimStyle}>—</span>}
+        </div>
+
+        {/* Last Activity */}
+        <div style={{ textAlign: "right" as const, ...dimStyle, fontSize: 12 }}>{f.lastActivity}</div>
+
+        {/* Arrow */}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <ChevronRight style={{ width: 14, height: 14, color: faint }} />
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+/* ─── Locked row ────────────────────────────────────────────────────────────── */
+function LockedRow(f: typeof LOCKED_FAMILIES[0]) {
+  const p = pal(f.name);
+  return (
+    <div style={{
+      display: "grid", gridTemplateColumns: COLS, gap: 0,
+      padding: "13px 28px", alignItems: "center",
+      borderBottom: `1px solid ${border}`,
+      opacity: 0.35,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: 6, flexShrink: 0,
+          background: p.bg, color: p.fg,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, fontWeight: 700, fontFamily: INTER,
+        }}>
+          {f.initials}
+        </div>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: navy, fontFamily: INTER }}>{f.name}</span>
+            <Lock style={{ width: 10, height: 10, color: muted }} />
+          </div>
+          {f.age > 0 && <div style={{ fontSize: 11, color: muted, marginTop: 1, fontFamily: INTER }}>Age {f.age}</div>}
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ width: 6, height: 6, borderRadius: "50%", background: RISK_DOT[f.risk] ?? muted }} />
+        <span style={{ ...cellStyle, fontSize: 12 }}>{RISK_LBL[f.risk] ?? f.risk}</span>
+      </div>
+      <div style={{ textAlign: "right" as const, ...cellStyle }}>{fmt$(f.totalAssets)}</div>
+      <div style={{ textAlign: "right" as const, ...cellStyle }}>{fmt$(f.aum)}</div>
+      <div style={{ textAlign: "right" as const, ...dimStyle }}>—</div>
+      <div style={{ textAlign: "center" as const, ...dimStyle }}>—</div>
+      <div style={{ textAlign: "right" as const, ...dimStyle }}>—</div>
+      <div style={{ textAlign: "right" as const, ...dimStyle, fontSize: 12 }}>{f.lastActivity}</div>
+      <div />
+    </div>
+  );
+}
+
+/* ─── Main page ─────────────────────────────────────────────────────────────── */
 export default function ClientsPage() {
-  const { data: clients, isLoading } = useClients();
+  const { data: dbClients } = useClients();
+
+  function resolveHref(name: string, fallback: string): string {
+    if (!dbClients) return fallback;
+    const match = dbClients.find((c: { name: string }) => c.name === name);
+    return match ? `/client/${match.id}` : fallback;
+  }
+
+  const totalAUM    = ACTIVE_FAMILIES.reduce((s, c) => s + c.aum, 0)         + LOCKED_FAMILIES.reduce((s, c) => s + c.aum, 0);
+  const totalAssets = ACTIVE_FAMILIES.reduce((s, c) => s + c.totalAssets, 0) + LOCKED_FAMILIES.reduce((s, c) => s + c.totalAssets, 0);
 
   return (
     <Layout>
-      {/* ── Page header ─────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-[17px] font-display font-bold text-foreground tracking-tight">
-            Client Portfolios
-          </h1>
-          <p className="text-[12px] text-muted-foreground mt-0.5">
-            Financial forecasts · capital allocation · money movement
-          </p>
-        </div>
-        <CreateClientModal />
-      </div>
+      {/* Full-width linen canvas */}
+      <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: linen, fontFamily: INTER }}>
 
-      {/* ── Summary strip ───────────────────────────────────────────────── */}
-      {!isLoading && clients && clients.length > 0 && (
-        <div className="grid grid-cols-3 gap-0 mb-4 border border-border rounded overflow-hidden bg-card">
-          {[
-            { label: "Active Clients",  value: String(clients.length) },
-            {
-              label: "Moderate Risk",
-              value: String(clients.filter(c => c.riskTolerance === "moderate").length),
-            },
-            {
-              label: "Avg Age",
-              value: String(Math.round(clients.reduce((s, c) => s + c.age, 0) / clients.length)),
-            },
-          ].map((stat, i) => (
-            <div
-              key={stat.label}
-              className={`px-4 py-3 text-center ${i !== 2 ? "border-r border-border" : ""}`}
-            >
-              <p className="text-[18px] font-bold tabular text-foreground">{stat.value}</p>
-              <p className="text-[10.5px] text-muted-foreground uppercase tracking-wide mt-0.5">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Client list ─────────────────────────────────────────────────── */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-14 rounded bg-secondary/50 animate-pulse" />
-          ))}
-        </div>
-      ) : !clients?.length ? (
-        /* Empty state */
-        <Card className="border-dashed border-2 bg-transparent text-center p-14">
-          <CardContent className="pt-0">
-            <div className="w-12 h-12 mx-auto bg-primary/10 text-primary rounded flex items-center justify-center mb-4">
-              <Users className="w-6 h-6" />
-            </div>
-            <h3 className="text-[14px] font-semibold mb-1.5">No clients yet</h3>
-            <p className="text-[12px] text-muted-foreground mb-5 max-w-xs mx-auto">
-              Onboard your first client to start building balance sheet strategies and running AI analysis.
-            </p>
-            <CreateClientModal />
-          </CardContent>
-        </Card>
-      ) : (
-        /* Client table */
-        <Card className="overflow-hidden border border-border shadow-sm">
-          {/* Table header */}
-          <div className="grid px-4 py-2 bg-secondary/60 border-b border-border"
-               style={{ gridTemplateColumns: "2rem 1fr 7rem 7rem 1.5rem" }}>
-            <div />
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">Client</p>
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground text-right hidden sm:block">AUM</p>
-            <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground text-right">Risk</p>
-            <div />
-          </div>
-
-          {/* Active (real) clients */}
-          {clients.map(client => (
-            <ClientCard
-              key={client.id}
-              href={`/client/${client.id}`}
-              name={client.name}
-              initials={client.name.charAt(0) + (client.name.split(" ")[1]?.charAt(0) ?? "")}
-              age={client.age}
-              risk={client.riskTolerance}
-              aum="$5.9M"
-            />
-          ))}
-
-          {/* Locked placeholder clients */}
-          {PLACEHOLDER_CLIENTS.map(ph => (
-            <ClientCard
-              key={ph.name}
-              name={ph.name}
-              initials={ph.initials}
-              age={ph.age}
-              risk={ph.riskKey}
-              aum={ph.aum}
-              locked
-            />
-          ))}
-
-          {/* Footer: add more */}
-          <div className="px-4 py-2.5 border-t border-border bg-secondary/30 flex items-center justify-between">
-            <span className="text-[11px] text-muted-foreground">
-              {(clients.length + PLACEHOLDER_CLIENTS.length)} clients total
+        {/* ── Top bar ── */}
+        <div style={{
+          background: panel, borderBottom: `1px solid ${border}`,
+          padding: "0 40px", height: 52,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
+            <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 400, color: navy, lineHeight: 1 }}>
+              Families
             </span>
-            <button className="flex items-center gap-1 text-[11px] font-medium text-primary hover:underline transition-colors">
-              <ArrowUpRight className="w-3 h-3" />
-              Export roster
-            </button>
+            <span style={{ fontSize: 12, color: muted, letterSpacing: "0.03em" }}>
+              GURU Advisor Intelligence
+            </span>
           </div>
-        </Card>
-      )}
+          <AddFamilyModal />
+        </div>
+
+        {/* ── KPI strip ── */}
+        <div style={{
+          background: panel, borderBottom: `1px solid ${border}`,
+          padding: "20px 40px", display: "flex", gap: 56, flexShrink: 0,
+        }}>
+          {[
+            { label: "Total AUM",    value: fmt$(totalAUM),    sub: "Under management",    accent: false },
+            { label: "Total Assets", value: fmt$(totalAssets), sub: "Across all families", accent: false },
+            { label: "Families",     value: "73",              sub: "Active book",          accent: false },
+            { label: "Action Items", value: "3",               sub: "Need attention today", accent: true  },
+          ].map(k => (
+            <div key={k.label}>
+              <div style={{
+                fontFamily: INTER, fontVariantNumeric: "tabular-nums",
+                fontSize: 26, fontWeight: 600, lineHeight: 1,
+                color: k.accent ? gold : navy,
+                letterSpacing: "-0.4px", marginBottom: 4,
+              }}>{k.value}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: muted, marginBottom: 1 }}>{k.label}</div>
+              <div style={{ fontSize: 11, color: faint }}>{k.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Table area ── */}
+        <div style={{ padding: "24px 40px 60px" }}>
+          <div style={{
+            background: panel,
+            border: `1px solid ${border}`,
+            borderRadius: 6,
+            overflow: "hidden",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          }}>
+            <THead />
+
+            {ACTIVE_FAMILIES.map(f => (
+              <FamilyRow
+                key={f.id}
+                {...f}
+                resolvedHref={resolveHref(f.name, f.href)}
+              />
+            ))}
+
+            {/* Divider before locked rows */}
+            <div style={{
+              padding: "10px 28px 8px",
+              borderBottom: `1px solid ${border}`,
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.10em",
+              textTransform: "uppercase" as const, color: faint,
+              fontFamily: INTER,
+            }}>
+              Coming Soon — Migrating to GURU
+            </div>
+
+            {LOCKED_FAMILIES.map(f => (
+              <LockedRow key={f.name} {...f} />
+            ))}
+          </div>
+        </div>
+
+      </div>
     </Layout>
   );
 }

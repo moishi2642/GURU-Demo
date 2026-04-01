@@ -422,19 +422,19 @@ const GURU_BUCKETS = {
     tagCls: "bg-transparent border border-[#162843]/35 text-[#162843]",
   },
   yield: {
-    label: "Reserve",
+    label: "Reserve Cash",
     short: "Savings & money market — penalty-free, higher-yielding",
     color: "#b8943f",
     tagCls: "bg-transparent border border-[#3a2710]/35 text-[#3a2710]",
   },
   tactical: {
-    label: "Build",
+    label: "Capital Build",
     short: "Treasuries & fixed income — 1–3 year horizon",
     color: "#3da870",
     tagCls: "bg-transparent border border-[#0e3320]/35 text-[#0e3320]",
   },
   growth: {
-    label: "Grow",
+    label: "Investments",
     short: "Long-horizon investments — equities, compounding wealth",
     color: "#5585ae",
     tagCls: "bg-transparent border border-[#1e2d40]/35 text-[#1e2d40]",
@@ -716,6 +716,66 @@ function NetWorthPanel({
     liabGroups[label] = (liabGroups[label] || 0) + Number(l.value);
   }
 
+  // ── Detection center calcs ───────────────────────────────────────────────
+  // Local CF2 palette for detection center (mirrors cashflow panel definition)
+  const CF2 = {
+    bg:       "#141c2b",
+    card:     "#1e2838",
+    elevated: "#1a2433",
+    border:   "rgba(255,255,255,0.08)",
+    divider:  "rgba(255,255,255,0.06)",
+    txt:      "rgba(255,255,255,0.9)",
+    txt2:     "rgba(255,255,255,0.85)",
+    txtMuted: "rgba(255,255,255,0.6)",
+    txtDim:   "rgba(255,255,255,0.5)",
+    green:    "#5ecc8a",
+    amber:    "#ffc83c",
+    red:      "#ff6464",
+    gold:     "#ffc83c",
+    blue:     "#5b9cf6",
+    INTER:    "Inter, system-ui, sans-serif",
+    SERIF:    "'Instrument Serif', Georgia, serif",
+  };
+
+  // Excess liquidity — coverage-month methodology (matches allocation tool)
+  // Op Cash target: 2 months × $20,939/mo; Reserve target: 12 months × $18,066/mo
+  const { totalLiquid: nwLiquid, reserve: nwReserve, yieldBucket: nwYield } = cashBuckets(assets);
+  const nwForecast = buildForecast(cashFlows);
+  const nwTrough   = computeTrough(nwForecast); // kept for other uses
+  const GURU_OP_RATE  = 20939;
+  const GURU_RES_RATE = 18066;
+  const nwExcess   = Math.max(0, nwReserve - 2 * GURU_OP_RATE) + Math.max(0, nwYield - 12 * GURU_RES_RATE);
+  const nwPickup   = Math.round(nwExcess * 0.0307); // ~$9,200 after-tax at 3.07%
+
+  // Home equity & HELOC
+  const reAssets   = assets.filter(a => a.type === "real_estate");
+  const primaryRE  = reAssets.find(a => (a.description ?? "").toLowerCase().includes("primary") || (a.description ?? "").toLowerCase().includes("tribeca")) ?? reAssets[0];
+  const primaryVal = primaryRE ? Number(primaryRE.value) : 0;
+  const mortgages  = liabilities.filter(l => l.type === "mortgage");
+  const primaryMortgage = mortgages.find(l => (l.description ?? "").toLowerCase().includes("tribeca") || (l.description ?? "").toLowerCase().includes("primary")) ?? mortgages[0];
+  const mortgageBalance = primaryMortgage ? Number(primaryMortgage.value) : 0;
+  const homeEquity  = primaryVal - mortgageBalance;
+  const helocAvail  = Math.max(0, Math.round(primaryVal * 0.80 - mortgageBalance));
+  const homeLTV     = primaryVal > 0 ? Math.round((mortgageBalance / primaryVal) * 100) : 0;
+
+  // Investable equity for margin loan (liquid public equities only)
+  const equityPortfolio = assets
+    .filter(a => a.type === "equity" && !(a.description ?? "").toLowerCase().match(/rsu|unvested|carry/))
+    .reduce((s, a) => s + Number(a.value), 0);
+  const marginAvail = Math.round(equityPortfolio * 0.50);
+
+  // High-rate liabilities (credit card, personal loans)
+  const highRateLiab = liabilities
+    .filter(l => Number(l.interestRate ?? 0) > 10)
+    .reduce((s, l) => s + Number(l.value), 0);
+  const highRateInt  = liabilities
+    .filter(l => Number(l.interestRate ?? 0) > 10)
+    .reduce((s, l) => s + Number(l.value) * Number(l.interestRate ?? 0) / 100, 0);
+
+  // Debt-to-asset ratio
+  const debtToAsset = totalAssets > 0 ? ((totalLiab / totalAssets) * 100).toFixed(1) : "0";
+  const availCredit = helocAvail + marginAvail;
+
   return (
     <div className={PANEL_CLS}>
       {/* ── Panel header ── */}
@@ -723,6 +783,142 @@ function NetWorthPanel({
         <span className="panel-hd-label">Net Worth</span>
         <span className="panel-hd-value">5yr&nbsp;<span className="text-emerald-600">{fmt(projYear5, true)}</span></span>
       </div>
+
+      {/* ── GURU Detection Banner ─────────────────────────────────────────────── */}
+      <div style={{ margin:"0 0 0", position:"relative", background:"#3a5580", overflow:"hidden" }}>
+        <div style={{ position:"absolute", top:-40, left:-40, width:260, height:180, background:"radial-gradient(ellipse at center,rgba(100,160,240,0.15) 0%,transparent 70%)", pointerEvents:"none", animation:"glowPulse 4s ease-in-out infinite" }} />
+        <div style={{ position:"absolute", top:0, left:0, width:"100%", height:1, background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)", pointerEvents:"none" }} />
+        {/* Ticker row */}
+        <div style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 16px 4px", borderBottom:"1px solid rgba(255,255,255,0.08)", overflow:"hidden" }}>
+          <div style={{ position:"absolute", top:0, left:0, width:"35%", height:"100%", background:"linear-gradient(90deg,transparent,rgba(180,210,255,0.07),transparent)", pointerEvents:"none", animation:"scanLine 3.5s linear infinite" }} />
+          <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.12em", color:"rgba(180,210,255,0.85)", position:"relative" }}>▶ Balance Sheet Scan Active</span>
+          <span style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.3)", textTransform:"uppercase" as const, letterSpacing:"0.05em" }}>GURU AI</span>
+        </div>
+        {/* Header row */}
+        <div style={{ display:"flex", alignItems:"center", padding:"7px 16px 6px" }}>
+          <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", display:"inline-block", flexShrink:0, animation:"alertDot 2s ease-in-out infinite", marginRight:8 }} />
+          <span style={{ fontFamily:CF2.INTER, fontSize:11, fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(180,215,255,0.95)" }}>Detection System</span>
+          <span style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.3)", marginLeft:"auto", letterSpacing:"0.04em" }}>4 active</span>
+        </div>
+        {/* ── HERO: Excess Liquidity ── */}
+        <div style={{ margin:"0 12px 8px", padding:"12px 16px", background:"rgba(0,0,0,0.22)", borderRadius:6, borderLeft:"2.5px solid rgba(94,204,138,0.55)", position:"relative", overflow:"hidden", animation:"borderRunGreen 4s ease-in-out infinite", animationDelay:"1s" }}>
+          <div style={{ position:"absolute", top:-16, right:-16, width:160, height:110, background:"radial-gradient(ellipse at center,rgba(94,204,138,0.08) 0%,transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", display:"inline-block", animation:"alertDot 2s ease-in-out infinite" }} />
+              <span style={{ fontFamily:CF2.INTER, fontSize:9.5, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.12em", color:"rgba(94,204,138,0.9)" }}>Liquidity Signal</span>
+            </div>
+            <span style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.28)" }}>6h ago</span>
+          </div>
+          <div style={{ fontFamily:CF2.INTER, fontSize:12, fontWeight:700, color:"rgba(180,215,255,0.95)", letterSpacing:"0.01em", marginBottom:10 }}>EXCESS LIQUIDITY DETECTED</div>
+          <div style={{ display:"flex", alignItems:"flex-end", gap:0, marginBottom:10 }}>
+            <div style={{ flex:1, paddingRight:16, borderRight:"1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(255,255,255,0.38)", marginBottom:3 }}>Excess Liquidity</div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:30, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const }}>{`$${Math.round(nwExcess/1000)}K`}</div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:9.5, color:"rgba(255,255,255,0.45)", marginTop:4 }}>Above reserve floor · <span style={{ color:"rgba(94,204,138,0.7)" }}>deployable now</span></div>
+            </div>
+            <div style={{ flex:1, paddingLeft:16 }}>
+              <div style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(255,255,255,0.38)", marginBottom:3 }}>Income Pickup</div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:30, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const }}>{`+$${Math.round(nwPickup/1000)}K`}<span style={{ fontSize:12, color:"rgba(94,204,138,0.7)", marginLeft:2 }}>/yr</span></div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:9.5, color:"rgba(255,255,255,0.45)", marginTop:4 }}>If deployed at GURU rates · <span style={{ color:"rgba(94,204,138,0.7)" }}>~7% AT</span></div>
+            </div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"2px 8px", borderRadius:4, border:"1px solid rgba(94,204,138,0.35)", background:"rgba(94,204,138,0.08)" }}>
+              <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.06em", color:"#5ecc8a" }}>Opportunity</span>
+            </div>
+            <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:600, color:"rgba(180,215,255,0.5)" }}>→ Allocation ↗</span>
+          </div>
+        </div>
+        {/* ── 3 small detection cards ── */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, padding:"0 12px 12px" }}>
+          {/* Card: High-Rate Liability */}
+          <div style={{ padding:"9px 11px", background:"rgba(0,0,0,0.18)", borderRadius:6, display:"flex", flexDirection:"column" as const, gap:0, animation:"borderRunAmber 4s ease-in-out infinite", animationDelay:"0.5s" }}>
+            <div style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.28)", textAlign:"right" as const, marginBottom:3 }}>active</div>
+            <div style={{ fontFamily:CF2.INTER, fontSize:10.5, fontWeight:700, color:"rgba(180,215,255,0.95)", lineHeight:1.2, marginBottom:5 }}>HIGH-RATE LIABILITY</div>
+            <div style={{ display:"flex", flexDirection:"column" as const, gap:2, flex:1, marginBottom:6 }}>
+              <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.6)", lineHeight:1.3, display:"flex", gap:4 }}><span style={{ color:"rgba(255,255,255,0.25)" }}>·</span><span>CC + loans at ~{liabilities.filter(l=>Number(l.interestRate??0)>10).map(l=>`${Number(l.interestRate).toFixed(0)}%`).join(", ")}</span></div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.6)", lineHeight:1.3, display:"flex", gap:4 }}><span style={{ color:"rgba(255,255,255,0.25)" }}>·</span><span>{fmt(Math.round(highRateInt))}/yr interest · margin loan saves {fmt(Math.round(highRateInt * 0.65))}</span></div>
+            </div>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 7px", borderRadius:4, border:"1px solid rgba(255,200,60,0.35)", background:"rgba(255,200,60,0.08)", alignSelf:"flex-start" as const }}>
+              <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.06em", color:"#ffc83c" }}>Action</span>
+            </div>
+          </div>
+          {/* Card: HELOC Opportunity */}
+          <div style={{ padding:"9px 11px", background:"rgba(0,0,0,0.18)", borderRadius:6, display:"flex", flexDirection:"column" as const, gap:0, animation:"borderRunBlue 4s ease-in-out infinite", animationDelay:"1.5s" }}>
+            <div style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.28)", textAlign:"right" as const, marginBottom:3 }}>unused</div>
+            <div style={{ fontFamily:CF2.INTER, fontSize:10.5, fontWeight:700, color:"rgba(180,215,255,0.95)", lineHeight:1.2, marginBottom:5 }}>HELOC AVAILABLE</div>
+            <div style={{ display:"flex", flexDirection:"column" as const, gap:2, flex:1, marginBottom:6 }}>
+              <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.6)", lineHeight:1.3, display:"flex", gap:4 }}><span style={{ color:"rgba(255,255,255,0.25)" }}>·</span><span>{homeLTV}% LTV on {fmt(primaryVal, true)} home</span></div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.6)", lineHeight:1.3, display:"flex", gap:4 }}><span style={{ color:"rgba(255,255,255,0.25)" }}>·</span><span>Up to {fmt(helocAvail, true)} at 80% LTV · prime +0.5%</span></div>
+            </div>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 7px", borderRadius:4, border:"1px solid rgba(91,143,204,0.35)", background:"rgba(91,143,204,0.08)", alignSelf:"flex-start" as const }}>
+              <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.06em", color:"#5b8fcc" }}>Opportunity</span>
+            </div>
+          </div>
+          {/* Card: Margin Loan */}
+          <div style={{ padding:"9px 11px", background:"rgba(0,0,0,0.18)", borderRadius:6, display:"flex", flexDirection:"column" as const, gap:0, animation:"borderRunBlue 4s ease-in-out infinite", animationDelay:"2.5s" }}>
+            <div style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.28)", textAlign:"right" as const, marginBottom:3 }}>unused</div>
+            <div style={{ fontFamily:CF2.INTER, fontSize:10.5, fontWeight:700, color:"rgba(180,215,255,0.95)", lineHeight:1.2, marginBottom:5 }}>MARGIN LOAN</div>
+            <div style={{ display:"flex", flexDirection:"column" as const, gap:2, flex:1, marginBottom:6 }}>
+              <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.6)", lineHeight:1.3, display:"flex", gap:4 }}><span style={{ color:"rgba(255,255,255,0.25)" }}>·</span><span>{fmt(equityPortfolio, true)} eligible equity portfolio</span></div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.6)", lineHeight:1.3, display:"flex", gap:4 }}><span style={{ color:"rgba(255,255,255,0.25)" }}>·</span><span>Up to {fmt(marginAvail, true)} at ~7.5% · no approval needed</span></div>
+            </div>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"2px 7px", borderRadius:4, border:"1px solid rgba(91,143,204,0.35)", background:"rgba(91,143,204,0.08)", alignSelf:"flex-start" as const }}>
+              <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.06em", color:"#5b8fcc" }}>Opportunity</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── KPI Table ─────────────────────────────────────────────────────────── */}
+      <div style={{ display:"flex", gap:6, padding:"10px 10px 4px", alignItems:"stretch" }}>
+        {/* Hero: Net Worth */}
+        <div style={{ background:CF2.card, border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"14px 16px", flexShrink:0, display:"flex", flexDirection:"column" as const, justifyContent:"center", gap:7, minWidth:160 }}>
+          <div style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", color:"rgba(255,255,255,0.55)" }}>Net Worth</div>
+          <div style={{ fontFamily:CF2.INTER, fontSize:28, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const }}>{fmt(netWorth, true)}</div>
+          <span style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.06em", padding:"2px 7px", borderRadius:4, alignSelf:"flex-start" as const, background:"rgba(94,204,138,0.08)", border:"1px solid rgba(94,204,138,0.2)", color:CF2.green }}>
+            {fmt(projYear5, true)} projected 5yr
+          </span>
+        </div>
+        {/* KPI grid */}
+        <div style={{ flex:1, background:CF2.card, border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, overflow:"hidden" }}>
+          <table style={{ width:"100%", height:"100%", borderCollapse:"collapse" as const }}>
+            <tbody>
+              {([
+                [
+                  { label:"Total Assets",     value:fmt(totalAssets, true),              note:"All asset classes"         },
+                  { label:"Total Liabilities",value:fmt(totalLiab, true),                note:"Debt obligations",         valueColor:CF2.red },
+                ],
+                [
+                  { label:"Debt-to-Asset",    value:`${debtToAsset}%`,                   note:"Total liab / total assets" },
+                  { label:"Home LTV",         value:`${homeLTV}%`,                        note:`${fmt(mortgageBalance, true)} / ${fmt(primaryVal, true)}` },
+                ],
+                [
+                  { label:"Available Credit", value:fmt(availCredit, true),              note:"HELOC + margin combined",  valueColor:CF2.blue },
+                  { label:"Idle Capital",     value:fmt(Math.round(nwExcess), true),     note:"Above reserve floor",      valueColor:CF2.amber },
+                ],
+              ] as { label:string; value:string; note:string; valueColor?:string }[][]).map((row, ri) => (
+                <tr key={ri} style={{ borderBottom: ri < 2 ? `1px solid ${CF2.divider}` : "none" }}>
+                  {row.map((kpi, ci) => (
+                    <React.Fragment key={kpi.label}>
+                      {ci === 1 && <td style={{ width:1, borderLeft:`1px solid ${CF2.divider}` }} />}
+                      <td style={{ padding:"8px 5px 7px 12px", verticalAlign:"middle" }}>
+                        <div style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.07em", color:"rgba(255,255,255,0.82)", marginBottom:2, whiteSpace:"nowrap" as const }}>{kpi.label}</div>
+                        <div style={{ fontFamily:CF2.INTER, fontSize:9, color:"rgba(255,255,255,0.35)", lineHeight:1.3, whiteSpace:"nowrap" as const }}>{kpi.note}</div>
+                      </td>
+                      <td style={{ padding:"8px 12px 7px 4px", verticalAlign:"middle", textAlign:"right" as const, whiteSpace:"nowrap" as const }}>
+                        <div style={{ fontFamily:CF2.INTER, fontSize:16, fontWeight:300, color:kpi.valueColor ?? "rgba(255,255,255,0.82)", fontVariantNumeric:"tabular-nums" as const, lineHeight:1 }}>{kpi.value}</div>
+                      </td>
+                    </React.Fragment>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* ── KPI row ── */}
       <div className="px-4 pt-3 pb-2 border-b border-border/60">
         <p className="serif-hero text-[2rem] font-normal tabular-nums text-foreground leading-tight" data-testid="kpi-net-worth">{fmt(netWorth)}</p>
@@ -1081,8 +1277,8 @@ function CashManagementPanel({
         {(() => {
           const buckets = [
             { label: "Operating Cash", value: reserve,     items: reserveItems  ?? [], color: "#1d4ed8", border: "border-blue-200",    rowBg: "bg-blue-50/60",    rowBorder: "border-blue-100",    textCls: "text-blue-900",    amtCls: "text-blue-700"    },
-            { label: "Reserve",        value: yieldBucket, items: yieldItems    ?? [], color: "#d97706", border: "border-amber-200",   rowBg: "bg-amber-50/60",   rowBorder: "border-amber-100",   textCls: "text-amber-900",   amtCls: "text-amber-700"   },
-            { label: "Build",          value: tactical,    items: tacticalItems ?? [], color: "#16a34a", border: "border-emerald-200", rowBg: "bg-emerald-50/60", rowBorder: "border-emerald-100", textCls: "text-emerald-900", amtCls: "text-emerald-700" },
+            { label: "Reserve Cash",   value: yieldBucket, items: yieldItems    ?? [], color: "#d97706", border: "border-amber-200",   rowBg: "bg-amber-50/60",   rowBorder: "border-amber-100",   textCls: "text-amber-900",   amtCls: "text-amber-700"   },
+            { label: "Capital Build",  value: tactical,    items: tacticalItems ?? [], color: "#16a34a", border: "border-emerald-200", rowBg: "bg-emerald-50/60", rowBorder: "border-emerald-100", textCls: "text-emerald-900", amtCls: "text-emerald-700" },
           ];
           return (
             <div className="flex items-start gap-3">
@@ -1447,7 +1643,7 @@ function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
             <div className="flex items-stretch gap-2" data-testid="mini-flow-reserve">
               <div className="w-[78px] flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1 py-3" style={{ background: "#d97706" }}>
                 <ShieldCheck className="w-3 h-3 text-white/80" />
-                <span className="font-black uppercase tracking-widest text-white text-center px-1 text-[8px] leading-tight">Reserve</span>
+                <span className="font-black uppercase tracking-widest text-white text-center px-1 text-[8px] leading-tight">Reserve Cash</span>
                 <span className="font-black tabular-nums text-white/90 text-[9px]">$129,385</span>
               </div>
               {/* Branch connector */}
@@ -3104,7 +3300,8 @@ function CashFlowForecastView({
                 </div>
                 {/* ── HERO: Excess Liquidity (full-width, big numbers) ─────────── */}
                 {(()=>{
-                  const excessLiqAmt  = Math.max(0, totalLiquid + heroTroughValue);
+                  // Coverage-month methodology — matches allocation tool ($299,966 ≈ $299,926)
+                  const excessLiqAmt  = Math.max(0, reserve - 2 * 20939) + Math.max(0, yieldBucket - 12 * 18066);
                   const deployableAmt = Math.round(excessLiqAmt * 0.623);
                   const potentialInc  = Math.round(deployableAmt * 0.0696);
                   const liqIsActive   = alertHighlight === "liq";
@@ -3620,8 +3817,8 @@ function CashFlowForecastView({
             const blendAT = wtd(allItems,liqAT);
             const BUCKETS = [
               { key:"op",    label:"Operating Cash", color:"#4a90d9", items:reserveItems,  total:reserve },
-              { key:"res",   label:"Reserve",        color:"#e8a830", items:yieldItems,    total:yieldBucket },
-              { key:"build", label:"Build",          color:"#2a9a5a", items:tacticalItems, total:tactical },
+              { key:"res",   label:"Reserve Cash",   color:"#e8a830", items:yieldItems,    total:yieldBucket },
+              { key:"build", label:"Capital Build",  color:"#2a9a5a", items:tacticalItems, total:tactical },
             ];
             // SVG donut — 2× size
             const CX=120,CY=120,R=92,SW=26, CIRC=2*Math.PI*R, GAP=3;
@@ -4342,9 +4539,9 @@ const MM_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","
 
 const MM_BUCKETS = [
   { key: "op",   label: "Operating Cash", color: "#2e5c8a", accent: "#a8c4e0", tag: "Checking + Savings" },
-  { key: "res",  label: "Reserve",        color: "#8a6e2e", accent: "#d4b87a", tag: "JPMorgan 100% Treasury MMF" },
-  { key: "bld",  label: "Build",          color: "#2e7a52", accent: "#7ac4a0", tag: "1yr Treasuries + 2028 Munis" },
-  { key: "grw",  label: "Grow",           color: "#2e4e7a", accent: "#8aace0", tag: "Growth Equity ETFs" },
+  { key: "res",  label: "Reserve Cash",   color: "#8a6e2e", accent: "#d4b87a", tag: "JPMorgan 100% Treasury MMF" },
+  { key: "bld",  label: "Capital Build",  color: "#2e7a52", accent: "#7ac4a0", tag: "1yr Treasuries + 2028 Munis" },
+  { key: "grw",  label: "Investments",    color: "#2e4e7a", accent: "#8aace0", tag: "Growth Equity ETFs" },
 ];
 
 // Starting balances (Jan start)
@@ -5171,7 +5368,7 @@ function MoneyMovementView({
               <div className="relative" style={{ gridColumn: '1', gridRow: '2' }}>
                 <div className="flex items-center gap-1.5 px-2 py-1 mb-2 rounded" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#d97706' }} />
-                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#92400e' }}>Reserve Cash</span>
                 </div>
                 {/* JPMorgan 100% Treasuries Money Market Fund */}
                 <LedgerCard
@@ -5491,13 +5688,13 @@ function MoneyMovementView({
                 </tr>
                 {/* Reserve TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#d97706" }}>
-                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Reserve</td>
+                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Reserve Cash</td>
                   {HC_RSV_TOTAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white relative">
                       <div className="group relative inline-block cursor-help">
                         {fmtBal(v)}
                         {cellTip([
-                          `Reserve — ${MONTHS[mi]} 2026`,
+                          `Reserve Cash — ${MONTHS[mi]} 2026`,
                           "─",
                           mi > 0 ? `Prior month: ${fmtBal(HC_RSV_TOTAL[mi - 1])}` : null,
                           INCOME_TO_ST[mi] > 0 ? `+ Inflow: ${fmtBal(INCOME_TO_ST[mi])}` : null,
@@ -5561,13 +5758,13 @@ function MoneyMovementView({
                 </tr>
                 {/* Build TOTAL */}
                 <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#16a34a" }}>
-                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Build</td>
+                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Capital Build</td>
                   {HC_BLD_TOTAL.map((v, mi) => (
                     <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white relative">
                       <div className="group relative inline-block cursor-help">
                         {fmtBal(v)}
                         {cellTip([
-                          `Build — ${MONTHS[mi]} 2026`,
+                          `Capital Build — ${MONTHS[mi]} 2026`,
                           "─",
                           mi > 0 ? `Prior month: ${fmtBal(HC_BLD_TOTAL[mi - 1])}` : null,
                           INCOME_TO_MT[mi] > 0 ? `+ Inflow: ${fmtBal(INCOME_TO_MT[mi])}` : null,
@@ -5640,7 +5837,7 @@ const GURU_BUCKETS_DEF = [
     accent: "#7aa7d4",
   },
   {
-    name: "Reserve",
+    name: "Reserve Cash",
     tagline: "Active cash management for what's next",
     rule: "12 months of cash for anticipated outflow",
     bg: "#3a2710",    // deep warm gold — not orange
@@ -5648,7 +5845,7 @@ const GURU_BUCKETS_DEF = [
     accent: "#c9a84c",
   },
   {
-    name: "Build",
+    name: "Capital Build",
     tagline: "Disciplined saving for big goals on the horizon",
     rule: "Large expenditure in next 3 years",
     bg: "#0e3320",    // deep forest green
@@ -5656,7 +5853,7 @@ const GURU_BUCKETS_DEF = [
     accent: "#5ab88a",
   },
   {
-    name: "Grow",
+    name: "Investments",
     tagline: "Long-term compounded investing",
     rule: "5 years + aggressive investment portfolio",
     bg: "#1e2d40",    // deep slate — not purple
@@ -5999,7 +6196,7 @@ function GuruAllocationView({
                   bg: "#1e2838",
                 },
                 {
-                  label: "Reserve",
+                  label: "Reserve Cash",
                   tagline: "Active cash management for what's next",
                   currentMonths: resCurrentMonthsT,
                   targetMonths: resMonthsLocal,
@@ -6204,7 +6401,7 @@ function GuruAllocationView({
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#9a7b3c", opacity: 0.75 }} />
           <span className="text-[9px] font-bold uppercase tracking-[0.14em] flex-shrink-0" style={{ color: "#9a7b3c" }}>GURU</span>
           <span className="text-muted-foreground/40 select-none px-0.5">·</span>
-          <span className="text-[10px] italic text-muted-foreground">Capital routing plan confirmed · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)}</span> moving from {opExcess > 100 && resExcess > 100 ? "Operating Cash and Reserve" : opExcess > 100 ? "Operating Cash" : "Reserve"} into Investment Pool.</span>
+          <span className="text-[10px] italic text-muted-foreground">Capital routing plan confirmed · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>{fmt(totalExcess)}</span> moving from {opExcess > 100 && resExcess > 100 ? "Operating Cash and Reserve Cash" : opExcess > 100 ? "Operating Cash" : "Reserve Cash"} into Capital Build & Investments.</span>
         </div>
       )}
 
@@ -6425,13 +6622,13 @@ function AdvisorBriefView({
 }) {
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
 
-  // ── Liquidity calcs — mirrors GURU hero bar exactly ──
-  const { totalLiquid: _abvTotalLiquid, yieldItems: _abvYieldItems } = cashBuckets(assets);
+  // ── Liquidity calcs — coverage-month methodology (matches allocation tool) ──
+  const { totalLiquid: _abvTotalLiquid, reserve: _abvReserve, yieldBucket: _abvYield, yieldItems: _abvYieldItems } = cashBuckets(assets);
   const _abvForecast = buildForecast(cashFlows);
-  const cashTroughBuffer = computeTrough(_abvForecast);
+  const cashTroughBuffer = computeTrough(_abvForecast); // kept for other uses
   const guruReserveTarget = cashTroughBuffer;
-  // cashExcess uses the same formula as the GURU hero bar: totalLiquid − trough
-  const cashExcess = Math.max(0, _abvTotalLiquid - cashTroughBuffer);
+  // cashExcess: op excess (2-mo) + reserve excess (12-mo) — matches allocation tool $299,926
+  const cashExcess = Math.max(0, _abvReserve - 2 * 20939) + Math.max(0, _abvYield - 12 * 18066);
   // reserveItems = all non-checking cash (savings, MM, Fidelity Cash)
   const reserveItems = assets.filter(
     (a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"),
@@ -6561,7 +6758,7 @@ function AdvisorBriefView({
     const paras: string[] = [];
     if (checked.has("liquidity"))
       paras.push(
-        `As we approach the new year, your December bonus has created a meaningful liquidity surplus — roughly ${fmt(totalToDeploy)} above your 3-month reserve target. Rather than letting that sit idle, we'd like to put it to work for you across the Build and Grow allocations we've modeled. The opportunity cost of leaving it in cash is real, and we think the timing is right to act.`,
+        `As we approach the new year, your December bonus has created a meaningful liquidity surplus — roughly ${fmt(totalToDeploy)} above your 3-month Reserve Cash target. Rather than letting that sit idle, we'd like to put it to work for you across the Capital Build and Investments allocations we've modeled. The opportunity cost of leaving it in cash is real, and we think the timing is right to act.`,
       );
     if (checked.has("rebalance"))
       paras.push(
@@ -6607,7 +6804,7 @@ function AdvisorBriefView({
     );
     if (checked.has("liquidity"))
       blocks.push(
-        <p key="liq" className="font-serif">Congrats on a great end of year! Your December bonus has come in and created a meaningful liquidity surplus. We calculate you are holding up to {fmt(Math.max(0, _abvTotalLiquid - 194196))} in excess liquidity given your cash flow forecast for the next 12 months. The opportunity cost of leaving it in cash is real and could be up to $10,000 or more of after tax annual returns.</p>
+        <p key="liq" className="font-serif">Congrats on a great end of year! Your December bonus has come in and created a meaningful liquidity surplus. We calculate you are holding up to {fmt(cashExcess)} in excess liquidity given your cash flow forecast for the next 12 months. The opportunity cost of leaving it in cash is real and could be up to $10,000 or more of after tax annual returns.</p>
       );
     if (checked.has("rebalance"))
       blocks.push(
@@ -6632,11 +6829,11 @@ function AdvisorBriefView({
           <ul className="list-none pl-3 space-y-0.5">
             <li className="font-serif text-[12px]">• In March, $47,126 will move from your Reserve Money Market into your Operating Checking Account to cover the Q1 tax payment and spring tuition — this rebuilds your two-month expense buffer.</li>
           </ul>
-          <BucketHeader color="#d97706" label="Reserve" />
+          <BucketHeader color="#d97706" label="Reserve Cash" />
           <ul className="list-none pl-3 space-y-0.5">
             <li className="font-serif text-[12px]">• Your 3-Month Treasury Bill matures on March 31st — those $41,877 in proceeds will stay in your Reserve Money Market as a liquidity buffer, keeping it ready to fund operations through the spring.</li>
           </ul>
-          <BucketHeader color="#16a34a" label="Build" />
+          <BucketHeader color="#16a34a" label="Capital Build" />
           <ul className="list-none pl-3 space-y-0.5">
             <li className="font-serif text-[12px]">• Your Build Account is holding flat at approximately $194,000, earning around 4.75% passively. No changes are planned — this account remains earmarked as long-term savings toward the home upgrade when you are ready to move forward.</li>
           </ul>
@@ -6678,19 +6875,19 @@ function AdvisorBriefView({
     body?: React.ReactNode;
   }) => (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: badgeBg, color: badgeText, border: `1px solid ${badgeBorder}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: badgeBg, color: badgeText, border: `1px solid ${badgeBorder}` }}>
           {badge}
         </span>
-        <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: priorityBg, color: priorityText, border: `1px solid ${priorityBorder}`, whiteSpace: "nowrap" as const }}>
+        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: priorityBg, color: priorityText, border: `1px solid ${priorityBorder}`, whiteSpace: "nowrap" as const }}>
           {priority}
         </span>
       </div>
-      <div style={{ fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif', fontSize: 20, fontWeight: 400, color: "#181816", lineHeight: 1.2, letterSpacing: "-0.01em", marginBottom: body ? 12 : 0 }}>
+      <div style={{ fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif', fontSize: 20, fontWeight: 400, color: "#181816", lineHeight: 1.2, letterSpacing: "-0.01em", marginBottom: body ? 8 : 0 }}>
         {title}
       </div>
       {body && (
-        <div style={{ fontSize: 14, fontWeight: 400, color: "#3a3a35", lineHeight: 1.7, marginTop: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 400, color: "#3a3a35", lineHeight: 1.6, marginTop: 6 }}>
           {body}
         </div>
       )}
@@ -6702,35 +6899,78 @@ function AdvisorBriefView({
     cardKey,
     approveLabel = "Approve",
     approveColor = "#1e4d30",
+    nowLabel,
+    nowSubtext,
+    nowSublabel,
+    afterLabel,
+    afterSubtext,
+    afterSublabel,
+    urgencyText,
+    urgencyColor,
     onApprove,
   }: {
     cardKey: string;
     approveLabel?: string;
     approveColor?: string;
+    nowLabel?: string;
+    nowSubtext?: string;
+    nowSublabel?: string;
+    afterLabel?: string;
+    afterSubtext?: string;
+    afterSublabel?: string;
+    urgencyText?: string;
+    urgencyColor?: string;
     onApprove?: () => void;
   }) => (
-    <div style={{ borderTop: "1px solid #e6e5e0", padding: "14px 24px", background: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-        <input
-          type="checkbox"
-          checked={checked.has(cardKey)}
-          onChange={() => toggle(cardKey)}
-          style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#181816", flexShrink: 0 }}
-        />
-        <span style={{ fontSize: 13, fontWeight: 500, color: "#3a3a35", userSelect: "none" as const }}>
-          Include in client email
-        </span>
-      </label>
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <button style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 500, padding: "9px 20px", borderRadius: 8, border: "1px solid #d4d4cf", background: "#fff", color: "#3a3a35", cursor: "pointer" }}>
-          Defer
-        </button>
-        <button
-          style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 600, padding: "9px 24px", borderRadius: 8, border: "none", color: "#fff", cursor: "pointer", background: approveColor, letterSpacing: "0.02em" }}
-          onClick={onApprove}
-        >
-          {approveLabel}
-        </button>
+    <div style={{ borderTop: `1px solid ${approveColor}28`, background: `${approveColor}0d`, display: "flex", flexDirection: "column" as const }}>
+      {/* NOW → AFTER GURU boxes */}
+      {nowLabel && afterLabel && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr", alignItems: "center", padding: "10px 16px", borderBottom: `1px solid ${approveColor}18` }}>
+          <div>
+            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: approveColor, opacity: 0.55, marginBottom: 3 }}>{nowSublabel ?? "NOW"}</div>
+            <div style={{ fontSize: 16, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#3a3a35", lineHeight: 1 }}>{nowLabel}</div>
+            {nowSubtext && <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 3 }}>{nowSubtext}</div>}
+          </div>
+          <div style={{ textAlign: "center" as const, fontSize: 14, color: `${approveColor}60` }}>→</div>
+          <div style={{ paddingLeft: 10, borderLeft: `1px solid ${approveColor}22` }}>
+            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: approveColor, marginBottom: 3 }}>{afterSublabel ?? "AFTER GURU"}</div>
+            <div style={{ fontSize: 16, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: approveColor, lineHeight: 1 }}>{afterLabel}</div>
+            {afterSubtext && <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 3 }}>{afterSubtext}</div>}
+          </div>
+        </div>
+      )}
+      {/* Controls row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", background: checked.has(cardKey) ? `${approveColor}18` : "rgba(255,255,255,0.75)", border: "1px solid", borderColor: checked.has(cardKey) ? `${approveColor}50` : `${approveColor}28`, borderRadius: 8, padding: "5px 11px 5px 9px", flexShrink: 0 }}>
+            <input
+              type="checkbox"
+              checked={checked.has(cardKey)}
+              onChange={() => toggle(cardKey)}
+              style={{ width: 16, height: 16, cursor: "pointer", accentColor: approveColor, flexShrink: 0 }}
+            />
+            <span style={{ fontSize: 12, fontWeight: 600, color: approveColor, userSelect: "none" as const, whiteSpace: "nowrap" as const }}>
+              Include in email
+            </span>
+          </label>
+          {urgencyText && (
+            <span style={{ fontSize: 9, fontWeight: 600, color: urgencyColor ?? approveColor, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" as const }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: urgencyColor ?? approveColor, display: "inline-block", flexShrink: 0 }} />
+              {urgencyText}
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+          <button style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 500, padding: "7px 15px", borderRadius: 8, border: `1px solid ${approveColor}30`, background: "rgba(255,255,255,0.6)", color: approveColor, cursor: "pointer" }}>
+            Defer
+          </button>
+          <button
+            style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: "7px 20px", borderRadius: 8, border: "none", color: "#fff", cursor: "pointer", background: approveColor, letterSpacing: "0.03em", boxShadow: `0 2px 8px ${approveColor}50` }}
+            onClick={onApprove}
+          >
+            {approveLabel}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -6760,77 +7000,94 @@ function AdvisorBriefView({
     accentColor: string;
   }) => (
     <div style={{ borderRadius: 8, border: "1px solid #e6e5e0", overflow: "hidden" }}>
-      <div style={{ padding: "12px 16px", background: "#f8f8f6", borderBottom: "1px solid #e6e5e0", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+      <div style={{ padding: "9px 12px", background: "#f8f8f6", borderBottom: "1px solid #e6e5e0", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <div>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 4 }}>GURU Recommended Action</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{action}</div>
+          <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 3 }}>GURU Recommended Action</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{action}</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0, paddingTop: 2 }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: urgencyColor, flexShrink: 0 }} />
-          <span style={{ fontSize: 10, fontWeight: 600, color: urgencyColor, whiteSpace: "nowrap" as const }}>{urgencyText}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, paddingTop: 2 }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: urgencyColor, flexShrink: 0 }} />
+          <span style={{ fontSize: 9, fontWeight: 600, color: urgencyColor, whiteSpace: "nowrap" as const }}>{urgencyText}</span>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 32px 1fr", alignItems: "center", background: "#fff" }}>
-        <div style={{ padding: "14px 16px" }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 5 }}>{nowSublabel ?? "NOW"}</div>
-          <div style={{ fontSize: 17, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#3a3a35", lineHeight: 1 }}>{nowLabel}</div>
-          {nowSubtext && <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 4 }}>{nowSubtext}</div>}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr", alignItems: "center", background: "#fff" }}>
+        <div style={{ padding: "10px 12px" }}>
+          <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 4 }}>{nowSublabel ?? "NOW"}</div>
+          <div style={{ fontSize: 15, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#3a3a35", lineHeight: 1 }}>{nowLabel}</div>
+          {nowSubtext && <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 3 }}>{nowSubtext}</div>}
         </div>
-        <div style={{ textAlign: "center" as const, fontSize: 16, color: "#9c9c93" }}>→</div>
-        <div style={{ padding: "14px 16px", borderLeft: `1px solid ${accentColor}25`, background: `${accentColor}06` }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: accentColor, marginBottom: 5 }}>{afterSublabel ?? "AFTER GURU"}</div>
-          <div style={{ fontSize: 17, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: accentColor, lineHeight: 1 }}>{afterLabel}</div>
-          {afterSubtext && <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 4 }}>{afterSubtext}</div>}
+        <div style={{ textAlign: "center" as const, fontSize: 14, color: "#9c9c93" }}>→</div>
+        <div style={{ padding: "10px 12px", borderLeft: `1px solid ${accentColor}25`, background: `${accentColor}06` }}>
+          <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: accentColor, marginBottom: 4 }}>{afterSublabel ?? "AFTER GURU"}</div>
+          <div style={{ fontSize: 15, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: accentColor, lineHeight: 1 }}>{afterLabel}</div>
+          {afterSubtext && <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 3 }}>{afterSubtext}</div>}
         </div>
       </div>
     </div>
   );
 
   return (
-    <div style={{ background: "#f5f4f0", minHeight: "100vh", padding: "36px 40px 72px" }}>
-      {/* ── Page header — matches allocation tab style ── */}
-      <div style={{ marginBottom: 28 }}>
-        {/* Title row: big light font + subtitle + compose button */}
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 300, color: "#1a2e4a", letterSpacing: "-0.01em", margin: 0, lineHeight: 1 }}>Advisor Brief</h1>
-            <span style={{ fontSize: 11, color: "rgba(0,0,0,0.40)", letterSpacing: "0.04em" }}>Kessler Family · {format(DEMO_NOW, "MMMM d, yyyy")}</span>
+    <div style={{ background: "#f5f4f0", minHeight: "100vh", padding: "24px 32px 48px" }}>
+
+      {/* ── Good morning greeting banner ── */}
+      <div style={{ padding: "4px 0 20px" }}>
+        {/* Top row: pill tags left + date right */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, padding: "4px 11px", borderRadius: 20, background: "#e8edf7", color: "#1a2e4a", border: "1px solid #c5d0e8" }}>ADVISOR BRIEF</span>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, padding: "4px 11px", borderRadius: 20, background: "#f0efeb", color: "#6b6860", border: "1px solid #dedad5" }}>DAILY UPDATE</span>
           </div>
-          {/* Compose email button */}
-          <button
-            onClick={() => setShowEmail(true)}
-            disabled={checked.size === 0}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 18px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: "none", cursor: checked.size > 0 ? "pointer" : "not-allowed", background: checked.size > 0 ? "#181816" : "#d4d4cf", color: "#fff", letterSpacing: "0.02em", whiteSpace: "nowrap", flexShrink: 0 }}
-          >
-            <Mail className="w-3.5 h-3.5" />
-            Compose Email{checked.size > 0 ? ` (${checked.size})` : ""}
-          </button>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 10, color: "#b0aca4", letterSpacing: "0.05em", textTransform: "uppercase" as const }}>{format(DEMO_NOW, "EEEE")}</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "#4a4740", letterSpacing: "-0.01em" }}>{format(DEMO_NOW, "MMMM d, yyyy")}</div>
+          </div>
         </div>
-        {/* Status pills row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+        {/* Title */}
+        <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 30, fontWeight: 400, color: "#1a1917", letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: 10 }}>
+          Good morning, Tara
+        </div>
+        {/* Body text — full width */}
+        <div style={{ fontSize: 13, color: "#6b6860", lineHeight: 1.65 }}>
+          Four items require your attention to reach out to the Kesslers. GURU can execute once approved. For 47 days, they have been sitting on excess liquidity — perfect time to discuss deployment along with cash management opportunities / updates.
+        </div>
+      </div>
+
+      {/* ── Page sub-header ── */}
+      <div style={{ marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" as const }}>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#fdecea", color: "#be2a2c", border: "1px solid #f5a8a8" }}>1 urgent</span>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#e5f3ee", color: "#0d6b50", border: "1px solid #b4d9ce" }}>2 deploy</span>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#edf1fb", color: "#1b3f8a", border: "1px solid #b4c5f5" }}>1 cash update</span>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#fcf1e6", color: "#a55b00", border: "1px solid #f0ce97" }}>1 act before May 7</span>
           <span style={{ fontSize: 11, color: "#9c9c93", marginLeft: 4 }}>· <span style={{ fontFamily: "monospace" }}>{fmt(totalAssets, true)}</span> net worth</span>
         </div>
+        <button
+          onClick={() => setShowEmail(true)}
+          disabled={checked.size === 0}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 28px", borderRadius: 10, fontSize: 14, fontWeight: 700, border: checked.size > 0 ? "none" : "1px solid #d0ccc7", cursor: checked.size > 0 ? "pointer" : "not-allowed", background: checked.size > 0 ? "#1a2e4a" : "#ececec", color: checked.size > 0 ? "#ffffff" : "#b0aca4", letterSpacing: "0.02em", whiteSpace: "nowrap" as const, boxShadow: checked.size > 0 ? "0 3px 12px rgba(26,46,74,0.25)" : "none" }}
+        >
+          <Mail style={{ width: 17, height: 17 }} />
+          Compose Email{checked.size > 0 ? ` (${checked.size})` : ""}
+        </button>
       </div>
       {/* ── Cards ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 36, alignItems: "stretch" }}>
 
         {/* ── Card 1: Year-End Bonus / Deployable Surplus ── */}
         {(() => {
+          // GURU coverage-month methodology: Op Cash 2-mo ($41,878) + Reserve 12-mo ($216,792) = $258,670 floor
+          // Balances match seeded DB: Chase $25,050 + Citizens Checking $107,000 = $132,050 Op Cash
+          //   Citizens MM $225,000 + CapitalOne $15,000 + Fidelity Sweep $186,586 = $426,586 Reserve
           const demoAccts = [
-            { name: "Citizens Private Banking Checking", num: "3438", balance: 107000, floor: 80000 },
-            { name: "Citizens Private Bank Money Market", num: "1482", balance: 225000, floor: 51000 },
-            { name: "Fidelity Cash Sweep / Money Market", num: "4976", balance: 368440, floor: 70000 },
+            { name: "Op Cash  (Chase + Citizens Checking)", num: "Checking", balance: 132050, floor: 41878  },
+            { name: "Reserve  (Citizens MM + CapitalOne + Fidelity Sweep)", num: "Savings/MM", balance: 426586, floor: 216792 },
           ];
-          const totalHarvest = demoAccts.reduce((s, a) => s + (a.balance - a.floor), 0);
+          const totalHarvest = demoAccts.reduce((s, a) => s + (a.balance - a.floor), 0); // = $299,966
           const monthlyLoss = Math.round(totalHarvest * 0.0096 / 12 * 10) * 10; // ~$4,800/mo at blended loss
           return (
-          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
             <div style={{ height: 3, background: "#1e4d30" }} />
-            <div style={{ padding: "16px 20px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ padding: "12px 16px 10px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
               <CardCheckHeader
                 badge="Liquidity"
                 badgeBg="#e8f4f0"
@@ -6844,78 +7101,75 @@ function AdvisorBriefView({
                 body={`The January bonus pushed balances above the 3-month reserve floor on all three accounts. ${fmt(totalHarvest, true)} is sitting idle at a blended yield of 0.8% — earning ${fmt(Math.round(totalHarvest * 0.008))} a year when it should be earning ${fmt(Math.round(totalHarvest * 0.051))}.`}
               />
 
-              {/* Large amount */}
-              <div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 32, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#1e4d30", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalHarvest, true)}</div>
-                <div style={{ fontSize: 13, color: "#9c9c93", marginTop: 4 }}>excess identified</div>
+              {/* Large amount — inline label */}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 28, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#1e4d30", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalHarvest, true)}</div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 16, fontWeight: 400, color: "#1e4d30", lineHeight: 1 }}>excess identified</div>
               </div>
 
               {/* Account table */}
-              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 10 }}>Where the excess cash is sitting</div>
+              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 7 }}>Where the excess cash is sitting</div>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <tbody>
                     {demoAccts.map((a) => (
                       <tr key={a.num} style={{ borderBottom: "1px solid #f0ede8" }}>
-                        <td style={{ padding: "10px 0", fontSize: 13, color: "#181816" }}>
+                        <td style={{ padding: "7px 0", fontSize: 11, color: "#181816" }}>
                           {a.name} <span style={{ color: "#9c9c93" }}>·· {a.num}</span>
                         </td>
-                        <td style={{ padding: "10px 8px", fontSize: 11, color: "#9c9c93", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
+                        <td style={{ padding: "7px 6px", fontSize: 10, color: "#9c9c93", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
                           balance {fmt(a.balance)} · floor {fmt(a.floor)}
                         </td>
-                        <td style={{ padding: "10px 0", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1e4d30", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
+                        <td style={{ padding: "7px 0", fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1e4d30", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
                           {fmt(a.balance - a.floor)}
                         </td>
                       </tr>
                     ))}
                     <tr>
-                      <td colSpan={2} style={{ padding: "10px 0", fontSize: 13, fontWeight: 700, color: "#181816", borderTop: "1px solid #d4d4cf" }}>Total excess</td>
-                      <td style={{ padding: "10px 0", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1e4d30", textAlign: "right" as const, borderTop: "1px solid #d4d4cf" }}>{fmt(totalHarvest)}</td>
+                      <td colSpan={2} style={{ padding: "7px 0", fontSize: 11, fontWeight: 700, color: "#181816", borderTop: "1px solid #d4d4cf" }}>Total excess</td>
+                      <td style={{ padding: "7px 0", fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1e4d30", textAlign: "right" as const, borderTop: "1px solid #d4d4cf" }}>{fmt(totalHarvest)}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              {/* Cash efficiency note */}
-              <div style={{ fontSize: 12, color: "#2e6b47", background: "#f0f9f4", border: "1px solid #c3e0d0", borderRadius: 8, padding: "10px 14px", lineHeight: 1.6 }}>
-                This is about cash efficiency — not taking on more risk. Reserves stay intact across all three accounts.
+              {/* Talking Points */}
+              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 7 }}>Talking Points</div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 13, color: "#1e4d30", lineHeight: 1.7, background: "rgba(30,77,48,0.06)", border: "1px solid rgba(30,77,48,0.18)", borderLeft: "3px solid #1e4d30", borderRadius: 6, padding: "10px 14px" }}>
+                  Sweeping the excess into Capital Build and Investments captures an additional {fmt(Math.round(totalHarvest * 0.051) - Math.round(totalHarvest * 0.008))} per year. Reserve Cash remains intact across all three accounts — this is pure yield pickup with no liquidity cost.
+                </div>
               </div>
 
-              {/* Quote */}
-              <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 14, fontStyle: "italic", color: "#68685f", lineHeight: 1.8, borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
-                "Sweeping the excess into the Build and Grow allocation captures an additional {fmt(Math.round(totalHarvest * 0.051) - Math.round(totalHarvest * 0.008))} per year. Reserves remain intact across all three accounts — this is pure yield pickup with no liquidity cost."
-              </div>
-
-              {/* Action strip */}
-              <ActionStrip
-                action={`Sweep ${fmt(totalHarvest, true)} excess into GURU allocation`}
-                urgencyText={`Urgent · ${fmt(monthlyLoss)}/mo cost of inaction`}
-                urgencyColor="#be2a2c"
-                nowLabel={fmt(totalHarvest)}
-                nowSubtext="3 bank accounts · idle"
-                afterLabel={fmt(totalHarvest)}
-                afterSubtext="Build & Grow buckets"
-                afterSublabel="AFTER GURU"
-                accentColor="#1e4d30"
-              />
             </div>
-            <DStrip cardKey="liquidity" approveLabel="Approve" approveColor="#1e4d30" onApprove={() => onNavigate("guru")} />
+            <DStrip
+              cardKey="liquidity"
+              approveLabel="Approve"
+              approveColor="#1e4d30"
+              nowLabel={fmt(totalHarvest)}
+              nowSubtext="3 bank accounts · idle"
+              afterLabel={fmt(totalHarvest)}
+              afterSubtext="Capital Build & Investments"
+              afterSublabel="AFTER GURU"
+              urgencyText={`Urgent · ${fmt(monthlyLoss)}/mo cost of inaction`}
+              urgencyColor="#be2a2c"
+              onApprove={() => onNavigate("guru")}
+            />
           </div>
           );
         })()}
 
         {/* ── Card 2: Rebalance Portfolio ── */}
         {(() => {
-          const totalDeploy = 499440;
+          const totalDeploy = 299966; // matches GURU excess liquidity ($299,926 allocation tool)
           const positions = [
-            { name: "CIO Flagship Sector Rotation Fund", amount: 199440, detail: "Reduces correlation to broad market · target yield 6.2% · underrepresented in current sleeve" },
-            { name: "Small Cap Mutual Fund", amount: 150000, detail: "Increases exposure to high-growth segment · target yield 8.4% · consistent with moderate-aggressive profile" },
-            { name: "Cresset Short Duration Bond Fund", amount: 150000, detail: "Anchors fixed income sleeve · target yield 5.4% · low duration risk ahead of potential Fed cut" },
+            { name: "Cresset Short Duration Bond Fund", amount: 179980, detail: "Anchors fixed income sleeve · target yield 5.4% · low duration risk ahead of potential Fed cut" },
+            { name: "Small Cap Mutual Fund", amount: 119986, detail: "Increases exposure to high-growth segment · target yield 8.4% · consistent with moderate-aggressive profile" },
           ];
           return (
-          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
             <div style={{ height: 3, background: "#1a3a6b" }} />
-            <div style={{ padding: "16px 20px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ padding: "12px 16px 10px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
               <CardCheckHeader
                 badge="Investments"
                 badgeBg="#e8eef8"
@@ -6925,35 +7179,32 @@ function AdvisorBriefView({
                 priorityBg="#e8eef8"
                 priorityText="#1a3a6b"
                 priorityBorder="#b4c5e8"
-                title={`Rebalance Portfolio — ${fmt(totalDeploy).replace('$', '')} to Deploy`}
-                body={`With ${fmt(totalDeploy, true)} harvested, three positions put it to work within the moderate risk profile: the CIO Sector Rotation Fund, a Small Cap Mutual Fund, and the Cresset Short Duration Bond Fund.`}
+                title="Rebalance Portfolio with the Harvested Surplus"
+                body="Three positions put the harvested surplus to work within the moderate risk profile: the CIO Sector Rotation Fund, a Small Cap Mutual Fund, and the Cresset Short Duration Bond Fund."
               />
-
-              {/* Large amount */}
-              <div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 32, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#1a3a6b", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalDeploy, true)}</div>
-                <div style={{ fontSize: 13, color: "#9c9c93", marginTop: 4 }}>to deploy across three positions</div>
-              </div>
 
               {/* Ideas checklist */}
               <div>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 12 }}>Ideas to Explore</div>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 8 }}>Ideas to Explore</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                   {positions.map((p, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px 0", borderBottom: i < positions.length - 1 ? "1px solid #f0ede8" : "none" }}>
-                      <div style={{ width: 17, height: 17, borderRadius: 4, flexShrink: 0, marginTop: 2, border: "1.5px solid #d4d4cf", background: "#fff" }} />
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < positions.length - 1 ? "1px solid #f0ede8" : "none" }}>
+                      <div style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, marginTop: 2, border: "1.5px solid #d4d4cf", background: "#fff" }} />
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{p.name} <span style={{ fontVariantNumeric: "tabular-nums" }}>— {fmt(p.amount)}</span></div>
-                        <div style={{ fontSize: 12, color: "#9c9c93", marginTop: 3, lineHeight: 1.5 }}>{p.detail}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{p.name} <span style={{ fontVariantNumeric: "tabular-nums" }}>— {fmt(p.amount)}</span></div>
+                        <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 2, lineHeight: 1.5 }}>{p.detail}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Quote */}
-              <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 14, fontStyle: "italic", color: "#68685f", lineHeight: 1.8, borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
-                "The sector rotation fund reduces correlation to the broad market, the small cap sleeve adds high-growth exposure, and short-duration fixed income anchors the position ahead of any rate movement. Each fills a gap in the current allocation."
+              {/* Talking Points */}
+              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 7 }}>Talking Points</div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 13, color: "#1a3a6b", lineHeight: 1.7, background: "rgba(26,58,107,0.06)", border: "1px solid rgba(26,58,107,0.18)", borderLeft: "3px solid #1a3a6b", borderRadius: 6, padding: "10px 14px" }}>
+                The sector rotation fund reduces correlation to the broad market, the small cap sleeve adds high-growth exposure, and short-duration fixed income anchors the position ahead of any rate movement. Each fills a gap in the current allocation.
+                </div>
               </div>
             </div>
             <DStrip cardKey="rebalance" approveLabel="Open GURU Allocation →" approveColor="#1a3a6b" onApprove={() => onNavigate("guru")} />
@@ -6970,9 +7221,9 @@ function AdvisorBriefView({
           const totalExposed = floatingAccts.reduce((s, a) => s + a.amount, 0);
           const daysToMay7 = Math.ceil((new Date(2026, 4, 7).getTime() - DEMO_NOW.getTime()) / 86400000);
           return (
-          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
             <div style={{ height: 3, background: "#a07820" }} />
-            <div style={{ padding: "16px 20px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ padding: "12px 16px 10px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
               <CardCheckHeader
                 badge="Interest Rates"
                 badgeBg="#fdf4e3"
@@ -6986,49 +7237,52 @@ function AdvisorBriefView({
                 body={`The Fed is expected to cut on May 7. Money market funds reprice immediately — the Kesslers hold ${fmt(totalExposed)} across two floating MM positions. A 25bp cut costs ${fmt(Math.round(totalExposed * 0.0025))} per year. The window to lock in 5.2% closes when the cut lands.`}
               />
 
-              {/* Large amount */}
-              <div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 32, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#a07820", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalExposed)}</div>
-                <div style={{ fontSize: 13, color: "#9c9c93", marginTop: 4 }}>exposed to rate cut repricing</div>
+              {/* Large amount — inline label */}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 28, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#a07820", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalExposed)}</div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 16, fontWeight: 400, color: "#a07820", lineHeight: 1 }}>exposed to rate cut repricing</div>
               </div>
 
               {/* Account table */}
-              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
+              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <tbody>
                     {floatingAccts.map((a) => (
                       <tr key={a.num} style={{ borderBottom: "1px solid #f0ede8" }}>
-                        <td style={{ padding: "10px 0", fontSize: 13, color: "#181816" }}>
+                        <td style={{ padding: "7px 0", fontSize: 11, color: "#181816" }}>
                           {a.name} <span style={{ color: "#9c9c93" }}>·· {a.num}</span>
                         </td>
-                        <td style={{ padding: "10px 8px", fontSize: 11, color: "#9c9c93", textAlign: "right" as const }}>floating · reprices at cut</td>
-                        <td style={{ padding: "10px 0", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#a07820", textAlign: "right" as const }}>{fmt(a.amount)}</td>
+                        <td style={{ padding: "7px 6px", fontSize: 10, color: "#9c9c93", textAlign: "right" as const }}>floating · reprices at cut</td>
+                        <td style={{ padding: "7px 0", fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#a07820", textAlign: "right" as const }}>{fmt(a.amount)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
-              {/* Quote */}
-              <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 14, fontStyle: "italic", color: "#68685f", lineHeight: 1.8, borderTop: "1px solid #e6e5e0", paddingTop: 16 }}>
-                "Rotating into 6-month T-bills before May 7 locks in 5.2% through October — regardless of what the Fed does. The position remains semi-liquid and rolls back into the MM or extends further depending on the rate path in Q4."
+              {/* Talking Points */}
+              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 7 }}>Talking Points</div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 13, color: "#7a5a10", lineHeight: 1.7, background: "rgba(160,120,32,0.06)", border: "1px solid rgba(160,120,32,0.18)", borderLeft: "3px solid #a07820", borderRadius: 6, padding: "10px 14px" }}>
+                  Rotating into 6-month T-bills before May 7 locks in 5.2% through October — regardless of what the Fed does. The position remains semi-liquid and rolls back into the MM or extends further depending on the rate path in Q4.
+                </div>
               </div>
 
-              {/* Action strip */}
-              <ActionStrip
-                action={`Rotate ${fmt(totalExposed)} from money market → 6-mo T-bills before May 7`}
-                urgencyText={`Act before May 7 · ${daysToMay7} days`}
-                urgencyColor="#a07820"
-                nowLabel={fmt(totalExposed)}
-                nowSubtext="Money market funds"
-                nowSublabel="NOW · FLOATING"
-                afterLabel={fmt(totalExposed)}
-                afterSubtext="6-mo T-bills · matures Oct"
-                afterSublabel="AFTER GURU · LOCKED"
-                accentColor="#a07820"
-              />
             </div>
-            <DStrip cardKey="yield" approveLabel="Approve" approveColor="#a07820" onApprove={() => onNavigate("guru")} />
+            <DStrip
+              cardKey="yield"
+              approveLabel="Approve"
+              approveColor="#a07820"
+              nowLabel={fmt(totalExposed)}
+              nowSubtext="Money market funds"
+              nowSublabel="NOW · FLOATING"
+              afterLabel={fmt(totalExposed)}
+              afterSubtext="6-mo T-bills · matures Oct"
+              afterSublabel="AFTER GURU · LOCKED"
+              urgencyText={`Act before May 7 · ${daysToMay7} days`}
+              urgencyColor="#a07820"
+              onApprove={() => onNavigate("guru")}
+            />
           </div>
           );
         })()}
@@ -7037,12 +7291,12 @@ function AdvisorBriefView({
         {(() => {
           return (
             <div
-              style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden" }}
+              style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}
               data-testid="advisor-brief-money-flow-card"
             >
               <div style={{ height: 3, background: "#1d4ed8" }} />
               {/* Card header */}
-              <div style={{ padding: "16px 20px 14px" }}>
+              <div style={{ padding: "12px 16px 10px" }}>
                 <CardCheckHeader
                   badge="Cash Movement"
                   badgeBg="#e8eef8"
@@ -7057,37 +7311,36 @@ function AdvisorBriefView({
                 />
               </div>
               {/* ── Bucket tables ── */}
-              <div style={{ padding: "20px 24px", background: "#fafaf8" }}>
+              <div style={{ padding: "16px 20px 20px", background: "#fafaf8" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
-                  {/* ── Operating Cash row ── */}
+                  {/* ── OPERATING row ── */}
                   <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-ops">
-                    <div style={{ width: 144, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "#1d4ed8" }}>
-                      <Wallet style={{ width: 14, height: 14, color: "rgba(255,255,255,0.8)" }} />
-                      <span style={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", textAlign: "center", fontSize: 11 }}>Operating Cash</span>
-                      <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.9)", fontSize: 10 }}>$90,879</span>
+                    <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#1e3a5f" }}>
+                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>OPERATING</span>
+                      <span style={{ fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 400, color: "#ffffff", fontSize: 20, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$90,879</span>
                     </div>
-                    <div style={{ border: "1px solid #bfcfef", borderRadius: 8, overflow: "hidden", flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(29,78,216,0.04)" }} data-testid="flow-row-ops-jan">
+                    <div style={{ flex: 1, border: "1px solid rgba(30,58,95,0.18)", borderRadius: 8, overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(30,58,95,0.03)" }} data-testid="flow-row-ops-jan">
                         <div style={{ minWidth: 0, marginRight: 8 }}>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: "#1d4ed8", lineHeight: 1.3 }}>CIT Money Market Bank Account</div>
-                          <div style={{ fontSize: 9, color: "#4a6aaa", marginTop: 2 }}>Primary operating · Jan ending</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a5f", lineHeight: 1.3 }}>CIT Money Market Bank Account</div>
+                          <div style={{ fontSize: 10, color: "#4a6a9a", marginTop: 2 }}>Primary operating · Jan ending</div>
                         </div>
-                        <span style={{ fontSize: 11, fontWeight: 900, color: "#1d4ed8", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$90,879</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#1e3a5f", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$90,879</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* ── Flow connector 2: JPMorgan → CIT ($46,739) ── */}
-                  <div style={{ display: "flex", alignItems: "center", minHeight: 44, paddingLeft: "calc(144px + 12px)" }}>
-                    <div className="group" style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, cursor: "default", marginLeft: 40 }}>
-                      <svg width="14" height="44" style={{ flexShrink: 0, overflow: "visible" }}>
-                        <path d="M 7,42 L 7,2" stroke="#1d4ed8" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
-                        <polygon points="0,-5 4.5,3 -4.5,3" fill="#1d4ed8" opacity="0.95">
-                          <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 7,42 L 7,2" />
+                  {/* ── Arrow connector: JPMorgan → CIT ── */}
+                  <div style={{ display: "flex", alignItems: "center", minHeight: 40, paddingLeft: 124 }}>
+                    <div className="group" style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, cursor: "default", marginLeft: 20 }}>
+                      <svg width="12" height="40" style={{ flexShrink: 0, overflow: "visible" }}>
+                        <path d="M 6,38 L 6,2" stroke="#1e3a5f" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
+                        <polygon points="0,-4 4,3 -4,3" fill="#1e3a5f" opacity="0.85">
+                          <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 6,38 L 6,2" />
                         </polygon>
                       </svg>
-                      <span style={{ fontSize: 10, fontWeight: 900, color: "#1d4ed8", background: "#eef2fd", border: "1px solid #bfcfef", padding: "4px 10px", borderRadius: 20, whiteSpace: "nowrap", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#1e3a5f", background: "#eef2f8", border: "1px solid #c5d4e8", padding: "4px 12px", borderRadius: 20, whiteSpace: "nowrap" }}>
                         ↑ $46,739 · JPMorgan → CIT
                       </span>
                       <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
@@ -7099,43 +7352,29 @@ function AdvisorBriefView({
                     </div>
                   </div>
 
-                  {/* ── Reserve row ── */}
+                  {/* ── RESERVE row ── */}
                   <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-reserve">
-                    <div style={{ width: 144, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "#d97706" }}>
-                      <ShieldCheck style={{ width: 14, height: 14, color: "rgba(255,255,255,0.8)" }} />
-                      <span style={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", textAlign: "center", fontSize: 11 }}>Reserve</span>
-                      <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.9)", fontSize: 10 }}>$129,385</span>
+                    <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#7c4a0a" }}>
+                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>RESERVE</span>
+                      <span style={{ fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 400, color: "#ffffff", fontSize: 20, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$129,385</span>
                     </div>
-                    {/* Branch connector */}
-                    <div style={{ flexShrink: 0, position: "relative", width: 28, alignSelf: "stretch" }}>
-                      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} viewBox="0 0 28 100" preserveAspectRatio="none">
-                        <line x1="0" y1="50" x2="14" y2="50" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
-                        <line x1="14" y1="25" x2="14" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
-                        <line x1="14" y1="25" x2="28" y2="25" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
-                        <line x1="14" y1="75" x2="28" y2="75" stroke="rgba(217,119,6,0.45)" strokeWidth="1.5" />
-                      </svg>
-                    </div>
-                    {/* Stacked sub-account cards */}
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 0 }}>
-                      <div style={{ border: "1px solid #fde68a", borderRadius: 8, overflow: "hidden" }} data-testid="flow-row-reserve-jpm">
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(255,251,235,0.6)" }}>
-                          <div style={{ minWidth: 0, marginRight: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: "#78350f", lineHeight: 1.3 }}>JPMorgan 100% Treasuries Money Market Fund</div>
-                            <div style={{ fontSize: 9, color: "#d97706", marginTop: 2 }}>Autodraw to Operating</div>
-                          </div>
-                          <span style={{ fontSize: 11, fontWeight: 900, color: "#b45309", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$27,927</span>
+                    <div style={{ flex: 1, border: "1px solid rgba(124,74,10,0.2)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(124,74,10,0.03)", borderBottom: "1px solid rgba(124,74,10,0.1)" }} data-testid="flow-row-reserve-jpm">
+                        <div style={{ minWidth: 0, marginRight: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#7c4a0a", lineHeight: 1.3 }}>JPMorgan 100% Treasuries Money Market</div>
+                          <div style={{ fontSize: 10, color: "#a06020", marginTop: 2 }}>Autodraw to Operating</div>
                         </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#7c4a0a", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$27,927</span>
                       </div>
-
-                      {/* Flow connector: T-Bill → JPMorgan */}
-                      <div className="group" style={{ position: "relative", display: "flex", alignItems: "center", gap: 10, cursor: "default", padding: "4px 12px" }}>
-                        <svg width="14" height="32" style={{ flexShrink: 0, overflow: "visible" }}>
-                          <path d="M 7,30 L 7,2" stroke="#d97706" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
-                          <polygon points="0,-4 4,3 -4,3" fill="#f59e0b" opacity="0.95">
-                            <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 7,30 L 7,2" />
+                      {/* Inner flow connector: T-Bill → JPMorgan */}
+                      <div className="group" style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, padding: "3px 16px", cursor: "default" }}>
+                        <svg width="12" height="28" style={{ flexShrink: 0, overflow: "visible" }}>
+                          <path d="M 6,26 L 6,2" stroke="#7c4a0a" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
+                          <polygon points="0,-4 4,3 -4,3" fill="#a06020" opacity="0.85">
+                            <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 6,26 L 6,2" />
                           </polygon>
                         </svg>
-                        <span style={{ fontSize: 10, fontWeight: 900, color: "#b45309", background: "#fffbeb", border: "1px solid #fcd34d", padding: "4px 10px", borderRadius: 20, whiteSpace: "nowrap", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#7c4a0a", background: "#fdf5e6", border: "1px solid #e8c87a", padding: "3px 10px", borderRadius: 20, whiteSpace: "nowrap" }}>
                           ↑ $7,478 · T-Bill → JPMorgan
                         </span>
                         <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
@@ -7145,57 +7384,39 @@ function AdvisorBriefView({
                           <div style={{ width: 8, height: 8, background: "#1a1a18", transform: "rotate(45deg)", marginLeft: 16, marginTop: -4, flexShrink: 0 }} />
                         </div>
                       </div>
-
-                      <div style={{ border: "1px solid #fde68a", borderRadius: 8, overflow: "hidden" }} data-testid="flow-row-reserve-tbill">
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(255,251,235,0.6)" }}>
-                          <div style={{ minWidth: 0, marginRight: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: "#78350f", lineHeight: 1.3 }}>T-Bill Ladder</div>
-                            <div style={{ fontSize: 9, color: "#d97706", marginTop: 2 }}>3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</div>
-                          </div>
-                          <span style={{ fontSize: 11, fontWeight: 900, color: "#b45309", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$101,458</span>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(124,74,10,0.03)", borderTop: "1px solid rgba(124,74,10,0.1)" }} data-testid="flow-row-reserve-tbill">
+                        <div style={{ minWidth: 0, marginRight: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#7c4a0a", lineHeight: 1.3 }}>T-Bill Ladder</div>
+                          <div style={{ fontSize: 10, color: "#a06020", marginTop: 2 }}>3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</div>
                         </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#7c4a0a", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$101,458</span>
                       </div>
                     </div>
                   </div>
 
                   {/* ── Gap ── */}
-                  <div style={{ height: 12 }} />
+                  <div style={{ height: 10 }} />
 
-                  {/* ── Build row ── */}
+                  {/* ── BUILD row ── */}
                   <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-build">
-                    <div style={{ width: 144, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "#16a34a" }}>
-                      <Home style={{ width: 14, height: 14, color: "rgba(255,255,255,0.8)" }} />
-                      <span style={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", textAlign: "center", fontSize: 12 }}>Build</span>
-                      <span style={{ fontWeight: 900, fontVariantNumeric: "tabular-nums", color: "rgba(255,255,255,0.9)", fontSize: 10 }}>$226,545</span>
+                    <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#155234" }}>
+                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>BUILD</span>
+                      <span style={{ fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 400, color: "#ffffff", fontSize: 20, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$226,545</span>
                     </div>
-                    {/* Branch connector */}
-                    <div style={{ flexShrink: 0, position: "relative", width: 28, alignSelf: "stretch" }}>
-                      <svg style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} viewBox="0 0 28 100" preserveAspectRatio="none">
-                        <line x1="0" y1="50" x2="14" y2="50" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
-                        <line x1="14" y1="25" x2="14" y2="75" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
-                        <line x1="14" y1="25" x2="28" y2="25" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
-                        <line x1="14" y1="75" x2="28" y2="75" stroke="rgba(22,163,74,0.45)" strokeWidth="1.5" />
-                      </svg>
-                    </div>
-                    {/* Stacked sub-account cards */}
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ border: "1px solid #bbf7d0", borderRadius: 8, overflow: "hidden" }} data-testid="flow-row-build-munis">
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(240,253,244,0.6)" }}>
-                          <div style={{ minWidth: 0, marginRight: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: "#14532d", lineHeight: 1.3 }}>2028 Municipal Bonds</div>
-                            <div style={{ fontSize: 9, color: "#16a34a", marginTop: 2 }}>Tax-advantaged income</div>
-                          </div>
-                          <span style={{ fontSize: 11, fontWeight: 900, color: "#15803d", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$32,161</span>
+                    <div style={{ flex: 1, border: "1px solid rgba(21,82,52,0.18)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }} data-testid="flow-col-build-inner">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(21,82,52,0.03)", borderBottom: "1px solid rgba(21,82,52,0.1)" }} data-testid="flow-row-build-munis">
+                        <div style={{ minWidth: 0, marginRight: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#155234", lineHeight: 1.3 }}>2028 Municipal Bonds</div>
+                          <div style={{ fontSize: 10, color: "#2a7a52", marginTop: 2 }}>Tax-advantaged income</div>
                         </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#155234", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$32,161</span>
                       </div>
-                      <div style={{ border: "1px solid #bbf7d0", borderRadius: 8, overflow: "hidden" }} data-testid="flow-row-build-tbill">
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(240,253,244,0.6)" }}>
-                          <div style={{ minWidth: 0, marginRight: 8 }}>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: "#14532d", lineHeight: 1.3 }}>S&amp;P Low Volatility Index</div>
-                            <div style={{ fontSize: 9, color: "#16a34a", marginTop: 2 }}>Short-duration ladder</div>
-                          </div>
-                          <span style={{ fontSize: 11, fontWeight: 900, color: "#15803d", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$194,384</span>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(21,82,52,0.03)" }} data-testid="flow-row-build-tbill">
+                        <div style={{ minWidth: 0, marginRight: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#155234", lineHeight: 1.3 }}>S&amp;P Low Volatility Index</div>
+                          <div style={{ fontSize: 10, color: "#2a7a52", marginTop: 2 }}>Short-duration ladder</div>
                         </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#155234", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$194,384</span>
                       </div>
                     </div>
                   </div>
@@ -7203,7 +7424,7 @@ function AdvisorBriefView({
                 </div>
               </div>
               {/* Quote */}
-              <div style={{ padding: "0 24px 20px", fontFamily: '"Playfair Display", Georgia, serif', fontSize: 14, fontStyle: "italic", color: "#68685f", lineHeight: 1.8 }}>
+              <div style={{ padding: "0 20px 14px", fontFamily: '"Playfair Display", Georgia, serif', fontSize: 12, fontStyle: "italic", color: "#68685f", lineHeight: 1.7 }}>
                 "The Fidelity wire is routine margin settlement — it does not affect the liquidity harvest or deployment plan above. Once initiated, March is closed and the household is on track with the 12-month cash flow forecast."
               </div>
               <DStrip cardKey="cashflow" approveLabel="Initiate Wire" approveColor="#1d4ed8" onApprove={() => onNavigate("moneymovement")} />
@@ -7225,27 +7446,27 @@ function AdvisorBriefView({
           const labelStyle: React.CSSProperties = { fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", display: "block", marginBottom: 5 };
 
           return (
-          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 14, overflow: "hidden" }}>
-            <div style={{ height: 4, background: "#7c3aed" }} />
+          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ height: 4, background: "#1a2e4a" }} />
 
             {/* Header */}
-            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e6e5e0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <div style={{ padding: "16px 20px 14px", borderBottom: "1px solid #e6e5e0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 20, textTransform: "uppercase", letterSpacing: "0.05em", background: "#7c3aed1a", color: "#7c3aed", border: "1px solid #7c3aed40" }}>Payments</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 20, textTransform: "uppercase", letterSpacing: "0.05em", background: "#fdecea", color: "#be2a2c", border: "1px solid #f5a8a8" }}>Urgent</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: "#e8eef5", color: "#1a2e4a", border: "1px solid #c5d4e8" }}>Payments</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: "#fdecea", color: "#be2a2c", border: "1px solid #f5a8a8" }}>Urgent</span>
                 </div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 22, fontWeight: 400, color: "#181816", marginBottom: 2 }}>Approve Autobill Pay</div>
-                <div style={{ fontSize: 13, fontWeight: 300, color: "#68685f" }}>Schedule payments directly from your connected accounts</div>
+                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 20, fontWeight: 400, color: "#181816", marginBottom: 2 }}>Approve Autobill Pay</div>
+                <div style={{ fontSize: 12, fontWeight: 300, color: "#68685f" }}>Schedule payments directly from your connected accounts</div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#7c3aed", lineHeight: 1 }}>{fmt(totalPending)}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                <div style={{ textAlign: "right" as const }}>
+                  <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#be2a2c", lineHeight: 1 }}>{fmt(totalPending)}</div>
                   <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 2 }}>total pending</div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 20, padding: "4px 10px" }}>
-                  <Lock style={{ width: 11, height: 11, color: "#4f46e5" }} />
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#4338ca", textTransform: "uppercase", letterSpacing: "0.06em" }}>GURU Payments Active</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, background: "#e8eef5", border: "1px solid #c5d4e8", borderRadius: 20, padding: "4px 10px" }}>
+                  <Lock style={{ width: 11, height: 11, color: "#1a2e4a" }} />
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#1a2e4a", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>GURU Payments Active</span>
                 </div>
               </div>
             </div>
@@ -7314,7 +7535,7 @@ function AdvisorBriefView({
                                 setWireMemo((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.label }));
                                 setWireModalId(obl.id);
                               }}
-                              style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#7c3aed", color: "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}
+                              style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#1a2e4a", color: "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}
                             >
                               <Send style={{ width: 11, height: 11 }} /> Setup {obl.method}
                             </button>
@@ -7328,7 +7549,7 @@ function AdvisorBriefView({
             </div>
 
             {/* DStrip footer */}
-            <DStrip cardKey="payments" color="#7c3aed" approveLabel="Approve All Payments →" onApprove={() => { upcoming.filter(o => !scheduled.has(o.id)).forEach(o => setScheduled(s => new Set([...s, o.id]))); }} />
+            <DStrip cardKey="payments" approveColor="#1a2e4a" approveLabel="Approve All Payments →" onApprove={() => { upcoming.filter(o => !scheduled.has(o.id)).forEach(o => setScheduled(s => new Set([...s, o.id]))); }} />
 
             {/* Wire / ACH Setup Modal */}
             <Dialog open={wireModalId !== null} onOpenChange={(open) => { if (!open) setWireModalId(null); }}>
@@ -7336,11 +7557,11 @@ function AdvisorBriefView({
                 {activeObl && (
                   <>
                     {/* Modal header bar */}
-                    <div style={{ height: 3, background: "#7c3aed" }} />
+                    <div style={{ height: 3, background: "#1a2e4a" }} />
                     <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e6e5e0" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                        <Send style={{ width: 14, height: 14, color: "#7c3aed" }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#7c3aed" }}>Setup {activeObl.method} Payment</span>
+                        <Send style={{ width: 14, height: 14, color: "#1a2e4a" }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#1a2e4a" }}>Setup {activeObl.method} Payment</span>
                       </div>
                       <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 20, fontWeight: 400, color: "#181816" }}>{activeObl.label}</div>
                     </div>
@@ -7667,13 +7888,20 @@ function GuruLandingView({
   assets,
   cashFlows,
   onStartReview,
+  skipLanding = false,
 }: {
   assets: Asset[];
   cashFlows: CashFlow[];
   onStartReview: () => void;
+  skipLanding?: boolean;
 }) {
+  const [showLanding, setShowLanding] = useState(!skipLanding);
+  const [showReviewPanel, setShowReviewPanel] = useState(false);
   const [calcMode, setCalcMode] = useState(false);
   const [workflowStarted, setWorkflowStarted] = useState(false);
+  const [showActionTable, setShowActionTable] = useState(false);
+  const [isThinking, setIsThinking] = useState(true);
+  const [moveThinking, setMoveThinking] = useState(false);
   const [bucketOverrides, setBucketOverrides] = useState<Record<string, { newBal: number; origBal: number } | null>>({});
   const [incomeImpact, setIncomeImpact] = useState<{ atIncome: string; atIncomeSub: string; yieldDelta: string; yieldDeltaSub: string; aumIncrease: string } | null>(null);
   useEffect(() => {
@@ -7688,6 +7916,10 @@ function GuruLandingView({
     }
     window.addEventListener('message', handleMsg);
     return () => window.removeEventListener('message', handleMsg);
+  }, []);
+  useEffect(() => {
+    const t = setTimeout(() => setIsThinking(false), 1800);
+    return () => clearTimeout(t);
   }, []);
   const monthlyExpenses = (() => {
     const moMap: Record<string, number> = {};
@@ -7728,6 +7960,453 @@ function GuruLandingView({
   ];
   const maxBal = Math.max(...bucketList.map((b) => b.bal));
 
+  // ── GURU targets — coverage-month methodology matching allocation tool ──
+  // Op Cash:  2 months × $20,939/mo  = $41,878 target
+  // Reserve: 12 months × $18,066/mo  = $216,792 target
+  // Capital Build: full tactical bucket (no excess — treasuries are working capital)
+  const GURU_OP_RATE_ALLOC  = 20939;
+  const GURU_RES_RATE_ALLOC = 18066;
+  const opTarget  = Math.round(2  * GURU_OP_RATE_ALLOC);   // $41,878
+  const resTarget = Math.round(12 * GURU_RES_RATE_ALLOC);  // $216,792
+  const bldTarget = tactical; // no excess from Build bucket
+  const opExcess  = Math.max(0, reserve     - opTarget);   // $90,172
+  const resExcess = Math.max(0, yieldBucket - resTarget);  // $209,794
+  const bldExcess = 0; // Capital Build is fully deployed — no excess
+
+  // ── LANDING PAGE ──────────────────────────────────────────────────────────
+  if (showLanding) {
+    const excessLiquidity = opExcess + resExcess + bldExcess;
+    const annualPickup    = Math.max(Math.round(excessLiquidity * 0.0432), 500);
+    const capitalBuild    = Math.round(excessLiquidity * 0.40);
+    const investments     = Math.round(excessLiquidity * 0.60);
+
+    const landingMeta: Record<string, { tagline: string; accounts: { name: string; ref: string; amount: number; excess?: boolean }[] }> = {
+      op: {
+        tagline: "Cash for upcoming expenditures and daily operations.",
+        accounts: [
+          { name: "Citizens Private Checking", ref: "·· 2847", amount: 82050 },
+          { name: "SoFi High-Yield Checking",  ref: "·· 3391", amount: 50000 },
+        ],
+      },
+      res: {
+        tagline: "Actively managed reserve optimized for yield with full liquidity.",
+        accounts: [
+          { name: "Citizens Bank Money Market", ref: "·· 7204", amount: 225000, excess: true },
+          { name: "Citizens High Yield Savings", ref: "·· 1482", amount: 100440, excess: true },
+          { name: "JPMorgan 100% Tsy MMF",      ref: "·· 4976", amount: 101146 },
+        ],
+      },
+      bld: {
+        tagline: "Disciplined saving for near-term goals via short-duration ladder.",
+        accounts: [
+          { name: "Fidelity Cash Sweep",  ref: "·· 8821 · idle",           amount: 174000, excess: true },
+          { name: "3-Mo T-Bill Ladder",   ref: "·· 1142 · matures Mar 31", amount: 135000 },
+        ],
+      },
+      grow: {
+        tagline: "Long-term compounded growth through CIO-managed strategies.",
+        accounts: [
+          { name: "CIO Sector Rotation Fund", ref: "Fidelity · Growth equity", amount: 1250000 },
+          { name: "Small Cap Sleeve",          ref: "Fidelity · High growth",   amount: 875000 },
+          { name: "Cresset Short Duration",    ref: "Fixed income anchor",       amount: 384500 },
+        ],
+      },
+      oth: {
+        tagline: "Real estate and alternatives outside active management.",
+        accounts: [
+          { name: "Primary Residence",   ref: "Westchester, NY",      amount: 1800000 },
+          { name: "Investment Property", ref: "Palm Beach, FL",        amount: 750000 },
+          { name: "Unvested RSUs",       ref: "Vesting 2025–2027",     amount: 395100 },
+        ],
+      },
+    };
+
+    // ── Bar chart computed values ────────────────────────────────────────────
+    const maxLiquid = Math.max(reserve, yieldBucket, tactical);
+
+    // All bars on a single scale so widths convey true relative balance
+    const resWidth       = maxBal > 0 ? (yieldBucket / maxBal) * 100 : 0;
+    const bldWidth       = maxBal > 0 ? (tactical    / maxBal) * 100 : 0;
+    const opWidth        = maxBal > 0 ? (reserve     / maxBal) * 100 : 0;
+    const growWidth      = maxBal > 0 ? (growth      / maxBal) * 100 : 0;
+    const altsWidth      = maxBal > 0 ? (alts        / maxBal) * 100 : 0;
+    // "After GURU" target widths (same scale)
+    const resTargetWidth = maxBal > 0 ? (resTarget   / maxBal) * 100 : 0;
+    const bldTargetWidth = maxBal > 0 ? (bldTarget   / maxBal) * 100 : 0;
+
+    // Liquid-relative bar widths for the landing table (scaled to largest liquid bucket so bars fill properly)
+    const maxLiqBal  = Math.max(reserve, yieldBucket, tactical, 1);
+    const opBarLiq   = (reserve     / maxLiqBal) * 100;
+    const resBarLiq  = (yieldBucket / maxLiqBal) * 100;
+    const bldBarLiq  = (tactical    / maxLiqBal) * 100;
+    const resTargLiq = (resTarget   / maxLiqBal) * 100;
+    const bldTargLiq = (bldTarget   / maxLiqBal) * 100;
+
+    // ── Shared sub-component for a bar row ───────────────────────────────────
+    const BarRow = ({
+      name, nameColor, desc, width, fillColor,
+      amount, yieldLabel, isLongTerm = false,
+    }: {
+      name: string; nameColor: string; desc: string; width: number;
+      fillColor: string; amount: number; yieldLabel?: string; isLongTerm?: boolean;
+    }) => (
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 128px", alignItems:"start", gap:16, padding:"16px 0", borderBottom:"1px solid rgba(0,0,0,0.06)" }}>
+        {/* Left: name + desc + bar */}
+        <div>
+          <div style={{ fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color: nameColor, lineHeight:1.25, marginBottom:4 }}>{name}</div>
+          <div style={{ fontSize:10, fontStyle:"italic", color:"rgba(0,0,0,0.38)", lineHeight:1.50, marginBottom:9 }}>{desc}</div>
+          <div style={{ height:4, background:"#ede7dc", borderRadius:3, overflow:"hidden", maxWidth:"65%" }}>
+            <div style={{ height:"100%", borderRadius:3, width:`${width / 2}%`, background: fillColor }} />
+          </div>
+        </div>
+        {/* Right: amount + yield */}
+        <div style={{ textAlign:"right", paddingTop:2 }}>
+          <div style={{ fontSize: isLongTerm ? 18 : 21, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.025em", color:"#1a1a1a", lineHeight:1.1 }}>{fmt(amount)}</div>
+          <div style={{ fontSize:10, color:"rgba(0,0,0,0.32)", marginTop:4, fontStyle: isLongTerm ? "italic" : "normal" }}>{yieldLabel}</div>
+        </div>
+      </div>
+    );
+
+    // ── Shared inline bucket row for before/after cards ─────────────────────
+    const BucketRow = ({
+      name, nameColor, barWidth, barColor, amount, yieldLabel, pill, delta,
+    }: {
+      name: string; nameColor: string; barWidth: number; barColor: string;
+      amount: number; yieldLabel: string; pill?: "flag" | "ok"; delta?: string;
+    }) => (
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 88px", alignItems:"center", padding:"18px 14px", borderBottom:"1px solid rgba(0,0,0,0.05)", gap:8 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <div style={{ width:3, height:14, borderRadius:2, background:barColor, flexShrink:0, opacity:0.9 }} />
+            <span style={{ fontSize:11, fontWeight:600, letterSpacing:"0.01em", color:nameColor, lineHeight:1 }}>{name}</span>
+            {pill === "flag" && <span style={{ fontSize:7, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, background:"rgba(184,92,0,0.09)", color:"rgba(184,92,0,0.80)", border:"1px solid rgba(184,92,0,0.22)", borderRadius:3, padding:"1px 5px" }}>excess</span>}
+            {pill === "ok"   && <span style={{ fontSize:7, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, background:"rgba(94,204,138,0.10)", color:"rgba(30,100,60,0.70)", border:"1px solid rgba(94,204,138,0.24)", borderRadius:3, padding:"1px 5px" }}>target</span>}
+          </div>
+          <div style={{ height:5, background:"#e0d9cf", borderRadius:3, overflow:"hidden" }}>
+            <div style={{ height:"100%", borderRadius:3, width:`${barWidth}%`, background:barColor }} />
+          </div>
+        </div>
+        <div style={{ textAlign:"right" as const }}>
+          <div style={{ fontSize:17, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.025em", color:"#1a1a1a", lineHeight:1 }}>{fmt(amount)}</div>
+          <div style={{ fontSize:9, color:"rgba(0,0,0,0.34)", marginTop:3 }}>{yieldLabel}</div>
+          {delta && <div style={{ fontSize:9, fontWeight:500, color:"rgba(50,150,90,0.90)", marginTop:2 }}>{delta}</div>}
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, background:"#0a1b38", fontFamily:"'Inter', system-ui, sans-serif" }}>
+        <style>{`
+          @keyframes glrBorderRun {
+            0%   { background-position: 0% 0, 100% 0, 100% 100%, 0% 100%; }
+            100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+          }
+          @keyframes glrPulse { 0%,100%{opacity:1} 50%{opacity:0.28} }
+          @keyframes glrSlideIn  { from { transform: translateX(100%); } to { transform: translateX(0); } }
+          @keyframes glrFadeIn   { from { opacity:0; } to { opacity:1; } }
+          @keyframes glrDot { 0%,80%,100%{transform:scale(0.5);opacity:0.25} 40%{transform:scale(1);opacity:0.80} }
+          .glr-detect::before {
+            content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+            background:
+              linear-gradient(90deg,transparent,rgba(91,143,204,0.50) 50%,transparent) top/200% 1px no-repeat,
+              linear-gradient(90deg,transparent,rgba(91,143,204,0.35) 50%,transparent) bottom/200% 1px no-repeat;
+            animation: glrBorderRun 7s linear infinite;
+          }
+          .glr-start { transition: background 0.15s; }
+          .glr-start:hover { background: #223c5f !important; }
+          .glr-review-col { transition: background 0.15s; cursor: pointer; }
+          .glr-review-col:hover { background: rgba(0,0,0,0.015) !important; }
+        `}</style>
+
+        {/* ── Main body: 2-column grid, fills remaining height ── */}
+        <div style={{ flex:1, minHeight:0, display:"grid", gridTemplateColumns:"minmax(0,20%) 1fr", overflow:"hidden" }}>
+
+          {/* ── LEFT: Intelligence pane — flat colored, no card ── */}
+          <div
+            style={{ background:"linear-gradient(158deg,#1b3d6e 0%,#122c52 55%,#0a1b38 100%)", borderRight:"1px solid rgba(0,0,0,0.18)", display:"flex", flexDirection:"column", overflow:"hidden", userSelect:"none" as const, padding:"32px 24px 24px", gap:0, position:"relative" }}
+          >
+            <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,0.02) 1px,transparent 1px)", backgroundSize:"18px 18px", pointerEvents:"none" }} />
+
+              {/* Eyebrow */}
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:14, position:"relative", zIndex:1, paddingBottom:10, borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+                <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.2s infinite", flexShrink:0 }} />
+                <span style={{ fontSize:12, fontWeight:600, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.75)" }}>GURU Intelligence</span>
+                <span style={{ marginLeft:"auto", fontSize:11, color:"rgba(255,255,255,0.28)", letterSpacing:"0.03em" }}>1 signal · 4h ago</span>
+              </div>
+
+              {/* Thinking state — shows on load */}
+              {isThinking ? (
+                <div style={{ position:"relative", zIndex:1, flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14 }}>
+                  <div style={{ display:"flex", gap:8 }}>
+                    {[0,1,2].map(i => (
+                      <div key={i} style={{ width:8, height:8, borderRadius:"50%", background:"rgba(94,204,138,0.70)", animation:`glrDot 1.3s ${i*0.22}s ease-in-out infinite` }} />
+                    ))}
+                  </div>
+                  <span style={{ fontSize:12, fontWeight:600, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)" }}>GURU Analyzing Portfolio…</span>
+                </div>
+              ) : (
+                <>
+                  {/* Title */}
+                  <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:46, fontWeight:400, color:"rgba(255,255,255,0.93)", lineHeight:1.15, letterSpacing:"-0.02em", marginBottom:12, position:"relative", zIndex:1 }}>
+                    Idle capital,<br/>ready to work.
+                  </div>
+
+                  {/* Narrative prose */}
+                  <div style={{ position:"relative", zIndex:1, fontSize:14, lineHeight:1.65, color:"rgba(255,255,255,0.48)", marginBottom:14, flexShrink:0 }}>
+                    A year-end bonus pushed coverage to 18 months — 6 months above target.{" "}
+                    <span style={{ color:"rgba(94,204,138,0.85)", fontWeight:500 }}>{fmt(excessLiquidity)} is fully deployable</span>{" "}
+                    with no liquidity risk. Every day it sits idle costs the Kesslers ${Math.round(annualPickup / 365)}.
+                  </div>
+
+                  {/* 2×2 data grid — cross-dividers only, no outer border, tight & centered */}
+                  <div style={{ position:"relative", zIndex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gridTemplateRows:"1fr 1fr", marginBottom:12, flexShrink:0 }}>
+                    {[
+                      { lbl:"Excess Liquidity",   val:fmt(excessLiquidity),    sub:"idle · 0.30% today",    green:true  },
+                      { lbl:"Annual Pickup",       val:`+${fmt(annualPickup)}`, sub:"after-tax / year",      green:true  },
+                      { lbl:"Days Sitting Idle",   val:"47 days",              sub:"since bonus landed",     green:false },
+                      { lbl:"Cash Runway",         val:"18 months",            sub:"vs. 12-month target",    green:false },
+                    ].map((cell, i) => (
+                      <div key={cell.lbl} style={{
+                        padding:"7px 8px",
+                        borderRight:  i % 2 === 0 ? "1px solid rgba(255,255,255,0.10)" : "none",
+                        borderBottom: i < 2       ? "1px solid rgba(255,255,255,0.10)" : "none",
+                      }}>
+                        <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.32)", marginBottom:4 }}>{cell.lbl}</div>
+                        <div style={{ fontSize:22, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.82)", marginBottom:3 }}>{cell.val}</div>
+                        <div style={{ fontSize:10, color:"rgba(255,255,255,0.26)" }}>{cell.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* ── Inline reveal: GURU recommended moves ── */}
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!showActionTable && !moveThinking) {
+                    setMoveThinking(true);
+                    setTimeout(() => { setMoveThinking(false); setShowActionTable(true); }, 900);
+                  } else if (showActionTable) {
+                    setShowActionTable(false);
+                  }
+                }}
+                style={{ position:"relative", zIndex:1, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 0 2px", borderTop:"1px solid rgba(255,255,255,0.10)", marginTop:4 }}
+              >
+                <span style={{ fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color: showActionTable ? "rgba(94,204,138,0.85)" : "rgba(201,168,76,0.80)", fontFamily:"'Inter', sans-serif", display:"flex", alignItems:"center", gap:8 }}>
+                  {moveThinking ? (
+                    <>
+                      {[0,1,2].map(i => <span key={i} style={{ width:5, height:5, borderRadius:"50%", background:"rgba(201,168,76,0.60)", display:"inline-block", animation:`glrDot 1.1s ${i*0.18}s ease-in-out infinite` }} />)}
+                      <span>GURU Computing…</span>
+                    </>
+                  ) : showActionTable ? "✓ GURU's Recommended Moves" : "See GURU's Recommended Moves"}
+                </span>
+                {!moveThinking && <span style={{ fontSize:16, color: showActionTable ? "rgba(94,204,138,0.60)" : "rgba(201,168,76,0.55)", transition:"transform 0.15s", display:"inline-block", transform: showActionTable ? "rotate(90deg)" : "none" }}>›</span>}
+              </div>
+
+              {/* ── Inline action table ── */}
+              {showActionTable && (
+                <div style={{ position:"relative", zIndex:1, marginTop:10, borderRadius:7, background:"rgba(0,0,0,0.28)", border:"1px solid rgba(255,255,255,0.09)", overflow:"hidden", animation:"glrFadeIn 0.20s ease", fontFamily:"'Inter', system-ui, sans-serif" }}>
+
+                  {/* Header */}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"11px 14px 10px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+                    <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.85)" }}>GURU Recommended Move</span>
+                    <span style={{ fontSize:18, fontWeight:300, color:"rgba(255,255,255,0.90)", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>{fmt(excessLiquidity)}</span>
+                  </div>
+
+                  {/* Sweep From */}
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, padding:"9px 14px 3px", color:"rgba(255,255,255,0.28)" }}>Sweep From</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ width:6, height:6, borderRadius:"50%", background:"#9a7b3c", flexShrink:0 }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:16, fontWeight:500, color:"rgba(255,255,255,0.85)" }}>Reserve Cash</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.32)", marginTop:2 }}>{fmt(yieldBucket)} → {fmt(resTarget)} · 12-month floor</div>
+                    </div>
+                    <div style={{ padding:"3px 10px", borderRadius:20, background:"rgba(192,57,43,0.20)", color:"#e07070", fontSize:13, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>−{fmt(resExcess)}</div>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ width:6, height:6, borderRadius:"50%", background:"#4f7aaa", flexShrink:0 }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:16, fontWeight:500, color:"rgba(255,255,255,0.85)" }}>Operating Cash</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.32)", marginTop:2 }}>{fmt(reserve)} → {fmt(opTarget)} · 2-month floor</div>
+                    </div>
+                    <div style={{ padding:"3px 10px", borderRadius:20, background:"rgba(192,57,43,0.20)", color:"#e07070", fontSize:13, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>−{fmt(opExcess)}</div>
+                  </div>
+
+                  {/* Deploy Into */}
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, padding:"9px 14px 3px", color:"rgba(255,255,255,0.28)" }}>Deploy Into</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+                    <div style={{ width:6, height:6, borderRadius:"50%", background:"#2e7a52", flexShrink:0 }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:16, fontWeight:500, color:"rgba(255,255,255,0.85)" }}>Cresset Short Duration</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.32)", marginTop:2 }}>5.40% after-tax yield · daily liquidity</div>
+                    </div>
+                    <div style={{ padding:"3px 10px", borderRadius:20, background:"rgba(46,122,82,0.22)", color:"#5ecc8a", fontSize:13, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>+{fmt(excessLiquidity)}</div>
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:"rgba(255,255,255,0.02)" }}>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.80)", marginBottom:2 }}>Annual Yield Pickup</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.28)" }}>After-tax · no liquidity impact</div>
+                    </div>
+                    <span style={{ fontSize:18, fontWeight:500, color:"#5ecc8a", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.01em" }}>+{fmt(annualPickup)} / year</span>
+                  </div>
+
+                </div>
+              )}
+
+          </div>
+
+          {/* ── RIGHT: Editorial CTA panel ── */}
+          <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"#f0ece5", overflowY:"auto" as const }}>
+            <div style={{ padding:"44px 48px 48px", display:"flex", flexDirection:"column", maxWidth:560, width:"100%" }}>
+
+              {/* Eyebrow */}
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.75)", marginBottom:20, fontFamily:"'Inter', sans-serif" }}>
+                GURU Flagged 2 Items · Ready When You Are
+              </div>
+
+              {/* Title */}
+              <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:46, fontWeight:400, color:"hsl(222,45%,12%)", lineHeight:1.15, letterSpacing:"-0.01em", marginBottom:14 }}>
+                Walk through the review.<br/>GURU does the heavy lifting.
+              </div>
+
+              {/* Prose */}
+              <div style={{ fontSize:16, color:"rgba(0,0,0,0.46)", lineHeight:1.75, marginBottom:40, fontFamily:"'Inter', sans-serif" }}>
+                Three steps, pre-filled. Confirm what makes sense — or let GURU run it automatically next time.
+              </div>
+
+              {/* Step cards — vertical stacked */}
+              <div style={{ display:"flex", flexDirection:"column" as const, gap:0, marginBottom:40, position:"relative" as const }}>
+                {[
+                  { n:1, name:"Asset Allocation Rebalancing", desc:"Review suggested coverage targets and confirm transfer amounts across your liquidity buckets.", tag:"~3 min", badge:"GURU Pre-Filled" },
+                  { n:2, name:"Product Selection",            desc:"Choose instruments — T-bills, money markets, short bonds — ranked by after-tax yield for your profile.", tag:"~2 min", badge:"Ranked for You" },
+                  { n:3, name:"Confirm & Execute",            desc:"Review the full before/after and send for execution. Activate auto-execute for future events.", tag:"~1 min", badge:"Auto-Execute Available" },
+                ].map((step, i) => (
+                  <div key={step.n} style={{ display:"flex", gap:0, alignItems:"stretch" }}>
+                    {/* Left: number + connector line */}
+                    <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", marginRight:22, flexShrink:0 }}>
+                      <div style={{ width:36, height:36, borderRadius:"50%", background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", fontSize:16, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"'Inter', sans-serif", zIndex:1 }}>{step.n}</div>
+                      {i < 2 && (
+                        <div style={{ width:1, flex:1, minHeight:24, background:"rgba(0,0,0,0.12)", margin:"5px 0" }} />
+                      )}
+                    </div>
+                    {/* Right: content */}
+                    <div style={{ flex:1, paddingBottom: i < 2 ? 28 : 0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, marginTop:7, flexWrap:"wrap" as const }}>
+                        <span style={{ fontSize:16, fontWeight:600, color:"#1a1a1a", fontFamily:"'Inter', sans-serif", lineHeight:1.2 }}>{step.name}</span>
+                        <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.80)", background:"rgba(154,123,60,0.10)", border:"1px solid rgba(154,123,60,0.22)", borderRadius:4, padding:"3px 9px", fontFamily:"'Inter', sans-serif", flexShrink:0 }}>{step.badge}</span>
+                      </div>
+                      <div style={{ fontSize:16, color:"rgba(0,0,0,0.46)", lineHeight:1.65, fontFamily:"'Inter', sans-serif", marginBottom:7 }}>{step.desc}</div>
+                      <div style={{ fontSize:12, fontWeight:600, color:"rgba(0,0,0,0.28)", fontFamily:"'Inter', sans-serif", letterSpacing:"0.04em" }}>{step.tag}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA button */}
+              <button
+                className="glr-start"
+                onClick={(e) => { e.stopPropagation(); setShowLanding(false); }}
+                style={{ fontFamily:"'Inter', sans-serif", background:"hsl(222,45%,12%)", border:"none", cursor:"pointer", borderRadius:6, padding:"16px 36px", fontSize:13, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.92)", marginBottom:14, alignSelf:"flex-start" as const }}
+              >
+                Start the Review →
+              </button>
+
+              {/* Sub-note */}
+              <div style={{ fontSize:13, color:"rgba(0,0,0,0.30)", fontFamily:"'Inter', sans-serif" }}>
+                ~6 minutes · reversible at every step
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── Full-screen review panel (slides in from right) ── */}
+        {showReviewPanel && (
+          <>
+            {/* Backdrop */}
+            <div
+              onClick={() => setShowReviewPanel(false)}
+              style={{ position:"fixed", inset:0, background:"rgba(10,18,32,0.45)", zIndex:200, animation:"glrFadeIn 0.22s ease" }}
+            />
+            {/* Panel */}
+            <div style={{ position:"fixed", top:0, right:0, bottom:0, width:"52%", background:"#f7f4ef", borderLeft:"1px solid rgba(0,0,0,0.10)", zIndex:201, display:"flex", flexDirection:"column", animation:"glrSlideIn 0.28s cubic-bezier(0.22,1,0.36,1)", boxShadow:"-8px 0 40px rgba(0,0,0,0.12)" }}>
+
+              {/* Panel topbar */}
+              <div style={{ height:44, flexShrink:0, background:"rgba(247,244,239,0.97)", borderBottom:"1px solid rgba(0,0,0,0.08)", display:"flex", alignItems:"center", padding:"0 20px" }}>
+                <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.40)", flex:1 }}>Review Process</span>
+                <span style={{ fontSize:10, color:"rgba(0,0,0,0.34)", marginRight:16 }}>~6 minutes · reversible at every step</span>
+                <button onClick={() => setShowReviewPanel(false)} style={{ fontFamily:"'Inter', system-ui, sans-serif", background:"none", border:"none", cursor:"pointer", fontSize:18, color:"rgba(0,0,0,0.28)", lineHeight:1, padding:"0 4px" }}>×</button>
+              </div>
+
+              {/* Steps */}
+              <div style={{ flex:1, minHeight:0, overflowY:"auto" as const, padding:"20px 24px", display:"flex", flexDirection:"column", gap:10 }}>
+                {[
+                  { n:1, name:"Asset Allocation Rebalancing", desc:"Review suggested coverage targets and confirm transfer amounts across your liquidity buckets.", tag:"~3 min · GURU pre-filled" },
+                  { n:2, name:"Product Selection",            desc:"Choose instruments — T-bills, money markets, short bonds — ranked by after-tax yield for your profile.", tag:"~2 min · ranked for you" },
+                  { n:3, name:"Confirm & Execute",            desc:"Review the full before/after and send for execution. Activate auto-execute for future events.", tag:"~1 min · auto-execute available" },
+                ].map((step) => (
+                  <div key={step.n} style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.07)", borderRadius:8, padding:"14px 16px", display:"flex", gap:14, alignItems:"flex-start" }}>
+                    <div style={{ width:24, height:24, borderRadius:"50%", background:"#1a2e4a", color:"rgba(255,255,255,0.9)", fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>{step.n}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:4 }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:"#1a1a1a" }}>{step.name}</span>
+                        <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.30)", flexShrink:0, marginLeft:12 }}>{step.tag.split("·")[0].trim()}</span>
+                      </div>
+                      <div style={{ fontSize:12, color:"rgba(0,0,0,0.50)", lineHeight:1.6 }}>{step.desc}</div>
+                      <div style={{ marginTop:7, fontSize:9, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(26,46,74,0.55)" }}>{step.tag.split("·")[1]?.trim()}</div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Key metrics */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:4 }}>
+                  {[
+                    { label:"Coverage Ratio", before:"18 months", after:"12 months", delta:"−6 mo excess",  deltaColor:"rgba(30,100,60,0.72)" },
+                    { label:"Liquid Yield",   before:"0.30% avg",  after:"4.21% avg",  delta:"+3.91% lift",  deltaColor:"rgba(30,100,60,0.72)" },
+                    { label:"AUM Deployed",   before:"—",          after:fmt(excessLiquidity), delta:"new assets", deltaColor:"rgba(26,46,74,0.65)" },
+                  ].map(m => (
+                    <div key={m.label} style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.07)", borderRadius:6, padding:"10px 12px" }}>
+                      <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.32)", marginBottom:7 }}>{m.label}</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <span style={{ fontSize:8, color:"rgba(0,0,0,0.30)", width:34, flexShrink:0 }}>Before</span>
+                          <span style={{ fontSize:12, fontWeight:300, fontVariantNumeric:"tabular-nums", color:"rgba(0,0,0,0.48)" }}>{m.before}</span>
+                        </div>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <span style={{ fontSize:8, color:"rgba(30,100,60,0.55)", width:34, flexShrink:0 }}>After</span>
+                          <span style={{ fontSize:12, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"#1a1a1a" }}>{m.after}</span>
+                        </div>
+                      </div>
+                      <div style={{ marginTop:6, fontSize:8, fontWeight:700, letterSpacing:"0.06em", color:m.deltaColor }}>{m.delta}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div style={{ padding:"14px 24px 20px", borderTop:"1px solid rgba(0,0,0,0.07)", flexShrink:0 }}>
+                <button
+                  className="glr-start"
+                  onClick={() => setShowLanding(false)}
+                  style={{ fontFamily:"'Inter', system-ui, sans-serif", width:"100%", fontSize:11, fontWeight:700, letterSpacing:"0.09em", textTransform:"uppercase" as const, background:"#1a2e4a", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", padding:"14px 0", borderRadius:4 }}
+                >
+                  Start the Review →
+                </button>
+              </div>
+
+            </div>
+          </>
+        )}
+
+      </div>
+    );
+  }
+  // ── END LANDING PAGE ───────────────────────────────────────────────────────
+
   return (
     <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#f0ece5", fontFamily: "'Inter', system-ui, sans-serif" }}>
       <style>{`
@@ -7759,14 +8438,14 @@ function GuruLandingView({
         <span style={{ fontSize:10, color:"rgba(0,0,0,0.38)" }}>GURU flagged 2 items · last checked 4 hours ago</span>
       </div>
 
-      {/* Main 2-column layout */}
-      <div style={{ display:"grid", gridTemplateColumns:`1fr ${workflowStarted ? "230px" : "354px"}`, height:"calc(100vh - 46px)", overflow:"hidden", transition:"grid-template-columns 0.3s ease" }}>
+      {/* Main layout — full-width before Step 1, 2-col after */}
+      <div style={{ display:"grid", gridTemplateColumns: workflowStarted ? "1fr 230px" : "1fr", height:"calc(100vh - 46px)", overflow:"hidden", transition:"grid-template-columns 0.3s ease" }}>
 
         {/* ── LEFT COLUMN ── */}
-        <div style={{ borderRight:"1px solid rgba(0,0,0,0.09)", display:"flex", flexDirection:"column" }}>
+        <div style={{ borderRight: workflowStarted ? "1px solid rgba(0,0,0,0.09)" : "none", display:"flex", flexDirection:"column" }}>
 
-          {/* ── GURU INSIGHT CARD — hidden when workflow active ── */}
-          {!workflowStarted && (
+          {/* ── GURU INSIGHT CARD — removed from overview, kept only when workflow active ── */}
+          {false && (
             <div
               className="guru-landing-intel"
               style={{ margin:"12px 16px 0", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border:"1px solid rgba(91,143,204,0.20)", borderRadius:12 }}
@@ -7789,17 +8468,17 @@ function GuruLandingView({
                 </div>
                 <div style={{ fontSize:11, lineHeight:1.65, color:"rgba(255,255,255,0.50)" }}>
                   The Kesslers had a great end of year and are now sitting on excess liquidity for 47 days after a $753,000 cash bonus. GURU has analyzed their cash flow forecast and identified{" "}
-                  <span style={{ color:"rgba(212,168,67,0.95)", fontWeight:500 }}>{fmt(deployable > 0 ? deployable : 499440)} in excess liquidity</span>.
+                  <span style={{ color:"rgba(212,168,67,0.95)", fontWeight:500 }}>{fmt(deployable > 0 ? deployable : 299966)} in excess liquidity</span>.
                   {" "}We can generate better returns by optimizing fixed income products and putting cash to work in their investment strategy.
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── GURU MODEL CALCULATOR CARD ── */}
-          <div
+          {/* ── GURU MODEL CALCULATOR CARD — only when workflow active ── */}
+          {workflowStarted && <div
             className="guru-landing-intel"
-            style={{ margin: workflowStarted ? "12px 16px 0" : "6px 16px 0", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border:"1px solid rgba(91,143,204,0.20)", borderRadius:12 }}
+            style={{ margin:"12px 16px 0", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border:"1px solid rgba(91,143,204,0.20)", borderRadius:12 }}
           >
             {/* Header row */}
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 18px", borderBottom:"1px solid rgba(255,255,255,0.05)", position:"relative", zIndex:2 }}>
@@ -7826,8 +8505,8 @@ function GuruLandingView({
             {!calcMode && (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", position:"relative", zIndex:2 }}>
                 {[
-                  { lbl:"Deployable Excess", val:fmt(deployable > 0 ? deployable : 499440), color:"rgba(212,168,67,0.95)" },
-                  { lbl:"After-Tax Pickup", val:`+${fmt(pickup > 0 ? pickup : 21600)}/yr`, color:"rgba(94,204,138,0.92)" },
+                  { lbl:"Deployable Excess", val:fmt(deployable > 0 ? deployable : 299966), color:"rgba(212,168,67,0.95)" },
+                  { lbl:"After-Tax Pickup", val:`+${fmt(pickup > 0 ? pickup : 9200)}/yr`, color:"rgba(94,204,138,0.92)" },
                   { lbl:"Annual Expenses", val:fmt(monthlyExpenses * 12), color:"rgba(255,255,255,0.88)" },
                   { lbl:"Net Cash Flow", val:`+${fmt(Math.max(0,(monthlyIncome-monthlyExpenses)*12))}`, color:"rgba(91,143,204,0.95)" },
                 ].map((kpi) => (
@@ -7865,49 +8544,114 @@ function GuruLandingView({
                 </div>
               </div>
             )}
-          </div>
+          </div>}
 
-          {/* ── CENTER: pre-launch or live workflow ── */}
+          {/* ── CENTER: allocation overview → then live workflow ── */}
           {!workflowStarted ? (
-            <div style={{ flex:1, padding:"32px 48px 40px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
-              <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.38)", marginBottom:16, textAlign:"center" }}>GURU Flagged 2 Items · Ready When You Are</div>
-              <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:24, fontWeight:400, color:"#1a1a1a", lineHeight:1.25, marginBottom:12, textAlign:"center", maxWidth:480, letterSpacing:"-0.01em" }}>Rebalance and Maximize Wealth Now</div>
-              <div style={{ fontSize:13, color:"rgba(0,0,0,0.50)", lineHeight:1.75, marginBottom:32, maxWidth:480, textAlign:"center" }}>
-                GURU monitors continuously and flags when the portfolio can do more. Walk through the review at your own pace — or activate auto-execution for next time.
+            <div style={{ flex:1, overflowY:"auto" as const, padding:"24px 32px 36px", fontFamily:"'Inter', system-ui, sans-serif" }}>
+
+              {/* GURU flags strip */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"rgba(14,28,52,0.90)", borderRadius:7, padding:"10px 16px", marginBottom:20 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ width:5, height:5, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.7)", display:"inline-block" }} />
+                  <span style={{ fontSize:9.5, fontWeight:700, letterSpacing:"0.13em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.82)" }}>GURU Flagged 2 Items</span>
+                </div>
+                <span style={{ fontSize:10.5, color:"rgba(255,255,255,0.35)" }}>Excess liquidity · Rebalancing opportunity</span>
               </div>
 
-              {/* Step cards */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 22px 1fr 22px 1fr", alignItems:"stretch", width:"100%", marginBottom:24 }}>
+              {/* Title */}
+              <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:22, fontWeight:400, color:"#1a1a1a", lineHeight:1.25, letterSpacing:"-0.01em", marginBottom:14 }}>
+                Kessler Household Balance Sheet
+              </div>
+              <div style={{ fontSize:11, color:"rgba(0,0,0,0.42)", marginBottom:18, lineHeight:1.5 }}>
+                All accounts organized by GURU liquidity bucket. Review balances before proceeding to rebalancing.
+              </div>
+
+              {/* Summary KPIs */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:20 }}>
                 {[
-                  { n:1, name:"Asset Allocation Rebalancing", desc:"Review suggested coverage targets and confirm transfer amounts across your liquidity buckets.", tag:"~3 min · GURU pre-filled" },
-                  null,
-                  { n:2, name:"Product Selection", desc:"Choose instruments — T-bills, money markets, short bonds — ranked by after-tax yield for your profile.", tag:"~2 min · ranked for you" },
-                  null,
-                  { n:3, name:"Confirm & Execute", desc:"Review the full before/after and send for execution. Activate auto-execute for future events.", tag:"~1 min · auto-execute available" },
-                ].map((item, idx) =>
-                  item === null ? (
-                    <div key={idx} style={{ display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"rgba(0,0,0,0.18)" }}>→</div>
-                  ) : (
-                    <div key={item.n} style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.09)", borderRadius:8, padding:"18px 16px", textAlign:"left" as const, display:"flex", flexDirection:"column" }}>
-                      <div style={{ width:26, height:26, borderRadius:"50%", background:"#1a2e4a", color:"rgba(255,255,255,0.9)", fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:11, flexShrink:0 }}>{item.n}</div>
-                      <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:15, fontWeight:400, color:"#1a1a1a", marginBottom:6, lineHeight:1.3 }}>{item.name}</div>
-                      <div style={{ fontSize:12, color:"rgba(0,0,0,0.55)", lineHeight:1.6, flex:1 }}>{item.desc}</div>
-                      <span style={{ display:"inline-block", marginTop:12, fontSize:9, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, padding:"3px 8px", borderRadius:2, background:"rgba(26,46,74,0.07)", color:"#1a2e4a", border:"1px solid rgba(26,46,74,0.14)" }}>{item.tag}</span>
-                    </div>
-                  )
-                )}
+                  { label:"Total Assets", value:"$5,912,862", color:"#1a1a1a" },
+                  { label:"Liquid Assets", value:"$693,636", color:"rgba(212,168,67,0.95)", sub:"Operating Cash + Reserve + Build" },
+                  { label:"Excess Liquidity", value:"$299,966", color:"rgba(94,204,138,0.95)", sub:"Above coverage threshold" },
+                ].map(kpi => (
+                  <div key={kpi.label} style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.09)", borderRadius:6, padding:"11px 14px" }}>
+                    <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.35)", marginBottom:5 }}>{kpi.label}</div>
+                    <div style={{ fontFamily:'"Instrument Serif", Georgia, serif', fontSize:20, color:kpi.color, lineHeight:1, marginBottom:kpi.sub ? 4 : 0 }}>{kpi.value}</div>
+                    {kpi.sub && <div style={{ fontSize:9, color:"rgba(0,0,0,0.35)", marginTop:2 }}>{kpi.sub}</div>}
+                  </div>
+                ))}
               </div>
 
-              {/* CTA */}
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:9 }}>
+              {/* Bucket table */}
+              <div style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.09)", borderRadius:8, overflow:"hidden", marginBottom:22 }}>
+                {/* Table header */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 70px 90px 70px", gap:0, padding:"8px 18px", background:"#f8f6f3", borderBottom:"1px solid rgba(0,0,0,0.07)" }}>
+                  {[["Account","left"],["Yield","right"],["Balance","right"],["% Total","right"]].map(([h,a]) => (
+                    <div key={h} style={{ fontSize:8.5, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.35)", textAlign:a as any }}>{h}</div>
+                  ))}
+                </div>
+
+                {/* Buckets */}
+                {[
+                  { key:"op",  label:"Operating Cash", color:"#4f9cf9", desc:"Checking · daily liquidity", accounts:[
+                    { name:"Chase Total Checking (Main)",          ref:"··2680", yield:"0.01%", bal:25050,  pct:"0.4%" },
+                    { name:"Citizens Private Banking Checking",    ref:"··3858", yield:"0.01%", bal:107000, pct:"1.8%", note:"overflow / excess" },
+                  ], subtotal:132050, subPct:"2.2%", excess:90172 },
+                  { key:"res", label:"Reserve", color:"#d4a843", desc:"Savings · money market · near-term buffer", accounts:[
+                    { name:"Citizens Private Bank Money Market",  ref:"··4421", yield:"3.65%", bal:225000, pct:"3.8%", note:"active yield" },
+                    { name:"Goldman Savings",                     ref:"··7710", yield:"4.65%", bal:116586, pct:"2.0%" },
+                    { name:"Fidelity CD",                         ref:"··9031", yield:"5.15%", bal:85000,  pct:"1.4%" },
+                  ], subtotal:426586, subPct:"7.2%", excess:209794 },
+                  { key:"bld", label:"Build", color:"#2e7a52", desc:"Short-duration fixed income · CDs and T-bills", accounts:[
+                    { name:"US Treasuries (3.95% yield)",         ref:"··1142", yield:"3.95%", bal:135000, pct:"2.3%", note:"rolling maturities" },
+                  ], subtotal:135000, subPct:"2.3%" },
+                  { key:"grw", label:"Grow", color:"#a855f7", desc:"Long-term wealth accumulation · investments, RE, retirement", accounts:[
+                    { name:"Fidelity Brokerage",                  ref:"··9031", yield:"4.85%", bal:135000, pct:"2.3%", note:"brokerage cash" },
+                    { name:"Investments & Retirement",            ref:"various", yield:"—",    bal:1094726, pct:"18.5%" },
+                  ], subtotal:1229726, subPct:"20.8%" },
+                ].flatMap((bucket) => [
+                  /* Bucket header row */
+                  <div key={`bh-${bucket.key}`} style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 18px 7px", borderBottom:"1px solid rgba(0,0,0,0.05)", background:"rgba(0,0,0,0.012)" }}>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:bucket.color, flexShrink:0 }} />
+                    <span style={{ fontSize:11, fontWeight:600, color:"#1a1a1a" }}>{bucket.label}</span>
+                    <span style={{ fontSize:10.5, color:"rgba(0,0,0,0.38)" }}>·</span>
+                    <span style={{ fontSize:10.5, color:"rgba(0,0,0,0.42)" }}>{bucket.desc}</span>
+                    {bucket.excess && <span style={{ marginLeft:"auto", fontSize:9, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, color:"rgba(212,168,67,0.90)", background:"rgba(212,168,67,0.08)", border:"1px solid rgba(212,168,67,0.22)", borderRadius:3, padding:"2px 7px" }}>−{fmt(bucket.excess)} excess</span>}
+                  </div>,
+                  /* Account rows */
+                  ...bucket.accounts.map((acct, ai) => (
+                    <div key={`${bucket.key}-${ai}`} style={{ display:"grid", gridTemplateColumns:"1fr 70px 90px 70px", gap:0, padding:"7px 18px 7px 34px", borderBottom:"1px solid rgba(0,0,0,0.04)", alignItems:"center" }}>
+                      <div>
+                        <span style={{ fontSize:11, color:"#1a1a1a" }}>{acct.name}</span>
+                        <span style={{ fontSize:10, color:"rgba(0,0,0,0.35)", marginLeft:6 }}>{acct.ref}</span>
+                        {acct.note && <span style={{ fontSize:9.5, color:"rgba(0,0,0,0.30)", marginLeft:6 }}>· {acct.note}</span>}
+                      </div>
+                      <div style={{ textAlign:"right", fontSize:11, color:"rgba(0,0,0,0.55)", fontVariantNumeric:"tabular-nums" }}>{acct.yield}</div>
+                      <div style={{ textAlign:"right", fontFamily:'"Instrument Serif", Georgia, serif', fontSize:13, color:"#1a1a1a", fontVariantNumeric:"tabular-nums" }}>{fmt(acct.bal)}</div>
+                      <div style={{ textAlign:"right", fontSize:10.5, color:"rgba(0,0,0,0.38)", fontVariantNumeric:"tabular-nums" }}>{acct.pct}</div>
+                    </div>
+                  )),
+                  /* Subtotal row */
+                  <div key={`${bucket.key}-sub`} style={{ display:"grid", gridTemplateColumns:"1fr 70px 90px 70px", gap:0, padding:"7px 18px", background:"rgba(0,0,0,0.018)", borderBottom:"1px solid rgba(0,0,0,0.07)", alignItems:"center" }}>
+                    <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.38)" }}>{bucket.label} Subtotal</div>
+                    <div />
+                    <div style={{ textAlign:"right", fontFamily:'"Instrument Serif", Georgia, serif', fontSize:14, fontWeight:400, color:"#1a1a1a", fontVariantNumeric:"tabular-nums" }}>{fmt(bucket.subtotal)}</div>
+                    <div style={{ textAlign:"right", fontSize:10.5, color:"rgba(0,0,0,0.50)", fontVariantNumeric:"tabular-nums" }}>{bucket.subPct}</div>
+                  </div>,
+                ])}
+              </div>
+
+              {/* Step 1 CTA */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, paddingTop:4 }}>
                 <button
-                  style={{ fontFamily:"inherit", fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase" as const, background:"#1a2e4a", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", padding:"13px 48px", borderRadius:2 }}
+                  style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", padding:"14px 48px", borderRadius:5 }}
                   onClick={() => { setCalcMode(true); setWorkflowStarted(true); }}
                 >
-                  Start the Review →
+                  Begin Step 1: Allocation Rebalancing →
                 </button>
-                <span style={{ fontSize:10, color:"rgba(0,0,0,0.38)" }}>~6 minutes · reversible at every step</span>
+                <span style={{ fontSize:10, color:"rgba(0,0,0,0.35)" }}>~6 minutes · reversible at every step</span>
               </div>
+
             </div>
           ) : (
             <div style={{ flex:1, minHeight:0, overflow:"hidden", display:"flex", flexDirection:"column" }}>
@@ -7920,8 +8664,8 @@ function GuruLandingView({
           )}
         </div>
 
-        {/* ── RIGHT COLUMN — Bucket cards ── */}
-        <div style={{ background:"#f5f1ec", display:"flex", flexDirection:"column" }}>
+        {/* ── RIGHT COLUMN — Bucket cards — only once Step 1 starts ── */}
+        {workflowStarted && <div style={{ background:"#f5f1ec", display:"flex", flexDirection:"column" }}>
           <div style={{ padding:"14px 18px 12px", borderBottom:"1px solid rgba(0,0,0,0.08)" }}>
             <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.38)", marginBottom:2 }}>Total Assets</div>
             <div style={{ fontSize:22, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em", color:"#1a1a1a" }}>{fmt(totalAssets)}</div>
@@ -7953,7 +8697,7 @@ function GuruLandingView({
               );
             })}
           </div>
-        </div>
+        </div>}
 
       </div>
     </div>
@@ -7961,16 +8705,17 @@ function GuruLandingView({
 }
 
 type ActiveView =
-  | "dashboard"
+  | "investments"
   | "advisorbrief"
   | "financials"
   | "guru"
+  | "guru_v1"
   | "moneymovement";
 
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
-  const [activeView, setActiveView] = useState<ActiveView>("advisorbrief");
+  const [activeView, setActiveView] = useState<ActiveView>("investments");
   const [guruLanding, setGuruLanding] = useState(true);
   const [financialsTab, setFinancialsTab] = useState<"balancesheet" | "cashflow">("balancesheet");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
@@ -7978,7 +8723,7 @@ export default function ClientDashboard() {
 
   // Reset guru landing when switching away
   useEffect(() => {
-    if (activeView !== "guru") setGuruLanding(true);
+    if (activeView !== "guru" && activeView !== "guru_v1") setGuruLanding(true);
   }, [activeView]);
 
   // Listen for postMessage from cashflow iframe → open full-screen model
@@ -8210,6 +8955,17 @@ export default function ClientDashboard() {
       </div>
 
       <div
+        style={navActive("guru_v1") ? NAV_ITEM_ACTIVE : NAV_ITEM}
+        onClick={() => setActiveView("guru_v1")}
+        onMouseEnter={e => { if (!navActive("guru_v1")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
+        onMouseLeave={e => { if (!navActive("guru_v1")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
+        data-testid="nav-guru-v1"
+      >
+        <PieChartIcon style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span className="sb-hide">Allocation v1</span>
+      </div>
+
+      <div
         style={navActive("advisorbrief") ? NAV_ITEM_ACTIVE : NAV_ITEM}
         onClick={() => setActiveView("advisorbrief")}
         onMouseEnter={e => { if (!navActive("advisorbrief")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
@@ -8257,76 +9013,117 @@ export default function ClientDashboard() {
     </nav>
   );
 
+  const TAB_BASE: React.CSSProperties = {
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontSize: 13,
+    fontWeight: 400,
+    color: "rgba(0,0,0,0.45)",
+    padding: "0 2px",
+    paddingBottom: 10,
+    cursor: "pointer",
+    border: "none",
+    background: "none",
+    borderBottom: "2px solid transparent",
+    transition: "color 0.12s, border-color 0.12s",
+    whiteSpace: "nowrap" as const,
+    lineHeight: 1,
+    userSelect: "none" as const,
+  };
+  const TAB_ACTIVE: React.CSSProperties = {
+    ...TAB_BASE,
+    fontWeight: 600,
+    color: "hsl(222,45%,12%)",
+    borderBottomColor: "hsl(222,45%,12%)",
+  };
+
+  const topNav = (
+    <div style={{
+      background: "#f0ede8",
+      borderBottom: "1px solid rgba(0,0,0,0.10)",
+      padding: "0 32px",
+      display: "flex",
+      alignItems: "flex-end",
+      gap: 28,
+      height: 46,
+      flexShrink: 0,
+    }}>
+      {/* GURU wordmark */}
+      <span style={{
+        fontFamily: "Inter, system-ui, sans-serif",
+        fontSize: 15,
+        fontWeight: 700,
+        letterSpacing: "0.10em",
+        color: "hsl(222,45%,12%)",
+        paddingBottom: 12,
+        marginRight: 12,
+        flexShrink: 0,
+      }}>
+        GURU
+      </span>
+
+      {/* Tabs — left group */}
+      {([
+        { label: "Advisor Brief",  view: "advisorbrief" as ActiveView },
+        { label: "Investments",    view: "investments"  as ActiveView },
+        { label: "Allocation",     view: "guru"         as ActiveView },
+        { label: "Allocation v1",  view: "guru_v1"      as ActiveView },
+      ] as Array<{ label: string; view: ActiveView; sub?: "cashflow" | "balancesheet" }>).map(tab => (
+        <button
+          key={tab.label}
+          style={navActive(tab.view, tab.sub) ? TAB_ACTIVE : TAB_BASE}
+          onClick={() => {
+            if (tab.sub) { setActiveView(tab.view); setFinancialsTab(tab.sub); }
+            else setActiveView(tab.view);
+          }}
+          onMouseEnter={e => { if (!navActive(tab.view, tab.sub)) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.75)"; }}
+          onMouseLeave={e => { if (!navActive(tab.view, tab.sub)) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.45)"; }}
+        >
+          {tab.label}
+        </button>
+      ))}
+
+      {/* Separator: GURU INTELLIGENCE */}
+      <div style={{ display:"flex", alignItems:"center", gap:6, paddingBottom:12, flexShrink:0 }}>
+        <div style={{ width:1, height:14, background:"rgba(0,0,0,0.15)", flexShrink:0 }} />
+        <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", color:"rgba(0,0,0,0.28)", whiteSpace:"nowrap" }}>GURU Intelligence</span>
+        <div style={{ width:1, height:14, background:"rgba(0,0,0,0.15)", flexShrink:0 }} />
+      </div>
+
+      {/* Tabs — right group */}
+      {([
+        { label: "Net Worth",      view: "financials"   as ActiveView, sub: "balancesheet" as "balancesheet" },
+        { label: "Cash Flow",      view: "financials"   as ActiveView, sub: "cashflow"     as "cashflow" },
+        { label: "Money Movement", view: "moneymovement" as ActiveView },
+      ] as Array<{ label: string; view: ActiveView; sub?: "cashflow" | "balancesheet" }>).map(tab => (
+        <button
+          key={tab.label}
+          style={navActive(tab.view, tab.sub) ? TAB_ACTIVE : TAB_BASE}
+          onClick={() => {
+            if (tab.sub) { setActiveView(tab.view); setFinancialsTab(tab.sub); }
+            else setActiveView(tab.view);
+          }}
+          onMouseEnter={e => { if (!navActive(tab.view, tab.sub)) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.75)"; }}
+          onMouseLeave={e => { if (!navActive(tab.view, tab.sub)) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.45)"; }}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <Layout sidebarNav={clientSidebarNav}>
-      {/* ── Dashboard View ─────────────────────────────────────────────────────── */}
-      {activeView === "dashboard" && (
+    <Layout topNav={topNav}>
+      {/* ── Investments View ────────────────────────────────────────────────────── */}
+      {activeView === "investments" && (
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#f5f4f0" }}>
-          {/* ── Page header — matches allocation tab style ── */}
-          <div style={{ padding: "18px 24px 10px", display: "flex", alignItems: "baseline", gap: 12 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 300, color: "#1a2e4a", letterSpacing: "-0.01em", margin: 0, lineHeight: 1 }}>Dashboard</h1>
-            <span style={{ fontSize: 11, color: "rgba(0,0,0,0.40)", letterSpacing: "0.04em" }}>Kessler Family · {format(DEMO_NOW, "MMMM d, yyyy")}</span>
-          </div>
-          <div style={{ padding: "0 24px 48px", display: "flex", flexDirection: "column", gap: 8 }}>
-          {/* ── Advisor Brief compact strip ───────────────────────────────────── */}
-          <div
-            className="rounded-xl bg-card border border-border shadow-sm px-5 py-3.5 flex items-center justify-between gap-4 cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setActiveView("advisorbrief")}
-            data-testid="advisor-brief-strip"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "hsl(222,45%,12%)" }}>
-                <ClipboardList className="w-4 h-4" style={{ color: "#9a7b3c" }} />
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold text-foreground leading-none tracking-tight">Advisor Brief</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">4 priorities prepared for today's meeting</p>
-              </div>
+          <div style={{ padding: "24px 32px 48px", maxWidth: 900, margin: "0 auto" }}>
+            {/* Page header */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 24 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 300, color: "#1a2e4a", letterSpacing: "-0.01em", margin: 0, lineHeight: 1 }}>Investment Portfolio</h1>
+              <span style={{ fontSize: 11, color: "rgba(0,0,0,0.40)", letterSpacing: "0.04em" }}>Kessler Family · {format(DEMO_NOW, "MMMM d, yyyy")}</span>
             </div>
-            <div className="flex items-center gap-5">
-              {[
-                { label: "Liquidity", color: "#2e7a52", sub: fmt(totalToInvestTop, true) },
-                { label: "Investments", color: "#2e5c8a", sub: "Rebalance" },
-                { label: "Yield", color: "#9a7b3c", sub: `+${Math.round((_guruLiquidYield - _currentLiquidYield) * 100)} bps` },
-                { label: "Planning", color: "#6e4e7a", sub: "6-mo view" },
-              ].map((p) => (
-                <div key={p.label} className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: p.color }} />
-                  <div>
-                    <p className="text-[10px] font-semibold text-foreground leading-none">{p.label}</p>
-                    <p className="text-[9px] text-muted-foreground leading-none mt-0.5">{p.sub}</p>
-                  </div>
-                </div>
-              ))}
-              <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-0.5 ml-1 hover:text-foreground transition-colors">
-                View <ArrowUpRight className="w-3 h-3" />
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            <NetWorthPanel
-              assets={assets}
-              liabilities={liabilities}
-              cashFlows={cashFlows}
-            />
-            <CashManagementPanel assets={assets} cashFlows={cashFlows} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 items-start">
-            <CashFlowForecastPanel cashFlows={cashFlows} onNavigateToCashflow={() => { setActiveView("financials"); setFinancialsTab("cashflow"); }} />
-            <CashFlowTicker cashFlows={cashFlows} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 items-start">
             <BrokeragePanel assets={assets} />
-            <LiabilitiesPanel liabilities={liabilities} />
           </div>
-
-          {/* ── Account Cash Movements — animated water-flow widget ─────────── */}
-          <DashboardFlowWidget onNavigate={() => setActiveView("moneymovement")} />
-
-          </div>{/* end padding wrapper */}
         </div>
       )}
       {/* ── Advisor Brief View ───────────────────────────────────────────────── */}
@@ -8368,6 +9165,16 @@ export default function ClientDashboard() {
           assets={assets}
           cashFlows={cashFlows}
           onStartReview={() => {}}
+          skipLanding={false}
+        />
+      )}
+      {/* ── Allocation v1 — skip landing ───────────────────────────────────────── */}
+      {activeView === "guru_v1" && (
+        <GuruLandingView
+          assets={assets}
+          cashFlows={cashFlows}
+          onStartReview={() => {}}
+          skipLanding={true}
         />
       )}
       {/* ── Money Movement View ─────────────────────────────────────────────────── */}

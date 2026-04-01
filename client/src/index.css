@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:ital,opsz,wght@0,14..32,100;0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:ital,opsz,wght@0,14..32,100;0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -96,6 +96,89 @@
   --muted-border:           hsl(var(--muted));
   --accent-border:          hsl(var(--accent));
   --destructive-border:     hsl(var(--destructive));
+
+  /* ═══════════════════════════════════════════════════════════════
+     GURU TWO-LAYER DESIGN SYSTEM
+     Layer 1 — GURU Intelligence  (dark, analytical, data-forward)
+     Layer 2 — Advisor Workspace  (light, calm, private-banking)
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ─── Layer 1: GURU Intelligence ────────────────────────────── */
+  /* Deep forest green canvas — dark, serious, analytical */
+  --intel-bg:              hsl(152, 38%, 7%);   /* #091a10  — main dark canvas      */
+  --intel-bg-raised:       hsl(152, 32%, 10%);  /* #0f2116  — card/panel surface    */
+  --intel-bg-overlay:      hsl(152, 28%, 13%);  /* #152b1c  — hover / selected row  */
+  --intel-border:          hsl(152, 22%, 18%);  /* #1e3326  — subtle separator      */
+  --intel-border-strong:   hsl(152, 18%, 26%);  /* #2e4a39  — emphasized border     */
+
+  /* Forest green accent palette */
+  --intel-green:           hsl(152, 52%, 38%);  /* #2e8b57  — primary action green  */
+  --intel-green-dim:       hsl(152, 40%, 28%);  /* #276640  — muted accent          */
+  --intel-green-glow:      hsl(152, 60%, 48%);  /* #3aab67  — highlight / active    */
+
+  /* Text on dark intelligence layer */
+  --intel-text-primary:    hsl(152, 20%, 88%);  /* #d3e4d8  — primary text          */
+  --intel-text-secondary:  hsl(152, 12%, 62%);  /* #8aab95  — secondary/labels      */
+  --intel-text-muted:      hsl(152, 10%, 44%);  /* #5f7a68  — muted / disabled      */
+  --intel-text-inverse:    hsl(152, 38%, 7%);   /* same as bg, for reversed text    */
+
+  /* Semantic data colors (used in charts, deltas, alerts) */
+  --intel-positive:        hsl(152, 58%, 44%);  /* #2da862  — gain / positive delta */
+  --intel-negative:        hsl(  4, 68%, 52%);  /* #d83a2e  — loss / negative delta */
+  --intel-warning:         hsl( 40, 78%, 54%);  /* #e6a020  — caution / watch       */
+  --intel-neutral:         hsl(152, 12%, 58%);  /* #829e8c  — flat / no change      */
+
+  /* Intelligence layer typography */
+  --intel-font-mono:       'JetBrains Mono', 'Menlo', monospace;  /* data grids, numbers */
+  --intel-font-sans:       'Inter', sans-serif;                   /* labels, UI text     */
+  --intel-font-size-data:  11px;   /* standard data cell */
+  --intel-font-size-label: 9px;    /* column header / stat label */
+  --intel-font-size-hero:  28px;   /* hero metric number */
+  --intel-letter-spacing-label: 0.11em;
+
+  /* ─── Layer 2: Advisor Workspace ─────────────────────────────── */
+  /* Warm linen canvas — light, calm, private-banking */
+  --advisor-bg:            hsl(36, 21%, 93%);   /* #f0ede8  — main light canvas     */
+  --advisor-bg-card:       hsl( 0,  0%, 100%);  /* #ffffff  — card surface          */
+  --advisor-bg-raised:     hsl(36, 14%, 97%);   /* #faf9f7  — slightly lifted panel */
+  --advisor-bg-section:    hsl(36, 16%, 89%);   /* #e8e2d9  — section divider bg    */
+  --advisor-border:        hsl(36, 12%, 84%);   /* #dbd4c8  — standard border       */
+  --advisor-border-strong: hsl(36,  8%, 70%);   /* #bab2a6  — emphasized border     */
+
+  /* Warm accent colors */
+  --advisor-gold:          hsl(40, 60%, 42%);   /* #9a7b3c  — institutional gold    */
+  --advisor-gold-light:    hsl(40, 52%, 72%);   /* #d4b97e  — light gold tint       */
+  --advisor-navy:          hsl(222, 45%, 16%);  /* #18244a  — deep navy accent      */
+  --advisor-teal:          hsl(196, 60%, 38%);  /* #2680a0  — institutional teal    */
+
+  /* Text on light advisor layer */
+  --advisor-text-primary:  hsl(222, 39%, 12%);  /* #141e33  — primary text          */
+  --advisor-text-secondary:hsl(220, 14%, 38%);  /* #555f76  — secondary/labels      */
+  --advisor-text-muted:    hsl(220, 10%, 58%);  /* #8a919e  — muted / disabled      */
+  --advisor-text-caption:  hsl(220, 12%, 46%);  /* #6b7384  — captions, timestamps  */
+
+  /* Semantic status colors (advisor workflow states) */
+  --advisor-on-track:      hsl(152, 52%, 34%);  /* #2e7a52  — on-track / complete   */
+  --advisor-needs-action:  hsl( 40, 72%, 42%);  /* #b8831a  — needs attention       */
+  --advisor-at-risk:       hsl(  4, 68%, 48%);  /* #c93220  — at-risk / overdue     */
+  --advisor-complete:      hsl(222, 20%, 72%);  /* #9ba5bc  — complete / archived   */
+
+  /* Advisor layer typography */
+  --advisor-font-display:  'Playfair Display', Georgia, serif;   /* client names, section heads */
+  --advisor-font-serif:    'Instrument Serif', Georgia, serif;   /* hero numbers, editorial     */
+  --advisor-font-sans:     'Inter', sans-serif;                  /* body, labels, data          */
+  --advisor-font-size-heading: 13px;  /* section heading */
+  --advisor-font-size-body:    12px;  /* body text */
+  --advisor-font-size-label:   10px;  /* field labels */
+  --advisor-font-size-caption: 9px;   /* captions, footnotes */
+  --advisor-letter-spacing-heading: 0.08em;
+  --advisor-letter-spacing-label:   0.10em;
+
+  /* ─── Shared semantic tokens (apply to both layers) ───────────── */
+  --layer-radius-sm:   4px;   /* data cells, badges, tight UI */
+  --layer-radius-md:   6px;   /* standard cards, panels */
+  --layer-radius-lg:   8px;   /* modal, large cards */
+  --layer-transition:  150ms ease;  /* consistent micro-animation speed */
 }
 
 /* ─── DARK MODE ──────────────────────────────────────────────────────────── */
@@ -247,6 +330,96 @@
   .data-row {
     @apply border-b border-border/40 last:border-0;
   }
+
+  /* ─── GURU Intelligence layer container ──────────────────────── */
+  /* Add class="guru-intelligence" to a section/div to enter the dark layer */
+  .guru-intelligence {
+    background-color: var(--intel-bg);
+    color: var(--intel-text-primary);
+    --font-mono: var(--intel-font-mono);
+
+    /* Override Tailwind CSS variables so ALL existing Tailwind classes
+       automatically render correctly on the dark intelligence background */
+    --background:       152 38%  7%;   /* intel-bg */
+    --foreground:       152 20% 88%;   /* intel-text-primary */
+    --card:             152 32% 10%;   /* intel-bg-raised */
+    --card-foreground:  152 20% 88%;
+    --card-border:      152 22% 18%;
+    --border:           152 22% 18%;   /* intel-border */
+    --muted:            152 28% 13%;   /* intel-bg-overlay */
+    --muted-foreground: 152 12% 62%;   /* intel-text-secondary */
+    --input:            152 22% 18%;
+    --popover:          152 32% 10%;
+    --popover-foreground: 152 20% 88%;
+  }
+
+  /* panel-hd overrides inside intelligence layer */
+  .guru-intelligence .panel-hd {
+    background: var(--intel-bg-raised);
+    border-top-color: var(--intel-green);
+    border-bottom-color: var(--intel-border);
+  }
+  .guru-intelligence .panel-hd-label {
+    color: var(--intel-text-secondary);
+  }
+  .guru-intelligence .panel-hd-value {
+    color: var(--intel-text-primary);
+  }
+  .guru-intelligence .intel-card {
+    background-color: var(--intel-bg-raised);
+    border: 1px solid var(--intel-border);
+    border-radius: var(--layer-radius-md);
+  }
+  .guru-intelligence .intel-label {
+    font-family: var(--intel-font-sans);
+    font-size: var(--intel-font-size-label);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--intel-letter-spacing-label);
+    color: var(--intel-text-secondary);
+  }
+  .guru-intelligence .intel-data {
+    font-family: var(--intel-font-mono);
+    font-size: var(--intel-font-size-data);
+    font-variant-numeric: tabular-nums;
+    color: var(--intel-text-primary);
+  }
+  .guru-intelligence .intel-positive { color: var(--intel-positive); }
+  .guru-intelligence .intel-negative { color: var(--intel-negative); }
+  .guru-intelligence .intel-warning  { color: var(--intel-warning); }
+
+  /* ─── Advisor Workspace layer container ──────────────────────── */
+  /* Add class="advisor-workspace" to a section/div to enter the light layer */
+  .advisor-workspace {
+    background-color: var(--advisor-bg);
+    color: var(--advisor-text-primary);
+  }
+  .advisor-workspace .advisor-card {
+    background-color: var(--advisor-bg-card);
+    border: 1px solid var(--advisor-border);
+    border-radius: var(--layer-radius-md);
+  }
+  .advisor-workspace .advisor-label {
+    font-family: var(--advisor-font-sans);
+    font-size: var(--advisor-font-size-label);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--advisor-letter-spacing-label);
+    color: var(--advisor-text-secondary);
+  }
+  .advisor-workspace .advisor-heading {
+    font-family: var(--advisor-font-display);
+    letter-spacing: var(--advisor-letter-spacing-heading);
+    color: var(--advisor-text-primary);
+  }
+  .advisor-workspace .advisor-serif-num {
+    font-family: var(--advisor-font-serif);
+    letter-spacing: -0.01em;
+    color: var(--advisor-text-primary);
+  }
+  .advisor-workspace .status-on-track    { color: var(--advisor-on-track); }
+  .advisor-workspace .status-needs-action{ color: var(--advisor-needs-action); }
+  .advisor-workspace .status-at-risk     { color: var(--advisor-at-risk); }
 
   /* Institutional panel header — the narrow colored stripe at top of panels */
   .panel-stripe {
