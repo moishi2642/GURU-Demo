@@ -9109,7 +9109,7 @@ type ActiveView =
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
-  const [activeView, setActiveView] = useState<ActiveView>("investments");
+  const [activeView, setActiveView] = useState<ActiveView>("guru");
   const [guruLanding, setGuruLanding] = useState(true);
   const [financialsTab, setFinancialsTab] = useState<"balancesheet" | "cashflow">("balancesheet");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
@@ -9349,17 +9349,6 @@ export default function ClientDashboard() {
       <SectionLabel first>Advisor</SectionLabel>
 
       <div
-        style={navActive("investments") ? NAV_ITEM_ACTIVE : NAV_ITEM}
-        onClick={() => setActiveView("investments")}
-        onMouseEnter={e => { if (!navActive("investments")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
-        onMouseLeave={e => { if (!navActive("investments")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
-        data-testid="nav-investments"
-      >
-        <LayoutDashboard style={{ width: 12, height: 12, flexShrink: 0 }} />
-        <span className="sb-hide">Investments</span>
-      </div>
-
-      <div
         style={navActive("guru") ? NAV_ITEM_ACTIVE : NAV_ITEM}
         onClick={() => setActiveView("guru")}
         onMouseEnter={e => { if (!navActive("guru")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
@@ -9379,6 +9368,17 @@ export default function ClientDashboard() {
       >
         <PieChartIcon style={{ width: 12, height: 12, flexShrink: 0 }} />
         <span className="sb-hide">Allocation v1</span>
+      </div>
+
+      <div
+        style={navActive("investments") ? NAV_ITEM_ACTIVE : NAV_ITEM}
+        onClick={() => setActiveView("investments")}
+        onMouseEnter={e => { if (!navActive("investments")) { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.55)"; }}}
+        onMouseLeave={e => { if (!navActive("investments")) { (e.currentTarget as HTMLDivElement).style.background = ""; (e.currentTarget as HTMLDivElement).style.color = "rgba(255,255,255,0.4)"; }}}
+        data-testid="nav-investments"
+      >
+        <LayoutDashboard style={{ width: 12, height: 12, flexShrink: 0 }} />
+        <span className="sb-hide">Investments</span>
       </div>
 
       <div
@@ -9485,9 +9485,9 @@ export default function ClientDashboard() {
       {/* Tabs — left group */}
       {([
         { label: "Advisor Brief",  view: "advisorbrief" as ActiveView },
-        { label: "Investments",    view: "investments"  as ActiveView },
         { label: "Allocation",     view: "guru"         as ActiveView },
         { label: "Allocation v1",  view: "guru_v1"      as ActiveView },
+        { label: "Investments",    view: "investments"  as ActiveView },
       ] as Array<{ label: string; view: ActiveView; sub?: "cashflow" | "balancesheet" }>).map(tab => (
         <button
           key={tab.label}

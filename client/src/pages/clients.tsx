@@ -163,8 +163,10 @@ function THead() {
 /* ─── Active family row ─────────────────────────────────────────────────────── */
 function FamilyRow(f: typeof ACTIVE_FAMILIES[0] & { resolvedHref: string }) {
   const p = pal(f.name);
+  // Clients with onboarding:false are still being onboarded → send to onboarding flow
+  const href = !f.onboarding ? "/new-client" : f.resolvedHref;
   return (
-    <Link href={f.resolvedHref} className="block" data-testid={`link-client-${f.resolvedHref.split("/").pop()}`}>
+    <Link href={href} className="block" data-testid={`link-client-${f.resolvedHref.split("/").pop()}`}>
       <div
         style={{
           display: "grid", gridTemplateColumns: COLS, gap: 0,
