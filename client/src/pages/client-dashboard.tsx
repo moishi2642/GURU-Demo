@@ -9109,7 +9109,7 @@ type ActiveView =
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
-  const [activeView, setActiveView] = useState<ActiveView>("guru");
+  const [activeView, setActiveView] = useState<ActiveView>("advisorbrief");
   const [guruLanding, setGuruLanding] = useState(true);
   const [financialsTab, setFinancialsTab] = useState<"balancesheet" | "cashflow">("balancesheet");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
@@ -9589,14 +9589,21 @@ export default function ClientDashboard() {
           skipLanding={false}
         />
       )}
-      {/* ── Allocation v1 — skip landing ───────────────────────────────────────── */}
+      {/* ── Allocation v1 — original calculator view ──────────────────────────── */}
       {activeView === "guru_v1" && (
-        <GuruLandingView
-          assets={assets}
-          cashFlows={cashFlows}
-          onStartReview={() => {}}
-          skipLanding={true}
-        />
+        <div className="space-y-4" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+          <GuruAllocationView
+            assets={assets}
+            liabilities={liabilities}
+            cashFlows={cashFlows}
+            opsCashMonths={opsCashMonths}
+            setOpsCashMonths={setOpsCashMonths}
+            pendingTransfers={pendingTransfers}
+            setPendingTransfers={setPendingTransfers}
+            bucketProductSelections={bucketProductSelections}
+            setBucketProductSelections={setBucketProductSelections}
+          />
+        </div>
       )}
       {/* ── Money Movement View ─────────────────────────────────────────────────── */}
       {activeView === "moneymovement" && (
