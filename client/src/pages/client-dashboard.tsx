@@ -7900,8 +7900,7 @@ function GuruLandingView({
   const [showReviewPanel, setShowReviewPanel] = useState(false);
   const [calcMode, setCalcMode] = useState(false);
   const [workflowStarted, setWorkflowStarted] = useState(false);
-  const [showActionTable, setShowActionTable] = useState(true);
-  const [showRightPanel, setShowRightPanel] = useState(false);
+  const [showActionTable, setShowActionTable] = useState(false);
   const [isThinking, setIsThinking] = useState(true);
   const [moveThinking, setMoveThinking] = useState(false);
   const [bucketOverrides, setBucketOverrides] = useState<Record<string, { newBal: number; origBal: number } | null>>({});
@@ -7920,9 +7919,8 @@ function GuruLandingView({
     return () => window.removeEventListener('message', handleMsg);
   }, []);
   useEffect(() => {
-    const t1 = setTimeout(() => setIsThinking(false), 1800);
-    const t2 = setTimeout(() => setShowRightPanel(true), 2400);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    const t = setTimeout(() => setIsThinking(false), 1800);
+    return () => clearTimeout(t);
   }, []);
   const monthlyExpenses = (() => {
     const moMap: Record<string, number> = {};
@@ -8099,302 +8097,167 @@ function GuruLandingView({
     );
 
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, background:"#0a1b38", fontFamily:"'Inter', system-ui, sans-serif" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0, background:"linear-gradient(160deg,#0d2044 0%,#081630 60%,#04101f 100%)", fontFamily:"'Inter', system-ui, sans-serif", overflowY:"auto", position:"relative" }}>
         <style>{`
-          @keyframes glrBorderRun {
-            0%   { background-position: 0% 0, 100% 0, 100% 100%, 0% 100%; }
-            100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
-          }
-          @keyframes glrPulse { 0%,100%{opacity:1} 50%{opacity:0.28} }
-          @keyframes glrSlideIn  { from { transform: translateX(30px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+          @keyframes glrPulse    { 0%,100%{opacity:1} 50%{opacity:0.28} }
           @keyframes glrFadeIn   { from { opacity:0; } to { opacity:1; } }
-          @keyframes glrDot { 0%,80%,100%{transform:scale(0.5);opacity:0.25} 40%{transform:scale(1);opacity:0.80} }
-          .glr-detect::before {
-            content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
-            background:
-              linear-gradient(90deg,transparent,rgba(91,143,204,0.50) 50%,transparent) top/200% 1px no-repeat,
-              linear-gradient(90deg,transparent,rgba(91,143,204,0.35) 50%,transparent) bottom/200% 1px no-repeat;
-            animation: glrBorderRun 7s linear infinite;
-          }
-          .glr-start { transition: background 0.15s; }
-          .glr-start:hover { background: #223c5f !important; }
-          .glr-review-col { transition: background 0.15s; cursor: pointer; }
-          .glr-review-col:hover { background: rgba(0,0,0,0.015) !important; }
+          @keyframes glrSlideUp  { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+          @keyframes glrDot      { 0%,80%,100%{transform:scale(0.5);opacity:0.25} 40%{transform:scale(1);opacity:0.80} }
+          @keyframes glrShimmer  { 0%{background-position:200% center} 100%{background-position:-200% center} }
+          .glr-stat-card { transition: border-color 0.15s, box-shadow 0.15s; }
+          .glr-stat-card:hover { border-color: rgba(94,204,138,0.25) !important; box-shadow: 0 2px 20px rgba(0,0,0,0.25) !important; }
+          .glr-recs-btn { transition: background 0.15s, border-color 0.15s; }
+          .glr-recs-btn:hover { background: rgba(94,204,138,0.13) !important; border-color: rgba(94,204,138,0.55) !important; }
+          .glr-review-btn { transition: background 0.15s, transform 0.12s; }
+          .glr-review-btn:hover { background: rgba(255,255,255,0.96) !important; transform: translateY(-1px); }
+          .glr-review-btn:active { transform: translateY(0px); }
         `}</style>
 
-        {/* ── Main body: 2-column grid, fills remaining height ── */}
-        <div style={{ flex:1, minHeight:0, display:"grid", gridTemplateColumns: showRightPanel ? "minmax(0,22%) 1fr" : "1fr 0fr", overflow:"hidden", transition:"grid-template-columns 0.65s cubic-bezier(0.4,0,0.2,1)" }}>
+        {/* Subtle dot grid */}
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px)", backgroundSize:"22px 22px", pointerEvents:"none" }} />
 
-          {/* ── LEFT: Intelligence pane — flat colored, no card ── */}
-          <div
-            style={{ background:"linear-gradient(158deg,#1b3d6e 0%,#122c52 55%,#0a1b38 100%)", borderRight:"1px solid rgba(0,0,0,0.18)", display:"flex", flexDirection:"column", alignItems:"center", overflowY:"auto", overflowX:"hidden", userSelect:"none" as const, position:"relative" }}
-          >
-            <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,0.02) 1px,transparent 1px)", backgroundSize:"18px 18px", pointerEvents:"none" }} />
-          <div style={{ width:"100%", maxWidth: showRightPanel ? "100%" : 440, padding:"32px 24px 24px", display:"flex", flexDirection:"column", gap:0, flex:1, transition:"max-width 0.65s cubic-bezier(0.4,0,0.2,1)" }}>
+        {/* Centered content container */}
+        <div style={{ position:"relative", zIndex:1, margin:"0 auto", width:"100%", maxWidth:900, padding:"48px 48px 60px", display:"flex", flexDirection:"column" }}>
 
-              {/* Eyebrow */}
-              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:14, position:"relative", zIndex:1, paddingBottom:10, borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
-                <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.2s infinite", flexShrink:0 }} />
-                <span style={{ fontSize:12, fontWeight:600, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.75)" }}>GURU Intelligence</span>
-                <span style={{ marginLeft:"auto", fontSize:11, color:"rgba(255,255,255,0.28)", letterSpacing:"0.03em" }}>1 signal · 4h ago</span>
-              </div>
-
-              {/* Thinking state — shows on load */}
-              {isThinking ? (
-                <div style={{ position:"relative", zIndex:1, flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14 }}>
-                  <div style={{ display:"flex", gap:8 }}>
-                    {[0,1,2].map(i => (
-                      <div key={i} style={{ width:8, height:8, borderRadius:"50%", background:"rgba(94,204,138,0.70)", animation:`glrDot 1.3s ${i*0.22}s ease-in-out infinite` }} />
-                    ))}
-                  </div>
-                  <span style={{ fontSize:12, fontWeight:600, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)" }}>GURU Analyzing Portfolio…</span>
-                </div>
-              ) : (
-                <>
-                  {/* Title — sized for narrow pane */}
-                  <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:36, fontWeight:400, color:"rgba(255,255,255,0.93)", lineHeight:1.18, letterSpacing:"-0.02em", marginBottom:14, position:"relative", zIndex:1 }}>
-                    Idle capital,<br/>ready to work.
-                  </div>
-
-                  {/* Narrative prose */}
-                  <div style={{ position:"relative", zIndex:1, fontSize:13, lineHeight:1.68, color:"rgba(255,255,255,0.46)", marginBottom:16, flexShrink:0 }}>
-                    A year-end bonus pushed coverage to 18 months — 6 months above target.{" "}
-                    <span style={{ color:"rgba(94,204,138,0.85)", fontWeight:500 }}>{fmt(excessLiquidity)} is fully deployable</span>{" "}
-                    with no liquidity risk. Every day it sits idle costs the Kesslers ${Math.round(annualPickup / 365)}.
-                  </div>
-
-                  {/* 2×2 data grid — cross-dividers only, no outer border */}
-                  <div style={{ position:"relative", zIndex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gridTemplateRows:"1fr 1fr", marginBottom:12, flexShrink:0 }}>
-                    {[
-                      { lbl:"Potential Excess Liquidity",       val:fmt(excessLiquidity),    sub:"idle · 0.30% today",    green:true  },
-                      { lbl:"Potential After-Tax Annual Return", val:`+${fmt(annualPickup)}`, sub:"estimated / year",      green:true  },
-                      { lbl:"Days Sitting Idle",   val:"47 days",              sub:"since bonus landed",     green:false },
-                      { lbl:"Cash Runway",         val:"18 months",            sub:"vs. 12-month target",    green:false },
-                    ].map((cell, i) => (
-                      <div key={cell.lbl} style={{
-                        padding:"9px 10px",
-                        borderRight:  i % 2 === 0 ? "1px solid rgba(255,255,255,0.10)" : "none",
-                        borderBottom: i < 2       ? "1px solid rgba(255,255,255,0.10)" : "none",
-                      }}>
-                        <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.30)", marginBottom:5 }}>{cell.lbl}</div>
-                        <div style={{ fontSize:20, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.82)", marginBottom:4 }}>{cell.val}</div>
-                        <div style={{ fontSize:10, color:"rgba(255,255,255,0.26)" }}>{cell.sub}</div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {/* ── GURU Recommended Actions header ── */}
-              <div style={{ position:"relative", zIndex:1, marginTop:20, paddingTop:18, borderTop:"1px solid rgba(255,255,255,0.08)", flexShrink:0, display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-                <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 5px rgba(94,204,138,0.7)", display:"inline-block", flexShrink:0, animation:"glrPulse 2.5s infinite" }} />
-                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.80)", fontFamily:"'Inter', sans-serif" }}>GURU's Recommended Actions</span>
-              </div>
-
-              {/* ── Inline action table — always visible ── */}
-              <div style={{ position:"relative", zIndex:1, borderRadius:7, background:"rgba(94,204,138,0.06)", border:"1px solid rgba(94,204,138,0.30)", overflow:"hidden", fontFamily:"'Inter', system-ui, sans-serif", flexShrink:0 }}>
-
-                  {/* Header */}
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px 7px", borderBottom:"1px solid rgba(94,204,138,0.18)" }}>
-                    <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.75)" }}>GURU Recommended Action</span>
-                    <span style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.85)", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>{fmt(excessLiquidity)}</span>
-                  </div>
-
-                  {/* Transferred Out */}
-                  <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, padding:"6px 12px 2px", color:"rgba(255,255,255,0.28)" }}>Transferred Out</div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 12px", borderBottom:"1px solid rgba(94,204,138,0.10)" }}>
-                    <div style={{ width:5, height:5, borderRadius:"50%", background:"#9a7b3c", flexShrink:0 }} />
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:11, fontWeight:500, color:"rgba(255,255,255,0.82)" }}>Reserve Cash</div>
-                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.30)", marginTop:1 }}>{fmt(yieldBucket)} → {fmt(resTarget)} · 12-mo floor</div>
-                    </div>
-                    <div style={{ padding:"2px 8px", borderRadius:20, background:"rgba(192,57,43,0.18)", color:"#e07070", fontSize:11, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>−{fmt(resExcess)}</div>
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 12px", borderBottom:"1px solid rgba(94,204,138,0.10)" }}>
-                    <div style={{ width:5, height:5, borderRadius:"50%", background:"#4f7aaa", flexShrink:0 }} />
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:11, fontWeight:500, color:"rgba(255,255,255,0.82)" }}>Operating Cash</div>
-                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.30)", marginTop:1 }}>{fmt(reserve)} → {fmt(opTarget)} · 2-mo floor</div>
-                    </div>
-                    <div style={{ padding:"2px 8px", borderRadius:20, background:"rgba(192,57,43,0.18)", color:"#e07070", fontSize:11, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>−{fmt(opExcess)}</div>
-                  </div>
-
-                  {/* Transferred In */}
-                  <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, padding:"6px 12px 2px", color:"rgba(255,255,255,0.28)" }}>Transferred In</div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 12px", borderBottom:"1px solid rgba(94,204,138,0.10)" }}>
-                    <div style={{ width:5, height:5, borderRadius:"50%", background:"#2e7a52", flexShrink:0 }} />
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:11, fontWeight:500, color:"rgba(255,255,255,0.82)" }}>Cresset Short Duration</div>
-                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.30)", marginTop:1 }}>5.40% after-tax yield · daily liquidity</div>
-                    </div>
-                    <div style={{ padding:"2px 8px", borderRadius:20, background:"rgba(46,122,82,0.20)", color:"#5ecc8a", fontSize:11, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>+{fmt(excessLiquidity)}</div>
-                  </div>
-
-                  {/* Footer */}
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 12px", background:"rgba(94,204,138,0.06)" }}>
-                    <div>
-                      <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.70)", marginBottom:1 }}>Annual Yield Pickup</div>
-                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.28)" }}>After-tax · no liquidity impact</div>
-                    </div>
-                    <span style={{ fontSize:13, fontWeight:600, color:"#5ecc8a", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.01em" }}>+{fmt(annualPickup)} / yr</span>
-                  </div>
-
-              </div>
-          </div>{/* end inner content wrapper */}
-          </div>{/* end left pane */}
-
-          {/* ── RIGHT: Editorial CTA panel ── */}
-          <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", background:"#f0ece5", overflowY:"auto" as const, animation: showRightPanel ? "glrSlideIn 0.50s ease both" : "none" }}>
-            <div style={{ padding:"44px 48px 48px", display:"flex", flexDirection:"column", maxWidth:560, width:"100%" }}>
-
-              {/* Eyebrow */}
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.75)", marginBottom:20, fontFamily:"'Inter', sans-serif" }}>
-                GURU Flagged 2 Items · Ready When You Are
-              </div>
-
-              {/* Title */}
-              <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:36, fontWeight:400, color:"hsl(222,45%,12%)", lineHeight:1.18, letterSpacing:"-0.01em", marginBottom:14 }}>
-                Walk through the review.<br/>GURU does the heavy lifting.
-              </div>
-
-              {/* Prose */}
-              <div style={{ fontSize:13, color:"rgba(0,0,0,0.46)", lineHeight:1.68, marginBottom:40, fontFamily:"'Inter', sans-serif" }}>
-                Three steps, pre-filled. Confirm what makes sense — or let GURU run it automatically next time.
-              </div>
-
-              {/* Step cards — white card boxes with connector */}
-              <div style={{ display:"flex", flexDirection:"column" as const, gap:0, marginBottom:40, position:"relative" as const }}>
-                {[
-                  { n:1, name:"Asset Allocation Rebalancing", desc:"Review suggested coverage targets and confirm transfer amounts across your liquidity buckets.", tag:"~3 min", badge:"GURU Pre-Filled" },
-                  { n:2, name:"Product Selection",            desc:"Choose instruments — T-bills, money markets, short bonds — ranked by after-tax yield for your profile.", tag:"~2 min", badge:"Ranked for You" },
-                  { n:3, name:"Confirm & Execute",            desc:"Review the full before/after and send for execution. Activate auto-execute for future events.", tag:"~1 min", badge:"Auto-Execute Available" },
-                ].map((step, i) => (
-                  <div key={step.n} style={{ display:"flex", gap:0, alignItems:"stretch" }}>
-                    {/* Left: number circle + connector */}
-                    <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", marginRight:16, flexShrink:0, width:32 }}>
-                      <div style={{ width:32, height:32, borderRadius:"50%", background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"'Inter', sans-serif", zIndex:1 }}>{step.n}</div>
-                      {i < 2 && (
-                        <div style={{ width:1, flex:1, minHeight:12, background:"rgba(0,0,0,0.12)", margin:"4px 0" }} />
-                      )}
-                    </div>
-                    {/* Right: white card */}
-                    <div style={{
-                      flex:1,
-                      marginBottom: i < 2 ? 8 : 0,
-                      background:"#ffffff",
-                      borderRadius:8,
-                      border:"1px solid rgba(0,0,0,0.08)",
-                      boxShadow:"0 1px 3px rgba(0,0,0,0.05)",
-                      padding:"14px 16px",
-                    }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, flexWrap:"wrap" as const }}>
-                        <span style={{ fontSize:13, fontWeight:600, color:"hsl(222,45%,12%)", fontFamily:"'Inter', sans-serif", lineHeight:1.2 }}>{step.name}</span>
-                        <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.80)", background:"rgba(154,123,60,0.10)", border:"1px solid rgba(154,123,60,0.22)", borderRadius:4, padding:"2px 7px", fontFamily:"'Inter', sans-serif", flexShrink:0 }}>{step.badge}</span>
-                      </div>
-                      <div style={{ fontSize:13, color:"rgba(0,0,0,0.46)", lineHeight:1.6, fontFamily:"'Inter', sans-serif", marginBottom:8 }}>{step.desc}</div>
-                      <div style={{ fontSize:11, fontWeight:600, color:"rgba(0,0,0,0.28)", fontFamily:"'Inter', sans-serif", letterSpacing:"0.04em" }}>{step.tag}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* CTA button */}
-              <button
-                className="glr-start"
-                onClick={(e) => { e.stopPropagation(); setShowLanding(false); setShowBucketBriefing(true); }}
-                style={{ fontFamily:"'Inter', sans-serif", background:"hsl(222,45%,12%)", border:"none", cursor:"pointer", borderRadius:6, padding:"16px 36px", fontSize:13, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.92)", marginBottom:14, alignSelf:"flex-start" as const }}
-              >
-                Start the Review →
-              </button>
-
-              {/* Sub-note */}
-              <div style={{ fontSize:13, color:"rgba(0,0,0,0.30)", fontFamily:"'Inter', sans-serif" }}>
-                ~6 minutes · reversible at every step
-              </div>
-
-            </div>
+          {/* ── Eyebrow ── */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:48, animation:"glrFadeIn 0.5s ease" }}>
+            <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 8px rgba(94,204,138,0.9)", display:"inline-block", animation:"glrPulse 2.2s infinite", flexShrink:0 }} />
+            <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.80)" }}>GURU Intelligence</span>
+            <span style={{ fontSize:11, color:"rgba(255,255,255,0.22)", marginLeft:4 }}>· 1 signal detected · 4h ago</span>
           </div>
 
-        </div>
-
-        {/* ── Full-screen review panel (slides in from right) ── */}
-        {showReviewPanel && (
-          <>
-            {/* Backdrop */}
-            <div
-              onClick={() => setShowReviewPanel(false)}
-              style={{ position:"fixed", inset:0, background:"rgba(10,18,32,0.45)", zIndex:200, animation:"glrFadeIn 0.22s ease" }}
-            />
-            {/* Panel */}
-            <div style={{ position:"fixed", top:0, right:0, bottom:0, width:"52%", background:"#f7f4ef", borderLeft:"1px solid rgba(0,0,0,0.10)", zIndex:201, display:"flex", flexDirection:"column", animation:"glrSlideIn 0.28s cubic-bezier(0.22,1,0.36,1)", boxShadow:"-8px 0 40px rgba(0,0,0,0.12)" }}>
-
-              {/* Panel topbar */}
-              <div style={{ height:44, flexShrink:0, background:"rgba(247,244,239,0.97)", borderBottom:"1px solid rgba(0,0,0,0.08)", display:"flex", alignItems:"center", padding:"0 20px" }}>
-                <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.40)", flex:1 }}>Review Process</span>
-                <span style={{ fontSize:10, color:"rgba(0,0,0,0.34)", marginRight:16 }}>~6 minutes · reversible at every step</span>
-                <button onClick={() => setShowReviewPanel(false)} style={{ fontFamily:"'Inter', system-ui, sans-serif", background:"none", border:"none", cursor:"pointer", fontSize:18, color:"rgba(0,0,0,0.28)", lineHeight:1, padding:"0 4px" }}>×</button>
-              </div>
-
-              {/* Steps */}
-              <div style={{ flex:1, minHeight:0, overflowY:"auto" as const, padding:"20px 24px", display:"flex", flexDirection:"column", gap:10 }}>
-                {[
-                  { n:1, name:"Asset Allocation Rebalancing", desc:"Review suggested coverage targets and confirm transfer amounts across your liquidity buckets.", tag:"~3 min · GURU pre-filled" },
-                  { n:2, name:"Product Selection",            desc:"Choose instruments — T-bills, money markets, short bonds — ranked by after-tax yield for your profile.", tag:"~2 min · ranked for you" },
-                  { n:3, name:"Confirm & Execute",            desc:"Review the full before/after and send for execution. Activate auto-execute for future events.", tag:"~1 min · auto-execute available" },
-                ].map((step) => (
-                  <div key={step.n} style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.07)", borderRadius:8, padding:"14px 16px", display:"flex", gap:14, alignItems:"flex-start" }}>
-                    <div style={{ width:24, height:24, borderRadius:"50%", background:"#1a2e4a", color:"rgba(255,255,255,0.9)", fontSize:10, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>{step.n}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:4 }}>
-                        <span style={{ fontSize:13, fontWeight:600, color:"#1a1a1a" }}>{step.name}</span>
-                        <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.30)", flexShrink:0, marginLeft:12 }}>{step.tag.split("·")[0].trim()}</span>
-                      </div>
-                      <div style={{ fontSize:12, color:"rgba(0,0,0,0.50)", lineHeight:1.6 }}>{step.desc}</div>
-                      <div style={{ marginTop:7, fontSize:9, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(26,46,74,0.55)" }}>{step.tag.split("·")[1]?.trim()}</div>
-                    </div>
-                  </div>
+          {/* ── Thinking state ── */}
+          {isThinking ? (
+            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"flex-start", justifyContent:"center", gap:20, minHeight:300, animation:"glrFadeIn 0.4s ease" }}>
+              <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                {[0,1,2].map(i => (
+                  <div key={i} style={{ width:10, height:10, borderRadius:"50%", background:"rgba(94,204,138,0.70)", animation:`glrDot 1.3s ${i*0.22}s ease-in-out infinite` }} />
                 ))}
-
-                {/* Key metrics */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:4 }}>
-                  {[
-                    { label:"Coverage Ratio", before:"18 months", after:"12 months", delta:"−6 mo excess",  deltaColor:"rgba(30,100,60,0.72)" },
-                    { label:"Liquid Yield",   before:"0.30% avg",  after:"4.21% avg",  delta:"+3.91% lift",  deltaColor:"rgba(30,100,60,0.72)" },
-                    { label:"AUM Deployed",   before:"—",          after:fmt(excessLiquidity), delta:"new assets", deltaColor:"rgba(26,46,74,0.65)" },
-                  ].map(m => (
-                    <div key={m.label} style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.07)", borderRadius:6, padding:"10px 12px" }}>
-                      <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.32)", marginBottom:7 }}>{m.label}</div>
-                      <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <span style={{ fontSize:8, color:"rgba(0,0,0,0.30)", width:34, flexShrink:0 }}>Before</span>
-                          <span style={{ fontSize:12, fontWeight:300, fontVariantNumeric:"tabular-nums", color:"rgba(0,0,0,0.48)" }}>{m.before}</span>
-                        </div>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <span style={{ fontSize:8, color:"rgba(30,100,60,0.55)", width:34, flexShrink:0 }}>After</span>
-                          <span style={{ fontSize:12, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"#1a1a1a" }}>{m.after}</span>
-                        </div>
-                      </div>
-                      <div style={{ marginTop:6, fontSize:8, fontWeight:700, letterSpacing:"0.06em", color:m.deltaColor }}>{m.delta}</div>
-                    </div>
-                  ))}
+                <span style={{ fontSize:13, fontWeight:600, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginLeft:6 }}>GURU Analyzing Portfolio…</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* ── Big headline ── */}
+              <div style={{ animation:"glrFadeIn 0.6s ease" }}>
+                <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:68, fontWeight:400, color:"rgba(255,255,255,0.93)", lineHeight:1.05, letterSpacing:"-0.03em", marginBottom:22 }}>
+                  Idle capital,<br/><span style={{ color:"rgba(94,204,138,0.90)" }}>ready to work.</span>
+                </div>
+                <div style={{ fontSize:15, lineHeight:1.75, color:"rgba(255,255,255,0.42)", maxWidth:620, marginBottom:52 }}>
+                  A year-end bonus pushed coverage to 18 months — 6 months above target.{" "}
+                  <span style={{ color:"rgba(94,204,138,0.85)", fontWeight:500 }}>{fmt(excessLiquidity)} is fully deployable</span>{" "}
+                  with no liquidity risk. Every day it sits idle costs the Kesslers ${Math.round(annualPickup / 365)}.
                 </div>
               </div>
 
-              {/* CTA */}
-              <div style={{ padding:"14px 24px 20px", borderTop:"1px solid rgba(0,0,0,0.07)", flexShrink:0 }}>
-                <button
-                  className="glr-start"
-                  onClick={() => { setShowLanding(false); setShowBucketBriefing(true); }}
-                  style={{ fontFamily:"'Inter', system-ui, sans-serif", width:"100%", fontSize:11, fontWeight:700, letterSpacing:"0.09em", textTransform:"uppercase" as const, background:"#1a2e4a", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", padding:"14px 0", borderRadius:4 }}
-                >
-                  Start the Review →
-                </button>
+              {/* ── 4 stat cards — horizontal ── */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom:48, animation:"glrFadeIn 0.7s ease" }}>
+                {[
+                  { lbl:"Potential Excess Liquidity",        val:fmt(excessLiquidity),    sub:"idle · 0.30% today",   green:true  },
+                  { lbl:"Potential After-Tax Annual Return", val:`+${fmt(annualPickup)}`, sub:"estimated / year",     green:true  },
+                  { lbl:"Days Sitting Idle",                 val:"47 days",               sub:"since bonus landed",   green:false },
+                  { lbl:"Cash Runway",                       val:"18 months",             sub:"vs. 12-month target",  green:false },
+                ].map(cell => (
+                  <div key={cell.lbl} className="glr-stat-card" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding:"22px 20px" }}>
+                    <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginBottom:12, lineHeight:1.4 }}>{cell.lbl}</div>
+                    <div style={{ fontSize:30, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.03em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.88)", marginBottom:8 }}>{cell.val}</div>
+                    <div style={{ fontSize:11, color:"rgba(255,255,255,0.24)" }}>{cell.sub}</div>
+                  </div>
+                ))}
               </div>
 
-            </div>
-          </>
-        )}
+              {/* ── Stage 0: "View Recommendations" CTA ── */}
+              {!showActionTable && (
+                <div style={{ animation:"glrFadeIn 0.8s ease" }}>
+                  <button
+                    className="glr-recs-btn"
+                    onClick={() => setShowActionTable(true)}
+                    style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 28px", borderRadius:8, border:"1px solid rgba(94,204,138,0.40)", background:"rgba(94,204,138,0.08)", cursor:"pointer", fontFamily:"inherit" }}
+                  >
+                    <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", flexShrink:0, animation:"glrPulse 2.5s infinite" }} />
+                    <span style={{ fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.92)" }}>View GURU's Recommendations</span>
+                    <span style={{ fontSize:16, color:"rgba(94,204,138,0.55)", lineHeight:1 }}>›</span>
+                  </button>
+                  <div style={{ marginTop:14, fontSize:12, color:"rgba(255,255,255,0.22)" }}>GURU has flagged 2 optimization opportunities · no action required yet</div>
+                </div>
+              )}
 
+              {/* ── Stage 1: Recommendations table + "Start Review" ── */}
+              {showActionTable && (
+                <div style={{ animation:"glrSlideUp 0.40s cubic-bezier(0.22,1,0.36,1)" }}>
+
+                  {/* Section header */}
+                  <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:16 }}>
+                    <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.5s infinite" }} />
+                    <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.80)" }}>GURU's Recommended Actions</span>
+                    <div style={{ flex:1, height:1, background:"rgba(94,204,138,0.15)" }} />
+                    <span style={{ fontSize:13, fontWeight:300, fontVariantNumeric:"tabular-nums", color:"rgba(255,255,255,0.55)", letterSpacing:"-0.01em" }}>{fmt(excessLiquidity)} total</span>
+                  </div>
+
+                  {/* Action table — wider layout */}
+                  <div style={{ background:"rgba(94,204,138,0.05)", border:"1px solid rgba(94,204,138,0.22)", borderRadius:10, overflow:"hidden", marginBottom:28 }}>
+
+                    {/* Transferred Out */}
+                    <div style={{ padding:"10px 20px 4px", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                      <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)" }}>Transferred Out</span>
+                    </div>
+                    {[
+                      { dot:"#9a7b3c", name:"Reserve Cash",   detail:`${fmt(yieldBucket)} → ${fmt(resTarget)} · 12-month floor`, delta:`−${fmt(resExcess)}` },
+                      { dot:"#4f7aaa", name:"Operating Cash", detail:`${fmt(reserve)} → ${fmt(opTarget)} · 2-month floor`,       delta:`−${fmt(opExcess)}`  },
+                    ].map((row, i) => (
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                        <div style={{ width:6, height:6, borderRadius:"50%", background:row.dot, flexShrink:0 }} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.80)" }}>{row.name}</div>
+                          <div style={{ fontSize:11, color:"rgba(255,255,255,0.30)", marginTop:2 }}>{row.detail}</div>
+                        </div>
+                        <div style={{ padding:"3px 10px", borderRadius:20, background:"rgba(192,57,43,0.18)", color:"#e07070", fontSize:12, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>{row.delta}</div>
+                      </div>
+                    ))}
+
+                    {/* Transferred In */}
+                    <div style={{ padding:"10px 20px 4px", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                      <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)" }}>Transferred In</span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px", borderBottom:"1px solid rgba(94,204,138,0.10)" }}>
+                      <div style={{ width:6, height:6, borderRadius:"50%", background:"#2e7a52", flexShrink:0 }} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.80)" }}>Cresset Short Duration</div>
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.30)", marginTop:2 }}>5.40% after-tax yield · daily liquidity maintained</div>
+                      </div>
+                      <div style={{ padding:"3px 10px", borderRadius:20, background:"rgba(46,122,82,0.20)", color:"#5ecc8a", fontSize:12, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>+{fmt(excessLiquidity)}</div>
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 20px", background:"rgba(94,204,138,0.06)", borderTop:"1px solid rgba(94,204,138,0.12)" }}>
+                      <div>
+                        <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.70)", marginBottom:2 }}>Potential Annual Yield Pickup</div>
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.28)" }}>After-tax · no liquidity impact · fully reversible</div>
+                      </div>
+                      <span style={{ fontSize:18, fontWeight:600, color:"#5ecc8a", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>+{fmt(annualPickup)} / yr</span>
+                    </div>
+                  </div>
+
+                  {/* Start Review CTA */}
+                  <div style={{ display:"flex", alignItems:"center", gap:20 }}>
+                    <button
+                      className="glr-review-btn"
+                      onClick={() => { setShowLanding(false); setShowBucketBriefing(true); }}
+                      style={{ padding:"16px 40px", borderRadius:8, background:"rgba(255,255,255,0.93)", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"hsl(222,45%,12%)", fontFamily:"inherit", flexShrink:0 }}
+                    >
+                      Start the Review →
+                    </button>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.28)", lineHeight:1.6 }}>
+                      <strong style={{ color:"rgba(255,255,255,0.45)", fontWeight:600 }}>~6 minutes.</strong>{" "}
+                      Three steps, pre-filled. Reversible at every stage.
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     );
   }
