@@ -8114,6 +8114,8 @@ function GuruLandingView({
           @keyframes glrDot     { 0%,80%,100%{transform:scale(0.5);opacity:0.25} 40%{transform:scale(1);opacity:0.80} }
           @keyframes glrSlideIn { from { opacity:0; transform:translateX(18px); } to { opacity:1; transform:translateX(0); } }
           @keyframes bbFadeIn   { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+          .glr-stat-card { transition: border-color 0.15s, box-shadow 0.15s; }
+          .glr-stat-card:hover { border-color: rgba(94,204,138,0.25) !important; box-shadow: 0 2px 20px rgba(0,0,0,0.25) !important; }
           .glr-recs-btn { transition: background 0.15s, border-color 0.15s; }
           .glr-recs-btn:hover { background: rgba(94,204,138,0.13) !important; border-color: rgba(94,204,138,0.55) !important; }
           .glr-review-btn { transition: background 0.15s, transform 0.12s; }
@@ -8178,44 +8180,20 @@ function GuruLandingView({
                   )}
                 </div>
 
-                {/* ── Bloomberg data panel ── */}
-                <div style={{ marginBottom: workflowStarted ? 20 : 48, animation:"glrFadeIn 0.7s ease" }}>
-                  {/* Two creed boxes — primary stats */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr" }}>
-                    {[
-                      { lbl:"Potential Excess Liquidity",   val:fmt(excessLiquidity),    sub:"idle · 0.30% today",  accent:"rgba(212,168,67,0.80)",  bg:"rgba(212,168,67,0.04)"  },
-                      { lbl:"After-Tax Annual Return",      val:`+${fmt(annualPickup)}`, sub:"estimated / year",    accent:"rgba(94,204,138,0.80)", bg:"rgba(94,204,138,0.04)"  },
-                    ].map((cell, i) => (
-                      <div key={i} style={{
-                        borderLeft:`3px solid ${cell.accent}`,
-                        borderRight:  i===0 ? "1px solid rgba(255,255,255,0.07)" : "none",
-                        borderTop:    "1px solid rgba(255,255,255,0.07)",
-                        borderBottom: "1px solid rgba(255,255,255,0.07)",
-                        padding: workflowStarted ? "14px 16px 12px" : "24px 24px 20px",
-                        background: cell.bg,
-                      }}>
-                        <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginBottom: workflowStarted ? 6 : 10 }}>{cell.lbl}</div>
-                        <div style={{ fontSize: workflowStarted ? 20 : 34, fontWeight:200, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.04em", lineHeight:1, color: i===0 ? "rgba(212,168,67,0.95)" : "#5ecc8a", marginBottom: workflowStarted ? 4 : 6 }}>{cell.val}</div>
-                        <div style={{ fontSize:10, color:"rgba(255,255,255,0.22)" }}>{cell.sub}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Secondary context strip */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", background:"rgba(0,0,0,0.20)", border:"1px solid rgba(255,255,255,0.07)", borderTop:"none" }}>
-                    {[
-                      { lbl:"Days Sitting Idle", val:"47", unit:" days", sub:"since bonus landed" },
-                      { lbl:"Cash Runway",        val:"18", unit:" mo",   sub:"vs. 12-month target" },
-                    ].map((cell, i) => (
-                      <div key={i} style={{ padding: workflowStarted ? "9px 16px" : "13px 24px", borderRight: i===0 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
-                        <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.22)", marginBottom: workflowStarted ? 4 : 6 }}>{cell.lbl}</div>
-                        <div style={{ display:"flex", alignItems:"baseline", gap:3 }}>
-                          <span style={{ fontSize: workflowStarted ? 17 : 22, fontWeight:300, fontVariantNumeric:"tabular-nums", color:"rgba(255,255,255,0.65)", letterSpacing:"-0.02em" }}>{cell.val}</span>
-                          <span style={{ fontSize: workflowStarted ? 10 : 13, fontWeight:300, color:"rgba(255,255,255,0.35)" }}>{cell.unit}</span>
-                        </div>
-                        <div style={{ fontSize:9, color:"rgba(255,255,255,0.20)", marginTop:2 }}>{cell.sub}</div>
-                      </div>
-                    ))}
-                  </div>
+                {/* ── 4 stat cards — horizontal ── */}
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom: workflowStarted ? 20 : 48, animation:"glrFadeIn 0.7s ease" }}>
+                  {[
+                    { lbl:"Potential Excess Liquidity",        val:fmt(excessLiquidity),    sub:"idle · 0.30% today",  green:true  },
+                    { lbl:"Potential After-Tax Annual Return", val:`+${fmt(annualPickup)}`, sub:"estimated / year",    green:true  },
+                    { lbl:"Days Sitting Idle",                 val:"47 days",               sub:"since bonus landed",  green:false },
+                    { lbl:"Cash Runway",                       val:"18 months",             sub:"vs. 12-month target", green:false },
+                  ].map(cell => (
+                    <div key={cell.lbl} className="glr-stat-card" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding: workflowStarted ? "14px 16px" : "22px 20px" }}>
+                      <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginBottom: workflowStarted ? 8 : 12, lineHeight:1.4 }}>{cell.lbl}</div>
+                      <div style={{ fontSize: workflowStarted ? 18 : 30, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.03em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.88)", marginBottom: workflowStarted ? 4 : 8 }}>{cell.val}</div>
+                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.24)" }}>{cell.sub}</div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* ── Recommendations table (always visible when workflowStarted, Stage 1 otherwise) ── */}
@@ -8235,41 +8213,64 @@ function GuruLandingView({
                       <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.55)", marginBottom:8 }}>Recommended Transfers</div>
                     )}
 
-                    {/* Action table */}
-                    <div style={{ background:"rgba(94,204,138,0.05)", border:"1px solid rgba(94,204,138,0.20)", overflow:"hidden", marginBottom: workflowStarted ? 0 : 28 }}>
-                      <div style={{ padding: workflowStarted ? "6px 14px 3px" : "10px 20px 4px", borderBottom:"1px solid rgba(255,255,255,0.04)", background:"rgba(0,0,0,0.15)" }}>
-                        <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)" }}>Transferred Out</span>
+                    {/* ── Bloomberg-terminal action table ── */}
+                    <div style={{ border:"1.5px solid rgba(94,204,138,0.45)", background:"rgba(4,16,31,0.60)", overflow:"hidden", marginBottom: workflowStarted ? 0 : 28, fontVariantNumeric:"tabular-nums" as const }}>
+
+                      {/* Column header row */}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 110px 110px 100px", padding:"5px 14px", background:"rgba(94,204,138,0.08)", borderBottom:"1px solid rgba(94,204,138,0.18)" }}>
+                        {["ACCOUNT","CURRENT","TARGET","DELTA"].map((h,i) => (
+                          <div key={h} style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.55)", textAlign: i > 0 ? "right" as const : "left" as const }}>{h}</div>
+                        ))}
                       </div>
+
+                      {/* OUT section label */}
+                      <div style={{ padding:"4px 14px 3px", background:"rgba(192,57,43,0.08)", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                        <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(220,100,80,0.70)" }}>↓ Transfers Out</span>
+                      </div>
+
+                      {/* Out rows */}
                       {[
-                        { dot:"#9a7b3c", name:"Reserve Cash",   detail:`${fmt(yieldBucket)} → ${fmt(resTarget)} · 12-mo floor`, delta:`−${fmt(resExcess)}` },
-                        { dot:"#4f7aaa", name:"Operating Cash", detail:`${fmt(reserve)} → ${fmt(opTarget)} · 2-mo floor`,        delta:`−${fmt(opExcess)}`  },
+                        { name:"Reserve Cash",   current:fmt(yieldBucket), target:fmt(resTarget), delta:`−${fmt(resExcess)}`, sub:"12-mo floor · overnight liquidity" },
+                        { name:"Operating Cash", current:fmt(reserve),     target:fmt(opTarget),  delta:`−${fmt(opExcess)}`,  sub:"2-mo floor · daily operating" },
                       ].map((row, i) => (
-                        <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding: workflowStarted ? "8px 14px" : "10px 20px", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
-                          <div style={{ width:5, height:5, borderRadius:"50%", background:row.dot, flexShrink:0 }} />
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize: workflowStarted ? 11 : 13, fontWeight:500, color:"rgba(255,255,255,0.75)" }}>{row.name}</div>
-                            <div style={{ fontSize: workflowStarted ? 9 : 11, color:"rgba(255,255,255,0.28)", marginTop:1 }}>{row.detail}</div>
+                        <div key={i} style={{ borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 110px 110px 100px", padding:"7px 14px 4px", alignItems:"baseline" }}>
+                            <div style={{ fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.80)", letterSpacing:"0.01em" }}>{row.name}</div>
+                            <div style={{ fontSize:12, fontWeight:400, color:"rgba(255,255,255,0.45)", textAlign:"right" as const }}>{row.current}</div>
+                            <div style={{ fontSize:12, fontWeight:400, color:"rgba(255,255,255,0.65)", textAlign:"right" as const }}>{row.target}</div>
+                            <div style={{ fontSize:12, fontWeight:700, color:"#e07070", textAlign:"right" as const }}>{row.delta}</div>
                           </div>
-                          <div style={{ padding:"2px 8px", background:"rgba(192,57,43,0.18)", color:"#e07070", fontSize: workflowStarted ? 10 : 12, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>{row.delta}</div>
+                          <div style={{ padding:"0 14px 6px" }}>
+                            <span style={{ fontSize:9, color:"rgba(255,255,255,0.22)", letterSpacing:"0.02em" }}>{row.sub}</span>
+                          </div>
                         </div>
                       ))}
-                      <div style={{ padding: workflowStarted ? "6px 14px 3px" : "10px 20px 4px", borderBottom:"1px solid rgba(255,255,255,0.04)", background:"rgba(0,0,0,0.15)" }}>
-                        <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)" }}>Transferred In</span>
+
+                      {/* IN section label */}
+                      <div style={{ padding:"4px 14px 3px", background:"rgba(46,122,82,0.08)", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                        <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.70)" }}>↑ Transfers In</span>
                       </div>
-                      <div style={{ display:"flex", alignItems:"center", gap:10, padding: workflowStarted ? "8px 14px" : "10px 20px", borderBottom:"1px solid rgba(94,204,138,0.10)" }}>
-                        <div style={{ width:5, height:5, borderRadius:"50%", background:"#2e7a52", flexShrink:0 }} />
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize: workflowStarted ? 11 : 13, fontWeight:500, color:"rgba(255,255,255,0.75)" }}>Cresset Short Duration</div>
-                          <div style={{ fontSize: workflowStarted ? 9 : 11, color:"rgba(255,255,255,0.28)", marginTop:1 }}>5.40% after-tax yield · daily liquidity maintained</div>
+
+                      {/* In row */}
+                      <div style={{ borderBottom:"1px solid rgba(94,204,138,0.12)" }}>
+                        <div style={{ display:"grid", gridTemplateColumns:"1fr 110px 110px 100px", padding:"7px 14px 4px", alignItems:"baseline" }}>
+                          <div style={{ fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.80)" }}>Cresset Short Duration</div>
+                          <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", textAlign:"right" as const }}>—</div>
+                          <div style={{ fontSize:12, fontWeight:400, color:"rgba(255,255,255,0.65)", textAlign:"right" as const }}>{fmt(excessLiquidity)}</div>
+                          <div style={{ fontSize:12, fontWeight:700, color:"#5ecc8a", textAlign:"right" as const }}>+{fmt(excessLiquidity)}</div>
                         </div>
-                        <div style={{ padding:"2px 8px", background:"rgba(46,122,82,0.20)", color:"#5ecc8a", fontSize: workflowStarted ? 10 : 12, fontWeight:700, fontVariantNumeric:"tabular-nums", flexShrink:0 }}>+{fmt(excessLiquidity)}</div>
+                        <div style={{ padding:"0 14px 6px" }}>
+                          <span style={{ fontSize:9, color:"rgba(255,255,255,0.22)", letterSpacing:"0.02em" }}>5.40% after-tax yield · daily liquidity · FDIC-equivalent</span>
+                        </div>
                       </div>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding: workflowStarted ? "8px 14px" : "12px 20px", background:"rgba(94,204,138,0.06)", borderTop:"1px solid rgba(94,204,138,0.12)" }}>
+
+                      {/* Summary footer */}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr auto", alignItems:"center", padding:"9px 14px", background:"rgba(94,204,138,0.07)", borderTop:"1px solid rgba(94,204,138,0.20)" }}>
                         <div>
-                          <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.70)", marginBottom:1 }}>Potential Annual Yield Pickup</div>
-                          <div style={{ fontSize: workflowStarted ? 9 : 11, color:"rgba(255,255,255,0.28)" }}>After-tax · no liquidity impact · fully reversible</div>
+                          <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.60)" }}>Est. Annual Yield Pickup</span>
+                          <span style={{ fontSize:9, color:"rgba(255,255,255,0.22)", marginLeft:10 }}>after-tax · fully reversible · no liquidity impact</span>
                         </div>
-                        <span style={{ fontSize: workflowStarted ? 14 : 18, fontWeight:600, color:"#5ecc8a", fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>+{fmt(annualPickup)} / yr</span>
+                        <span style={{ fontSize:16, fontWeight:700, color:"#5ecc8a", letterSpacing:"-0.02em" }}>+{fmt(annualPickup)} <span style={{ fontSize:11, fontWeight:400, color:"rgba(94,204,138,0.55)" }}>/ yr</span></span>
                       </div>
                     </div>
 
