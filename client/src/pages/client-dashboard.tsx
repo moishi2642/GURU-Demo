@@ -8213,8 +8213,9 @@ function GuruLandingView({
                       <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.55)", marginBottom:8 }}>Recommended Transfers</div>
                     )}
 
-                    {/* ── Bloomberg-terminal action table ── */}
-                    <div style={{ border:"1.5px solid rgba(94,204,138,0.45)", background:"rgba(4,16,31,0.60)", overflow:"hidden", marginBottom: workflowStarted ? 0 : 28, fontVariantNumeric:"tabular-nums" as const }}>
+                    {/* ── Bloomberg-terminal action table + CTA (side by side) ── */}
+                    <div style={{ display:"flex", alignItems:"stretch", gap:0 }}>
+                    <div style={{ flex:1, border:"1.5px solid rgba(94,204,138,0.45)", background:"rgba(4,16,31,0.60)", overflow:"hidden", marginBottom: workflowStarted ? 0 : 0, fontVariantNumeric:"tabular-nums" as const }}>
 
                       {/* Column header row */}
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 110px 110px 100px", padding:"5px 14px", background:"rgba(94,204,138,0.08)", borderBottom:"1px solid rgba(94,204,138,0.18)" }}>
@@ -8252,7 +8253,7 @@ function GuruLandingView({
                       </div>
 
                       {/* In row */}
-                      <div style={{ borderBottom:"1px solid rgba(94,204,138,0.12)" }}>
+                      <div>
                         <div style={{ display:"grid", gridTemplateColumns:"1fr 110px 110px 100px", padding:"7px 14px 4px", alignItems:"baseline" }}>
                           <div style={{ fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.80)" }}>Cresset Short Duration</div>
                           <div style={{ fontSize:12, color:"rgba(255,255,255,0.25)", textAlign:"right" as const }}>—</div>
@@ -8263,33 +8264,24 @@ function GuruLandingView({
                           <span style={{ fontSize:9, color:"rgba(255,255,255,0.22)", letterSpacing:"0.02em" }}>5.40% after-tax yield · daily liquidity · FDIC-equivalent</span>
                         </div>
                       </div>
-
-                      {/* Summary footer */}
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr auto", alignItems:"center", padding:"9px 14px", background:"rgba(94,204,138,0.07)", borderTop:"1px solid rgba(94,204,138,0.20)" }}>
-                        <div>
-                          <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.60)" }}>Est. Annual Yield Pickup</span>
-                          <span style={{ fontSize:9, color:"rgba(255,255,255,0.22)", marginLeft:10 }}>after-tax · fully reversible · no liquidity impact</span>
-                        </div>
-                        <span style={{ fontSize:16, fontWeight:700, color:"#5ecc8a", letterSpacing:"-0.02em" }}>+{fmt(annualPickup)} <span style={{ fontSize:11, fontWeight:400, color:"rgba(94,204,138,0.55)" }}>/ yr</span></span>
-                      </div>
                     </div>
 
-                    {/* Start Review CTA (full-screen Stage 1 only) */}
+                    {/* CTA to the right of the table */}
                     {!workflowStarted && (
-                      <div style={{ display:"flex", alignItems:"center", gap:20 }}>
+                      <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:12, paddingLeft:24, flexShrink:0, width:220 }}>
                         <button
                           className="glr-review-btn"
                           onClick={() => setWorkflowStarted(true)}
-                          style={{ padding:"16px 40px", background:"rgba(255,255,255,0.93)", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"hsl(222,45%,12%)", fontFamily:"inherit", flexShrink:0 }}
+                          style={{ width:"100%", padding:"14px 20px", background:"rgba(255,255,255,0.93)", border:"none", cursor:"pointer", fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, color:"hsl(222,45%,12%)", fontFamily:"inherit", lineHeight:1.4, textAlign:"center" as const }}
                         >
-                          Start the Review →
+                          Begin Rebalance &amp;<br/>Asset Allocation →
                         </button>
-                        <div style={{ fontSize:12, color:"rgba(255,255,255,0.28)", lineHeight:1.6 }}>
-                          <strong style={{ color:"rgba(255,255,255,0.45)", fontWeight:600 }}>~6 minutes.</strong>{" "}
-                          Three steps, pre-filled. Reversible at every stage.
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.25)", lineHeight:1.55 }}>
+                          ~6 min · 3 steps · pre-filled.<br/>Nothing moves until Step 3.
                         </div>
                       </div>
                     )}
+                    </div>{/* end flex row: table + CTA */}
                   </div>
                 )}
 
