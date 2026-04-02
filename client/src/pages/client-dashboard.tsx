@@ -8747,184 +8747,119 @@ function OnboardingView({ clientName }: { clientName: string }) {
   const [uploaded, setUploaded] = useState<string[]>([]);
 
   const DOC_TYPES = [
-    { icon: FileText,    label: "Bank Statements",      sub: "Last 3–6 months",         color: "#2563eb" },
-    { icon: BarChart2,   label: "Brokerage Statements", sub: "All investment accounts",  color: "#7c3aed" },
-    { icon: BookOpen,    label: "Tax Returns",           sub: "Most recent 1–2 years",   color: "#9a7b3c" },
-    { icon: Home,        label: "Real Estate Docs",      sub: "Deeds, mortgage, HELOC",  color: "#2e7a52" },
+    { icon: FileText,    label: "Bank Statements",      sub: "Last 3–6 months",            color: "#2563eb" },
+    { icon: BarChart2,   label: "Brokerage Statements", sub: "All investment accounts",     color: "#7c3aed" },
+    { icon: BookOpen,    label: "Tax Returns",           sub: "Most recent 1–2 years",      color: "#9a7b3c" },
+    { icon: Home,        label: "Real Estate Docs",      sub: "Deeds, mortgage, HELOC",     color: "#2e7a52" },
     { icon: Building2,   label: "Business Interests",   sub: "K-1s, operating agreements", color: "#1b3d6e" },
-    { icon: ShieldCheck, label: "Insurance Policies",   sub: "Life, disability, umbrella", color: "#b45309" },
-  ];
-
-  const STEPS = [
-    { n: 1, label: "Personal Info",      done: true  },
-    { n: 2, label: "Upload Documents",   done: false, active: true },
-    { n: 3, label: "Connect Accounts",   done: false },
-    { n: 4, label: "GURU Analysis",      done: false },
-    { n: 5, label: "Review & Launch",    done: false },
+    { icon: ShieldCheck, label: "Insurance Policies",   sub: "Life, disability, umbrella",  color: "#b45309" },
   ];
 
   return (
-    <div style={{ flex:1, display:"flex", flexDirection:"column", background:"#f0ede8", overflow:"hidden", fontFamily:"'Inter', system-ui, sans-serif" }}>
+    <div style={{ flex:1, overflowY:"auto", background:"#f0ede8", fontFamily:"'Inter', system-ui, sans-serif" }}>
+      <div style={{ maxWidth:820, margin:"0 auto", padding:"40px 48px 60px" }}>
 
-      {/* ── Header ── */}
-      <div style={{ padding:"28px 48px 0", flexShrink:0 }}>
-        <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", color:"rgba(154,123,60,0.75)", marginBottom:8 }}>
+        {/* ── Eyebrow ── */}
+        <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.75)", marginBottom:10 }}>
           Client Onboarding
         </div>
-        <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28 }}>
-          <div>
-            <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:36, fontWeight:400, color:"hsl(222,45%,12%)", lineHeight:1.15, letterSpacing:"-0.02em" }}>
-              Welcome, {firstName}.<br/>Let's build your profile.
-            </div>
-            <div style={{ fontSize:13, color:"rgba(0,0,0,0.44)", marginTop:10, lineHeight:1.65 }}>
-              Upload your financial documents and GURU will analyze your complete picture — in minutes.
-            </div>
-          </div>
 
-          {/* Step progress strip */}
-          <div style={{ display:"flex", gap:0, alignItems:"center", flexShrink:0, marginLeft:48 }}>
-            {STEPS.map((s, i) => (
-              <React.Fragment key={s.n}>
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5 }}>
-                  <div style={{
-                    width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700,
-                    background: s.done ? "#2e7a52" : s.active ? "hsl(222,45%,12%)" : "rgba(0,0,0,0.10)",
-                    color: (s.done || s.active) ? "#fff" : "rgba(0,0,0,0.35)",
-                    border: s.active ? "2px solid hsl(222,45%,12%)" : "none",
-                  }}>
-                    {s.done ? <Check style={{ width:13, height:13 }} /> : s.n}
-                  </div>
-                  <div style={{ fontSize:9, fontWeight: s.active ? 700 : 500, color: s.active ? "hsl(222,45%,12%)" : s.done ? "#2e7a52" : "rgba(0,0,0,0.35)", letterSpacing:"0.04em", whiteSpace:"nowrap" }}>{s.label}</div>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div style={{ width:32, height:1, background: s.done ? "#2e7a52" : "rgba(0,0,0,0.12)", marginBottom:14, flexShrink:0 }} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+        {/* ── Headline ── */}
+        <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:34, fontWeight:400, color:"hsl(222,45%,12%)", lineHeight:1.15, letterSpacing:"-0.02em", marginBottom:10 }}>
+          Welcome, {firstName}.<br/>Let's build your profile.
+        </div>
+        <div style={{ fontSize:13, color:"rgba(0,0,0,0.44)", marginBottom:36, lineHeight:1.70, maxWidth:520 }}>
+          Upload your financial documents below. GURU will analyze your complete picture and prepare your first review — typically within a few minutes.
         </div>
 
-        {/* Divider */}
-        <div style={{ height:1, background:"rgba(0,0,0,0.08)", marginBottom:28 }} />
-      </div>
-
-      {/* ── Main body ── */}
-      <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 340px", gap:0, overflow:"hidden", padding:"0 48px 36px" }}>
-
-        {/* LEFT: document grid + drop zone */}
-        <div style={{ display:"flex", flexDirection:"column", gap:20, paddingRight:32, overflowY:"auto" }}>
-
-          <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:"rgba(0,0,0,0.38)" }}>
-            What we need from you
-          </div>
-
-          {/* Document type cards */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-            {DOC_TYPES.map(({ icon: Icon, label, sub, color }) => (
-              <div key={label} style={{
-                background:"#ffffff", borderRadius:10, border:"1px solid rgba(0,0,0,0.07)",
-                padding:"16px 16px 14px", boxShadow:"0 1px 3px rgba(0,0,0,0.04)",
-                display:"flex", flexDirection:"column", gap:8,
-              }}>
-                <div style={{ width:32, height:32, borderRadius:8, background:`${color}14`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <Icon style={{ width:16, height:16, color }} />
-                </div>
-                <div>
-                  <div style={{ fontSize:12, fontWeight:600, color:"hsl(222,45%,12%)", marginBottom:2 }}>{label}</div>
-                  <div style={{ fontSize:11, color:"rgba(0,0,0,0.40)", lineHeight:1.4 }}>{sub}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Drop zone */}
-          <div
-            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={e => { e.preventDefault(); setDragOver(false); const names = Array.from(e.dataTransfer.files).map(f => f.name); setUploaded(prev => [...prev, ...names]); }}
-            style={{
-              border:`2px dashed ${dragOver ? "hsl(222,45%,12%)" : "rgba(0,0,0,0.15)"}`,
-              borderRadius:12, padding:"32px 24px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10,
-              background: dragOver ? "rgba(27,61,110,0.04)" : "rgba(255,255,255,0.50)",
-              transition:"all 0.15s", cursor:"pointer", textAlign:"center",
-            }}
-          >
-            <div style={{ width:44, height:44, borderRadius:"50%", background:"rgba(27,61,110,0.08)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <ArrowUpRight style={{ width:20, height:20, color:"hsl(222,45%,12%)" }} />
-            </div>
-            <div>
-              <div style={{ fontSize:13, fontWeight:600, color:"hsl(222,45%,12%)", marginBottom:3 }}>Drop files here to upload</div>
-              <div style={{ fontSize:12, color:"rgba(0,0,0,0.40)" }}>PDF, CSV, XLSX · or <span style={{ color:"hsl(222,45%,12%)", fontWeight:600, cursor:"pointer", textDecoration:"underline" }}>browse files</span></div>
-            </div>
-          </div>
-
-          {/* Uploaded list */}
-          {uploaded.length > 0 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              {uploaded.map((name, i) => (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"#fff", border:"1px solid rgba(46,122,82,0.25)", borderRadius:7, padding:"8px 12px" }}>
-                  <CheckCircle2 style={{ width:14, height:14, color:"#2e7a52", flexShrink:0 }} />
-                  <span style={{ fontSize:12, color:"hsl(222,45%,12%)", flex:1 }}>{name}</span>
-                  <span style={{ fontSize:10, color:"rgba(0,0,0,0.35)" }}>Uploaded</span>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* ── Section label ── */}
+        <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.35)", marginBottom:14 }}>
+          Documents to upload
         </div>
 
-        {/* RIGHT: connect accounts + CTA */}
-        <div style={{ display:"flex", flexDirection:"column", gap:16, overflowY:"auto", paddingLeft:0 }}>
-
-          <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:"rgba(0,0,0,0.38)" }}>
-            Or connect directly
-          </div>
-
-          {[
-            { label:"Schwab / Fidelity",  sub:"Brokerage accounts",      color:"#2563eb", icon:BarChart2 },
-            { label:"Chase / BofA / Citi",sub:"Checking & savings",      color:"#9a7b3c", icon:CreditCard },
-            { label:"Vanguard / BlackRock",sub:"Retirement & funds",      color:"#7c3aed", icon:PieChartIcon },
-            { label:"Yodlee / Plaid",      sub:"All accounts at once",    color:"#2e7a52", icon:Link2 },
-          ].map(({ label, sub, color, icon: Icon }) => (
+        {/* ── Document type cards — reference grid ── */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:24 }}>
+          {DOC_TYPES.map(({ icon: Icon, label, sub, color }) => (
             <div key={label} style={{
-              background:"#fff", border:"1px solid rgba(0,0,0,0.07)", borderRadius:9,
-              padding:"13px 16px", display:"flex", alignItems:"center", gap:12, cursor:"pointer",
-              boxShadow:"0 1px 3px rgba(0,0,0,0.04)", transition:"box-shadow 0.15s",
-            }}
-              onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 3px 10px rgba(0,0,0,0.10)")}
-              onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)")}
-            >
-              <div style={{ width:34, height:34, borderRadius:8, background:`${color}14`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              background:"#ffffff", borderRadius:10, border:"1px solid rgba(0,0,0,0.07)",
+              padding:"16px 16px 14px", boxShadow:"0 1px 3px rgba(0,0,0,0.04)",
+              display:"flex", flexDirection:"column", gap:8,
+            }}>
+              <div style={{ width:32, height:32, borderRadius:8, background:`${color}14`, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <Icon style={{ width:16, height:16, color }} />
               </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:12, fontWeight:600, color:"hsl(222,45%,12%)" }}>{label}</div>
-                <div style={{ fontSize:11, color:"rgba(0,0,0,0.40)", marginTop:1 }}>{sub}</div>
+              <div>
+                <div style={{ fontSize:12, fontWeight:600, color:"hsl(222,45%,12%)", marginBottom:2 }}>{label}</div>
+                <div style={{ fontSize:11, color:"rgba(0,0,0,0.40)", lineHeight:1.4 }}>{sub}</div>
               </div>
-              <ChevronRight style={{ width:14, height:14, color:"rgba(0,0,0,0.25)", flexShrink:0 }} />
             </div>
           ))}
+        </div>
 
-          {/* Spacer */}
-          <div style={{ flex:1 }} />
-
-          {/* Security note */}
-          <div style={{ background:"rgba(27,61,110,0.05)", border:"1px solid rgba(27,61,110,0.10)", borderRadius:8, padding:"12px 14px", display:"flex", gap:10, alignItems:"flex-start" }}>
-            <Lock style={{ width:13, height:13, color:"hsl(222,45%,12%)", flexShrink:0, marginTop:1 }} />
-            <div style={{ fontSize:11, color:"rgba(0,0,0,0.50)", lineHeight:1.55 }}>
-              Bank-grade 256-bit encryption. Read-only access — GURU never moves funds without your approval.
+        {/* ── Drop zone ── */}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => {
+            e.preventDefault(); setDragOver(false);
+            const names = Array.from(e.dataTransfer.files).map(f => f.name);
+            setUploaded(prev => [...prev, ...names]);
+          }}
+          style={{
+            border:`2px dashed ${dragOver ? "hsl(222,45%,12%)" : "rgba(0,0,0,0.15)"}`,
+            borderRadius:12, padding:"36px 32px", display:"flex", flexDirection:"column" as const, alignItems:"center",
+            justifyContent:"center", gap:12, background: dragOver ? "rgba(27,61,110,0.04)" : "rgba(255,255,255,0.55)",
+            transition:"all 0.15s", cursor:"pointer", textAlign:"center" as const, marginBottom:16,
+          }}
+        >
+          <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(27,61,110,0.08)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <ArrowUpRight style={{ width:22, height:22, color:"hsl(222,45%,12%)" }} />
+          </div>
+          <div>
+            <div style={{ fontSize:14, fontWeight:600, color:"hsl(222,45%,12%)", marginBottom:4 }}>
+              {dragOver ? "Release to upload" : "Drop files here to upload"}
+            </div>
+            <div style={{ fontSize:12, color:"rgba(0,0,0,0.40)" }}>
+              PDF, CSV, XLSX accepted
             </div>
           </div>
+        </div>
 
-          {/* CTA */}
+        {/* ── Uploaded file list ── */}
+        {uploaded.length > 0 && (
+          <div style={{ display:"flex", flexDirection:"column" as const, gap:6, marginBottom:20 }}>
+            <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.32)", marginBottom:4 }}>
+              {uploaded.length} file{uploaded.length !== 1 ? "s" : ""} ready for analysis
+            </div>
+            {uploaded.map((name, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"#fff", border:"1px solid rgba(46,122,82,0.22)", borderRadius:7, padding:"9px 14px" }}>
+                <CheckCircle2 style={{ width:14, height:14, color:"#2e7a52", flexShrink:0 }} />
+                <span style={{ fontSize:12, color:"hsl(222,45%,12%)", flex:1 }}>{name}</span>
+                <span style={{ fontSize:10, color:"rgba(46,122,82,0.70)", fontWeight:600 }}>Ready</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Security note ── */}
+        <div style={{ background:"rgba(27,61,110,0.04)", border:"1px solid rgba(27,61,110,0.09)", borderRadius:8, padding:"12px 16px", display:"flex", gap:10, alignItems:"flex-start", marginBottom:28 }}>
+          <Lock style={{ width:13, height:13, color:"hsl(222,45%,12%)", flexShrink:0, marginTop:1 }} />
+          <div style={{ fontSize:11, color:"rgba(0,0,0,0.48)", lineHeight:1.6 }}>
+            Bank-grade 256-bit encryption. GURU uses read-only access and never moves funds without your explicit approval.
+          </div>
+        </div>
+
+        {/* ── CTA ── */}
+        <div style={{ display:"flex", alignItems:"center", gap:20 }}>
           <button style={{
-            width:"100%", background:"hsl(222,45%,12%)", border:"none", borderRadius:8,
-            padding:"14px 0", fontSize:12, fontWeight:700, letterSpacing:"0.10em",
-            textTransform:"uppercase", color:"rgba(255,255,255,0.92)", cursor:"pointer",
+            background:"hsl(222,45%,12%)", border:"none", borderRadius:8,
+            padding:"14px 32px", fontSize:12, fontWeight:700, letterSpacing:"0.10em",
+            textTransform:"uppercase" as const, color:"rgba(255,255,255,0.92)", cursor:"pointer", flexShrink:0,
           }}>
-            Continue with Uploaded Documents →
+            {uploaded.length > 0 ? `Continue with ${uploaded.length} Document${uploaded.length !== 1 ? "s" : ""} →` : "Upload Documents to Continue"}
           </button>
-          <div style={{ fontSize:11, color:"rgba(0,0,0,0.35)", textAlign:"center" }}>
-            You can also add accounts manually after setup
+          <div style={{ fontSize:11, color:"rgba(0,0,0,0.35)", lineHeight:1.5 }}>
+            Your advisor will be notified to review<br/>and schedule your first session.
           </div>
         </div>
 

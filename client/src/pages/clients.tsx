@@ -300,28 +300,22 @@ export default function ClientsPage() {
   const totalAUM    = ACTIVE_FAMILIES.reduce((s, c) => s + c.aum, 0)         + LOCKED_FAMILIES.reduce((s, c) => s + c.aum, 0);
   const totalAssets = ACTIVE_FAMILIES.reduce((s, c) => s + c.totalAssets, 0) + LOCKED_FAMILIES.reduce((s, c) => s + c.totalAssets, 0);
 
+  const topNav = (
+    <div style={{ background: panel, borderBottom: `1px solid ${border}`, padding: "0 40px", height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
+        <span style={{ fontFamily: INTER, fontSize: 15, fontWeight: 700, letterSpacing: "0.10em", color: navy }}>GURU</span>
+        <div style={{ width: 1, height: 14, background: border, display: "inline-block", marginBottom: -2 }} />
+        <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 20, fontWeight: 400, color: navy, lineHeight: 1 }}>Current Client Portfolio</span>
+        <span style={{ fontSize: 12, color: muted, letterSpacing: "0.03em" }}>GURU Advisor Intelligence</span>
+      </div>
+      <AddFamilyModal />
+    </div>
+  );
+
   return (
-    <Layout>
+    <Layout topNav={topNav}>
       {/* Full-width linen canvas */}
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: linen, fontFamily: INTER }}>
-
-        {/* ── Top bar ── */}
-        <div style={{
-          background: panel, borderBottom: `1px solid ${border}`,
-          padding: "0 40px", height: 52,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          flexShrink: 0,
-        }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
-            <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 400, color: navy, lineHeight: 1 }}>
-              Families
-            </span>
-            <span style={{ fontSize: 12, color: muted, letterSpacing: "0.03em" }}>
-              GURU Advisor Intelligence
-            </span>
-          </div>
-          <AddFamilyModal />
-        </div>
 
         {/* ── KPI strip ── */}
         <div style={{
@@ -331,7 +325,7 @@ export default function ClientsPage() {
           {[
             { label: "Total AUM",    value: fmt$(totalAUM),    sub: "Under management",    accent: false },
             { label: "Total Assets", value: fmt$(totalAssets), sub: "Across all families", accent: false },
-            { label: "Families",     value: "73",              sub: "Active book",          accent: false },
+            { label: "Clients",      value: "73",              sub: "Active book",          accent: false },
             { label: "Action Items", value: "3",               sub: "Need attention today", accent: true  },
           ].map(k => (
             <div key={k.label}>
