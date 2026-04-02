@@ -8741,10 +8741,39 @@ function GuruLandingView({
 }
 
 // ─── Onboarding View — shown when client has no data yet ──────────────────────
-function OnboardingView({ clientName }: { clientName: string }) {
+function OnboardingView({ clientName, clientId }: { clientName: string; clientId: number }) {
   const firstName = clientName.split(" ")[0];
-  const [dragOver, setDragOver] = useState(false);
-  const [uploaded, setUploaded] = useState<string[]>([]);
+  const [dragOver, setDragOver]     = useState(false);
+  const [uploaded, setUploaded]     = useState<{ name: string; status: "uploading"|"done"|"error" }[]>([]);
+  const [uploading, setUploading]   = useState(false);
+  const fileInputRef                = useRef<HTMLInputElement>(null);
+
+  async function uploadFile(file: File) {
+    setUploaded(prev => [...prev, { name: file.name, status: "uploading" }]);
+    try {
+      const base64 = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload  = () => res((r.result as string).split(",")[1]);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+      const resp = await fetch(`/api/clients/${clientId}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, type: file.type, data: base64 }),
+      });
+      const status = resp.ok ? "done" : "error";
+      setUploaded(prev => prev.map(u => u.name === file.name ? { ...u, status } : u));
+    } catch {
+      setUploaded(prev => prev.map(u => u.name === file.name ? { ...u, status: "error" } : u));
+    }
+  }
+
+  async function handleFiles(files: FileList | File[]) {
+    setUploading(true);
+    await Promise.all(Array.from(files).map(uploadFile));
+    setUploading(false);
+  }
 
   const DOC_TYPES = [
     { icon: FileText,    label: "Bank Statements",      sub: "Last 3–6 months",            color: "#2563eb" },
@@ -8757,6 +8786,7 @@ function OnboardingView({ clientName }: { clientName: string }) {
 
   return (
     <div style={{ flex:1, overflowY:"auto", background:"#f0ede8", fontFamily:"'Inter', system-ui, sans-serif" }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <div style={{ maxWidth:820, margin:"0 auto", padding:"40px 48px 60px" }}>
 
         {/* ── Eyebrow ── */}
@@ -8797,13 +8827,21 @@ function OnboardingView({ clientName }: { clientName: string }) {
         </div>
 
         {/* ── Drop zone ── */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.csv,.xlsx,.xls,.png,.jpg,.jpeg"
+          style={{ display:"none" }}
+          onChange={e => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
+        />
         <div
+          onClick={() => fileInputRef.current?.click()}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={e => {
             e.preventDefault(); setDragOver(false);
-            const names = Array.from(e.dataTransfer.files).map(f => f.name);
-            setUploaded(prev => [...prev, ...names]);
+            if (e.dataTransfer.files) handleFiles(e.dataTransfer.files);
           }}
           style={{
             border:`2px dashed ${dragOver ? "hsl(222,45%,12%)" : "rgba(0,0,0,0.15)"}`,
@@ -8817,10 +8855,10 @@ function OnboardingView({ clientName }: { clientName: string }) {
           </div>
           <div>
             <div style={{ fontSize:14, fontWeight:600, color:"hsl(222,45%,12%)", marginBottom:4 }}>
-              {dragOver ? "Release to upload" : "Drop files here to upload"}
+              {dragOver ? "Release to upload" : uploading ? "Uploading…" : "Click or drop files here"}
             </div>
             <div style={{ fontSize:12, color:"rgba(0,0,0,0.40)" }}>
-              PDF, CSV, XLSX accepted
+              PDF, CSV, XLSX, images accepted
             </div>
           </div>
         </div>
@@ -8829,13 +8867,23 @@ function OnboardingView({ clientName }: { clientName: string }) {
         {uploaded.length > 0 && (
           <div style={{ display:"flex", flexDirection:"column" as const, gap:6, marginBottom:20 }}>
             <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.32)", marginBottom:4 }}>
-              {uploaded.length} file{uploaded.length !== 1 ? "s" : ""} ready for analysis
+              {uploaded.filter(u=>u.status==="done").length} of {uploaded.length} file{uploaded.length !== 1 ? "s" : ""} uploaded
             </div>
-            {uploaded.map((name, i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"#fff", border:"1px solid rgba(46,122,82,0.22)", borderRadius:7, padding:"9px 14px" }}>
-                <CheckCircle2 style={{ width:14, height:14, color:"#2e7a52", flexShrink:0 }} />
-                <span style={{ fontSize:12, color:"hsl(222,45%,12%)", flex:1 }}>{name}</span>
-                <span style={{ fontSize:10, color:"rgba(46,122,82,0.70)", fontWeight:600 }}>Ready</span>
+            {uploaded.map((f, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"#fff",
+                border:`1px solid ${f.status==="error" ? "rgba(220,38,38,0.22)" : "rgba(46,122,82,0.22)"}`,
+                borderRadius:7, padding:"9px 14px" }}>
+                {f.status === "uploading"
+                  ? <div style={{ width:14, height:14, borderRadius:"50%", border:"2px solid #2e7a52", borderTopColor:"transparent", animation:"spin 0.7s linear infinite", flexShrink:0 }} />
+                  : f.status === "done"
+                  ? <CheckCircle2 style={{ width:14, height:14, color:"#2e7a52", flexShrink:0 }} />
+                  : <span style={{ fontSize:13, color:"#dc2626" }}>✕</span>
+                }
+                <span style={{ fontSize:12, color:"hsl(222,45%,12%)", flex:1 }}>{f.name}</span>
+                <span style={{ fontSize:10, fontWeight:600,
+                  color: f.status==="error" ? "#dc2626" : f.status==="uploading" ? "rgba(0,0,0,0.35)" : "rgba(46,122,82,0.70)" }}>
+                  {f.status === "uploading" ? "Uploading…" : f.status === "done" ? "Uploaded" : "Failed"}
+                </span>
               </div>
             ))}
           </div>
@@ -8856,7 +8904,9 @@ function OnboardingView({ clientName }: { clientName: string }) {
             padding:"14px 32px", fontSize:12, fontWeight:700, letterSpacing:"0.10em",
             textTransform:"uppercase" as const, color:"rgba(255,255,255,0.92)", cursor:"pointer", flexShrink:0,
           }}>
-            {uploaded.length > 0 ? `Continue with ${uploaded.length} Document${uploaded.length !== 1 ? "s" : ""} →` : "Upload Documents to Continue"}
+            {uploaded.filter(u=>u.status==="done").length > 0
+              ? `Continue with ${uploaded.filter(u=>u.status==="done").length} Document${uploaded.filter(u=>u.status==="done").length !== 1 ? "s" : ""} →`
+              : "Upload Documents to Continue"}
           </button>
           <div style={{ fontSize:11, color:"rgba(0,0,0,0.35)", lineHeight:1.5 }}>
             Your advisor will be notified to review<br/>and schedule your first session.
@@ -8961,7 +9011,7 @@ export default function ClientDashboard() {
     );
     return (
       <Layout topNav={onboardingNav}>
-        <OnboardingView clientName={client.name} />
+        <OnboardingView clientName={client.name} clientId={client.id} />
       </Layout>
     );
   }

@@ -1,10 +1,14 @@
 import type { Express } from "express";
 import type { Server } from "http";
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { join } from "path";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
+import { db, pool } from "./db";
+import { eq } from "drizzle-orm";
+import { cashFlows as cfTable, assets as assetsTable, clients as clientsTable, liabilities as liabilitiesTable, strategies as strategiesTable } from "@shared/schema";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -15,6 +19,8 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Run migrations before any Drizzle queries touch the DB
+  await runMigrations();
   seedDatabase().catch(console.error);
 
   // ── Clients ──────────────────────────────────────────────────────────────
@@ -112,6 +118,35 @@ export async function registerRoutes(
     } catch (err) {
       console.error("[market/quotes]", err);
       res.status(502).json({ error: "Market data unavailable" });
+    }
+  });
+
+  app.delete("/api/clients/:id", async (req, res) => {
+    const id = Number(req.params.id);
+    // Delete child records first (FK constraints)
+    await db.delete(cfTable).where(eq(cfTable.clientId, id));
+    await db.delete(assetsTable).where(eq(assetsTable.clientId, id));
+    await db.delete(liabilitiesTable).where(eq(liabilitiesTable.clientId, id));
+    await db.delete(strategiesTable).where(eq(strategiesTable.clientId, id));
+    await storage.deleteClient(id);
+    res.status(204).end();
+  });
+
+  app.patch("/api/clients/:id/onboarding", async (req, res) => {
+    const id = Number(req.params.id);
+    const { complete } = req.body;
+    const updated = await storage.setOnboardingComplete(id, !!complete);
+    if (!updated) return res.status(404).json({ message: "Client not found" });
+    res.json(updated);
+  });
+
+  // One-time setup: add onboarding_complete column if missing
+  app.post("/api/admin/migrate", async (req, res) => {
+    try {
+      await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS onboarding_complete boolean NOT NULL DEFAULT false`);
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
@@ -272,7 +307,73 @@ Respond with a JSON object with a "strategies" array. Each element must have:
     }
   });
 
+  // ── Document upload endpoint ─────────────────────────────────────────────────
+  app.post("/api/clients/:id/documents", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.id, 10);
+      const { name, type, data } = req.body as { name: string; type: string; data: string };
+
+      if (!name || !data) {
+        res.status(400).json({ message: "name and data are required" });
+        return;
+      }
+
+      // Save file to uploads directory
+      const uploadsDir = join(process.cwd(), "uploads", String(clientId));
+      if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+
+      const safeName = name.replace(/[^a-zA-Z0-9._\-]/g, "_");
+      const filePath = join(uploadsDir, `${Date.now()}_${safeName}`);
+      writeFileSync(filePath, Buffer.from(data, "base64"));
+
+      console.log(`[upload] Saved ${name} for client ${clientId} → ${filePath}`);
+
+      res.json({ ok: true, filename: safeName, path: filePath });
+    } catch (err) {
+      console.error("[upload] Error:", err);
+      res.status(500).json({ message: "Upload failed" });
+    }
+  });
+
   return httpServer;
+}
+
+// ── Migrations ─────────────────────────────────────────────────────────────────
+async function runMigrations() {
+  // Add onboarding_complete column if it doesn't exist yet
+  await pool.query(`
+    ALTER TABLE clients
+    ADD COLUMN IF NOT EXISTS onboarding_complete boolean NOT NULL DEFAULT false
+  `);
+
+  // Remove stale test profiles (keep Kessler and Mari Oishi only)
+  const keepNames = ["Sarah & Michael Kessler", "Mari Oishi"];
+  const allClients = await pool.query(`SELECT id, name FROM clients`);
+  for (const row of allClients.rows) {
+    if (!keepNames.includes(row.name)) {
+      await pool.query(`DELETE FROM cash_flows WHERE client_id = $1`, [row.id]);
+      await pool.query(`DELETE FROM assets WHERE client_id = $1`, [row.id]);
+      await pool.query(`DELETE FROM liabilities WHERE client_id = $1`, [row.id]);
+      await pool.query(`DELETE FROM strategies WHERE client_id = $1`, [row.id]);
+      await pool.query(`DELETE FROM clients WHERE id = $1`, [row.id]);
+      console.log(`[migrate] Removed stale test profile: ${row.name} (id=${row.id})`);
+    }
+  }
+
+  // Ensure Mari Oishi profile exists (onboarding not complete)
+  const { rows } = await pool.query(`SELECT id FROM clients WHERE name = 'Mari Oishi'`);
+  if (rows.length === 0) {
+    await pool.query(
+      `INSERT INTO clients (name, email, age, risk_tolerance, onboarding_complete) VALUES ($1,$2,$3,$4,$5)`,
+      ["Mari Oishi", "", 0, "moderate", false]
+    );
+    console.log("[migrate] Created Mari Oishi profile");
+  }
+
+  // Mark Kessler as onboarding complete (they have full data)
+  await pool.query(
+    `UPDATE clients SET onboarding_complete = true WHERE name = 'Sarah & Michael Kessler'`
+  );
 }
 
 // ── Seed Data ──────────────────────────────────────────────────────────────────
@@ -282,7 +383,31 @@ function monthDate(year: number, month: number): Date {
 
 async function seedDatabase() {
   const existing = await storage.getClients();
-  if (existing.length > 0) return;
+  const kessler = existing.find(c => c.name === "Sarah & Michael Kessler");
+
+  if (kessler) {
+    const cfs = await storage.getCashFlows(kessler.id);
+    // Check if Kessler data is up to date — if yes, skip
+    const needsMigration = cfs.length === 0 || cfs.some(cf =>
+      cf.description?.includes("Monthly Net Salaries") ||
+      cf.description?.includes("Tribeca — Mortgage, Maintenance") ||
+      cf.description?.includes("Management, Mortgage & Maintenance")
+    ) || !cfs.some(cf => cf.description?.includes("Thanksgiving Travel"))
+      || cfs.some(cf => cf.description?.includes("Investment Property Taxes") && cf.amount === "11012")
+      || !cfs.some(cf => cf.description?.includes("Sarasota — Golf Club"))
+      || cfs.some(cf => cf.description?.includes("Annual Memberships") && new Date(cf.date).getUTCMonth() === 10)
+      || cfs.some(cf => cf.description === "Golf Club Annual Dues")
+      || cfs.some(cf => cf.description?.includes("Year-End Investment") && Number(cf.amount) < 20000);
+    if (!needsMigration) return; // Kessler data is good, nothing to do
+
+    console.log("[seed] Reseeding Kessler data with updated cash flows...");
+    await db.delete(cfTable).where(eq(cfTable.clientId, kessler.id));
+    await db.delete(assetsTable).where(eq(assetsTable.clientId, kessler.id));
+    await db.delete(liabilitiesTable).where(eq(liabilitiesTable.clientId, kessler.id));
+    await db.delete(strategiesTable).where(eq(strategiesTable.clientId, kessler.id));
+    await db.delete(clientsTable).where(eq(clientsTable.id, kessler.id));
+    console.log("[seed] Kessler data cleared — reseeding");
+  }
 
   // ── Client 1: Sarah & Michael Kessler ───────────────────────────────────────
   // HNW dual-income family — exact financials from model
@@ -339,7 +464,7 @@ async function seedDatabase() {
   // Source: Prototype_Model_v4.xlsx
   // Monthly income: salaries $18,814 + rental $2,100 + interest $388 = $21,302
   // Monthly base expenses: $23,037 → base net ≈ −$1,735/mo
-  // Cumulative trough: −$125,082 in November. Dec bonus flips to +$192,965.
+  // Cumulative trough: ~−$125,096 in November. Dec bonus + portfolio distributions flip to ~+$68,000 annual net.
 
   const cfBatch: Array<{ clientId: number; type: "inflow" | "outflow"; category: string; amount: string; date: Date; description: string }> = [];
 
@@ -354,13 +479,17 @@ async function seedDatabase() {
     const d = monthDate(y, m);
 
     // ── Recurring monthly income ──────────────────────────────────────────
-    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary",      amount: "18814", date: d, description: "Monthly Net Salaries — P1 ($13,302) + P2 ($5,511)" });
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary",      amount: "13302", date: d, description: "Michael — Net Monthly Salary" });
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary",      amount: "5511",  date: d, description: "Sarah — Net Monthly Salary" });
     cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "2100",  date: d, description: "Investment Property Rental Income" });
     cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "388",   date: d, description: "Reserve MMF & Savings Interest" });
 
     // ── Recurring monthly expenses ($23,037 gross) ────────────────────────
     // Primary residence: Tribeca mortgage $2,481 + HOA $819 + cable $106 + utilities $287 + insurance $830
-    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing",         amount: "4523",  date: d, description: "Tribeca — Mortgage, Maintenance, Insurance & Utilities" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing",         amount: "2481",  date: d, description: "Tribeca — Mortgage" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing",         amount: "819",   date: d, description: "Tribeca — HOA & Maintenance" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing",         amount: "830",   date: d, description: "Tribeca — Home Insurance" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing",         amount: "393",   date: d, description: "Tribeca — Cable & Utilities" });
     // Credit cards cover lifestyle: food, dining, entertainment, gas, shopping
     cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "11466", date: d, description: "Credit Card Payments (Lifestyle Expenses)" });
     cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "4333",  date: d, description: "Childcare / Nanny" });
@@ -368,8 +497,10 @@ async function seedDatabase() {
     // Student loans: $165 undergrad + $594 graduate
     cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "759",   date: d, description: "Student Loan Payments ($165 undergrad + $594 graduate)" });
     cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "346",   date: d, description: "Phone, Cable & Utilities" });
-    // Investment property: management $378 + mortgage $312 + maintenance $243
-    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing",         amount: "933",   date: d, description: "Investment Property — Management, Mortgage & Maintenance" });
+    // Investment property — split into individual line items
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing", amount: "378", date: d, description: "Investment Property — Property Management" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing", amount: "312", date: d, description: "Investment Property — Mortgage" });
+    cfBatch.push({ clientId: c1.id, type: "outflow", category: "housing", amount: "243", date: d, description: "Investment Property — Maintenance" });
 
     // ── January: NYC property taxes semi-annual (1st installment) ─────────
     if (m === 1) {
@@ -397,19 +528,22 @@ async function seedDatabase() {
     if (m === 8) {
       cfBatch.push({ clientId: c1.id, type: "outflow", category: "education", amount: "15000", date: d, description: "Private School Tuition — Fall Installment" });
     }
-    // ── November: Annual memberships & fees ───────────────────────────────
+    // ── November: Thanksgiving travel only ────────────────────────────────
     if (m === 11) {
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle", amount: "4000", date: d, description: "Annual Memberships & Fees" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel",    amount: "4000", date: d, description: "Thanksgiving Travel" });
     }
-    // ── December: year-end bonuses + annual one-time expenses ────────────
+    // ── December: year-end bonuses + all annual one-time expenses ─────────
     if (m === 12) {
       cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus",       amount: "191556", date: d, description: "Partner 1 Year-End Bonus" });
       cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus",       amount: "25085",  date: d, description: "Partner 2 Year-End Bonus" });
-      cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "3414",   date: d, description: "Year-End Investment Distributions & Interest" });
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "4102",  date: d, description: "Golf Club Annual Dues" });
+      cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "22333",  date: d, description: "Year-End Investment Distributions & Interest" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "education",      amount: "15000", date: d, description: "Private School Tuition — December Installment" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "4000",  date: d, description: "Annual Memberships & Fees" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "4102",  date: d, description: "NYC — Golf Club Annual Dues" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "4102",  date: d, description: "Sarasota — Golf Club Annual Dues" });
       cfBatch.push({ clientId: c1.id, type: "outflow", category: "lifestyle",       amount: "2140",  date: d, description: "Annual Insurance Premiums (home + umbrella)" });
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel",          amount: "2000",  date: d, description: "Holiday Travel" });
-      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes",           amount: "11012", date: d, description: "Investment Property Taxes (semi-annual, Dec)" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "travel",          amount: "4000",  date: d, description: "Holiday Travel" });
+      cfBatch.push({ clientId: c1.id, type: "outflow", category: "taxes",           amount: "4697",  date: d, description: "Investment Property Taxes (FL annual, Dec)" });
       cfBatch.push({ clientId: c1.id, type: "outflow", category: "living_expenses", amount: "6101",  date: d, description: "Year-End Fees, Subscriptions & Misc" });
     }
   }
@@ -418,4 +552,7 @@ async function seedDatabase() {
     await storage.createCashFlow(cf);
   }
 
+  // Mark Kessler as onboarding complete after seeding
+  await storage.setOnboardingComplete(c1.id, true);
+  console.log("[seed] Kessler seeded and marked onboarding complete");
 }
