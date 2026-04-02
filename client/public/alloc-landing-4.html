@@ -466,9 +466,8 @@
 
   <script>
     function startReview() {
-      document.getElementById('gi-kpis').classList.add('hidden');
-      document.getElementById('gi-calculator').classList.add('active');
-      document.getElementById('gi-pill-txt').textContent = 'Calculating';
+      // Navigate the iframe (or full window) to the full allocation calculator
+      window.location.href = '/allocation-tool-v7.html';
     }
 
     function parseDollar(str) {
