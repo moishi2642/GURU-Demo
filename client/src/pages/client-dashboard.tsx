@@ -7898,7 +7898,7 @@ function GuruLandingView({
   const [showLanding, setShowLanding] = useState(!skipLanding);
   const [showBucketBriefing, setShowBucketBriefing] = useState(false);
   const [showReviewPanel, setShowReviewPanel] = useState(false);
-  const [calcMode, setCalcMode] = useState(false);
+  // calcMode merged into workflowStarted — removed
   const [workflowStarted, setWorkflowStarted] = useState(false);
   const [showActionTable, setShowActionTable] = useState(false);
   const [isThinking, setIsThinking] = useState(true);
@@ -8691,76 +8691,55 @@ function GuruLandingView({
             </div>
           )}
 
-          {/* ── GURU MODEL CALCULATOR CARD — only when workflow active ── */}
-          {workflowStarted && <div
-            className="guru-landing-intel"
-            style={{ margin:"12px 16px 0", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border:"1px solid rgba(91,143,204,0.20)", borderRadius:12 }}
-          >
-            {/* Header row */}
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 18px", borderBottom:"1px solid rgba(255,255,255,0.05)", position:"relative", zIndex:2 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-                <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.7)", display:"inline-block", animation:"guruPulse 2.2s infinite", flexShrink:0 }} />
-                <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.85)" }}>GURU Model Calculator</span>
+          {/* ── GURU MODEL CALCULATOR CARD — Step 1 only: live AUM & after-tax stats ── */}
+          {workflowStarted && (
+            <div
+              className="guru-landing-intel"
+              style={{ margin:"12px 16px 0", position:"relative", overflow:"hidden", background:"linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border:"1px solid rgba(91,143,204,0.20)", borderRadius:12, flexShrink:0 }}
+            >
+              {/* Header row */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 18px", borderBottom:"1px solid rgba(255,255,255,0.05)", position:"relative", zIndex:2 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                  <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.7)", display:"inline-block", animation:"guruPulse 2.2s infinite", flexShrink:0 }} />
+                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.85)" }}>GURU Model Calculator</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:5, padding:"2px 8px", border:"1px solid rgba(91,143,204,0.20)", borderRadius:2, background:"rgba(91,143,204,0.05)" }}>
+                  <span style={{ width:4, height:4, borderRadius:"50%", background:"rgba(94,204,138,0.70)", display:"inline-block", animation:"guruPulse 1.8s infinite" }} />
+                  <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.40)" }}>Live · Step 1</span>
+                </div>
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:5, padding:"2px 8px", border:"1px solid rgba(91,143,204,0.20)", borderRadius:2, background:"rgba(91,143,204,0.05)" }}>
-                <span style={{ width:4, height:4, borderRadius:"50%", background:"rgba(91,143,204,0.85)", display:"inline-block", animation:"guruPulse 1.8s infinite" }} />
-                <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.40)" }}>{calcMode ? "Calculating" : "Live · Now"}</span>
+
+              {/* Live calculator stats — update as advisor makes selections in Step 1 */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1px 1fr 1px 1fr", position:"relative", zIndex:2 }}>
+                {/* AUM Increase */}
+                <div style={{ padding:"12px 18px 14px", display:"flex", flexDirection:"column", gap:4 }}>
+                  <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.32)" }}>AUM Increase</span>
+                  <span style={{ fontSize:22, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.03em", color: incomeImpact?.aumIncrease && incomeImpact.aumIncrease !== "—" ? "rgba(212,168,67,0.95)" : "rgba(255,255,255,0.22)", lineHeight:1 }}>
+                    {incomeImpact?.aumIncrease ?? "—"}
+                  </span>
+                  <span style={{ fontSize:9, color:"rgba(255,255,255,0.22)" }}>assets deployed</span>
+                </div>
+                <div style={{ background:"rgba(255,255,255,0.06)" }} />
+                {/* After-Tax Annual Income */}
+                <div style={{ padding:"12px 18px 14px", display:"flex", flexDirection:"column", gap:4 }}>
+                  <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.32)" }}>After-Tax Annual Income</span>
+                  <span style={{ fontSize:22, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.03em", color: incomeImpact?.atIncome && incomeImpact.atIncome !== "—" ? "#5ecc8a" : "rgba(255,255,255,0.22)", lineHeight:1 }}>
+                    {incomeImpact?.atIncome ?? "—"}
+                  </span>
+                  <span style={{ fontSize:9, color:"rgba(255,255,255,0.22)" }}>{incomeImpact?.atIncomeSub ?? "per year · after-tax"}</span>
+                </div>
+                <div style={{ background:"rgba(255,255,255,0.06)" }} />
+                {/* % AT Return Increase */}
+                <div style={{ padding:"12px 18px 14px", display:"flex", flexDirection:"column", gap:4 }}>
+                  <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.32)" }}>% AT Return Increase</span>
+                  <span style={{ fontSize:22, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.03em", color: incomeImpact?.yieldDelta && incomeImpact.yieldDelta !== "—" ? "#5ecc8a" : "rgba(255,255,255,0.22)", lineHeight:1 }}>
+                    {incomeImpact?.yieldDelta ?? "—"}
+                  </span>
+                  <span style={{ fontSize:9, color:"rgba(255,255,255,0.22)" }}>{incomeImpact?.yieldDeltaSub ?? "make selections below to calculate"}</span>
+                </div>
               </div>
             </div>
-
-            {/* When workflow active: Playfair headline sits above the KPIs */}
-            {workflowStarted && (
-              <div style={{ padding:"12px 18px 0", position:"relative", zIndex:2, borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
-                <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:20, fontWeight:400, color:"rgba(255,255,255,0.90)", lineHeight:1.25, letterSpacing:"-0.01em", paddingBottom:12 }}>
-                  Strong Liquidity. Time to Generate More Alpha.
-                </div>
-              </div>
-            )}
-
-            {/* KPI view — pre-launch */}
-            {!calcMode && (
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", position:"relative", zIndex:2 }}>
-                {[
-                  { lbl:"Deployable Excess", val:fmt(deployable > 0 ? deployable : 299966), color:"rgba(212,168,67,0.95)" },
-                  { lbl:"After-Tax Pickup", val:`+${fmt(pickup > 0 ? pickup : 9200)}/yr`, color:"rgba(94,204,138,0.92)" },
-                  { lbl:"Annual Expenses", val:fmt(monthlyExpenses * 12), color:"rgba(255,255,255,0.88)" },
-                  { lbl:"Net Cash Flow", val:`+${fmt(Math.max(0,(monthlyIncome-monthlyExpenses)*12))}`, color:"rgba(91,143,204,0.95)" },
-                ].map((kpi) => (
-                  <div key={kpi.lbl} style={{ display:"flex", flexDirection:"column", gap:3, padding:"10px 16px", borderRight:"1px solid rgba(255,255,255,0.06)" }}>
-                    <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.38)" }}>{kpi.lbl}</span>
-                    <span style={{ fontSize:16, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em", color:kpi.color, lineHeight:1 }}>{kpi.val}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Calculator view — live income impact KPIs */}
-            {calcMode && (
-              <div style={{ padding:"10px 18px 12px", position:"relative", zIndex:2, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, alignItems:"stretch" }}>
-                {/* AUM Increase — left */}
-                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(212,168,67,0.18)", borderRadius:4, padding:"8px 14px", display:"flex", flexDirection:"column", gap:3 }}>
-                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,195,80,0.60)" }}>AUM Increase</span>
-                  <span style={{ fontSize:20, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"rgba(212,168,67,0.95)", letterSpacing:"-0.01em", lineHeight:1 }}>
-                    {incomeImpact ? incomeImpact.aumIncrease : "—"}
-                  </span>
-                </div>
-                {/* After-Tax Income — center */}
-                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(212,168,67,0.18)", borderRadius:4, padding:"8px 14px", display:"flex", flexDirection:"column", gap:3 }}>
-                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,195,80,0.60)" }}>After-Tax Income</span>
-                  <span style={{ fontSize:20, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"rgba(212,168,67,0.95)", letterSpacing:"-0.01em", lineHeight:1 }}>
-                    {incomeImpact ? incomeImpact.atIncome : "—"}
-                  </span>
-                </div>
-                {/* % AT Return Increase — right */}
-                <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(212,168,67,0.18)", borderRadius:4, padding:"8px 14px", display:"flex", flexDirection:"column", gap:3 }}>
-                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,195,80,0.60)" }}>% Increase · AT Annual Returns</span>
-                  <span style={{ fontSize:20, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"rgba(212,168,67,0.95)", letterSpacing:"-0.01em", lineHeight:1 }}>
-                    {incomeImpact ? incomeImpact.yieldDelta : "—"}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>}
+          )}
 
           {/* ── CENTER: allocation overview → then live workflow ── */}
           {!workflowStarted ? (
@@ -8861,7 +8840,7 @@ function GuruLandingView({
               <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10, paddingTop:4 }}>
                 <button
                   style={{ fontFamily:"'Inter', system-ui, sans-serif", fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", padding:"14px 48px", borderRadius:5 }}
-                  onClick={() => { setCalcMode(true); setWorkflowStarted(true); }}
+                  onClick={() => { setWorkflowStarted(true); }}
                 >
                   Begin Step 1: Allocation Rebalancing →
                 </button>
