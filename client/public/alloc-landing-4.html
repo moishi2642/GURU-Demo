@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GURU Allocation — Landing Mockup 4</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --page:    #f0ece5;
+      --card:    #f5f1ec;
+      --navy:    #1a2e4a;
+      --forest:  #1e4d30;
+      --gold:    #8a6920;
+      --border:  rgba(0,0,0,0.09);
+      --text:    #1a1a1a;
+      --mid:     rgba(0,0,0,0.55);
+      --dim:     rgba(0,0,0,0.38);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--page);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    @keyframes ipulse   { 0%,100%{opacity:1} 50%{opacity:0.30} }
+    @keyframes cfmpulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    @keyframes borderRunBlue {
+      0%   { background-position: 0% 0,   100% 0,   100% 100%, 0% 100%; }
+      100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── SLIM HEADER ── */
+    .page-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; height: 46px;
+      background: rgba(240,236,229,0.96);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+    .ph-left { display: flex; align-items: center; gap: 9px; }
+    .ph-client { font-size: 13px; font-weight: 500; color: var(--text); }
+    .ph-sep { color: rgba(0,0,0,0.18); }
+    .ph-page { font-size: 13px; color: var(--mid); }
+    .ph-right { font-size: 10px; color: var(--dim); }
+
+    /* ── MAIN LAYOUT ── */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 308px;
+      min-height: calc(100vh - 46px);
+    }
+
+    /* ── LEFT COLUMN ── */
+    .left-col { border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+
+    /* ── GURU INTELLIGENCE — blue header bar ── */
+    .guru-intel {
+      position: relative; overflow: hidden;
+      background: linear-gradient(160deg, #1a3a6b 0%, #163060 55%, #0f2248 100%);
+      border-bottom: 1px solid rgba(91,143,204,0.22);
+      transition: all 0.35s ease;
+    }
+    .guru-intel::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.60) 50%, transparent 100%) top / 200% 1.5px no-repeat,
+        linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.30) 50%, transparent 100%) right / 1.5px 200% no-repeat,
+        linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.40) 50%, transparent 100%) bottom / 200% 1.5px no-repeat,
+        linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.30) 50%, transparent 100%) left / 1.5px 200% no-repeat;
+      animation: borderRunBlue 7s linear infinite;
+    }
+    .gi-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 22px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      position: relative; z-index: 2;
+    }
+    .gi-badge { display: flex; align-items: center; gap: 7px; }
+    .gi-dot   { width: 6px; height: 6px; border-radius: 50%; background: #5ecc8a; box-shadow: 0 0 6px rgba(94,204,138,0.7); animation: cfmpulse 2.2s infinite; }
+    .gi-lbl   { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(94,204,138,0.85); }
+    .gi-pill  { display: flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid rgba(91,143,204,0.20); border-radius: 2px; background: rgba(91,143,204,0.05); }
+    .gi-pill-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(91,143,204,0.85); animation: cfmpulse 1.8s infinite; }
+    .gi-pill-txt { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.40); }
+
+    /* KPI state */
+    .gi-kpis {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      position: relative; z-index: 2;
+      transition: opacity 0.25s, height 0.35s;
+    }
+    .gi-kpi {
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 12px 16px;
+      border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    .gi-kpi:last-child { border-right: none; }
+    .gi-kpi-lbl { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.38); }
+    .gi-kpi-val { font-size: 17px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: rgba(255,255,255,0.88); line-height: 1; }
+
+    /* Calculator state — hidden by default */
+    .gi-calculator {
+      display: none; padding: 14px 22px 16px;
+      position: relative; z-index: 2;
+      animation: fadeIn 0.3s ease;
+    }
+    .gi-calculator.active { display: block; }
+    .gi-kpis.hidden { display: none; }
+
+    .calc-grid {
+      display: grid; grid-template-columns: repeat(3,1fr) auto;
+      gap: 10px; align-items: end;
+    }
+    .calc-field {}
+    .calc-label {
+      font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(255,255,255,0.38); margin-bottom: 5px; display: block;
+    }
+    .calc-input {
+      width: 100%; font-family: inherit; font-size: 13px; font-weight: 500;
+      font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.88);
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(91,143,204,0.25);
+      border-radius: 3px; padding: 7px 10px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .calc-input:focus { border-color: rgba(91,143,204,0.55); background: rgba(255,255,255,0.08); }
+    .calc-result {
+      background: rgba(94,204,138,0.10); border: 1px solid rgba(94,204,138,0.25);
+      border-radius: 3px; padding: 7px 12px;
+      display: flex; flex-direction: column; gap: 2px; white-space: nowrap;
+    }
+    .calc-result-lbl { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(94,204,138,0.60); }
+    .calc-result-val { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: rgba(94,204,138,0.92); }
+
+    /* ── GURU INSIGHT ── */
+    .guru-insight {
+      position: relative; overflow: hidden;
+      background: linear-gradient(160deg, #0e1e38 0%, #0b1930 55%, #091525 100%);
+      border-bottom: 1px solid rgba(94,204,138,0.10);
+    }
+    .guru-insight::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, rgba(94,204,138,0.35), rgba(94,204,138,0.06) 40%, transparent);
+    }
+    .gi2-eyebrow {
+      display: flex; align-items: center; gap: 7px;
+      padding: 12px 22px 0; position: relative; z-index: 2;
+    }
+    .gi2-dot  { width: 5px; height: 5px; border-radius: 50%; background: #5ecc8a; box-shadow: 0 0 6px rgba(94,204,138,0.60); animation: ipulse 2.8s infinite; flex-shrink: 0; }
+    .gi2-lbl  { font-size: 9px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(94,204,138,0.70); }
+    .gi2-body { padding: 8px 22px 16px; position: relative; z-index: 2; }
+    .gi2-hl   {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 17px; font-weight: 400; font-style: italic;
+      color: rgba(255,255,255,0.88); letter-spacing: -0.01em; line-height: 1.3;
+      margin-bottom: 7px;
+    }
+    .gi2-text { font-size: 12px; line-height: 1.7; color: rgba(255,255,255,0.48); }
+    .gi2-text em { color: rgba(255,255,255,0.72); font-style: normal; }
+
+    /* ── BEGIN SECTION ── */
+    .begin-section {
+      flex: 1; padding: 24px 28px 32px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .bs-overline {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--dim);
+      margin-bottom: 8px; text-align: center;
+    }
+    .bs-headline {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 22px; font-weight: 400; color: var(--text);
+      line-height: 1.25; margin-bottom: 8px; text-align: center;
+    }
+    .bs-subhead {
+      font-size: 12px; color: var(--mid); line-height: 1.65;
+      margin-bottom: 24px; max-width: 520px; text-align: center;
+    }
+
+    /* Step cards */
+    .step-row {
+      display: grid; grid-template-columns: 1fr 22px 1fr 22px 1fr;
+      align-items: stretch; width: 100%; margin-bottom: 24px;
+    }
+    .step-card {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 8px; padding: 18px 16px; text-align: left;
+      display: flex; flex-direction: column;
+    }
+    .sc-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--navy); color: rgba(255,255,255,0.9);
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 11px; flex-shrink: 0;
+    }
+    .sc-name  {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 15px; font-weight: 400; color: var(--text);
+      margin-bottom: 6px; line-height: 1.3;
+    }
+    .sc-desc  { font-size: 12px; color: var(--mid); line-height: 1.6; flex: 1; }
+    .sc-tag   {
+      display: inline-block; margin-top: 12px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+      background: rgba(26,46,74,0.07); color: var(--navy); border: 1px solid rgba(26,46,74,0.14);
+    }
+    .step-arrow {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: rgba(0,0,0,0.18);
+    }
+
+    /* CTA */
+    .cta-area { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+    .btn-begin {
+      font-family: inherit; font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      background: var(--navy); color: rgba(255,255,255,0.92);
+      border: none; cursor: pointer; padding: 13px 48px; border-radius: 2px;
+      transition: background 0.15s;
+    }
+    .btn-begin:hover { background: #0f1d30; }
+    .cta-note { font-size: 10px; color: var(--dim); }
+
+    /* ── RIGHT COLUMN ── */
+    .right-col {
+      background: var(--card);
+      display: flex; flex-direction: column;
+    }
+    .rc-header {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rc-total-lbl { font-size: 8px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); margin-bottom: 2px; }
+    .rc-total-val { font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--text); }
+
+    /* ── BUCKET CARDS ── */
+    .bucket-cards { display: flex; flex-direction: column; gap: 7px; padding: 10px 10px 0; }
+    .bucket-card {
+      background: #fff; border: 1px solid var(--border);
+      border-left: 3px solid transparent; border-radius: 6px;
+      padding: 11px 13px; display: flex; flex-direction: column; gap: 6px;
+      transition: box-shadow 0.15s;
+    }
+    .bucket-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    .bucket-card.op   { border-left-color: var(--navy); }
+    .bucket-card.res  { border-left-color: var(--gold); }
+    .bucket-card.bld  { border-left-color: var(--forest); }
+    .bucket-card.grow { border-left-color: rgba(0,0,0,0.20); }
+    .bucket-card.oth  { border-left-color: rgba(0,0,0,0.13); }
+
+    .bc-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .bc-name   { font-size: 9px; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase; color: var(--mid); }
+    .bc-yield  { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
+    .bc-bal    { font-size: 19px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--text); line-height: 1; }
+    .bc-bar    { height: 2px; background: rgba(0,0,0,0.06); border-radius: 1px; overflow: hidden; }
+    .bc-fill   { height: 100%; border-radius: 1px; }
+    .bucket-card.op   .bc-fill { background: var(--navy); }
+    .bucket-card.res  .bc-fill { background: var(--gold); }
+    .bucket-card.bld  .bc-fill { background: var(--forest); }
+    .bucket-card.grow .bc-fill { background: rgba(0,0,0,0.28); }
+    .bucket-card.oth  .bc-fill { background: rgba(0,0,0,0.18); }
+    .bc-desc { font-size: 9px; color: var(--dim); line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+  <div class="page-hdr">
+    <div class="ph-left">
+      <span class="ph-client">Kessler Family</span>
+      <span class="ph-sep">·</span>
+      <span class="ph-page">Asset Allocation</span>
+    </div>
+    <div class="ph-right">Demo Mockup 4</div>
+  </div>
+
+  <div class="main-layout">
+
+    <!-- ── LEFT ── -->
+    <div class="left-col">
+
+      <!-- GURU Intelligence — transforms to calculator on begin -->
+      <div class="guru-intel" id="guru-intel">
+        <div class="gi-header">
+          <div class="gi-badge">
+            <div class="gi-dot"></div>
+            <span class="gi-lbl">GURU Intelligence</span>
+          </div>
+          <div class="gi-pill">
+            <div class="gi-pill-dot"></div>
+            <span class="gi-pill-txt" id="gi-pill-txt">Live · Now</span>
+          </div>
+        </div>
+
+        <!-- KPI view (landing) -->
+        <div class="gi-kpis" id="gi-kpis">
+          <div class="gi-kpi">
+            <span class="gi-kpi-lbl">Deployable Excess</span>
+            <span class="gi-kpi-val" style="color:rgba(212,168,67,0.95)">$499,926</span>
+          </div>
+          <div class="gi-kpi">
+            <span class="gi-kpi-lbl">After-Tax Pickup</span>
+            <span class="gi-kpi-val" style="color:rgba(94,204,138,0.92)">+$21,600 / yr</span>
+          </div>
+          <div class="gi-kpi">
+            <span class="gi-kpi-lbl">Annual Expenses</span>
+            <span class="gi-kpi-val">$299,268</span>
+          </div>
+          <div class="gi-kpi">
+            <span class="gi-kpi-lbl">Net Cash Flow</span>
+            <span class="gi-kpi-val" style="color:rgba(91,143,204,0.95)">+$66,338</span>
+          </div>
+        </div>
+
+        <!-- Calculator view (after begin) -->
+        <div class="gi-calculator" id="gi-calculator">
+          <div class="calc-grid">
+            <div class="calc-field">
+              <label class="calc-label">Monthly Income</label>
+              <input class="calc-input" id="calc-income" type="text" value="$30,467" oninput="recalc()">
+            </div>
+            <div class="calc-field">
+              <label class="calc-label">Monthly Expenses</label>
+              <input class="calc-input" id="calc-expenses" type="text" value="$24,939" oninput="recalc()">
+            </div>
+            <div class="calc-field">
+              <label class="calc-label">Coverage Target</label>
+              <input class="calc-input" id="calc-coverage" type="text" value="12 months" oninput="recalc()">
+            </div>
+            <div class="calc-result" id="calc-result">
+              <span class="calc-result-lbl">Deploy</span>
+              <span class="calc-result-val" id="calc-deploy">$499,926</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GURU Insight -->
+      <div class="guru-insight">
+        <div class="gi2-eyebrow">
+          <div class="gi2-dot"></div>
+          <span class="gi2-lbl">GURU Insight · Kessler Family</span>
+        </div>
+        <div class="gi2-body">
+          <div class="gi2-hl">Reserves are comfortable. One opportunity flagged.</div>
+          <div class="gi2-text">
+            The year-end bonus settled cleanly across all three accounts — floors covered, coverage ratios intact.
+            GURU has identified <em>$499,440 in idle capital</em> that can be redeployed into Build and Grow
+            at no change to the liquidity picture, adding roughly $21,600 in after-tax return annually.
+          </div>
+        </div>
+      </div>
+
+      <!-- Process preview + CTA -->
+      <div class="begin-section">
+        <div class="bs-overline">GURU flagged 2 items · ready when you are</div>
+        <div class="bs-headline">Rebalance and Maximize Wealth Now</div>
+        <div class="bs-subhead">
+          GURU monitors continuously and flags when the portfolio can do more.
+          Walk through the review at your own pace — or activate auto-execution for next time.
+        </div>
+
+        <div class="step-row">
+          <div class="step-card">
+            <div class="sc-num">1</div>
+            <div class="sc-name">Asset Allocation Rebalancing</div>
+            <div class="sc-desc">Review suggested coverage targets and confirm transfer amounts across your liquidity buckets.</div>
+            <span class="sc-tag">~3 min · GURU pre-filled</span>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step-card">
+            <div class="sc-num">2</div>
+            <div class="sc-name">Product Selection</div>
+            <div class="sc-desc">Choose instruments — T-bills, money markets, short bonds — ranked by after-tax yield for your profile.</div>
+            <span class="sc-tag">~2 min · ranked for you</span>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step-card">
+            <div class="sc-num">3</div>
+            <div class="sc-name">Confirm &amp; Execute</div>
+            <div class="sc-desc">Review the full before/after and send for execution. Activate auto-execute for future events.</div>
+            <span class="sc-tag">~1 min · auto-execute available</span>
+          </div>
+        </div>
+
+        <div class="cta-area">
+          <button class="btn-begin" onclick="startReview()">Start the Review →</button>
+          <span class="cta-note">~6 minutes · reversible at every step</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT — Bucket cards ── -->
+    <div class="right-col">
+
+      <div class="rc-header">
+        <div class="rc-total-lbl">Total Assets</div>
+        <div class="rc-total-val">$6,148,236</div>
+      </div>
+
+      <div class="bucket-cards">
+
+        <div class="bucket-card op">
+          <div class="bc-header">
+            <span class="bc-name">Operating Cash</span>
+            <span class="bc-yield">0.01%</span>
+          </div>
+          <div class="bc-bal">$132,050</div>
+          <div class="bc-bar"><div class="bc-fill" style="width:19%"></div></div>
+          <div class="bc-desc">6.3 mo · cash for upcoming expenditures</div>
+        </div>
+
+        <div class="bucket-card res">
+          <div class="bc-header">
+            <span class="bc-name">Reserve Cash</span>
+            <span class="bc-yield">4.60%</span>
+          </div>
+          <div class="bc-bal">$426,586</div>
+          <div class="bc-bar"><div class="bc-fill" style="width:62%"></div></div>
+          <div class="bc-desc">23.6 mo · active cash management</div>
+        </div>
+
+        <div class="bucket-card bld">
+          <div class="bc-header">
+            <span class="bc-name">Capital Build</span>
+            <span class="bc-yield">4.85%</span>
+          </div>
+          <div class="bc-bal">$135,000</div>
+          <div class="bc-bar"><div class="bc-fill" style="width:19.5%"></div></div>
+          <div class="bc-desc">Goal-directed saving · short-duration ladder</div>
+        </div>
+
+        <div class="bucket-card grow">
+          <div class="bc-header">
+            <span class="bc-name">Investments</span>
+            <span class="bc-yield">3.95%</span>
+          </div>
+          <div class="bc-bal">$2,509,500</div>
+          <div class="bc-bar"><div class="bc-fill" style="width:78%"></div></div>
+          <div class="bc-desc">Long-term compounded growth</div>
+        </div>
+
+        <div class="bucket-card oth">
+          <div class="bc-header">
+            <span class="bc-name">Other Assets</span>
+            <span class="bc-yield" style="opacity:0">—</span>
+          </div>
+          <div class="bc-bal">$2,945,100</div>
+          <div class="bc-bar"><div class="bc-fill" style="width:92%"></div></div>
+          <div class="bc-desc">Real estate &amp; alternatives</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function startReview() {
+      document.getElementById('gi-kpis').classList.add('hidden');
+      document.getElementById('gi-calculator').classList.add('active');
+      document.getElementById('gi-pill-txt').textContent = 'Calculating';
+    }
+
+    function parseDollar(str) {
+      return parseFloat(str.replace(/[$,]/g, '')) || 0;
+    }
+
+    function recalc() {
+      const income   = parseDollar(document.getElementById('calc-income').value);
+      const expenses = parseDollar(document.getElementById('calc-expenses').value);
+      const coverage = parseFloat(document.getElementById('calc-coverage').value) || 12;
+      const required = expenses * coverage;
+      const totalCash = 132050 + 426586 + 135000; // operating + reserve + build
+      const deployable = Math.max(0, totalCash - required);
+      const pickup = Math.round(deployable * 0.0432); // ~4.32% after-tax uplift
+      document.getElementById('calc-deploy').textContent =
+        '$' + deployable.toLocaleString('en-US', {maximumFractionDigits:0})
+        + (pickup > 0 ? ' · +$' + pickup.toLocaleString('en-US', {maximumFractionDigits:0}) + '/yr' : '');
+    }
+  </script>
+</body>
+</html>

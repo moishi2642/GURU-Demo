@@ -9589,19 +9589,13 @@ export default function ClientDashboard() {
           skipLanding={false}
         />
       )}
-      {/* ── Allocation v1 — original calculator view ──────────────────────────── */}
+      {/* ── Allocation v1 — original alloc-landing-4 (GURU Intel + calculator on begin) ── */}
       {activeView === "guru_v1" && (
-        <div className="space-y-4" style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-          <GuruAllocationView
-            assets={assets}
-            liabilities={liabilities}
-            cashFlows={cashFlows}
-            opsCashMonths={opsCashMonths}
-            setOpsCashMonths={setOpsCashMonths}
-            pendingTransfers={pendingTransfers}
-            setPendingTransfers={setPendingTransfers}
-            bucketProductSelections={bucketProductSelections}
-            setBucketProductSelections={setBucketProductSelections}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <iframe
+            src="/alloc-landing-4.html"
+            title="Allocation v1"
+            style={{ flex: 1, width: "100%", border: "none", display: "block", minHeight: 0 }}
           />
         </div>
       )}
