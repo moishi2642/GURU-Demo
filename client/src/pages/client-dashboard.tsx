@@ -8128,7 +8128,7 @@ function GuruLandingView({
 
         {/* ══════════════════════ LEFT: Dark Navy Pane ══════════════════════ */}
         <div style={{
-          flex: workflowStarted ? "0 0 400px" : 1,
+          flex: workflowStarted ? "0 0 520px" : 1,
           display:"flex", flexDirection:"column",
           background:"linear-gradient(160deg,#0d2044 0%,#081630 60%,#04101f 100%)",
           position:"relative",
@@ -8166,8 +8166,13 @@ function GuruLandingView({
                 {/* ── Headline ── */}
                 <div style={{ animation:"glrFadeIn 0.6s ease", marginBottom: workflowStarted ? 20 : 0 }}>
                   {workflowStarted ? (
-                    <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:20, fontWeight:400, color:"rgba(255,255,255,0.72)", lineHeight:1.25, letterSpacing:"-0.01em", marginBottom:0 }}>
+                    <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:22, fontWeight:400, color:"rgba(255,255,255,0.72)", lineHeight:1.25, letterSpacing:"-0.01em", marginBottom:0 }}>
                       Idle capital,{" "}<span style={{ color:"rgba(94,204,138,0.80)" }}>ready to work.</span>
+                    </div>
+                  ) : showActionTable ? (
+                    /* Compressed header once table is revealed */
+                    <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:36, fontWeight:400, color:"rgba(255,255,255,0.93)", lineHeight:1.08, letterSpacing:"-0.02em", marginBottom:20 }}>
+                      Idle capital,{" "}<span style={{ color:"rgba(94,204,138,0.90)" }}>ready to work.</span>
                     </div>
                   ) : (
                     <>
@@ -8184,16 +8189,19 @@ function GuruLandingView({
                 </div>
 
                 {/* ── 4 stat cards — horizontal ── */}
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom: workflowStarted ? 20 : 48, animation:"glrFadeIn 0.7s ease" }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom: workflowStarted ? 20 : showActionTable ? 20 : 48, animation:"glrFadeIn 0.7s ease" }}>
                   {[
-                    { lbl:"Potential Excess Liquidity",        val:fmt(excessLiquidity),    sub:"idle · 0.30% today",  green:true  },
-                    { lbl:"Potential After-Tax Annual Return", val:`+${fmt(annualPickup)}`, sub:"estimated / year",    green:true  },
-                    { lbl:"Days Sitting Idle",                 val:"47 days",               sub:"since bonus landed",  green:false },
-                    { lbl:"Cash Runway",                       val:"18 months",             sub:"vs. 12-month target", green:false },
+                    { lbl:"Potential Excess Liquidity",        num:fmt(excessLiquidity),    unit:"",         sub:"idle · 0.30% today",  green:true  },
+                    { lbl:"Potential After-Tax Annual Return", num:`+${fmt(annualPickup)}`, unit:"/yr",      sub:"estimated · after-tax", green:true  },
+                    { lbl:"Days Sitting Idle",                 num:"47",                    unit:"days",     sub:"since bonus landed",  green:false },
+                    { lbl:"Cash Runway",                       num:"18",                    unit:"mo",       sub:"vs. 12-month target", green:false },
                   ].map(cell => (
-                    <div key={cell.lbl} className="glr-stat-card" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding: workflowStarted ? "14px 16px" : "22px 20px" }}>
-                      <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginBottom: workflowStarted ? 8 : 12, lineHeight:1.4 }}>{cell.lbl}</div>
-                      <div style={{ fontSize: workflowStarted ? 18 : 30, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.03em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.88)", marginBottom: workflowStarted ? 4 : 8 }}>{cell.val}</div>
+                    <div key={cell.lbl} className="glr-stat-card" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding: workflowStarted || showActionTable ? "14px 16px" : "22px 20px" }}>
+                      <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginBottom: workflowStarted || showActionTable ? 8 : 12, lineHeight:1.4 }}>{cell.lbl}</div>
+                      <div style={{ display:"flex", alignItems:"baseline", gap:4, marginBottom: workflowStarted || showActionTable ? 4 : 8 }}>
+                        <span style={{ fontSize: workflowStarted || showActionTable ? 22 : 30, fontWeight:300, fontVariantNumeric:"tabular-nums" as const, letterSpacing:"-0.03em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.88)" }}>{cell.num}</span>
+                        {cell.unit && <span style={{ fontSize: workflowStarted || showActionTable ? 11 : 13, fontWeight:400, color: cell.green ? "rgba(94,204,138,0.55)" : "rgba(255,255,255,0.35)" }}>{cell.unit}</span>}
+                      </div>
                       <div style={{ fontSize:11, color:"rgba(255,255,255,0.24)" }}>{cell.sub}</div>
                     </div>
                   ))}
@@ -8290,20 +8298,21 @@ function GuruLandingView({
           </div>{/* end padding wrapper */}
           </div>{/* end scrollable content area */}
 
-          {/* ── Sticky bottom CTA — visible even when table pushes content below fold ── */}
+          {/* ── Sticky bottom CTA ── */}
           {showActionTable && !workflowStarted && (
-            <div style={{ position:"relative", zIndex:2, flexShrink:0, borderTop:"1px solid rgba(94,204,138,0.20)", background:"rgba(4,14,28,0.92)", backdropFilter:"blur(8px)", padding:"16px 48px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 8px rgba(94,204,138,0.9)", display:"inline-block", flexShrink:0, animation:"glrPulse 2.2s infinite" }} />
+            <div style={{ position:"relative", zIndex:2, flexShrink:0, borderTop:"1px solid rgba(94,204,138,0.22)", background:"linear-gradient(180deg,rgba(9,24,50,0.97) 0%,rgba(4,14,28,0.99) 100%)", backdropFilter:"blur(12px)", padding:"14px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:24 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 10px rgba(94,204,138,0.9)", display:"inline-block", flexShrink:0, animation:"glrPulse 2.2s infinite" }} />
                 <div>
-                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.06em", color:"rgba(255,255,255,0.70)" }}>GURU has pre-filled all 3 steps</div>
-                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.28)", marginTop:1 }}>Nothing moves until you approve in Step 3</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.82)", letterSpacing:"0.01em" }}>GURU has pre-filled all 3 steps</div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.36)", marginTop:2 }}>Nothing moves until you approve in Step 3</div>
                 </div>
               </div>
               <button
-                className="glr-review-btn"
                 onClick={() => setWorkflowStarted(true)}
-                style={{ padding:"12px 28px", background:"rgba(255,255,255,0.93)", border:"none", cursor:"pointer", fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"hsl(222,45%,12%)", fontFamily:"inherit", whiteSpace:"nowrap" as const }}
+                style={{ padding:"13px 32px", background:"#5ecc8a", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, letterSpacing:"0.09em", textTransform:"uppercase" as const, color:"hsl(222,45%,10%)", fontFamily:"inherit", whiteSpace:"nowrap" as const, boxShadow:"0 0 24px rgba(94,204,138,0.35)", transition:"box-shadow 0.15s, transform 0.12s", flexShrink:0 }}
+                onMouseEnter={e => { (e.target as HTMLElement).style.boxShadow="0 0 36px rgba(94,204,138,0.55)"; (e.target as HTMLElement).style.transform="translateY(-1px)"; }}
+                onMouseLeave={e => { (e.target as HTMLElement).style.boxShadow="0 0 24px rgba(94,204,138,0.35)"; (e.target as HTMLElement).style.transform="translateY(0)"; }}
               >
                 Begin Rebalance &amp; Asset Allocation →
               </button>
@@ -8313,13 +8322,13 @@ function GuruLandingView({
 
         {/* ══════════════════════ RIGHT: Process Overview ══════════════════════ */}
         {workflowStarted && (
-          <div style={{ flex:1, display:"flex", flexDirection:"column", background:"#f0ece5", borderLeft:"1px solid rgba(0,0,0,0.07)", animation:"glrSlideIn 0.45s cubic-bezier(0.22,1,0.36,1)" }}>
+          <div style={{ flex:"0 0 560px", display:"flex", flexDirection:"column", background:"#f0ece5", borderLeft:"1px solid rgba(0,0,0,0.07)", animation:"glrSlideIn 0.45s cubic-bezier(0.22,1,0.36,1)" }}>
 
             {/* Scrollable body */}
             <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column" }}>
 
               {/* Hero headline area */}
-              <div style={{ padding:"52px 52px 36px" }}>
+              <div style={{ padding:"40px 44px 28px" }}>
                 <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.80)", marginBottom:14 }}>
                   GURU has already done the analysis — here's the plan
                 </div>
@@ -8335,7 +8344,7 @@ function GuruLandingView({
               <div style={{ height:1, background:"rgba(0,0,0,0.07)", margin:"0 52px" }} />
 
               {/* Steps */}
-              <div style={{ padding:"32px 52px 0" }}>
+              <div style={{ padding:"20px 44px 0" }}>
                 <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.32)", marginBottom:20 }}>
                   Your Review · 3 Steps · ~6 Minutes
                 </div>
@@ -8383,18 +8392,19 @@ function GuruLandingView({
             </div>
 
             {/* Sticky bottom CTA bar */}
-            <div style={{ borderTop:"1px solid rgba(0,0,0,0.09)", background:"rgba(240,236,229,0.97)", padding:"20px 52px", display:"flex", alignItems:"center", gap:28, flexShrink:0 }}>
+            <div style={{ borderTop:"1px solid rgba(0,0,0,0.09)", background:"rgba(240,236,229,0.97)", padding:"16px 44px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:20, flexShrink:0 }}>
+              <div>
+                <div style={{ fontSize:13, fontWeight:600, color:"hsl(222,45%,12%)" }}>Nothing moves until Step 3.</div>
+                <div style={{ fontSize:11, color:"rgba(0,0,0,0.40)", marginTop:2 }}>Every step is reversible. You stay in control.</div>
+              </div>
               <button
-                className="bb-continue"
                 onClick={() => { setShowLanding(false); setShowBucketBriefing(true); }}
-                style={{ background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, padding:"14px 36px", transition:"background 0.15s", flexShrink:0 }}
+                style={{ background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, padding:"14px 32px", transition:"background 0.15s, transform 0.12s", flexShrink:0, boxShadow:"0 2px 12px rgba(0,0,0,0.20)" }}
+                onMouseEnter={e => { (e.target as HTMLElement).style.background="hsl(222,45%,16%)"; (e.target as HTMLElement).style.transform="translateY(-1px)"; }}
+                onMouseLeave={e => { (e.target as HTMLElement).style.background="hsl(222,45%,12%)"; (e.target as HTMLElement).style.transform="translateY(0)"; }}
               >
                 Begin Step 1 →
               </button>
-              <div>
-                <div style={{ fontSize:12, fontWeight:600, color:"hsl(222,45%,12%)" }}>Nothing moves until Step 3.</div>
-                <div style={{ fontSize:11, color:"rgba(0,0,0,0.40)", marginTop:2 }}>Every step is reversible. You stay in control.</div>
-              </div>
             </div>
           </div>
         )}
