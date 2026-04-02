@@ -9589,11 +9589,11 @@ export default function ClientDashboard() {
           skipLanding={false}
         />
       )}
-      {/* ── Allocation v1 — original alloc-landing-4 (GURU Intel + calculator on begin) ── */}
+      {/* ── Allocation v1 — original live-calc landing (GURU Intel hero bar → rebalancer) ── */}
       {activeView === "guru_v1" && (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
           <iframe
-            src="/alloc-landing-4.html"
+            src="/alloc-v1-original.html"
             title="Allocation v1"
             style={{ flex: 1, width: "100%", border: "none", display: "block", minHeight: 0 }}
           />

@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GURU · Asset Allocation</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f0ece5; color: #1a1a1a; }
+
+@keyframes guruBorderRun {
+  0%   { background-position: 0% 0, 100% 0, 100% 100%, 0% 100%; }
+  100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+}
+@keyframes guruPulse   { 0%,100%{opacity:1} 50%{opacity:0.28} }
+@keyframes blink       { 0%,100%{opacity:1} 50%{opacity:0} }
+@keyframes spin        { to{transform:rotate(360deg)} }
+@keyframes countUp     { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+
+/* ── topbar ── */
+.topbar { background:rgba(240,236,229,0.97); border-bottom:1px solid rgba(0,0,0,0.08); padding:0 32px; display:flex; align-items:center; height:46px; position:sticky; top:0; z-index:100; backdrop-filter:blur(4px); }
+.topbar-logo { font-family:'Playfair Display',Georgia,serif; font-size:17px; color:#1a1a1a; margin-right:28px; }
+.topbar-tab { font-size:12px; font-weight:500; padding:0 16px; height:46px; display:flex; align-items:center; border-bottom:2px solid transparent; color:rgba(0,0,0,0.40); cursor:pointer; }
+.topbar-tab.active { color:#1a1a1a; border-bottom-color:#1a3a6b; }
+.topbar-right { margin-left:auto; font-size:10px; color:rgba(0,0,0,0.35); letter-spacing:0.02em; }
+
+/* ══════════════════════════════════════
+   STATE 1 — LANDING
+══════════════════════════════════════ */
+#state-landing { min-height:calc(100vh - 46px); }
+.wrap { padding:36px 44px 56px; max-width:1440px; margin:0 auto; }
+
+/* wealth total */
+.w-eyebrow { font-size:10px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(0,0,0,0.35); text-align:center; margin-bottom:7px; }
+.w-total { font-family:'Playfair Display',Georgia,serif; font-size:56px; font-weight:400; color:#1a1a1a; text-align:center; letter-spacing:-0.03em; line-height:1; margin-bottom:32px; }
+
+/* ── GURU card ── */
+.guru-card { position:relative; overflow:hidden; background:linear-gradient(155deg,#1a3a6b 0%,#152e5a 50%,#0e2043 100%); border:1px solid rgba(91,143,204,0.20); border-radius:16px; margin-bottom:16px; }
+.guru-card::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:15px;
+  background:
+    linear-gradient(90deg,transparent 0%,rgba(91,143,204,0.55) 50%,transparent 100%) top/200% 1.5px no-repeat,
+    linear-gradient(180deg,transparent 0%,rgba(91,143,204,0.25) 50%,transparent 100%) right/1.5px 200% no-repeat,
+    linear-gradient(90deg,transparent 0%,rgba(91,143,204,0.38) 50%,transparent 100%) bottom/200% 1.5px no-repeat,
+    linear-gradient(180deg,transparent 0%,rgba(91,143,204,0.25) 50%,transparent 100%) left/1.5px 200% no-repeat;
+  animation:guruBorderRun 7s linear infinite;
+}
+.guru-hdr { display:flex; align-items:center; justify-content:space-between; padding:10px 22px; border-bottom:1px solid rgba(255,255,255,0.06); position:relative; z-index:2; }
+.guru-dot { width:7px; height:7px; border-radius:50%; background:#5ecc8a; box-shadow:0 0 7px rgba(94,204,138,0.85); display:inline-block; animation:guruPulse 2.2s infinite; flex-shrink:0; }
+.guru-lbl { font-size:10px; font-weight:700; letter-spacing:0.09em; text-transform:uppercase; color:rgba(94,204,138,0.85); }
+.guru-ai  { display:flex; align-items:center; gap:5px; padding:2px 9px; border:1px solid rgba(91,143,204,0.2); border-radius:2px; background:rgba(91,143,204,0.06); font-size:9px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.36); }
+.guru-body { padding:20px 24px 16px; position:relative; z-index:2; display:grid; grid-template-columns:1fr 280px; gap:32px; align-items:start; }
+.guru-left {}
+.guru-title { font-family:'Playfair Display',Georgia,serif; font-size:26px; font-weight:400; color:rgba(255,255,255,0.92); line-height:1.2; letter-spacing:-0.01em; margin-bottom:14px; }
+.guru-text { font-size:16px; line-height:1.75; color:rgba(255,255,255,0.55); min-height:60px; }
+.guru-text .hi { color:rgba(212,168,67,0.95); font-weight:500; }
+.cursor { display:inline-block; width:2px; height:16px; background:rgba(255,255,255,0.6); margin-left:2px; vertical-align:middle; animation:blink 1s step-end infinite; }
+.spinner-row { display:flex; align-items:center; gap:10px; color:rgba(255,255,255,0.35); font-size:14px; }
+.spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.14); border-top-color:rgba(255,255,255,0.72); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+.calc-spinner { display:inline-block; width:14px; height:14px; border:1.5px solid rgba(255,255,255,0.12); border-top-color:rgba(255,255,255,0.55); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; }
+
+/* mini calc inside GURU card */
+.guru-calc { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 18px; display:flex; flex-direction:column; gap:12px; }
+.gc-title { font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.38); margin-bottom:2px; }
+.gc-row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.07); }
+.gc-row:last-child { border-bottom:none; padding-bottom:0; }
+.gc-row-lbl { font-size:11px; color:rgba(255,255,255,0.45); }
+.gc-row-val { font-family:'Playfair Display',Georgia,serif; font-size:18px; color:rgba(255,255,255,0.88); letter-spacing:-0.02em; font-weight:400; }
+.gc-row-val.amber { color:rgba(212,168,67,0.95); }
+.gc-row-val.green { color:rgba(94,204,138,0.92); }
+.gc-result { background:rgba(94,204,138,0.09); border:1px solid rgba(94,204,138,0.22); border-radius:8px; padding:10px 14px; }
+.gc-result-lbl { font-size:8px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:rgba(94,204,138,0.6); margin-bottom:4px; }
+.gc-result-val { font-family:'Playfair Display',Georgia,serif; font-size:26px; color:rgba(94,204,138,0.95); letter-spacing:-0.02em; line-height:1; }
+.gc-result-sub { font-size:10px; color:rgba(94,204,138,0.55); margin-top:3px; }
+
+
+/* section header */
+.section-hdr { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.section-hdr-line { flex:1; height:1px; background:rgba(0,0,0,0.10); }
+.section-hdr-lbl { font-size:9px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:rgba(0,0,0,0.35); white-space:nowrap; }
+
+/* ── bucket cards ── */
+.buckets-row { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:14px; }
+.b-card { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.06); transition:box-shadow 0.15s,transform 0.12s; cursor:default; }
+.b-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.10); transform:translateY(-1px); }
+.b-top { height:4px; }
+.b-inner { padding:16px 18px 15px; display:flex; flex-direction:column; }
+.b-name { font-family:'Inter',sans-serif; font-size:14px; font-weight:500; color:#1a1a1a; letter-spacing:0; margin-bottom:8px; line-height:1.2; }
+.b-desc { font-family:'Inter',sans-serif; font-size:11px; color:rgba(0,0,0,0.40); line-height:1.4; margin-top:12px; margin-bottom:0; }
+.b-amt { font-family:'Inter',sans-serif; font-size:26px; font-weight:300; color:#1a1a1a; letter-spacing:-0.02em; line-height:1; margin-bottom:10px; }
+.b-yield { display:inline-flex; font-size:11px; font-weight:600; padding:2px 9px; border-radius:20px; margin-bottom:10px; letter-spacing:0.02em; }
+.b-bar-wrap { background:#f0ece5; border-radius:3px; height:5px; overflow:hidden; margin-bottom:8px; }
+.b-bar { height:100%; border-radius:3px; transition:width 1s ease; }
+.b-pct { font-size:10px; color:rgba(0,0,0,0.35); }
+.b-flag { display:inline-flex; font-size:9px; font-weight:700; letter-spacing:0.05em; padding:2px 7px; border-radius:10px; margin-left:6px; }
+.y-op  { background:#e8eef8; color:#1d4ed8; }
+.y-res { background:#f5efd4; color:#7a5c10; }
+.y-bld { background:#e4f2e8; color:#1e4d30; }
+.y-inv { background:#ede8f5; color:#4a1e8a; }
+.y-oth { background:#f0efeb; color:#6b6860; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; }
+.flag-over  { background:#fdecea; color:#be2a2c; border:1px solid #f5a8a8; }
+.flag-idle  { background:#fff5e0; color:#a55b00; border:1px solid #f0ce97; }
+.flag-under { background:#e5f3ee; color:#0d6b50; border:1px solid #b4d9ce; }
+
+/* subaccount rows */
+.b-accts { border-top:1px solid rgba(0,0,0,0.07); margin-top:10px; padding-top:8px; display:flex; flex-direction:column; gap:1px; }
+.b-acct { display:flex; align-items:center; justify-content:space-between; padding:5px 8px; border-radius:6px; gap:8px; }
+.b-acct.excess { background:rgba(190,42,44,0.05); border:1px solid rgba(190,42,44,0.14); }
+.b-acct-left { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.b-acct-name { font-size:10px; font-weight:500; color:#3a3a35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.b-acct-num  { font-size:9px; color:rgba(0,0,0,0.32); letter-spacing:0.04em; }
+.b-acct-right { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.b-acct-amt { font-size:11px; font-weight:600; color:#1a1a1a; font-variant-numeric:tabular-nums; }
+.b-acct-excess { font-size:8px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; background:#be2a2c; color:#fff; padding:1px 6px; border-radius:8px; }
+
+/* allocation bar */
+.alloc-bar-wrap { height:6px; border-radius:4px; overflow:hidden; display:flex; margin-bottom:20px; gap:2px; }
+.alloc-seg { height:100%; border-radius:2px; }
+
+/* ── CTA ── */
+.cta-row { display:flex; justify-content:center; padding-top:4px; }
+.cta-btn { background:#1a2e4a; color:#fff; border:none; padding:18px 52px; border-radius:12px; font-size:14px; font-weight:700; letter-spacing:0.06em; cursor:pointer; font-family:'Inter',sans-serif; box-shadow:0 6px 24px rgba(26,46,74,0.30); transition:background 0.15s,transform 0.1s,box-shadow 0.15s; display:flex; align-items:center; gap:10px; }
+.cta-btn:hover { background:#243f65; transform:translateY(-2px); box-shadow:0 10px 30px rgba(26,46,74,0.35); }
+.cta-arrow { font-size:18px; transition:transform 0.15s; }
+.cta-btn:hover .cta-arrow { transform:translateX(3px); }
+
+/* ══════════════════════════════════════
+   STATE 2 — WORKFLOW
+══════════════════════════════════════ */
+#state-workflow { display:none; min-height:calc(100vh - 46px); }
+.wf-wrap { max-width:1000px; margin:0 auto; padding:28px 44px 56px; display:flex; flex-direction:column; gap:16px; }
+.wf-topbar { display:flex; align-items:center; justify-content:space-between; }
+.wf-title { font-family:'Playfair Display',Georgia,serif; font-size:22px; color:#1a1a1a; letter-spacing:-0.01em; }
+.back-btn { font-size:12px; font-weight:500; color:#1a3a6b; background:rgba(26,58,107,0.08); border:none; padding:7px 16px; border-radius:7px; cursor:pointer; font-family:'Inter',sans-serif; }
+
+/* condensed GURU bar */
+.guru-bar { position:relative; overflow:hidden; background:linear-gradient(160deg,#1a3a6b,#0e2043); border:1px solid rgba(91,143,204,0.2); border-radius:11px; }
+.guru-bar::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:10px;
+  background:
+    linear-gradient(90deg,transparent,rgba(91,143,204,0.5) 50%,transparent) top/200% 1.5px no-repeat,
+    linear-gradient(90deg,transparent,rgba(91,143,204,0.35) 50%,transparent) bottom/200% 1.5px no-repeat;
+  animation:guruBorderRun 7s linear infinite;
+}
+.gb-inner { padding:14px 20px; position:relative; z-index:2; display:flex; align-items:center; gap:14px; }
+.gb-text { font-size:13px; color:rgba(255,255,255,0.6); line-height:1.55; flex:1; }
+.gb-text .hi { color:rgba(212,168,67,0.95); font-weight:500; }
+.gb-kpis { display:flex; gap:24px; flex-shrink:0; padding-left:20px; border-left:1px solid rgba(255,255,255,0.1); }
+.gb-kpi { display:flex; flex-direction:column; gap:2px; }
+.gb-kpi-lbl { font-size:8px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.3); }
+.gb-kpi-val { font-family:'Playfair Display',Georgia,serif; font-size:16px; color:rgba(212,168,67,0.92); letter-spacing:-0.01em; line-height:1; }
+.gb-kpi-val.green { color:rgba(94,204,138,0.9); }
+
+/* step cards */
+.step-card { background:#fff; border:1px solid #e5e2db; border-radius:14px; overflow:hidden; }
+.step-hdr { display:flex; align-items:center; justify-content:space-between; padding:13px 20px; border-bottom:1px solid #f0ede8; }
+.step-hdr-left { display:flex; align-items:center; gap:10px; }
+.step-num { width:22px; height:22px; border-radius:50%; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.step-num.done { background:#e8f5ee; color:#1e6b3c; }
+.step-num.active { background:#1a2e4a; color:#fff; }
+.step-num.locked { background:#f0efeb; color:#9c9c93; }
+.step-title { font-size:13px; font-weight:600; color:#1a1a1a; }
+.step-title.locked { color:#9c9c93; }
+.step-done-badge { font-size:9px; font-weight:700; letter-spacing:0.08em; background:#e8f5ee; color:#1e6b3c; border:1px solid #b4ddc8; padding:2px 9px; border-radius:20px; }
+.step-body { padding:18px 20px; }
+
+/* Step 1 — Liquidity Policy */
+.liq-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.liq-bucket { border:1px solid #e5e2db; border-radius:10px; overflow:hidden; }
+.liq-top { height:3px; }
+.liq-inner { padding:13px 16px; }
+.liq-name { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:#6b6860; margin-bottom:8px; }
+.liq-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#4a4740; padding:3px 0; }
+.liq-row .lv { font-weight:600; color:#1a1a1a; }
+.liq-confirmed { display:flex; align-items:center; gap:6px; margin-top:10px; padding:8px 12px; background:#e8f5ee; border:1px solid #b4ddc8; border-radius:7px; font-size:11px; font-weight:600; color:#1e6b3c; }
+.coverage-bar { height:5px; background:#f0ece5; border-radius:3px; overflow:hidden; margin:8px 0 4px; }
+.coverage-fill { height:100%; border-radius:3px; }
+.step1-summary { margin-top:12px; padding:11px 14px; background:#f8f7f5; border:1px solid #e5e2db; border-radius:8px; font-size:12px; color:#4a4740; display:flex; align-items:center; justify-content:space-between; }
+.step1-summary strong { color:#1a1a1a; }
+
+/* Step 2 — Capital Release */
+.release-table { width:100%; border-collapse:collapse; }
+.release-table th { font-size:9px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#9c9c93; padding:7px 12px; text-align:left; border-bottom:1px solid #f0ede8; background:#faf9f7; }
+.release-table td { padding:11px 12px; font-size:12px; color:#4a4740; border-bottom:1px solid #f8f7f5; vertical-align:middle; }
+.release-table tr:last-child td { border-bottom:none; }
+.acct-cell { display:flex; flex-direction:column; gap:1px; }
+.acct-cell .an { font-size:12px; font-weight:500; color:#1a1a1a; }
+.acct-cell .aref { font-size:10px; color:#9c9c93; }
+.excess-tag { font-size:8px; font-weight:700; background:#be2a2c; color:#fff; padding:1px 6px; border-radius:8px; display:inline-block; }
+.amt-cell { font-size:14px; font-weight:600; color:#be2a2c; font-variant-numeric:tabular-nums; }
+.dest-toggle { display:flex; gap:6px; }
+.dest-btn { font-size:11px; font-weight:600; padding:5px 13px; border-radius:7px; border:1px solid; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.12s; }
+.dest-btn.active-green { background:#e8f5ee; color:#1e4d30; border-color:#b4ddc8; }
+.dest-btn.active-blue  { background:#e8eef8; color:#1a3a6b; border-color:#b4c8e8; }
+.dest-btn.inactive { background:#f5f4f0; color:#9c9c93; border-color:#e5e2db; }
+.release-footer { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#faf9f7; border-top:1px solid #f0ede8; }
+.release-total { font-size:13px; color:#4a4740; }
+.release-total strong { font-size:16px; color:#1a1a1a; }
+.btn-primary { padding:11px 28px; border-radius:9px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; border:none; background:#1a2e4a; color:#fff; letter-spacing:0.02em; box-shadow:0 3px 12px rgba(26,46,74,0.25); }
+.btn-secondary { padding:11px 18px; border-radius:9px; font-size:12px; font-weight:500; cursor:pointer; font-family:'Inter',sans-serif; background:#f0efeb; color:#4a4740; border:1px solid #dedad5; }
+
+/* Step 3 — Product Allocation (locked) */
+.locked-body { padding:28px 20px; display:flex; flex-direction:column; align-items:center; gap:10px; opacity:0.45; }
+.lock-icon { width:36px; height:36px; border-radius:50%; background:#f0efeb; border:1px solid #dedad5; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.lock-text { font-size:13px; color:#6b6860; text-align:center; }
+.lock-sub { font-size:11px; color:#9c9c93; text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">GURU</div>
+  <div style="display:flex;">
+    <div class="topbar-tab">Dashboard</div>
+    <div class="topbar-tab">Cash Movement</div>
+    <div class="topbar-tab active">Allocation</div>
+    <div class="topbar-tab">Tax</div>
+    <div class="topbar-tab">Advisor Brief</div>
+  </div>
+  <div class="topbar-right">GURU flagged 2 items &middot; last checked 4 hours ago</div>
+</div>
+
+<!-- ═══════════════════════════════
+     STATE 1 — LANDING
+═══════════════════════════════ -->
+<div id="state-landing">
+<div class="wrap">
+
+  <!-- GURU Intelligence — with embedded mini-calc -->
+  <div class="guru-card">
+    <div class="guru-hdr">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="guru-dot"></div>
+        <span class="guru-lbl">GURU Intelligence</span>
+      </div>
+      <div class="guru-ai">
+        <div class="guru-dot" style="width:5px;height:5px;box-shadow:none;"></div>
+        Editorial &middot; AI
+      </div>
+    </div>
+    <div class="guru-body">
+      <div class="guru-left">
+        <div class="guru-title">Strong Liquidity.<br>Time to Generate More Alpha.</div>
+        <div class="guru-text" id="guru-text">
+          <div class="spinner-row"><div class="spinner"></div>&nbsp;Analyzing cash flow forecast and bucket positions&hellip;</div>
+        </div>
+      </div>
+      <!-- Mini calculator — visible on landing -->
+      <div class="guru-calc">
+        <div class="gc-title">The Opportunity · Live Calc</div>
+        <div class="gc-result" style="margin-bottom:4px;">
+          <div class="gc-result-lbl">Excess Liquidity</div>
+          <div class="gc-result-val" id="kpi-deploy"><span class="calc-spinner" style="border-top-color:rgba(94,204,138,0.9);"></span></div>
+          <div class="gc-result-sub" id="kpi-deploy-sub" style="opacity:0;">sitting idle across 3 accounts · 47 days</div>
+        </div>
+        <div class="gc-row">
+          <span class="gc-row-lbl">→ Capital Build (40%)</span>
+          <span class="gc-row-val" style="color:rgba(255,255,255,0.72);" id="kpi-build"><span class="calc-spinner"></span></span>
+        </div>
+        <div class="gc-row">
+          <span class="gc-row-lbl">→ Investments (60%)</span>
+          <span class="gc-row-val" style="color:rgba(255,255,255,0.72);" id="kpi-inv"><span class="calc-spinner"></span></span>
+        </div>
+        <div class="gc-result" style="margin-top:4px;">
+          <div class="gc-result-lbl">After-Tax Annual Pickup</div>
+          <div class="gc-result-val" id="kpi-pickup"><span class="calc-spinner" style="border-top-color:rgba(94,204,138,0.9);"></span></div>
+          <div class="gc-result-sub" id="kpi-sub" style="opacity:0;">vs. current 0.01% idle cash yield</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA footer — inside GURU card, after the analysis resolves -->
+    <div style="padding:0 24px 18px;position:relative;z-index:2;">
+      <div style="border-top:1px solid rgba(255,255,255,0.07);padding-top:16px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.32);line-height:1.5;">GURU has identified an action.<br>Review and confirm to deploy capital.</div>
+        <button onclick="enterPreview()" style="font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:rgba(94,204,138,0.15);color:rgba(94,204,138,0.95);border:1px solid rgba(94,204,138,0.30);padding:11px 28px;border-radius:6px;cursor:pointer;transition:background 0.15s,border-color 0.15s;display:flex;align-items:center;gap:9px;">
+          Rebalance and Maximize Wealth
+          <span style="font-size:14px;">→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="buckets-row">
+    <div class="b-card">
+      <div class="b-top" style="background:#1d4ed8;"></div>
+      <div class="b-inner">
+        <div class="b-name">Operating Cash</div>
+        <div class="b-amt">$132,050</div>
+        <div><span class="b-yield y-op">0.01% blended</span></div>
+        <div class="b-bar-wrap" style="margin-top:10px;"><div class="b-bar" style="background:#1d4ed8;width:14%;"></div></div>
+        <div class="b-pct">2.1% of AUM</div>
+        <div class="b-accts">
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Citizens Private Checking</div>
+              <div class="b-acct-num">·· 2847</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$82,050</div></div>
+          </div>
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">SoFi High-Yield Checking</div>
+              <div class="b-acct-num">·· 3391</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$50,000</div></div>
+          </div>
+        </div>
+        <div class="b-desc">Cash for upcoming expenditures</div>
+      </div>
+    </div>
+
+    <div class="b-card">
+      <div class="b-top" style="background:#8a6920;"></div>
+      <div class="b-inner">
+        <div class="b-name">Reserve Cash</div>
+        <div class="b-amt">$426,586</div>
+        <div><span class="b-yield y-res">4.60% blended</span></div>
+        <div class="b-bar-wrap" style="margin-top:10px;"><div class="b-bar" style="background:#8a6920;width:44%;"></div></div>
+        <div class="b-pct">6.9% of AUM</div>
+        <div class="b-accts">
+          <div class="b-acct excess">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Citizens Bank Money Market</div>
+              <div class="b-acct-num">·· 7204</div>
+            </div>
+            <div class="b-acct-right">
+              <div class="b-acct-amt">$225,000</div>
+              <div class="b-acct-excess">EXCESS</div>
+            </div>
+          </div>
+          <div class="b-acct excess">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Citizens High Yield Savings</div>
+              <div class="b-acct-num">·· 1482</div>
+            </div>
+            <div class="b-acct-right">
+              <div class="b-acct-amt">$100,440</div>
+              <div class="b-acct-excess">EXCESS</div>
+            </div>
+          </div>
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">JPMorgan 100% Tsy MMF</div>
+              <div class="b-acct-num">·· 4976</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$101,146</div></div>
+          </div>
+        </div>
+        <div class="b-desc">Active cash management for what's next</div>
+      </div>
+    </div>
+
+    <div class="b-card">
+      <div class="b-top" style="background:#1e4d30;"></div>
+      <div class="b-inner">
+        <div class="b-name">Capital Build</div>
+        <div class="b-amt">$135,000</div>
+        <div><span class="b-yield y-bld">4.85% avg</span></div>
+        <div class="b-bar-wrap" style="margin-top:10px;"><div class="b-bar" style="background:#1e4d30;width:14%;"></div></div>
+        <div class="b-pct">2.2% of AUM</div>
+        <div class="b-accts">
+          <div class="b-acct excess">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Fidelity Cash Sweep</div>
+              <div class="b-acct-num">·· 4976 · idle</div>
+            </div>
+            <div class="b-acct-right">
+              <div class="b-acct-amt">$174,000</div>
+              <div class="b-acct-excess">EXCESS</div>
+            </div>
+          </div>
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">3-Mo T-Bill Ladder</div>
+              <div class="b-acct-num">·· 1142 · matures Mar 31</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$135,000</div></div>
+          </div>
+        </div>
+        <div class="b-desc">Disciplined saving for big goals on the horizon</div>
+      </div>
+    </div>
+
+    <div class="b-card">
+      <div class="b-top" style="background:#5b8bd6;"></div>
+      <div class="b-inner">
+        <div class="b-name">Investments</div>
+        <div class="b-amt">$2,509,500</div>
+        <div><span class="b-yield y-inv">10.0% est.</span></div>
+        <div class="b-bar-wrap" style="margin-top:10px;"><div class="b-bar" style="background:#5b8bd6;width:100%;"></div></div>
+        <div class="b-pct">40.8% of AUM</div>
+        <div class="b-accts">
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">CIO Sector Rotation Fund</div>
+              <div class="b-acct-num">Fidelity · Growth equity</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$1,250,000</div></div>
+          </div>
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Small Cap Sleeve</div>
+              <div class="b-acct-num">Fidelity · High growth</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$875,000</div></div>
+          </div>
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Cresset Short Duration</div>
+              <div class="b-acct-num">Fixed income anchor</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$384,500</div></div>
+          </div>
+        </div>
+        <div class="b-desc">Long-term compounded investing</div>
+      </div>
+    </div>
+
+    <div class="b-card">
+      <div class="b-top" style="background:rgba(0,0,0,0.13);"></div>
+      <div class="b-inner">
+        <div class="b-name">Other Assets</div>
+        <div class="b-amt">$2,945,100</div>
+        <div><span class="b-yield y-oth">Unallocated</span></div>
+        <div class="b-bar-wrap" style="margin-top:10px;"><div class="b-bar" style="background:rgba(0,0,0,0.18);width:100%;"></div></div>
+        <div class="b-pct">47.9% of AUM</div>
+        <div class="b-accts">
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Primary Residence</div>
+              <div class="b-acct-num">Westchester, NY</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$1,800,000</div></div>
+          </div>
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Investment Property</div>
+              <div class="b-acct-num">Palm Beach, FL</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$750,000</div></div>
+          </div>
+          <div class="b-acct">
+            <div class="b-acct-left">
+              <div class="b-acct-name">Unvested RSUs</div>
+              <div class="b-acct-num">Vesting 2025–2027</div>
+            </div>
+            <div class="b-acct-right"><div class="b-acct-amt">$395,100</div></div>
+          </div>
+        </div>
+        <div class="b-desc">Real estate &amp; alternatives</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:flex-end;gap:10px;margin-top:10px;padding:0 2px;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:rgba(0,0,0,0.32);">Total Assets</div>
+    <div style="font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:400;color:#1a1a1a;letter-spacing:-0.02em;line-height:1;">$6,148,236</div>
+  </div>
+
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════
+     STATE 2 — THREE-CARD PREVIEW
+═══════════════════════════════ -->
+<div id="state-preview" style="display:none;min-height:calc(100vh - 46px);display:none;align-items:center;justify-content:center;">
+<div style="flex:1;padding:32px 48px 40px;display:flex;flex-direction:column;align-items:center;justify-content:center;max-width:900px;margin:0 auto;width:100%;">
+
+  <div style="font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(0,0,0,0.38);margin-bottom:16px;text-align:center;">GURU Flagged 2 Items · Ready When You Are</div>
+
+  <div style="font-family:'Playfair Display',Georgia,serif;font-size:32px;font-weight:400;color:#1a1a1a;line-height:1.25;margin-bottom:12px;text-align:center;max-width:480px;letter-spacing:-0.01em;">Rebalance and Maximize Wealth Now</div>
+
+  <div style="font-size:13px;color:rgba(0,0,0,0.50);line-height:1.75;margin-bottom:36px;max-width:480px;text-align:center;">
+    GURU monitors continuously and flags when the portfolio can do more. Walk through the review at your own pace — or activate auto-execution for next time.
+  </div>
+
+  <!-- Step cards — exact layout from codebase: 1fr 22px 1fr 22px 1fr -->
+  <div style="display:grid;grid-template-columns:1fr 22px 1fr 22px 1fr;align-items:stretch;width:100%;margin-bottom:28px;">
+
+    <!-- Card 1 -->
+    <div style="background:#fff;border:1px solid rgba(0,0,0,0.09);border-radius:8px;padding:18px 16px;text-align:left;display:flex;flex-direction:column;">
+      <div style="width:26px;height:26px;border-radius:50%;background:#1a2e4a;color:rgba(255,255,255,0.9);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:11px;flex-shrink:0;">1</div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:400;color:#1a1a1a;margin-bottom:6px;line-height:1.3;">Asset Allocation Rebalancing</div>
+      <div style="font-size:12px;color:rgba(0,0,0,0.55);line-height:1.6;flex:1;">Review suggested coverage targets and confirm transfer amounts across your liquidity buckets.</div>
+      <span style="display:inline-block;margin-top:12px;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 8px;border-radius:2px;background:rgba(26,46,74,0.07);color:#1a2e4a;border:1px solid rgba(26,46,74,0.14);">~3 min · GURU pre-filled</span>
+    </div>
+
+    <!-- Arrow -->
+    <div style="display:flex;align-items:center;justify-content:center;font-size:14px;color:rgba(0,0,0,0.18);">→</div>
+
+    <!-- Card 2 -->
+    <div style="background:#fff;border:1px solid rgba(0,0,0,0.09);border-radius:8px;padding:18px 16px;text-align:left;display:flex;flex-direction:column;">
+      <div style="width:26px;height:26px;border-radius:50%;background:#1a2e4a;color:rgba(255,255,255,0.9);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:11px;flex-shrink:0;">2</div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:400;color:#1a1a1a;margin-bottom:6px;line-height:1.3;">Product Selection</div>
+      <div style="font-size:12px;color:rgba(0,0,0,0.55);line-height:1.6;flex:1;">Choose instruments — T-bills, money markets, short bonds — ranked by after-tax yield for your profile.</div>
+      <span style="display:inline-block;margin-top:12px;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 8px;border-radius:2px;background:rgba(26,46,74,0.07);color:#1a2e4a;border:1px solid rgba(26,46,74,0.14);">~2 min · ranked for you</span>
+    </div>
+
+    <!-- Arrow -->
+    <div style="display:flex;align-items:center;justify-content:center;font-size:14px;color:rgba(0,0,0,0.18);">→</div>
+
+    <!-- Card 3 -->
+    <div style="background:#fff;border:1px solid rgba(0,0,0,0.09);border-radius:8px;padding:18px 16px;text-align:left;display:flex;flex-direction:column;">
+      <div style="width:26px;height:26px;border-radius:50%;background:#1a2e4a;color:rgba(255,255,255,0.9);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:11px;flex-shrink:0;">3</div>
+      <div style="font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:400;color:#1a1a1a;margin-bottom:6px;line-height:1.3;">Confirm &amp; Execute</div>
+      <div style="font-size:12px;color:rgba(0,0,0,0.55);line-height:1.6;flex:1;">Review the full before/after and send for execution. Activate auto-execute for future events.</div>
+      <span style="display:inline-block;margin-top:12px;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 8px;border-radius:2px;background:rgba(26,46,74,0.07);color:#1a2e4a;border:1px solid rgba(26,46,74,0.14);">~1 min · auto-execute available</span>
+    </div>
+
+  </div>
+
+  <!-- CTA — exact from codebase -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+    <button onclick="enterWorkflow()" style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:#1a2e4a;color:rgba(255,255,255,0.92);border:none;cursor:pointer;padding:13px 48px;border-radius:2px;">
+      Start the Review →
+    </button>
+    <span style="font-size:10px;color:rgba(0,0,0,0.38);">~6 minutes · reversible at every step</span>
+  </div>
+
+  <div style="margin-top:20px;">
+    <button class="back-btn" onclick="backToLanding()">&larr; Back to Overview</button>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════════
+     STATE 3 — WORKFLOW (iframe)
+═══════════════════════════════ -->
+<div id="state-workflow" style="display:none;flex-direction:column;min-height:calc(100vh - 46px);">
+
+  <!-- Slim nav bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 28px;background:rgba(240,236,229,0.97);border-bottom:1px solid rgba(0,0,0,0.08);flex-shrink:0;">
+    <button class="back-btn" onclick="backToPreview()">&larr; Back to Plan</button>
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,0,0,0.35);">Step 1 of 3 &middot; Asset Allocation Rebalancing</div>
+    <div style="width:110px;"></div>
+  </div>
+
+  <!-- Full-height iframe — real allocation workflow -->
+  <iframe
+    src="allocation-tab-mockup.html?embedded=1"
+    style="flex:1;width:100%;border:none;display:block;min-height:calc(100vh - 92px);"
+    title="Allocation Workflow"
+  ></iframe>
+
+</div>
+
+<!-- hidden placeholder so nothing below breaks -->
+<div style="display:none;"><div class="wf-wrap">
+
+  <!-- legacy step cards kept for reference only — not rendered -->
+  <div class="wf-topbar">
+    <div class="wf-title">Allocation Rebalancer</div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="back-btn" onclick="backToPreview()">&larr; Back to Plan</button>
+      <button class="btn-primary" style="opacity:0.45;cursor:not-allowed;">Execute All →</button>
+    </div>
+  </div>
+
+  <!-- Condensed GURU bar with KPIs -->
+  <div class="guru-bar">
+    <div class="gb-inner">
+      <div class="guru-dot"></div>
+      <div class="gb-text">The Kesslers have <span class="hi">$499,440</span> sitting idle across 3 accounts for <span class="hi">47 days</span>. GURU recommends deploying into Capital Build + Investments — est. after-tax pickup of <span class="hi">+$21,600/yr</span>.</div>
+      <div class="gb-kpis">
+        <div class="gb-kpi">
+          <div class="gb-kpi-lbl">Excess Liquidity</div>
+          <div class="gb-kpi-val">$499,440</div>
+        </div>
+        <div class="gb-kpi">
+          <div class="gb-kpi-lbl">After-Tax Pickup</div>
+          <div class="gb-kpi-val green">+$21,600/yr</div>
+        </div>
+        <div class="gb-kpi">
+          <div class="gb-kpi-lbl">Days Idle</div>
+          <div class="gb-kpi-val" style="color:rgba(255,100,100,0.85);">47</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 1: Liquidity Policy (COMPLETE) ── -->
+  <div class="step-card">
+    <div class="step-hdr">
+      <div class="step-hdr-left">
+        <div class="step-num done">✓</div>
+        <div class="step-title">Step 1 — Liquidity Policy</div>
+      </div>
+      <div class="step-done-badge">Confirmed by GURU</div>
+    </div>
+    <div class="step-body">
+      <div class="liq-grid">
+        <div class="liq-bucket">
+          <div class="liq-top" style="background:#2e5c8a;"></div>
+          <div class="liq-inner">
+            <div class="liq-name">Operating Cash</div>
+            <div class="liq-row"><span>Current</span><span class="lv">$132,050</span></div>
+            <div class="liq-row"><span>Target (2 months)</span><span class="lv">$83,760</span></div>
+            <div class="coverage-bar"><div class="coverage-fill" style="background:#2e5c8a;width:100%;"></div></div>
+            <div style="font-size:10px;color:#2e5c8a;font-weight:600;">2.0 months coverage · At target</div>
+            <div class="liq-confirmed">&#10003; Policy confirmed — no change needed</div>
+          </div>
+        </div>
+        <div class="liq-bucket">
+          <div class="liq-top" style="background:#8a6e2e;"></div>
+          <div class="liq-inner">
+            <div class="liq-name">Reserve Cash</div>
+            <div class="liq-row"><span>Current</span><span class="lv">$426,586</span></div>
+            <div class="liq-row"><span>Target (12 months)</span><span class="lv">$251,280</span></div>
+            <div class="coverage-bar"><div class="coverage-fill" style="background:#8a6e2e;width:100%;"></div></div>
+            <div style="font-size:10px;color:#8a6e2e;font-weight:600;">20.3 months coverage · <span style="color:#be2a2c;">$175,306 excess</span></div>
+            <div class="liq-confirmed" style="background:#fdecea;border-color:#f5a8a8;color:#be2a2c;">&#9888; Excess identified — flagged for release</div>
+          </div>
+        </div>
+      </div>
+      <div class="step1-summary">
+        <span>Total excess liquidity flagged for deployment</span>
+        <strong>$499,440 across 3 accounts</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Capital Release (ACTIVE) ── -->
+  <div class="step-card" style="border-color:#1a2e4a;">
+    <div class="step-hdr" style="border-bottom-color:#eaedf5;background:#f8f9fc;">
+      <div class="step-hdr-left">
+        <div class="step-num active">2</div>
+        <div class="step-title">Step 2 — Capital Release</div>
+      </div>
+      <span style="font-size:11px;color:#6b6860;">Select destination for each flagged account</span>
+    </div>
+    <div class="step-body" style="padding:0;">
+      <table class="release-table">
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Excess</th>
+            <th>→ Capital Build</th>
+            <th>→ Investments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="acct-cell">
+                <div class="an">Citizens Bank Money Market</div>
+                <div class="aref">·· 7204 · Reserve Cash</div>
+              </div>
+            </td>
+            <td><div class="amt-cell">$225,000</div><div style="margin-top:3px;"><span class="excess-tag">EXCESS</span></div></td>
+            <td>
+              <div class="dest-toggle">
+                <button class="dest-btn active-green" onclick="toggleDest(this,'green')">40% · $90,000</button>
+                <button class="dest-btn inactive" onclick="toggleDest(this,'green')">100%</button>
+              </div>
+            </td>
+            <td>
+              <div class="dest-toggle">
+                <button class="dest-btn active-blue" onclick="toggleDest(this,'blue')">60% · $135,000</button>
+                <button class="dest-btn inactive" onclick="toggleDest(this,'blue')">100%</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="acct-cell">
+                <div class="an">Citizens High Yield Savings</div>
+                <div class="aref">·· 1482 · Reserve Cash</div>
+              </div>
+            </td>
+            <td><div class="amt-cell">$100,440</div><div style="margin-top:3px;"><span class="excess-tag">EXCESS</span></div></td>
+            <td>
+              <div class="dest-toggle">
+                <button class="dest-btn active-green" onclick="toggleDest(this,'green')">40% · $40,176</button>
+                <button class="dest-btn inactive">100%</button>
+              </div>
+            </td>
+            <td>
+              <div class="dest-toggle">
+                <button class="dest-btn active-blue" onclick="toggleDest(this,'blue')">60% · $60,264</button>
+                <button class="dest-btn inactive">100%</button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="acct-cell">
+                <div class="an">Fidelity Cash Sweep</div>
+                <div class="aref">·· 4976 · Capital Build</div>
+              </div>
+            </td>
+            <td><div class="amt-cell">$174,000</div><div style="margin-top:3px;"><span class="excess-tag">EXCESS</span></div></td>
+            <td>
+              <div class="dest-toggle">
+                <button class="dest-btn active-green" onclick="toggleDest(this,'green')">40% · $69,600</button>
+                <button class="dest-btn inactive">100%</button>
+              </div>
+            </td>
+            <td>
+              <div class="dest-toggle">
+                <button class="dest-btn active-blue" onclick="toggleDest(this,'blue')">60% · $104,400</button>
+                <button class="dest-btn inactive">100%</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="release-footer">
+        <div class="release-total">Total to deploy: <strong>$499,440</strong> &nbsp;·&nbsp; Capital Build <strong>$199,776</strong> &nbsp;·&nbsp; Investments <strong>$299,664</strong></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secondary">Adjust Split</button>
+          <button class="btn-primary" onclick="unlockStep3()">Find Best Products →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Product Allocation (LOCKED) ── -->
+  <div class="step-card" id="step3-card" style="border-color:#e5e2db;">
+    <div class="step-hdr">
+      <div class="step-hdr-left">
+        <div class="step-num locked" id="step3-num">3</div>
+        <div class="step-title locked" id="step3-title">Step 3 — Product Allocation</div>
+      </div>
+      <span style="font-size:11px;color:#c0bdb8;">Complete Step 2 to unlock</span>
+    </div>
+    <div class="locked-body" id="step3-locked">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-text">Product recommendations load after capital release is confirmed</div>
+      <div class="lock-sub">GURU will analyze yield, duration, and tax efficiency across your approved product list</div>
+    </div>
+    <!-- Product cards — hidden until unlocked -->
+    <div id="step3-products" style="display:none;" class="step-body">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:#6b6860;">
+        <div class="guru-dot" style="width:7px;height:7px;background:#5ecc8a;box-shadow:0 0 7px rgba(94,204,138,0.85);border-radius:50%;animation:guruPulse 2.2s infinite;"></div>
+        GURU is recommending products for <strong style="color:#1a1a1a;margin-left:2px;">$199,776 → Capital Build</strong> and <strong style="color:#1a1a1a;margin-left:2px;">$299,664 → Investments</strong>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <!-- Product 1 -->
+        <div style="border:2px solid #b4ddc8;border-radius:11px;overflow:hidden;background:#f8fdf9;">
+          <div style="background:#1e4d30;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;color:rgba(255,255,255,0.9);">CAPITAL BUILD</span>
+            <span style="font-size:8px;font-weight:700;background:rgba(94,204,138,0.25);color:rgba(94,204,138,0.95);border:1px solid rgba(94,204,138,0.35);padding:2px 8px;border-radius:20px;">RECOMMENDED</span>
+          </div>
+          <div style="padding:14px;">
+            <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:2px;">6-Month T-Bill Ladder</div>
+            <div style="font-size:10px;color:#6b6860;margin-bottom:12px;">Zero credit risk · Fed-backed · Laddered maturities</div>
+            <div style="font-size:28px;font-weight:300;color:#1e4d30;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;line-height:1;margin-bottom:2px;">4.85%</div>
+            <div style="font-size:10px;color:#4a7c2a;margin-bottom:12px;">After-tax yield · State/local exempt</div>
+            <div style="border-top:1px solid #e5e2db;padding-top:10px;font-size:12px;color:#0d6b50;font-weight:600;">+$9,689/yr on $199,776</div>
+          </div>
+        </div>
+        <!-- Product 2 -->
+        <div style="border:2px solid #b4c8e8;border-radius:11px;overflow:hidden;background:#f8fafd;">
+          <div style="background:#1a3a6b;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;color:rgba(255,255,255,0.9);">INVESTMENTS</span>
+            <span style="font-size:8px;font-weight:700;background:rgba(91,143,204,0.25);color:rgba(140,185,230,0.95);border:1px solid rgba(91,143,204,0.35);padding:2px 8px;border-radius:20px;">RECOMMENDED</span>
+          </div>
+          <div style="padding:14px;">
+            <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:2px;">CIO Sector Rotation Fund</div>
+            <div style="font-size:10px;color:#6b6860;margin-bottom:12px;">Active equity · Reduced market correlation</div>
+            <div style="font-size:28px;font-weight:300;color:#1a3a6b;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;line-height:1;margin-bottom:2px;">6.80%</div>
+            <div style="font-size:10px;color:#4a6fa5;margin-bottom:12px;">Est. after-tax return · Long-term growth</div>
+            <div style="border-top:1px solid #e5e2db;padding-top:10px;font-size:12px;color:#0d6b50;font-weight:600;">+$11,911/yr on $299,664</div>
+          </div>
+        </div>
+        <!-- Product 3 -->
+        <div style="border:1px solid #e5e2db;border-radius:11px;overflow:hidden;background:#fafaf8;">
+          <div style="background:#2a4060;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;color:rgba(255,255,255,0.9);">INVESTMENTS</span>
+            <span style="font-size:8px;font-weight:700;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.55);padding:2px 8px;border-radius:20px;">ALTERNATIVE</span>
+          </div>
+          <div style="padding:14px;">
+            <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:2px;">Cresset Short Duration</div>
+            <div style="font-size:10px;color:#6b6860;margin-bottom:12px;">Fixed income anchor · Rate hedge</div>
+            <div style="font-size:28px;font-weight:300;color:#2a4060;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;line-height:1;margin-bottom:2px;">5.20%</div>
+            <div style="font-size:10px;color:#4a5a70;margin-bottom:12px;">After-tax yield · Lower volatility</div>
+            <div style="border-top:1px solid #e5e2db;padding-top:10px;font-size:12px;color:#6b6860;">+$9,122/yr on $175,000</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:13px 0 0;border-top:1px solid #f0ede8;">
+        <div style="font-size:12px;color:#4a4740;">Total projected after-tax pickup: <strong style="color:#1e6b3c;font-size:14px;">+$21,600/yr</strong></div>
+        <button class="btn-primary" style="background:#1e4d30;box-shadow:0 3px 12px rgba(30,77,48,0.30);">✓ Confirm Allocation &amp; Execute</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+</div><!-- /hidden placeholder -->
+
+<script>
+  // ── GURU typewriter ──
+  const narrative = "The Kesslers had a strong end of year and are now sitting on excess liquidity for 47 days after a $753,000 cash bonus. GURU has analyzed their cash flow forecast and identified $499,440 in excess liquidity across three accounts. We can generate better returns by optimizing fixed income products and putting cash to work in their investment strategy.";
+  const el = document.getElementById('guru-text');
+  let typed = 0;
+
+  function hl(s) {
+    return s.replace(/\$[\d,]+/g, m => '<span class="hi">' + m + '</span>')
+            .replace(/\d+ days/g, m => '<span class="hi">' + m + '</span>');
+  }
+
+  setTimeout(() => {
+    el.innerHTML = '<span class="cursor"></span>';
+    step();
+  }, 1500);
+
+  function step() {
+    if (typed < narrative.length) {
+      typed++;
+      el.innerHTML = hl(narrative.slice(0, typed)) + '<span class="cursor"></span>';
+      setTimeout(step, typed < 15 ? 50 : 16);
+    } else {
+      el.innerHTML = hl(narrative);
+    }
+  }
+
+  // ── Mini-calc: spinner → reveal after GURU analysis delay ──
+  function revealCalc() {
+    const deploy = 499440, build = 199776, inv = 299664, pickup = 21600;
+
+    const elDeploy    = document.getElementById('kpi-deploy');
+    const elDeploySub = document.getElementById('kpi-deploy-sub');
+    const elBuild     = document.getElementById('kpi-build');
+    const elInv       = document.getElementById('kpi-inv');
+    const elPickup    = document.getElementById('kpi-pickup');
+    const elSub       = document.getElementById('kpi-sub');
+
+    function reveal(el, text, delay) {
+      setTimeout(() => {
+        el.style.transition = 'opacity 0.4s';
+        el.style.opacity = '0';
+        el.innerHTML = text;
+        requestAnimationFrame(() => { el.style.opacity = ''; });
+      }, delay);
+    }
+
+    reveal(elDeploy, '$' + deploy.toLocaleString(), 0);
+    setTimeout(() => { elDeploySub.style.opacity = '1'; elDeploySub.style.transition = 'opacity 0.5s'; }, 240);
+    reveal(elBuild,  '$' + build.toLocaleString(),  380);
+    reveal(elInv,    '$' + inv.toLocaleString(),     560);
+    reveal(elPickup, '+$' + pickup.toLocaleString(), 740);
+    setTimeout(() => { elSub.style.opacity = '1'; elSub.style.transition = 'opacity 0.5s'; }, 960);
+  }
+
+  // Spinners show for ~1.8s while typewriter runs, then numbers appear
+  setTimeout(revealCalc, 1800);
+
+  // ── State transitions ──
+  // Landing → Preview (three-card summary)
+  function enterPreview() {
+    document.getElementById('state-landing').style.display = 'none';
+    document.getElementById('state-preview').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+
+  // Preview → Workflow (iframe rebalancer)
+  function enterWorkflow() {
+    document.getElementById('state-preview').style.display = 'none';
+    document.getElementById('state-workflow').style.display = 'flex';
+    window.scrollTo(0, 0);
+  }
+
+  function backToPreview() {
+    document.getElementById('state-workflow').style.display = 'none';
+    document.getElementById('state-preview').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+
+  function backToLanding() {
+    document.getElementById('state-workflow').style.display = 'none';
+    document.getElementById('state-preview').style.display = 'none';
+    document.getElementById('state-landing').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+
+  // ── Step 3 unlock ──
+  function unlockStep3() {
+    const card = document.getElementById('step3-card');
+    const num  = document.getElementById('step3-num');
+    const ttl  = document.getElementById('step3-title');
+    const locked   = document.getElementById('step3-locked');
+    const products = document.getElementById('step3-products');
+    card.style.borderColor = '#1e4d30';
+    num.className = 'step-num active';
+    num.style.background = '#1e4d30';
+    ttl.className = 'step-title';
+    locked.style.display = 'none';
+    products.style.display = 'block';
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── Destination toggle (visual only) ──
+  function toggleDest(btn, color) {
+    const siblings = btn.parentElement.querySelectorAll('.dest-btn');
+    const cls = color === 'green' ? 'active-green' : 'active-blue';
+    siblings.forEach(b => { b.className = 'dest-btn inactive'; });
+    btn.className = 'dest-btn ' + cls;
+  }
+</script>
+</body>
+</html>
