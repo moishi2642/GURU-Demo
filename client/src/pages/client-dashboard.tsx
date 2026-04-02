@@ -8131,13 +8131,16 @@ function GuruLandingView({
           flex: workflowStarted ? "0 0 400px" : 1,
           display:"flex", flexDirection:"column",
           background:"linear-gradient(160deg,#0d2044 0%,#081630 60%,#04101f 100%)",
-          overflowY:"auto", position:"relative",
+          position:"relative",
           transition:"flex 0.45s cubic-bezier(0.22,1,0.36,1)",
+          minHeight:0,
         }}>
           {/* Dot grid */}
-          <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px)", backgroundSize:"22px 22px", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px)", backgroundSize:"22px 22px", pointerEvents:"none", zIndex:0 }} />
 
-          <div style={{ position:"relative", zIndex:1, padding: workflowStarted ? "28px 28px 36px" : "48px 48px 60px", margin: workflowStarted ? 0 : "0 auto", width:"100%", maxWidth: workflowStarted ? "none" : 900, display:"flex", flexDirection:"column" }}>
+          {/* Scrollable content area */}
+          <div style={{ flex:1, overflowY:"auto", position:"relative", zIndex:1 }}>
+          <div style={{ padding: workflowStarted ? "28px 28px 36px" : "48px 48px 60px", margin: workflowStarted ? 0 : "0 auto", width:"100%", maxWidth: workflowStarted ? "none" : 900, display:"flex", flexDirection:"column" }}>
 
             {/* ── Eyebrow (full-screen only) ── */}
             {!workflowStarted && (
@@ -8205,7 +8208,7 @@ function GuruLandingView({
                         <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.5s infinite" }} />
                         <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.80)" }}>GURU's Recommended Actions</span>
                         <div style={{ flex:1, height:1, background:"rgba(94,204,138,0.15)" }} />
-                        <span style={{ fontSize:13, fontWeight:300, fontVariantNumeric:"tabular-nums", color:"rgba(255,255,255,0.55)", letterSpacing:"-0.01em" }}>{fmt(excessLiquidity)} total</span>
+                        <span style={{ fontSize:13, fontWeight:300, fontVariantNumeric:"tabular-nums", color:"rgba(255,255,255,0.55)", letterSpacing:"-0.01em" }}>{fmt(excessLiquidity).replace("$","")} total</span>
                       </div>
                     )}
                     {/* Collapsed header in split mode */}
@@ -8213,9 +8216,8 @@ function GuruLandingView({
                       <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.55)", marginBottom:8 }}>Recommended Transfers</div>
                     )}
 
-                    {/* ── Bloomberg-terminal action table + CTA (side by side) ── */}
-                    <div style={{ display:"flex", alignItems:"stretch", gap:0 }}>
-                    <div style={{ flex:1, border:"1.5px solid rgba(94,204,138,0.45)", background:"rgba(4,16,31,0.60)", overflow:"hidden", marginBottom: workflowStarted ? 0 : 0, fontVariantNumeric:"tabular-nums" as const }}>
+                    {/* ── Bloomberg-terminal action table ── */}
+                    <div style={{ border:"1.5px solid rgba(94,204,138,0.45)", background:"rgba(4,16,31,0.60)", overflow:"hidden", fontVariantNumeric:"tabular-nums" as const }}>
 
                       {/* Column header row */}
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 110px 110px 100px", padding:"5px 14px", background:"rgba(94,204,138,0.08)", borderBottom:"1px solid rgba(94,204,138,0.18)" }}>
@@ -8266,22 +8268,6 @@ function GuruLandingView({
                       </div>
                     </div>
 
-                    {/* CTA to the right of the table */}
-                    {!workflowStarted && (
-                      <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:12, paddingLeft:24, flexShrink:0, width:220 }}>
-                        <button
-                          className="glr-review-btn"
-                          onClick={() => setWorkflowStarted(true)}
-                          style={{ width:"100%", padding:"14px 20px", background:"rgba(255,255,255,0.93)", border:"none", cursor:"pointer", fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, color:"hsl(222,45%,12%)", fontFamily:"inherit", lineHeight:1.4, textAlign:"center" as const }}
-                        >
-                          Begin Rebalance &amp;<br/>Asset Allocation →
-                        </button>
-                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.25)", lineHeight:1.55 }}>
-                          ~6 min · 3 steps · pre-filled.<br/>Nothing moves until Step 3.
-                        </div>
-                      </div>
-                    )}
-                    </div>{/* end flex row: table + CTA */}
                   </div>
                 )}
 
@@ -8302,7 +8288,28 @@ function GuruLandingView({
                 )}
               </>
             )}
-          </div>
+          </div>{/* end padding wrapper */}
+          </div>{/* end scrollable content area */}
+
+          {/* ── Sticky bottom CTA — visible even when table pushes content below fold ── */}
+          {showActionTable && !workflowStarted && (
+            <div style={{ position:"relative", zIndex:2, flexShrink:0, borderTop:"1px solid rgba(94,204,138,0.20)", background:"rgba(4,14,28,0.92)", backdropFilter:"blur(8px)", padding:"16px 48px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 8px rgba(94,204,138,0.9)", display:"inline-block", flexShrink:0, animation:"glrPulse 2.2s infinite" }} />
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.06em", color:"rgba(255,255,255,0.70)" }}>GURU has pre-filled all 3 steps</div>
+                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.28)", marginTop:1 }}>Nothing moves until you approve in Step 3</div>
+                </div>
+              </div>
+              <button
+                className="glr-review-btn"
+                onClick={() => setWorkflowStarted(true)}
+                style={{ padding:"12px 28px", background:"rgba(255,255,255,0.93)", border:"none", cursor:"pointer", fontSize:11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"hsl(222,45%,12%)", fontFamily:"inherit", whiteSpace:"nowrap" as const }}
+              >
+                Begin Rebalance &amp; Asset Allocation →
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ══════════════════════ RIGHT: Process Overview ══════════════════════ */}
