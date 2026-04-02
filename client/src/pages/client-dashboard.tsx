@@ -8208,7 +8208,6 @@ function GuruLandingView({
                         <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.5s infinite" }} />
                         <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.80)" }}>GURU's Recommended Actions</span>
                         <div style={{ flex:1, height:1, background:"rgba(94,204,138,0.15)" }} />
-                        <span style={{ fontSize:13, fontWeight:300, fontVariantNumeric:"tabular-nums", color:"rgba(255,255,255,0.55)", letterSpacing:"-0.01em" }}>{fmt(excessLiquidity).replace("$","")} total</span>
                       </div>
                     )}
                     {/* Collapsed header in split mode */}
