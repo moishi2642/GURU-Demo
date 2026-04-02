@@ -8128,7 +8128,7 @@ function GuruLandingView({
 
         {/* ══════════════════════ LEFT: Dark Navy Pane ══════════════════════ */}
         <div style={{
-          flex: workflowStarted ? "0 0 520px" : 1,
+          flex: workflowStarted ? "0 0 500px" : 1,
           display:"flex", flexDirection:"column",
           background:"linear-gradient(160deg,#0d2044 0%,#081630 60%,#04101f 100%)",
           position:"relative",
@@ -8142,14 +8142,13 @@ function GuruLandingView({
           <div style={{ flex:1, overflowY:"auto", position:"relative", zIndex:1 }}>
           <div style={{ padding: workflowStarted ? "28px 28px 36px" : "48px 48px 60px", margin: workflowStarted ? 0 : "0 auto", width:"100%", maxWidth: workflowStarted ? "none" : 900, display:"flex", flexDirection:"column" }}>
 
-            {/* ── Eyebrow (full-screen only) ── */}
-            {!workflowStarted && (
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:48, animation:"glrFadeIn 0.5s ease" }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 8px rgba(94,204,138,0.9)", display:"inline-block", animation:"glrPulse 2.2s infinite", flexShrink:0 }} />
-                <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.80)" }}>GURU Intelligence</span>
-                <span style={{ fontSize:11, color:"rgba(255,255,255,0.22)", marginLeft:4 }}>· 1 signal detected · 4h ago</span>
-              </div>
-            )}
+            {/* ── Eyebrow ── */}
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom: workflowStarted ? 10 : 48, paddingBottom: workflowStarted ? 10 : 0, borderBottom: workflowStarted ? "1px solid rgba(255,255,255,0.08)" : "none", animation:"glrFadeIn 0.5s ease" }}>
+              <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.2s infinite", flexShrink:0 }} />
+              <span style={{ fontSize: workflowStarted ? 10 : 11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.75)" }}>GURU Intelligence</span>
+              {!workflowStarted && <span style={{ fontSize:11, color:"rgba(255,255,255,0.22)", marginLeft:4 }}>· 1 signal detected · 4h ago</span>}
+              {workflowStarted && <span style={{ fontSize:10, color:"rgba(255,255,255,0.28)", marginLeft:"auto" }}>4h ago</span>}
+            </div>
 
             {/* ── Thinking state ── */}
             {isThinking && !workflowStarted ? (
@@ -8164,11 +8163,18 @@ function GuruLandingView({
             ) : (
               <>
                 {/* ── Headline ── */}
-                <div style={{ animation:"glrFadeIn 0.6s ease", marginBottom: workflowStarted ? 20 : 0 }}>
+                <div style={{ animation:"glrFadeIn 0.6s ease", marginBottom: workflowStarted ? 12 : 0 }}>
                   {workflowStarted ? (
-                    <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:22, fontWeight:400, color:"rgba(255,255,255,0.72)", lineHeight:1.25, letterSpacing:"-0.01em", marginBottom:0 }}>
-                      Idle capital,{" "}<span style={{ color:"rgba(94,204,138,0.80)" }}>ready to work.</span>
-                    </div>
+                    <>
+                      <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:34, fontWeight:400, color:"rgba(255,255,255,0.93)", lineHeight:1.18, letterSpacing:"-0.02em", marginBottom:10 }}>
+                        Idle capital,<br/><span style={{ color:"rgba(94,204,138,0.90)" }}>ready to work.</span>
+                      </div>
+                      <div style={{ fontSize:12, lineHeight:1.65, color:"rgba(255,255,255,0.44)", marginBottom:14 }}>
+                        A year-end bonus pushed coverage to 18 months.{" "}
+                        <span style={{ color:"rgba(94,204,138,0.85)", fontWeight:500 }}>{fmt(excessLiquidity)} is deployable</span>{" "}
+                        with no liquidity risk.
+                      </div>
+                    </>
                   ) : showActionTable ? (
                     /* Compressed header once table is revealed */
                     <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:36, fontWeight:400, color:"rgba(255,255,255,0.93)", lineHeight:1.08, letterSpacing:"-0.02em", marginBottom:20 }}>
@@ -8188,29 +8194,48 @@ function GuruLandingView({
                   )}
                 </div>
 
-                {/* ── 4 stat cards — horizontal ── */}
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom: workflowStarted ? 20 : showActionTable ? 20 : 48, animation:"glrFadeIn 0.7s ease" }}>
-                  {[
-                    { lbl:"Potential Excess Liquidity",        num:fmt(excessLiquidity),    unit:"",         sub:"idle · 0.30% today",  green:true  },
-                    { lbl:"Potential After-Tax Annual Return", num:`+${fmt(annualPickup)}`, unit:"/yr",      sub:"estimated · after-tax", green:true  },
-                    { lbl:"Days Sitting Idle",                 num:"47",                    unit:"days",     sub:"since bonus landed",  green:false },
-                    { lbl:"Cash Runway",                       num:"18",                    unit:"mo",       sub:"vs. 12-month target", green:false },
-                  ].map(cell => (
-                    <div key={cell.lbl} className="glr-stat-card" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding: workflowStarted || showActionTable ? "14px 16px" : "22px 20px" }}>
-                      <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginBottom: workflowStarted || showActionTable ? 8 : 12, lineHeight:1.4 }}>{cell.lbl}</div>
-                      <div style={{ display:"flex", alignItems:"baseline", gap:4, marginBottom: workflowStarted || showActionTable ? 4 : 8 }}>
-                        <span style={{ fontSize: workflowStarted || showActionTable ? 22 : 30, fontWeight:300, fontVariantNumeric:"tabular-nums" as const, letterSpacing:"-0.03em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.88)" }}>{cell.num}</span>
-                        {cell.unit && <span style={{ fontSize: workflowStarted || showActionTable ? 11 : 13, fontWeight:400, color: cell.green ? "rgba(94,204,138,0.55)" : "rgba(255,255,255,0.35)" }}>{cell.unit}</span>}
+                {/* ── Stat cards ── */}
+                {workflowStarted ? (
+                  /* 2×2 compact grid matching mockup sidebar */
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", marginBottom:14, border:"1px solid rgba(255,255,255,0.08)", animation:"glrFadeIn 0.7s ease" }}>
+                    {[
+                      { lbl:"Excess Liquidity", num:fmt(excessLiquidity), sub:"idle · 0.30%", green:true,  br:true,  bb:true  },
+                      { lbl:"Annual Pickup",    num:`+${fmt(annualPickup)}`, sub:"after-tax / yr", green:true,  br:false, bb:true  },
+                      { lbl:"Days Idle",        num:"47 days",            sub:"since bonus",   green:false, br:true,  bb:false },
+                      { lbl:"Cash Runway",      num:"18 months",          sub:"vs. 12-mo target", green:false, br:false, bb:false },
+                    ].map(cell => (
+                      <div key={cell.lbl} style={{ padding:"8px 9px", borderRight: cell.br ? "1px solid rgba(255,255,255,0.10)" : "none", borderBottom: cell.bb ? "1px solid rgba(255,255,255,0.10)" : "none" }}>
+                        <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.30)", marginBottom:4, lineHeight:1.4 }}>{cell.lbl}</div>
+                        <div style={{ fontSize:19, fontWeight:300, fontVariantNumeric:"tabular-nums" as const, letterSpacing:"-0.02em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.82)", marginBottom:3 }}>{cell.num}</div>
+                        <div style={{ fontSize:9, color:"rgba(255,255,255,0.26)" }}>{cell.sub}</div>
                       </div>
-                      <div style={{ fontSize:11, color:"rgba(255,255,255,0.24)" }}>{cell.sub}</div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* 4-column horizontal grid for full-screen landing */
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:16, marginBottom: showActionTable ? 20 : 48, animation:"glrFadeIn 0.7s ease" }}>
+                    {[
+                      { lbl:"Potential Excess Liquidity",        num:fmt(excessLiquidity),    unit:"",     sub:"idle · 0.30% today",    green:true  },
+                      { lbl:"Potential After-Tax Annual Return", num:`+${fmt(annualPickup)}`, unit:"/yr",  sub:"estimated · after-tax",  green:true  },
+                      { lbl:"Days Sitting Idle",                 num:"47",                    unit:"days", sub:"since bonus landed",     green:false },
+                      { lbl:"Cash Runway",                       num:"18",                    unit:"mo",   sub:"vs. 12-month target",    green:false },
+                    ].map(cell => (
+                      <div key={cell.lbl} className="glr-stat-card" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding: showActionTable ? "14px 16px" : "22px 20px" }}>
+                        <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginBottom: showActionTable ? 8 : 12, lineHeight:1.4 }}>{cell.lbl}</div>
+                        <div style={{ display:"flex", alignItems:"baseline", gap:4, marginBottom: showActionTable ? 4 : 8 }}>
+                          <span style={{ fontSize: showActionTable ? 22 : 30, fontWeight:300, fontVariantNumeric:"tabular-nums" as const, letterSpacing:"-0.03em", lineHeight:1, color: cell.green ? "#5ecc8a" : "rgba(255,255,255,0.88)" }}>{cell.num}</span>
+                          {cell.unit && <span style={{ fontSize: showActionTable ? 11 : 13, fontWeight:400, color: cell.green ? "rgba(94,204,138,0.55)" : "rgba(255,255,255,0.35)" }}>{cell.unit}</span>}
+                        </div>
+                        <div style={{ fontSize:11, color:"rgba(255,255,255,0.24)" }}>{cell.sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-                {/* ── Recommendations table (always visible when workflowStarted, Stage 1 otherwise) ── */}
+                {/* ── Recommendations table (full-screen) or compact Bloomberg table (workflow) ── */}
                 {(showActionTable || workflowStarted) && (
                   <div style={{ animation: workflowStarted ? "none" : "glrSlideUp 0.40s cubic-bezier(0.22,1,0.36,1)" }}>
-                    {/* Section header (full-screen only) */}
+                    {/* Full-screen section header */}
                     {!workflowStarted && (
                       <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:16 }}>
                         <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.5s infinite" }} />
@@ -8218,7 +8243,7 @@ function GuruLandingView({
                         <div style={{ flex:1, height:1, background:"rgba(94,204,138,0.15)" }} />
                       </div>
                     )}
-                    {/* Collapsed header in split mode */}
+                    {/* Compact label in workflow sidebar */}
                     {workflowStarted && (
                       <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.55)", marginBottom:8 }}>Recommended Transfers</div>
                     )}
@@ -8322,89 +8347,94 @@ function GuruLandingView({
 
         {/* ══════════════════════ RIGHT: Process Overview ══════════════════════ */}
         {workflowStarted && (
-          <div style={{ flex:"0 0 560px", display:"flex", flexDirection:"column", background:"#f0ece5", borderLeft:"1px solid rgba(0,0,0,0.07)", animation:"glrSlideIn 0.45s cubic-bezier(0.22,1,0.36,1)" }}>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", background:"#f0ece5", borderLeft:"1px solid rgba(0,0,0,0.07)", animation:"glrSlideIn 0.45s cubic-bezier(0.22,1,0.36,1)", overflow:"hidden" }}>
 
-            {/* Scrollable body */}
-            <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column" }}>
+            {/* Body: flex column — headline is fixed, steps section scrolls */}
+            <div style={{ flex:1, display:"flex", flexDirection:"column", minHeight:0 }}>
 
               {/* Hero headline area */}
-              <div style={{ padding:"40px 44px 28px" }}>
-                <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.80)", marginBottom:14 }}>
+              <div style={{ padding:"28px 44px 20px", borderBottom:"1px solid rgba(0,0,0,0.09)", flexShrink:0 }}>
+                <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.72)", marginBottom:10 }}>
                   GURU has already done the analysis — here's the plan
                 </div>
-                <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:38, fontWeight:400, color:"hsl(222,45%,12%)", lineHeight:1.12, letterSpacing:"-0.02em", marginBottom:16 }}>
+                <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:34, fontWeight:400, color:"hsl(222,45%,12%)", lineHeight:1.14, letterSpacing:"-0.02em", marginBottom:8 }}>
                   Walk through it.<br/>Confirm what you agree with.
                 </div>
-                <div style={{ fontSize:13, color:"rgba(0,0,0,0.45)", lineHeight:1.65, maxWidth:480 }}>
+                <div style={{ fontSize:13, color:"rgba(0,0,0,0.44)", lineHeight:1.6 }}>
                   Three pre-built steps. GURU prepared the work — you review and approve each one.
                 </div>
               </div>
 
-              {/* Divider */}
-              <div style={{ height:1, background:"rgba(0,0,0,0.07)", margin:"0 52px" }} />
-
-              {/* Steps */}
-              <div style={{ padding:"20px 44px 0" }}>
-                <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.32)", marginBottom:20 }}>
-                  Your Review · 3 Steps · ~6 Minutes
+              {/* Steps — scrollable */}
+              <div style={{ flex:1, overflowY:"auto", padding:"20px 44px 0" }}>
+                <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.30)", marginBottom:14 }}>
+                  Your review · 3 steps · ~6 minutes
                 </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-                  {[
-                    {
-                      n:1, title:"Asset Allocation Rebalancing", badge:"GURU PRE-FILLED", badgeColor:"rgba(27,61,110,0.10)", badgeText:"hsl(222,45%,22%)",
-                      desc:"Review how GURU has split your liquid assets across buckets and confirm the coverage targets before anything moves.",
-                      time:"~3 minutes to review and adjust",
-                    },
-                    {
-                      n:2, title:"Product Selection", badge:"RANKED FOR YOU", badgeColor:"rgba(46,122,82,0.10)", badgeText:"#2e7a52",
-                      desc:"Choose from GURU's ranked shortlist of instruments — filtered for your tax profile, liquidity needs, and risk tolerance.",
-                      time:"~2 minutes to review and choose",
-                    },
-                    {
-                      n:3, title:"Confirm & Execute", badge:"AUTO-EXECUTE AVAILABLE", badgeColor:"rgba(154,123,60,0.10)", badgeText:"rgba(154,123,60,0.90)",
-                      desc:"See the complete before/after in one view, then approve. Optionally enable auto-execute for future events.",
-                      time:"~1 minute to approve and submit",
-                    },
-                  ].map((step, idx) => (
-                    <div key={step.n} style={{ display:"flex", gap:0, animation:`bbFadeIn 0.35s ${idx*0.08}s ease both` }}>
-                      {/* Number + connector */}
-                      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginRight:18, flexShrink:0 }}>
-                        <div style={{ width:36, height:36, borderRadius:"50%", border:"1.5px solid hsl(222,45%,12%)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:600, color:"hsl(222,45%,12%)", background:"transparent", flexShrink:0 }}>{step.n}</div>
-                        {idx < 2 && <div style={{ width:1, flex:1, background:"rgba(0,0,0,0.10)", minHeight:20, marginTop:6 }} />}
-                      </div>
-                      {/* Card */}
-                      <div style={{ flex:1, background:"#fff", border:"1px solid rgba(0,0,0,0.08)", padding:"18px 20px 16px", marginBottom: idx < 2 ? 0 : 0 }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
-                          <div style={{ fontSize:14, fontWeight:600, color:"hsl(222,45%,12%)" }}>{step.title}</div>
-                          <div style={{ padding:"3px 9px", background:step.badgeColor, fontSize:9, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:step.badgeText, flexShrink:0, marginLeft:12 }}>{step.badge}</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                    {[
+                      {
+                        n:1, title:"Asset Allocation Rebalancing",
+                        badge:"GURU Pre-Filled",
+                        badgeBg:"rgba(27,61,110,0.08)", badgeBorder:"rgba(27,61,110,0.20)", badgeText:"rgba(27,61,110,0.75)",
+                        leftBorder:"hsl(222,45%,12%)",
+                        desc:"Review how GURU has split your liquid assets across buckets and confirm the coverage targets before anything moves.",
+                        time:"~3 minutes to review and adjust",
+                      },
+                      {
+                        n:2, title:"Product Selection",
+                        badge:"Ranked for You",
+                        badgeBg:"rgba(154,123,60,0.10)", badgeBorder:"rgba(154,123,60,0.25)", badgeText:"rgba(154,123,60,0.85)",
+                        leftBorder:"#9a7b3c",
+                        desc:"Choose from GURU's ranked shortlist of instruments — filtered for your tax profile, liquidity needs, and risk tolerance.",
+                        time:"~2 minutes to review and choose",
+                      },
+                      {
+                        n:3, title:"Confirm & Execute",
+                        badge:"Auto-Execute Available",
+                        badgeBg:"rgba(46,122,82,0.10)", badgeBorder:"rgba(46,122,82,0.25)", badgeText:"rgba(46,122,82,0.85)",
+                        leftBorder:"#2e7a52",
+                        desc:"See the complete before/after in one view, then approve. Optionally enable auto-execute for future events.",
+                        time:"~1 minute to approve and submit",
+                      },
+                    ].map((step, idx) => (
+                      <div key={step.n} style={{ display:"flex", gap:0, alignItems:"stretch", animation:`bbFadeIn 0.35s ${idx*0.08}s ease both` }}>
+                        {/* Number circle + connector line */}
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", width:52, flexShrink:0 }}>
+                          <div style={{ width:38, height:38, borderRadius:"50%", border:"2px solid hsl(222,45%,12%)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"hsl(222,45%,12%)", background:"#f0ece5", flexShrink:0, position:"relative", zIndex:1 }}>{step.n}</div>
+                          {idx < 2 && <div style={{ width:2, flex:1, minHeight:14, background:"rgba(27,61,110,0.15)", margin:"2px auto" }} />}
                         </div>
-                        <div style={{ fontSize:12, color:"rgba(0,0,0,0.52)", lineHeight:1.65, marginBottom:10 }}>{step.desc}</div>
-                        <div style={{ height:1, background:"rgba(0,0,0,0.06)", marginBottom:10 }} />
-                        <div style={{ fontSize:11, color:"rgba(0,0,0,0.32)" }}>{step.time}</div>
+                        {/* Card with colored left accent */}
+                        <div style={{ flex:1, background:"#fff", borderRadius:10, border:"1px solid rgba(0,0,0,0.07)", boxShadow:"0 1px 4px rgba(0,0,0,0.05)", padding:"16px 20px", position:"relative", overflow:"hidden", marginBottom: idx < 2 ? 0 : 0 }}>
+                          {/* Left color accent */}
+                          <div style={{ position:"absolute", left:0, top:0, bottom:0, width:3, borderRadius:"2px 0 0 2px", background:step.leftBorder }} />
+                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, marginBottom:6 }}>
+                            <div style={{ fontSize:14, fontWeight:700, color:"hsl(222,45%,12%)" }}>{step.title}</div>
+                            <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.07em", textTransform:"uppercase" as const, padding:"3px 8px", borderRadius:20, background:step.badgeBg, border:`1px solid ${step.badgeBorder}`, color:step.badgeText, whiteSpace:"nowrap" as const, flexShrink:0 }}>{step.badge}</div>
+                          </div>
+                          <div style={{ fontSize:12, color:"rgba(0,0,0,0.50)", lineHeight:1.55, marginBottom:10 }}>{step.desc}</div>
+                          <div style={{ height:1, background:"rgba(0,0,0,0.06)", marginBottom:9 }} />
+                          <div style={{ fontSize:10, fontWeight:500, color:"rgba(0,0,0,0.28)" }}>{step.time}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
+                <div style={{ height:16 }} />
               </div>
-
-              {/* Spacer */}
-              <div style={{ flex:1, minHeight:32 }} />
             </div>
 
-            {/* Sticky bottom CTA bar */}
-            <div style={{ borderTop:"1px solid rgba(0,0,0,0.09)", background:"rgba(240,236,229,0.97)", padding:"16px 44px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:20, flexShrink:0 }}>
-              <div>
-                <div style={{ fontSize:13, fontWeight:600, color:"hsl(222,45%,12%)" }}>Nothing moves until Step 3.</div>
-                <div style={{ fontSize:11, color:"rgba(0,0,0,0.40)", marginTop:2 }}>Every step is reversible. You stay in control.</div>
-              </div>
+            <div style={{ borderTop:"1px solid rgba(0,0,0,0.08)", background:"rgba(240,236,229,0.97)", padding:"16px 44px", flexShrink:0, display:"flex", alignItems:"center", gap:18 }}>
               <button
                 onClick={() => { setShowLanding(false); setShowBucketBriefing(true); }}
-                style={{ background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, padding:"14px 32px", transition:"background 0.15s, transform 0.12s", flexShrink:0, boxShadow:"0 2px 12px rgba(0,0,0,0.20)" }}
+                style={{ background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, padding:"15px 36px", transition:"background 0.15s, transform 0.12s", flexShrink:0, boxShadow:"0 2px 12px rgba(0,0,0,0.20)", borderRadius:7 }}
                 onMouseEnter={e => { (e.target as HTMLElement).style.background="hsl(222,45%,16%)"; (e.target as HTMLElement).style.transform="translateY(-1px)"; }}
                 onMouseLeave={e => { (e.target as HTMLElement).style.background="hsl(222,45%,12%)"; (e.target as HTMLElement).style.transform="translateY(0)"; }}
               >
                 Begin Step 1 →
               </button>
+              <div style={{ fontSize:12, color:"rgba(0,0,0,0.38)", lineHeight:1.6 }}>
+                <strong style={{ fontWeight:600, color:"rgba(0,0,0,0.55)" }}>Nothing moves until Step 3.</strong><br/>
+                Every step is reversible. You stay in control.
+              </div>
             </div>
           </div>
         )}
