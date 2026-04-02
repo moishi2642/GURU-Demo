@@ -8312,66 +8312,90 @@ function GuruLandingView({
           </div>
         </div>
 
-        {/* ══════════════════════ RIGHT: Step 1 — Bucket Briefing ══════════════════════ */}
+        {/* ══════════════════════ RIGHT: Process Overview ══════════════════════ */}
         {workflowStarted && (
-          <div style={{ flex:1, display:"flex", flexDirection:"column", background:"#f0ece5", borderLeft:"1px solid rgba(255,255,255,0.06)", animation:"glrSlideIn 0.45s cubic-bezier(0.22,1,0.36,1)" }}>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", background:"#f0ece5", borderLeft:"1px solid rgba(0,0,0,0.07)", animation:"glrSlideIn 0.45s cubic-bezier(0.22,1,0.36,1)" }}>
 
-            {/* Step header */}
-            <div style={{ background:"rgba(240,236,229,0.97)", borderBottom:"1px solid rgba(0,0,0,0.08)", padding:"0 36px", height:48, display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontSize:13, fontWeight:500, color:"hsl(222,45%,12%)" }}>Kessler Family</span>
-                <span style={{ color:"rgba(0,0,0,0.20)" }}>·</span>
-                <span style={{ fontSize:13, color:"rgba(0,0,0,0.45)" }}>Asset Allocation</span>
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:20 }}>
-                {["Bucket Briefing","Rebalancing","Confirm & Execute"].map((s,i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:6, opacity: i===0 ? 1 : 0.35 }}>
-                    <span style={{ width:18, height:18, borderRadius:"50%", background: i===0 ? "hsl(222,45%,12%)" : "transparent", border:`1.5px solid ${i===0 ? "hsl(222,45%,12%)" : "rgba(0,0,0,0.22)"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:700, color: i===0 ? "#fff" : "rgba(0,0,0,0.35)" }}>{i+1}</span>
-                    <span style={{ fontSize:10, fontWeight: i===0 ? 600 : 400, color: i===0 ? "hsl(222,45%,12%)" : "rgba(0,0,0,0.35)" }}>{s}</span>
-                    {i < 2 && <span style={{ fontSize:12, color:"rgba(0,0,0,0.18)", marginLeft:2 }}>›</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Scrollable body */}
+            <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column" }}>
 
-            {/* Body */}
-            <div style={{ flex:1, overflowY:"auto", padding:"28px 36px 48px" }}>
-              <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.75)", marginBottom:8 }}>Before we begin</div>
-              <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:24, fontWeight:400, color:"hsl(222,45%,12%)", lineHeight:1.20, letterSpacing:"-0.02em", marginBottom:6 }}>
-                How GURU organizes your money
-              </div>
-              <div style={{ fontSize:12, color:"rgba(0,0,0,0.45)", lineHeight:1.65, maxWidth:480, marginBottom:22 }}>
-                Every dollar belongs to a bucket. Each bucket has a job — a yield target, a liquidity profile, and a horizon. Review what's in each one before we make any changes.
+              {/* Hero headline area */}
+              <div style={{ padding:"52px 52px 36px" }}>
+                <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(154,123,60,0.80)", marginBottom:14 }}>
+                  GURU has already done the analysis — here's the plan
+                </div>
+                <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:38, fontWeight:400, color:"hsl(222,45%,12%)", lineHeight:1.12, letterSpacing:"-0.02em", marginBottom:16 }}>
+                  Walk through it.<br/>Confirm what you agree with.
+                </div>
+                <div style={{ fontSize:13, color:"rgba(0,0,0,0.45)", lineHeight:1.65, maxWidth:480 }}>
+                  Three pre-built steps. GURU prepared the work — you review and approve each one.
+                </div>
               </div>
 
-              {/* Bucket cards — compact list */}
-              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:28 }}>
-                {LANDING_BUCKET_DEFS.map((b, idx) => (
-                  <div key={b.key} className="bb-card-mini" style={{ background:"#fff", border:`1px solid ${b.border}`, overflow:"hidden", animationDelay:`${idx * 0.04}s` }}>
-                    <div style={{ height:2, background:b.color, opacity:0.85 }} />
-                    <div style={{ padding:"12px 16px 10px", display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                      <div>
-                        <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:b.color, marginBottom:3, opacity:0.85 }}>{b.name}</div>
-                        <div style={{ fontSize:11, color:"rgba(0,0,0,0.42)", lineHeight:1.4, maxWidth:300 }}>{b.philosophy.split('.')[0]}.</div>
+              {/* Divider */}
+              <div style={{ height:1, background:"rgba(0,0,0,0.07)", margin:"0 52px" }} />
+
+              {/* Steps */}
+              <div style={{ padding:"32px 52px 0" }}>
+                <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(0,0,0,0.32)", marginBottom:20 }}>
+                  Your Review · 3 Steps · ~6 Minutes
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                  {[
+                    {
+                      n:1, title:"Asset Allocation Rebalancing", badge:"GURU PRE-FILLED", badgeColor:"rgba(27,61,110,0.10)", badgeText:"hsl(222,45%,22%)",
+                      desc:"Review how GURU has split your liquid assets across buckets and confirm the coverage targets before anything moves.",
+                      time:"~3 minutes to review and adjust",
+                    },
+                    {
+                      n:2, title:"Product Selection", badge:"RANKED FOR YOU", badgeColor:"rgba(46,122,82,0.10)", badgeText:"#2e7a52",
+                      desc:"Choose from GURU's ranked shortlist of instruments — filtered for your tax profile, liquidity needs, and risk tolerance.",
+                      time:"~2 minutes to review and choose",
+                    },
+                    {
+                      n:3, title:"Confirm & Execute", badge:"AUTO-EXECUTE AVAILABLE", badgeColor:"rgba(154,123,60,0.10)", badgeText:"rgba(154,123,60,0.90)",
+                      desc:"See the complete before/after in one view, then approve. Optionally enable auto-execute for future events.",
+                      time:"~1 minute to approve and submit",
+                    },
+                  ].map((step, idx) => (
+                    <div key={step.n} style={{ display:"flex", gap:0, animation:`bbFadeIn 0.35s ${idx*0.08}s ease both` }}>
+                      {/* Number + connector */}
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginRight:18, flexShrink:0 }}>
+                        <div style={{ width:36, height:36, borderRadius:"50%", border:"1.5px solid hsl(222,45%,12%)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:600, color:"hsl(222,45%,12%)", background:"transparent", flexShrink:0 }}>{step.n}</div>
+                        {idx < 2 && <div style={{ width:1, flex:1, background:"rgba(0,0,0,0.10)", minHeight:20, marginTop:6 }} />}
                       </div>
-                      <div style={{ textAlign:"right" as const, flexShrink:0, paddingLeft:16 }}>
-                        <div style={{ fontSize:14, fontWeight:300, fontVariantNumeric:"tabular-nums", color:"hsl(222,45%,12%)", letterSpacing:"-0.01em" }}>{fmt(b.bal)}</div>
-                        <div style={{ fontSize:9, color:"rgba(0,0,0,0.35)", marginTop:1 }}>{b.target}</div>
+                      {/* Card */}
+                      <div style={{ flex:1, background:"#fff", border:"1px solid rgba(0,0,0,0.08)", padding:"18px 20px 16px", marginBottom: idx < 2 ? 0 : 0 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                          <div style={{ fontSize:14, fontWeight:600, color:"hsl(222,45%,12%)" }}>{step.title}</div>
+                          <div style={{ padding:"3px 9px", background:step.badgeColor, fontSize:9, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:step.badgeText, flexShrink:0, marginLeft:12 }}>{step.badge}</div>
+                        </div>
+                        <div style={{ fontSize:12, color:"rgba(0,0,0,0.52)", lineHeight:1.65, marginBottom:10 }}>{step.desc}</div>
+                        <div style={{ height:1, background:"rgba(0,0,0,0.06)", marginBottom:10 }} />
+                        <div style={{ fontSize:11, color:"rgba(0,0,0,0.32)" }}>{step.time}</div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              {/* CTA */}
+              {/* Spacer */}
+              <div style={{ flex:1, minHeight:32 }} />
+            </div>
+
+            {/* Sticky bottom CTA bar */}
+            <div style={{ borderTop:"1px solid rgba(0,0,0,0.09)", background:"rgba(240,236,229,0.97)", padding:"20px 52px", display:"flex", alignItems:"center", gap:28, flexShrink:0 }}>
               <button
                 className="bb-continue"
-                onClick={() => setShowLanding(false)}
-                style={{ background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, padding:"14px 36px", transition:"background 0.15s" }}
+                onClick={() => { setShowLanding(false); setShowBucketBriefing(true); }}
+                style={{ background:"hsl(222,45%,12%)", color:"rgba(255,255,255,0.92)", border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, padding:"14px 36px", transition:"background 0.15s", flexShrink:0 }}
               >
-                Begin Rebalancing →
+                Begin Step 1 →
               </button>
-              <div style={{ marginTop:10, fontSize:11, color:"rgba(0,0,0,0.35)" }}>Set targets, confirm transfers — nothing executes without your approval.</div>
+              <div>
+                <div style={{ fontSize:12, fontWeight:600, color:"hsl(222,45%,12%)" }}>Nothing moves until Step 3.</div>
+                <div style={{ fontSize:11, color:"rgba(0,0,0,0.40)", marginTop:2 }}>Every step is reversible. You stay in control.</div>
+              </div>
             </div>
           </div>
         )}
