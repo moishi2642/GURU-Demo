@@ -418,11 +418,11 @@ const GURU_BUCKETS = {
   reserve: {
     label: "Operating Cash",
     short: "Checking — instantly available transaction accounts",
-    color: "#5a85b8",
-    tagCls: "bg-transparent border border-[#162843]/35 text-[#162843]",
+    color: "#3da870",
+    tagCls: "bg-transparent border border-[#0e3320]/35 text-[#0e3320]",
   },
   yield: {
-    label: "Reserve Cash",
+    label: "Liquidity Reserve",
     short: "Savings & money market — penalty-free, higher-yielding",
     color: "#b8943f",
     tagCls: "bg-transparent border border-[#3a2710]/35 text-[#3a2710]",
@@ -430,14 +430,14 @@ const GURU_BUCKETS = {
   tactical: {
     label: "Capital Build",
     short: "Treasuries & fixed income — 1–3 year horizon",
-    color: "#3da870",
-    tagCls: "bg-transparent border border-[#0e3320]/35 text-[#0e3320]",
+    color: "#5a85b8",
+    tagCls: "bg-transparent border border-[#162843]/35 text-[#162843]",
   },
   growth: {
     label: "Investments",
     short: "Long-horizon investments — equities, compounding wealth",
-    color: "#5585ae",
-    tagCls: "bg-transparent border border-[#1e2d40]/35 text-[#1e2d40]",
+    color: "#8878C3",
+    tagCls: "bg-transparent border border-[#2D1B6B]/35 text-[#2D1B6B]",
   },
   alternatives: {
     label: "Alternatives",
@@ -1278,7 +1278,7 @@ function CashManagementPanel({
           const buckets = [
             { label: "Operating Cash", value: reserve,     items: reserveItems  ?? [], color: "#1d4ed8", border: "border-blue-200",    rowBg: "bg-blue-50/60",    rowBorder: "border-blue-100",    textCls: "text-blue-900",    amtCls: "text-blue-700"    },
             { label: "Reserve Cash",   value: yieldBucket, items: yieldItems    ?? [], color: "#d97706", border: "border-amber-200",   rowBg: "bg-amber-50/60",   rowBorder: "border-amber-100",   textCls: "text-amber-900",   amtCls: "text-amber-700"   },
-            { label: "Capital Build",  value: tactical,    items: tacticalItems ?? [], color: "#16a34a", border: "border-emerald-200", rowBg: "bg-emerald-50/60", rowBorder: "border-emerald-100", textCls: "text-emerald-900", amtCls: "text-emerald-700" },
+            { label: "Capital Build", value: tactical, items: tacticalItems ?? [], color: "#16a34a", border: "border-emerald-200", rowBg: "bg-emerald-50/60", rowBorder: "border-emerald-100", textCls: "text-emerald-900", amtCls: "text-emerald-700" },
           ];
           return (
             <div className="flex items-start gap-3">
@@ -3818,7 +3818,7 @@ function CashFlowForecastView({
             const BUCKETS = [
               { key:"op",    label:"Operating Cash", color:"#4a90d9", items:reserveItems,  total:reserve },
               { key:"res",   label:"Reserve Cash",   color:"#e8a830", items:yieldItems,    total:yieldBucket },
-              { key:"build", label:"Capital Build",  color:"#2a9a5a", items:tacticalItems, total:tactical },
+              { key:"build", label:"Capital Build", color:"#2a9a5a", items:tacticalItems, total:tactical },
             ];
             // SVG donut — 2× size
             const CX=120,CY=120,R=92,SW=26, CIRC=2*Math.PI*R, GAP=3;
@@ -5142,7 +5142,7 @@ function MoneyMovementView({
           </div>
         );
 
-        /* ── accounting ledger card ── */
+        /* ── accounting ledger card — styled to match BSBucketCard ── */
         const LedgerCard = ({
           title, subtitle, balance, balanceColor = '#1e293b', entries, accent, width, beginningBalance, shade,
         }: {
@@ -5150,52 +5150,49 @@ function MoneyMovementView({
           entries?: { label: string; amount: string; type: 'plus' | 'less' | 'neutral' }[];
           accent?: string; width?: number; beginningBalance?: string; shade?: string;
         }) => (
-          <div
-            className="border border-slate-200 rounded-lg overflow-hidden shadow-sm"
-            style={{ width: width ?? '100%', borderTopColor: accent, borderTopWidth: accent ? 2 : 1, backgroundColor: shade ?? 'white' }}
-          >
-            {/* Header: account name + subtitle */}
-            <div className="px-4 pt-3 pb-2 border-b border-slate-100">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-[12px] font-bold text-slate-900 leading-tight">{title}</div>
-                  {subtitle && <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">{subtitle}</div>}
-                </div>
-                {/* Simple cards (no ledger body): show balance in header */}
-                {!beginningBalance && !entries?.length && (
-                  <div className="text-[13px] font-black tabular-nums flex-shrink-0" style={{ color: balanceColor }}>{balance}</div>
-                )}
-              </div>
+          <div style={{
+            width: width ?? '100%', borderRadius: 8, overflow: 'hidden', background: shade ?? '#fff',
+            border: `1px solid ${accent ? `${accent}28` : 'rgba(0,0,0,0.09)'}`,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+          }}>
+            {/* Colored top stripe */}
+            {accent && <div style={{ height: 3, background: accent, opacity: 0.9 }} />}
+            {/* Header */}
+            <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid rgba(0,0,0,0.06)', background: shade ?? '#fff' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase' as const, color: accent ?? '#334155', lineHeight: 1.2 }}>{title}</div>
+              {subtitle && <div style={{ fontSize: 9.5, color: 'rgba(0,0,0,0.40)', marginTop: 3, lineHeight: 1.35 }}>{subtitle}</div>}
+              {/* Simple cards (no ledger body): balance in header */}
+              {!beginningBalance && !entries?.length && (
+                <div style={{ fontSize: 17, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.025em', color: balanceColor, lineHeight: 1, marginTop: 7 }}>{balance}</div>
+              )}
             </div>
-            {/* Ledger body: beginning → changes → ending */}
+            {/* Ledger body */}
             {(beginningBalance || (entries && entries.length > 0)) && (
-              <div className="px-4 py-2 space-y-1.5">
+              <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {beginningBalance && (
-                  <div className="flex items-center justify-between pb-1.5 border-b border-dashed border-slate-200">
-                    <span className="text-[9px] uppercase tracking-wider font-semibold text-slate-400 leading-none">Beg. Balance</span>
-                    <span className="text-[10px] font-semibold tabular-nums text-slate-500 leading-none">{beginningBalance}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 7, borderBottom: '1px dashed rgba(0,0,0,0.10)', marginBottom: 2 }}>
+                    <span style={{ fontSize: 8.5, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'rgba(0,0,0,0.33)' }}>Beg. Balance</span>
+                    <span style={{ fontSize: 11, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', color: 'rgba(0,0,0,0.48)' }}>{beginningBalance}</span>
                   </div>
                 )}
                 {entries && entries.map((e, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-500 leading-none">
-                      {e.type === 'plus' ? '+ ' : e.type === 'less' ? '− ' : '  '}{e.label}
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.50)', lineHeight: 1.3 }}>
+                      {e.type === 'plus' ? '+ ' : e.type === 'less' ? '− ' : '\u00a0\u00a0'}{e.label}
                     </span>
-                    <span className={`text-[10px] font-bold tabular-nums leading-none ${
-                      e.type === 'plus' ? 'text-emerald-600' : e.type === 'less' ? 'text-rose-600' : 'text-slate-600'
-                    }`}>{e.amount}</span>
+                    <span style={{ fontSize: 11, fontWeight: 400, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.015em', color: e.type === 'plus' ? '#1A6640' : e.type === 'less' ? '#9b2020' : 'rgba(0,0,0,0.50)' }}>{e.amount}</span>
                   </div>
                 ))}
                 {beginningBalance && (
-                  <div className="flex items-center justify-between pt-1.5 border-t-2 border-slate-300 mt-0.5">
-                    <span className="text-[9px] uppercase tracking-wider font-bold text-slate-500 leading-none">End. Balance</span>
-                    <span className="text-[13px] font-black tabular-nums leading-none" style={{ color: balanceColor }}>{balance}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: 8, borderTop: '2px solid rgba(0,0,0,0.10)', marginTop: 2 }}>
+                    <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'rgba(0,0,0,0.38)' }}>End. Balance</span>
+                    <span style={{ fontSize: 17, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.025em', color: balanceColor, lineHeight: 1 }}>{balance}</span>
                   </div>
                 )}
                 {!beginningBalance && entries && entries.length > 0 && (
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 mt-0.5">
-                    <span className="text-[9px] uppercase tracking-wider font-bold text-slate-500 leading-none">Balance</span>
-                    <span className="text-[13px] font-black tabular-nums leading-none" style={{ color: balanceColor }}>{balance}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: 7, borderTop: '1px solid rgba(0,0,0,0.08)', marginTop: 2 }}>
+                    <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'rgba(0,0,0,0.38)' }}>Balance</span>
+                    <span style={{ fontSize: 17, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.025em', color: balanceColor, lineHeight: 1 }}>{balance}</span>
                   </div>
                 )}
               </div>
@@ -5262,7 +5259,7 @@ function MoneyMovementView({
               {/* ══════════ ROW 1 col 2: Income → CIT connector ══════════ */}
               <div style={{ gridColumn: '2', gridRow: '1', display: 'flex', alignItems: 'flex-start', paddingTop: 180 }}>
                 <div className="relative w-full">
-                  <span className="absolute -top-5 left-2 font-black tabular-nums whitespace-nowrap text-[11px]" style={{ color: '#16a34a' }}>{fmtBal(income + rentalAmt)}</span>
+                  <span style={{ position: 'absolute', top: -20, left: 8, fontSize: 11, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', whiteSpace: 'nowrap', color: '#16a34a' }}>{fmtBal(income + rentalAmt)}</span>
                   <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: 'rgba(22,163,74,0.2)' }}>
                     <motion.div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: '#16a34a', boxShadow: '0 0 6px #16a34a' }}
@@ -5276,8 +5273,8 @@ function MoneyMovementView({
               {/* ══════════ ROW 1+2 col 3: CIT card (spans both rows) ══════════ */}
               <div style={{ gridColumn: '3', gridRow: '1 / 3' }}>
                 {/* OPERATING CASH — large prominent banner */}
-                <div className="flex items-center px-4 py-3 rounded-lg mb-3" style={{ backgroundColor: '#1d4ed8', border: '2px solid #1e40af' }}>
-                  <span className="text-[18px] font-black uppercase tracking-widest text-white">Operating Cash</span>
+                <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px', borderRadius: 8, marginBottom: 10, backgroundColor: '#1d4ed8', border: '2px solid #1e40af' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.10em', textTransform: 'uppercase' as const, color: '#fff' }}>Operating Cash</span>
                 </div>
                 {/* CIT card — expanded with more spacing */}
                 <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm" style={{ backgroundColor: '#eff6ff', borderTopColor: '#1d4ed8', borderTopWidth: 3, minHeight: 280 }}>
@@ -5291,11 +5288,11 @@ function MoneyMovementView({
                     </div>
                   </div>
                   {/* Ledger body */}
-                  <div className="px-5 py-4 space-y-3">
+                  <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 7 }}>
                     {sm > 0 && (
-                      <div className="flex items-center justify-between pb-3 border-b border-dashed border-blue-200">
-                        <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Beg. Balance</span>
-                        <span className="text-[11px] font-semibold tabular-nums text-slate-500">{fmtBal(HC_CIT_MM[sm - 1])}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, borderBottom: '1px dashed rgba(29,78,216,0.20)', marginBottom: 2 }}>
+                        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'rgba(0,0,0,0.35)' }}>Beg. Balance</span>
+                        <span style={{ fontSize: 12, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', color: 'rgba(0,0,0,0.48)' }}>{fmtBal(HC_CIT_MM[sm - 1])}</span>
                       </div>
                     )}
                     {[
@@ -5305,16 +5302,16 @@ function MoneyMovementView({
                       ...(jpmRsvDraw > 0 ? [{ label: 'JPMorgan 100% Treasuries MMF — Draw', amount: `+${fmtBal(jpmRsvDraw)}`, type: 'plus' as const }] : []),
                       { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' as const },
                     ].map((e, i) => (
-                      <div key={i} className="flex items-center justify-between py-0.5">
-                        <span className="text-[11px] text-slate-600 leading-none">
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.52)', lineHeight: 1.3 }}>
                           {e.type === 'plus' ? '+ ' : '− '}{e.label}
                         </span>
-                        <span className={`text-[11px] font-bold tabular-nums leading-none ${e.type === 'plus' ? 'text-emerald-600' : 'text-rose-600'}`}>{e.amount}</span>
+                        <span style={{ fontSize: 11.5, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.015em', color: e.type === 'plus' ? '#1A6640' : '#9b2020' }}>{e.amount}</span>
                       </div>
                     ))}
-                    <div className="flex items-center justify-between pt-3 border-t-2 border-blue-300 mt-1">
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">End. Balance</span>
-                      <span className="text-[18px] font-black tabular-nums" style={{ color: opsBal < 0 ? '#dc2626' : '#1d4ed8' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', paddingTop: 10, borderTop: '2px solid rgba(29,78,216,0.25)', marginTop: 2 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: 'rgba(0,0,0,0.38)' }}>End. Balance</span>
+                      <span style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.025em', color: opsBal < 0 ? '#9b2020' : '#1d4ed8', lineHeight: 1 }}>
                         {opsBal < 0 ? `(${fmtBal(Math.abs(opsBal))})` : fmtBal(opsBal)}
                       </span>
                     </div>
@@ -5325,7 +5322,7 @@ function MoneyMovementView({
               {/* ══════════ ROW 1+2 col 4: CIT → Expenses connector (spans both rows) ══════════ */}
               <div style={{ gridColumn: '4', gridRow: '1 / 3', display: 'flex', alignItems: 'flex-start', paddingTop: 233 }}>
                 <div className="relative w-full">
-                  <span className="absolute -top-5 left-2 text-[9px] font-black tabular-nums whitespace-nowrap" style={{ color: '#dc2626' }}>{fmtBal(totalExp)}</span>
+                  <span style={{ position: 'absolute', top: -18, left: 8, fontSize: 11, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', whiteSpace: 'nowrap', color: '#9b2020' }}>{fmtBal(totalExp)}</span>
                   <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: 'rgba(220,38,38,0.2)' }}>
                     <motion.div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: '#dc2626', boxShadow: '0 0 6px #dc2626' }}
@@ -5457,7 +5454,7 @@ function MoneyMovementView({
               {/* ══════════ ROW 2 col 2: JPM → CIT connector ══════════ */}
               <div style={{ gridColumn: '2', gridRow: '2', display: 'flex', alignItems: 'flex-start', paddingTop: 90 }}>
                 <div className="relative w-full">
-                  <span className="absolute -top-5 left-2 font-black tabular-nums whitespace-nowrap text-[12px]" style={{ color: '#d97706' }}>
+                  <span style={{ position: 'absolute', top: -20, left: 8, fontSize: 11, fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', whiteSpace: 'nowrap', color: '#d97706' }}>
                     {jpmRsvDraw > 0 ? fmtBal(jpmRsvDraw) : '$0 Standby'}
                   </span>
                   <div className="relative w-full overflow-hidden" style={{ height: 2, backgroundColor: jpmRsvDraw > 0 ? 'rgba(217,119,6,0.25)' : '#e5e7eb' }}>
@@ -6534,7 +6531,7 @@ function DetailsView({
   };
 
   return (
-    <div style={{ background: CF2.bg, borderRadius: 8, overflow: "hidden" }}>
+    <div style={{ background: CF2.bg, borderRadius: 0 }}>
 
       {tab === "bs" && (
         <div className="space-y-4" style={{ padding: "0" }}>
@@ -7103,8 +7100,8 @@ function AdvisorBriefView({
 
               {/* Large amount — inline label */}
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 28, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#1e4d30", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalHarvest, true)}</div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 16, fontWeight: 400, color: "#1e4d30", lineHeight: 1 }}>excess identified</div>
+                <div style={{ fontSize: 28, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#1e4d30", lineHeight: 1, letterSpacing: "-0.025em" }}>{fmt(totalHarvest, true)}</div>
+                <div style={{ fontSize: 16, fontWeight: 300, color: "#1e4d30", lineHeight: 1 }}>excess identified</div>
               </div>
 
               {/* Account table */}
@@ -7239,8 +7236,8 @@ function AdvisorBriefView({
 
               {/* Large amount — inline label */}
               <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 28, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#a07820", lineHeight: 1, letterSpacing: "-0.02em" }}>{fmt(totalExposed)}</div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 16, fontWeight: 400, color: "#a07820", lineHeight: 1 }}>exposed to rate cut repricing</div>
+                <div style={{ fontSize: 28, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#a07820", lineHeight: 1, letterSpacing: "-0.025em" }}>{fmt(totalExposed)}</div>
+                <div style={{ fontSize: 16, fontWeight: 300, color: "#a07820", lineHeight: 1 }}>exposed to rate cut repricing</div>
               </div>
 
               {/* Account table */}
@@ -7318,7 +7315,7 @@ function AdvisorBriefView({
                   <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-ops">
                     <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#1e3a5f" }}>
                       <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>OPERATING</span>
-                      <span style={{ fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 400, color: "#ffffff", fontSize: 20, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$90,879</span>
+                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 20, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$90,879</span>
                     </div>
                     <div style={{ flex: 1, border: "1px solid rgba(30,58,95,0.18)", borderRadius: 8, overflow: "hidden" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(30,58,95,0.03)" }} data-testid="flow-row-ops-jan">
@@ -7356,7 +7353,7 @@ function AdvisorBriefView({
                   <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-reserve">
                     <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#7c4a0a" }}>
                       <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>RESERVE</span>
-                      <span style={{ fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 400, color: "#ffffff", fontSize: 20, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$129,385</span>
+                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 20, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$129,385</span>
                     </div>
                     <div style={{ flex: 1, border: "1px solid rgba(124,74,10,0.2)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(124,74,10,0.03)", borderBottom: "1px solid rgba(124,74,10,0.1)" }} data-testid="flow-row-reserve-jpm">
@@ -7401,7 +7398,7 @@ function AdvisorBriefView({
                   <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-build">
                     <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#155234" }}>
                       <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>BUILD</span>
-                      <span style={{ fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 400, color: "#ffffff", fontSize: 20, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$226,545</span>
+                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 20, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$226,545</span>
                     </div>
                     <div style={{ flex: 1, border: "1px solid rgba(21,82,52,0.18)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }} data-testid="flow-col-build-inner">
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(21,82,52,0.03)", borderBottom: "1px solid rgba(21,82,52,0.1)" }} data-testid="flow-row-build-munis">
@@ -9077,9 +9074,1573 @@ function OnboardingView({ clientName, clientId }: { clientName: string; clientId
   );
 }
 
+// ─── Asset Overview View ───────────────────────────────────────────────────────
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function parseAssetYield(desc: string): string | null {
+  const m = (desc ?? "").match(/(\d+\.?\d*)\s*%/);
+  return m ? m[1] + "%" : null;
+}
+function assetShortName(desc: string): string {
+  return (desc ?? "").split("(")[0].split("—")[0].split("–")[0].split("@")[0].trim();
+}
+function assetBucketKey(a: Asset): "reserve" | "yield_" | "tactical" | "growth" | "alts" {
+  const d = (a.description ?? "").toLowerCase();
+  if (a.type === "cash") return d.includes("checking") ? "reserve" : "yield_";
+  if (a.type === "fixed_income")
+    return d.includes("treasur") || d.includes("t-bill") || d.includes("short") ? "tactical" : "growth";
+  if (a.type === "equity")
+    return d.includes("rsu") || d.includes("unvested") || d.includes("carry") ? "alts" : "growth";
+  return "alts"; // alternative, real_estate
+}
+function isRetirementAsset(a: Asset): boolean {
+  const d = (a.description ?? "").toLowerCase();
+  return d.includes("401") || d.includes("roth") || d.includes(" ira") || d.includes("retirement");
+}
+function isIdleAsset(a: Asset): boolean {
+  const d = (a.description ?? "").toLowerCase();
+  return d.includes("idle") || d.includes("sweep");
+}
+
+function AssetOvBucketCard({
+  color, border, name, tagline, approach, balance, isNeg, items, header4, subSections,
+}: {
+  color: string; border: string; name: string; tagline: string; approach: string;
+  balance: number; isNeg?: boolean;
+  items?: Asset[];
+  header4?: string;
+  subSections?: { label: string; items: Asset[] }[];
+}) {
+  const COL3: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 92px 58px", padding: "0 20px" };
+  const thStyle = (right?: boolean): React.CSSProperties => ({
+    fontSize: 7.5, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase",
+    color: "rgba(0,0,0,0.30)", textAlign: right ? "right" : "left",
+  });
+
+  function renderRow(a: Asset, key: string | number) {
+    const yld = parseAssetYield(a.description ?? "");
+    const desc = a.description ?? "";
+    const d = desc.toLowerCase();
+    const isRental = d.includes("rented") || d.includes("rental") || d.includes("investment, fl");
+    const isPrimary = d.includes("primary") || d.includes("tribeca");
+    const isIlliquid = a.type === "alternative" || a.type === "real_estate";
+    const isUnvested = d.includes("rsu") || d.includes("unvested");
+    const isCarry = d.includes("carry");
+    const isIdle = isIdleAsset(a);
+    const negBal = false;
+
+    let yieldEl: React.ReactNode;
+    if (isRental) yieldEl = <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(100,60,20,0.80)" }}>rental</span>;
+    else if (isPrimary && a.type === "real_estate") yieldEl = <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(26,26,74,0.55)" }}>primary</span>;
+    else if (isCarry) yieldEl = <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(30,77,140,0.75)" }}>carry</span>;
+    else if (isIlliquid && !isCarry) yieldEl = <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(80,40,120,0.80)" }}>illiquid</span>;
+    else if (isUnvested) yieldEl = <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(80,40,120,0.80)" }}>unvested</span>;
+    else if (isIdle && yld) yieldEl = <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(184,92,0,0.85)" }}>{yld} idle</span>;
+    else if (d.includes("checking") && !yld) yieldEl = <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(184,92,0,0.85)" }}>excess</span>;
+    else if (yld) yieldEl = <span style={{ fontSize: 10.5, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.42)" }}>{yld}</span>;
+    else yieldEl = <span style={{ color: "rgba(0,0,0,0.25)" }}>—</span>;
+
+    // Subtext: institution hint from description
+    const afterParen = desc.match(/\(([^)]+)\)/)?.[1];
+    const afterDash = desc.match(/—\s*(.+)$/)?.[1]?.replace(/\d+\.\d+%\s*yield/i, "").trim();
+    const subtext = (afterParen ?? afterDash ?? "").replace(/\d+\.\d+%\s*yield/i, "").trim();
+
+    return (
+      <div key={key} style={{ ...COL3, paddingTop: 6, paddingBottom: 6, borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{assetShortName(desc)}</span>
+          {subtext && <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtext}</span>}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.70)", textAlign: "right" }}>{fmt(Number(a.value))}</div>
+        <div style={{ textAlign: "right" }}>{yieldEl}</div>
+      </div>
+    );
+  }
+
+  function renderLiabRow(l: Liability, key: string | number) {
+    const rate = Number(l.interestRate);
+    const d = (l.description ?? "").toLowerCase();
+    const isCard = l.type === "credit_card";
+    const isCommitment = d.includes("commitment") || d.includes("unfunded");
+    const rateEl = isCommitment
+      ? <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(80,40,120,0.80)" }}>unfunded</span>
+      : <span style={{ fontSize: 10.5, fontVariantNumeric: "tabular-nums", fontWeight: 400, color: isCard ? "#9b2020" : "rgba(0,0,0,0.42)" }}>{rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(2)}%</span>;
+    const subtext = (l.description ?? "").match(/\(([^)]+)\)/)?.[1] ?? "";
+    return (
+      <div key={key} style={{ ...COL3, paddingTop: 6, paddingBottom: 6, borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{assetShortName(l.description ?? "")}</span>
+          {subtext && <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtext}</span>}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#9b2020", textAlign: "right" }}>−{fmt(Number(l.value))}</div>
+        <div style={{ textAlign: "right" }}>{rateEl}</div>
+      </div>
+    );
+  }
+
+  const hasSubSections = subSections && subSections.length > 0;
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 10, border: `1px solid ${border}`, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+      <div style={{ height: 3, background: color, opacity: 0.85 }} />
+      <div style={{ padding: "18px 20px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color, opacity: 0.85, marginBottom: 4 }}>{name}</div>
+            <div style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", lineHeight: 1.45 }}>{tagline}</div>
+          </div>
+          <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
+            <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.025em", color: isNeg ? "#9b2020" : "#1a1a1a", lineHeight: 1 }}>
+              {isNeg ? "−" : ""}{fmt(Math.abs(balance))}
+            </div>
+          </div>
+        </div>
+        <div style={{ borderRadius: 6, padding: "9px 12px", marginBottom: 14, background: hexToRgba(color, 0.06) }}>
+          <div style={{ fontSize: 10.5, color: "rgba(0,0,0,0.55)", lineHeight: 1.55 }}>{approach}</div>
+        </div>
+      </div>
+      {/* Table */}
+      <div style={{ marginLeft: -20, marginRight: -20, marginLeft: 0, marginRight: 0, borderTop: "1px solid rgba(0,0,0,0.07)" }}>
+        {/* Header */}
+        <div style={{ ...COL3, paddingTop: 6, paddingBottom: 5, borderBottom: "1px solid rgba(0,0,0,0.07)", background: "rgba(0,0,0,0.018)" }}>
+          <div style={thStyle()}>Subaccounts</div>
+          <div style={thStyle(true)}>Balance</div>
+          <div style={thStyle(true)}>{header4 ?? "Yield"}</div>
+        </div>
+        {/* Rows */}
+        {hasSubSections ? subSections!.map((sec, si) => (
+          <React.Fragment key={si}>
+            {sec.label && (
+              <div style={{ ...COL3, paddingTop: 7, paddingBottom: 3, gridColumn: "1/-1" }}>
+                <div style={{ gridColumn: "1/-1", fontSize: 7.5, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(0,0,0,0.28)", borderTop: si > 0 ? "1px solid rgba(0,0,0,0.05)" : "none", paddingTop: si > 0 ? 7 : 3 }}>
+                  {sec.label}
+                </div>
+              </div>
+            )}
+            {sec.items.map((a, i) => renderRow(a, `${si}-${i}`))}
+          </React.Fragment>
+        )) : items?.map((a, i) => renderRow(a, i))}
+      </div>
+    </div>
+  );
+}
+
+function AssetOverviewView({ assets, liabilities }: { assets: Asset[]; liabilities: Liability[]; cashFlows?: CashFlow[] }) {
+  const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
+  const totalLiab = liabilities.reduce((s, l) => s + Number(l.value), 0);
+  const netWorth = totalAssets - totalLiab;
+
+  // Bucket the assets
+  const opCash    = assets.filter(a => assetBucketKey(a) === "reserve");
+  const resCash   = assets.filter(a => assetBucketKey(a) === "yield_");
+  const capBuild  = assets.filter(a => assetBucketKey(a) === "tactical");
+  const growthAll = assets.filter(a => assetBucketKey(a) === "growth");
+  const alts      = assets.filter(a => assetBucketKey(a) === "alts");
+
+  const growthEquity     = growthAll.filter(a => !isRetirementAsset(a));
+  const growthRetirement = growthAll.filter(a => isRetirementAsset(a));
+
+  const opTotal    = opCash.reduce((s, a) => s + Number(a.value), 0);
+  const resTotal   = resCash.reduce((s, a) => s + Number(a.value), 0);
+  const capTotal   = capBuild.reduce((s, a) => s + Number(a.value), 0);
+  const growTotal  = growthAll.reduce((s, a) => s + Number(a.value), 0);
+  const altTotal   = alts.reduce((s, a) => s + Number(a.value), 0);
+
+  // Liability buckets
+  const mortgages     = liabilities.filter(l => l.type === "mortgage");
+  const consumer      = liabilities.filter(l => l.type === "credit_card" || l.type === "student_loan");
+  const investFinance = liabilities.filter(l => l.type === "personal_loan");
+  const mortTotal     = mortgages.reduce((s, l) => s + Number(l.value), 0);
+  const consTotal     = consumer.reduce((s, l) => s + Number(l.value), 0);
+  const investTotal   = investFinance.reduce((s, l) => s + Number(l.value), 0);
+
+  // GURU signal: largest idle/low-yield cash chunk
+  const idleItems = resCash.filter(a => isIdleAsset(a));
+  const idleTotal = idleItems.reduce((s, a) => s + Number(a.value), 0);
+
+  const COL3: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 92px 58px", padding: "0 20px" };
+  const thStyle = (right?: boolean): React.CSSProperties => ({
+    fontSize: 7.5, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase",
+    color: "rgba(0,0,0,0.30)", textAlign: right ? "right" : "left",
+  });
+
+  function renderLiabRows(items: Liability[], header4 = "Rate") {
+    return items.map((l, i) => {
+      const rate = Number(l.interestRate);
+      const d = (l.description ?? "").toLowerCase();
+      const isCard = l.type === "credit_card";
+      const isCommitment = d.includes("commitment") || d.includes("unfunded");
+      const rateEl = isCommitment
+        ? <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "rgba(80,40,120,0.80)" }}>unfunded</span>
+        : <span style={{ fontSize: 10.5, fontVariantNumeric: "tabular-nums", fontWeight: 400, color: isCard ? "#9b2020" : "rgba(0,0,0,0.42)" }}>{rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(2)}%</span>;
+      const subtext = (l.description ?? "").match(/\(([^)]+)\)/)?.[1] ?? (l.description ?? "").match(/—\s*(.+?)(?:\s*@|$)/)?.[1]?.trim() ?? "";
+      return (
+        <div key={i} style={{ ...COL3, paddingTop: 6, paddingBottom: 6, borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{assetShortName(l.description ?? "")}</span>
+            {subtext && <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtext}</span>}
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#9b2020", textAlign: "right" }}>−{fmt(Number(l.value))}</div>
+          <div style={{ textAlign: "right" }}>{rateEl}</div>
+        </div>
+      );
+    });
+  }
+
+  function LiabCard({ color, border, name, tagline, approach, total, items: ls, header4 = "Rate" }: {
+    color: string; border: string; name: string; tagline: string; approach: string;
+    total: number; items: Liability[]; header4?: string;
+  }) {
+    return (
+      <div style={{ background: "#fff", borderRadius: 10, border: `1px solid ${border}`, boxShadow: "0 1px 4px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+        <div style={{ height: 3, background: color, opacity: 0.85 }} />
+        <div style={{ padding: "18px 20px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color, opacity: 0.85, marginBottom: 4 }}>{name}</div>
+              <div style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", lineHeight: 1.45 }}>{tagline}</div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 12 }}>
+              <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.025em", color: "#9b2020", lineHeight: 1 }}>−{fmt(total)}</div>
+            </div>
+          </div>
+          <div style={{ borderRadius: 6, padding: "9px 12px", marginBottom: 14, background: "rgba(155,32,32,0.05)" }}>
+            <div style={{ fontSize: 10.5, color: "rgba(0,0,0,0.55)", lineHeight: 1.55 }}>{approach}</div>
+          </div>
+        </div>
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }}>
+          <div style={{ ...COL3, paddingTop: 6, paddingBottom: 5, borderBottom: "1px solid rgba(0,0,0,0.07)", background: "rgba(0,0,0,0.018)" }}>
+            <div style={thStyle()}>Subaccounts</div>
+            <div style={thStyle(true)}>Balance</div>
+            <div style={thStyle(true)}>{header4}</div>
+          </div>
+          {renderLiabRows(ls, header4)}
+        </div>
+      </div>
+    );
+  }
+
+  const sectionLbl: React.CSSProperties = { fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(0,0,0,0.30)", marginBottom: 12 };
+  const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 14, marginBottom: 32 };
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#f0ece5" }}>
+      {/* Sticky header */}
+      <div style={{ background: "rgba(240,236,229,0.97)", borderBottom: "1px solid rgba(0,0,0,0.08)", padding: "0 48px", height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10, backdropFilter: "blur(4px)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>Kessler Family</span>
+          <span style={{ color: "rgba(0,0,0,0.20)" }}>·</span>
+          <span style={{ fontSize: 13, color: "rgba(0,0,0,0.50)" }}>Asset Overview</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#5ecc8a" }} />
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(0,0,0,0.35)" }}>Live Data</span>
+        </div>
+      </div>
+
+      <div style={{ padding: "36px 48px 80px" }}>
+        {/* Headline */}
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(154,123,60,0.75)", marginBottom: 10 }}>Kessler Family · Financial Picture</div>
+        <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 30, fontWeight: 400, color: "hsl(222,45%,12%)", lineHeight: 1.20, letterSpacing: "-0.02em", marginBottom: 8 }}>Where the money lives — and how it is working.</div>
+        <div style={{ fontSize: 13, color: "rgba(0,0,0,0.45)", lineHeight: 1.65, maxWidth: 560, marginBottom: 22 }}>Every position, organized by purpose. Balances and yields as of today.</div>
+
+        {/* Net worth strip */}
+        <div style={{ display: "flex", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, background: "#fff", marginBottom: 28, overflow: "hidden" }}>
+          {[
+            { label: "Net Worth", val: netWorth, note: null },
+            { label: "Total Assets", val: totalAssets, note: `${assets.length} positions` },
+            { label: "Total Liabilities", val: -totalLiab, note: `${liabilities.length} positions`, neg: true },
+            { label: "Liquid Assets", val: opTotal + resTotal + capTotal, note: `${(((opTotal + resTotal + capTotal) / totalAssets) * 100).toFixed(1)}% of total assets` },
+          ].map((item, i) => (
+            <div key={i} style={{ flex: 1, padding: "14px 20px", borderRight: "1px solid rgba(0,0,0,0.07)" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(0,0,0,0.32)", marginBottom: 4 }}>{item.label}</div>
+              <div style={{ fontSize: 19, fontWeight: 300, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.025em", color: item.neg ? "#9b2020" : "hsl(222,45%,12%)", lineHeight: 1 }}>
+                {item.neg ? "−" : ""}{fmt(Math.abs(item.val))}
+              </div>
+              {item.note && <div style={{ fontSize: 10, color: "rgba(0,0,0,0.38)", marginTop: 3 }}>{item.note}</div>}
+            </div>
+          ))}
+          <div style={{ flex: 1, padding: "14px 20px" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(0,0,0,0.32)", marginBottom: 4 }}>Annual Income</div>
+            <div style={{ fontSize: 19, fontWeight: 300, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1 }}>—</div>
+            <div style={{ fontSize: 10, color: "rgba(0,0,0,0.38)", marginTop: 3 }}>Yield-bearing positions</div>
+          </div>
+        </div>
+
+        {/* GURU signal */}
+        {idleTotal > 0 && (
+          <div style={{ background: "#0c1828", borderRadius: 8, padding: "10px 16px", display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)", whiteSpace: "nowrap" }}>GURU Intelligence</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, borderLeft: "2px solid #44e08a", paddingLeft: 10 }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#44e08a", flexShrink: 0 }} />
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "#fff", textTransform: "uppercase" }}>LQ-7</span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)" }}>{fmt(idleTotal)} sitting in idle sweep — opportunity to ladder into Treasuries at current rates</span>
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid rgba(68,224,138,0.35)", color: "#44e08a", padding: "2px 7px", borderRadius: 2, whiteSpace: "nowrap" }}>Opportunity · Review Allocation</span>
+            </div>
+          </div>
+        )}
+
+        {/* Assets */}
+        <div style={sectionLbl}>Assets · {fmt(totalAssets)}</div>
+        <div style={grid}>
+          <AssetOvBucketCard color={GURU_BUCKETS.reserve.color} border={`${GURU_BUCKETS.reserve.color}2e`} name="Operating Cash"
+            tagline="2–3 months of core expenses. Instant access. No rate optimization."
+            approach="Day-to-day expenses and debt payments. Always available. Priority is access, not return. Anything above the floor should be deployed."
+            balance={opTotal} items={opCash} />
+          <AssetOvBucketCard color={GURU_BUCKETS.yield.color} border={`${GURU_BUCKETS.yield.color}2e`} name="Liquidity Reserve"
+            tagline="12–18 months of anticipated outflows plus a buffer."
+            approach="Next 12–18 months of outflows, plus room for the unexpected. Priority is to preserve value and stay accessible. Intentionally larger than known needs. The buffer is the point."
+            balance={resTotal} items={resCash} />
+          {capTotal > 0 && (
+            <AssetOvBucketCard color={GURU_BUCKETS.tactical.color} border={`${GURU_BUCKETS.tactical.color}2e`} name="Capital Build"
+              tagline="Saving for a specific goal with a known target and deadline."
+              approach="Set aside for a large planned expenditure with a fixed timeline. Priority is to grow while protecting principal. One purpose — do not touch for anything else."
+              balance={capTotal} items={capBuild} />
+          )}
+          <AssetOvBucketCard color={GURU_BUCKETS.growth.color} border={`${GURU_BUCKETS.growth.color}2e`} name="Investments"
+            tagline="Long-term growth across brokerage and retirement accounts."
+            approach="Long-term wealth growth. Return is the only objective. Priority is after-tax growth over decades. Volatility is accepted."
+            balance={growTotal} header4="5yr Ret."
+            subSections={[
+              ...(growthEquity.length > 0 ? [{ label: "Equities", items: growthEquity }] : []),
+              ...(growthRetirement.length > 0 ? [{ label: "Retirement", items: growthRetirement }] : []),
+            ]} />
+          {altTotal > 0 && (
+            <AssetOvBucketCard color={GURU_BUCKETS.alternatives.color} border={`${GURU_BUCKETS.alternatives.color}2e`} name="Other Assets"
+              tagline="Real estate, private equity, and stock compensation. Not liquid."
+              approach="Assets that contribute to net worth but cannot quickly be accessed. Priority is accurate tracking for a complete financial picture. Not managed for deployment. Values are estimates."
+              balance={altTotal} items={alts} />
+          )}
+        </div>
+
+        {/* Liabilities */}
+        <div style={{ ...sectionLbl, marginTop: 8 }}>Liabilities · −{fmt(totalLiab)}</div>
+        <div style={grid}>
+          {mortgages.length > 0 && (
+            <LiabCard color="#9b2020" border="rgba(155,32,32,0.18)" name="Mortgages" tagline="Real estate debt obligations"
+              approach="Fixed-rate mortgages locked at advantaged rates. Cost of debt is below current market — no action recommended."
+              total={mortTotal} items={mortgages} />
+          )}
+          {consumer.length > 0 && (
+            <LiabCard color="#9b2020" border="rgba(155,32,32,0.18)" name="Consumer Liabilities" tagline="Credit cards &amp; student loans"
+              approach="Credit card balances assumed paid monthly — cost of carry is negligible. Student loan rate is below refi threshold; monitored annually."
+              total={consTotal} items={consumer} />
+          )}
+          {investFinance.length > 0 && (
+            <LiabCard color="#50287a" border="rgba(80,40,120,0.18)" name="Investment Financing" tagline="Private equity capital obligations"
+              approach="Professional loan used to fund capital calls into PE Fund II. Remaining unfunded commitment tracked separately. Rate review recommended at next meeting."
+              total={investTotal} items={investFinance} />
+          )}
+        </div>
+      </div>
+
+      {/* Fixed footer */}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0c1828", borderTop: "1px solid rgba(255,255,255,0.05)", height: 50, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", zIndex: 40 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.28)" }}>Net Worth</span>
+          <span style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.025em", color: "#fff" }}>{fmt(netWorth)}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+          {[
+            { label: "Total Assets", val: fmt(totalAssets) },
+            { label: "Total Liabilities", val: `−${fmt(totalLiab)}` },
+            { label: "Liquid Cash", val: fmt(opTotal + resTotal + capTotal), green: true },
+          ].map((item, i) => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
+              <span style={{ fontSize: 8, color: "rgba(255,255,255,0.28)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{item.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: item.green ? "#44e08a" : "rgba(255,255,255,0.55)" }}>{item.val}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Balance Sheet bucket card ─────────────────────────────────────────────────
+// 4–5 key stats always visible in a compact table; additional context in ▼ MORE.
+function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBalance, nextMonth, stats, secondaryStats }: {
+  color: string; border: string; name: string; tagline: string;
+  bullets?: string[];
+  balance: number;
+  nextBalance?: number;
+  nextMonth?: string;
+  stats: { label: string; value: string; note?: string }[];
+  secondaryStats?: { label: string; value: string; note?: string }[];
+}) {
+  const [expanded, setExpanded] = React.useState(false);
+  // label | value (auto, left-aligned) | note (flex, right-aligned — more room, no truncation)
+  const cols = "1fr auto minmax(0, 1fr)";
+  const rowSt: React.CSSProperties = {
+    display: "grid", gridTemplateColumns: cols, gap: "0 8px",
+    padding: "5px 16px", borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "center", minHeight: 28,
+  };
+  return (
+    <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: 3, background: color, opacity: 0.9 }} />
+      {/* Header — vertical stack: name → balance → tagline → forecast
+          minHeight locks the separator to the same horizontal line across all cards */}
+      <div style={{ padding: "16px 16px 14px", minHeight: 120 }}>
+        {/* Bucket name */}
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color, opacity: 0.85, marginBottom: 8 }}>{name}</div>
+        {/* Balance row — current balance left, forecast right on same line */}
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+          <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "#1a1a1a", lineHeight: 1 }}>{fmt(balance)}</div>
+          {nextBalance !== undefined && nextMonth && (
+            <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexShrink: 0 }}>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.28)" }}>{nextMonth}</span>
+              <span style={{ fontSize: 13, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: nextBalance >= balance ? "#1A6640" : "#9b2020", lineHeight: 1 }}>{fmt(nextBalance)}</span>
+              <span style={{ fontSize: 9, color: nextBalance >= balance ? "#1A6640" : "#9b2020", lineHeight: 1 }}>{nextBalance >= balance ? "▲" : "▼"}</span>
+            </div>
+          )}
+        </div>
+        {/* Tagline */}
+        <div style={{ fontSize: 10.5, color: "rgba(0,0,0,0.48)", lineHeight: 1.45 }}>{tagline}</div>
+      </div>
+      {/* Stats table — always visible */}
+      <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)", flex: 1 }}>
+        {/* Separator bar — color tint, no text labels */}
+        <div style={{ height: 3, background: color, opacity: 0.12 }} />
+        {stats.map((s, i) => (
+          <div key={i} style={rowSt}>
+            <span style={{ fontSize: 11, fontWeight: 500, color: "#2a2820", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.label}</span>
+            <span style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.70)", whiteSpace: "nowrap" }}>{s.value}</span>
+            <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", textAlign: "right", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note ?? ""}</span>
+          </div>
+        ))}
+      </div>
+      {/* Element 2+3 — More detail toggle + bullets */}
+      {bullets && bullets.length > 0 && (
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.012)" }}>
+          {/* Element 3 — toggle link */}
+          <button
+            onClick={() => setExpanded(e => !e)}
+            style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 16px", background: "none", border: "none", cursor: "pointer", fontSize: 10.5, color: "rgba(0,0,0,0.38)", letterSpacing: "0.01em" }}
+          >
+            {expanded ? "Less detail ▲" : "More detail ▼"}
+          </button>
+          {/* Element 2 — expanded bullets */}
+          {expanded && (
+            <div style={{ padding: "0 16px 12px", borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+              {bullets.map((b, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, padding: "5px 0", borderBottom: i < bullets.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
+                  <span style={{ fontSize: 9, color: "rgba(0,0,0,0.22)", flexShrink: 0, marginTop: 2 }}>—</span>
+                  <span style={{ fontSize: 10.5, color: "rgba(0,0,0,0.54)", lineHeight: 1.55 }}>{b}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Asset[]; liabilities: Liability[]; cashFlows?: CashFlow[] }) {
+  const [expandedRE, setExpandedRE] = React.useState<Set<number>>(new Set());
+
+  // ── Account metadata lookup (full names, institutions, account sub-labels) ──
+  function acctMeta(desc: string): { name: string; inst: string; last4: string; insight: string; yield_: string; comment: string; collateral: string } {
+    const d = (desc ?? "").toLowerCase();
+    if (d.includes("chase total checking"))                                  return { name: "Chase Total Checking",                          inst: "JPMorgan Chase Bank, N.A.",        last4: "·7842", insight: "Daily Operating",         yield_: "< 0.01%",   comment: "",                       collateral: "" };
+    if (d.includes("citizens private banking checking"))                     return { name: "Citizens Private Banking Checking",              inst: "Citizens Bank, N.A.",              last4: "·2847", insight: "Overflow / Payroll",      yield_: "< 0.01%",   comment: "Excess — deployable",    collateral: "" };
+    if (d.includes("citizens private bank money market"))                    return { name: "Citizens Private Bank Money Market",             inst: "Citizens Bank, N.A.",              last4: "·7204", insight: "3.65% APY",               yield_: "3.65%",     comment: "",                       collateral: "" };
+    if (d.includes("capitalOne 360") || d.includes("360 performance") || d.includes("capital one 360")) return { name: "Capital One 360 Performance Savings",         inst: "Capital One, N.A.",               last4: "·1482", insight: "3.78% APY",               yield_: "3.78%",     comment: "",                       collateral: "" };
+    if (d.includes("cash sweep") || (d.includes("fidelity") && d.includes("money market")))             return { name: "Fidelity Government Money Market Fund (SPAXX)", inst: "Fidelity Investments",            last4: "·4976", insight: "2.50% 7-day yield",       yield_: "2.50%",     comment: "Below potential",        collateral: "" };
+    if (d.includes("us treasuries") || d.includes("t-bill") || d.includes("treasur"))                  return { name: "U.S. Treasury Bills — 3-Month",                inst: "Fidelity Investments (custodian)", last4: "·1142", insight: "Matures Apr 2026",        yield_: "3.95%",     comment: "Maturing Apr '26",       collateral: "" };
+    if (d.includes("cresset"))                                               return { name: "Cresset Capital — Managed Portfolio (US)",       inst: "Cresset Asset Management, LLC",    last4: "·3391", insight: "Advisor managed",          yield_: "—",         comment: "",                       collateral: "" };
+    if (d.includes("schwab"))                                                return { name: "Schwab International Index Fund (SWISX)",         inst: "Charles Schwab & Co., Inc.",       last4: "·7678", insight: "",                        yield_: "+7.9%",     comment: "",                       collateral: "" };
+    if (d.includes("meta platforms") || (d.includes("meta") && d.includes("e*trade"))) return { name: "E*Trade Brokerage — Meta Platforms, Inc. (META)", inst: "Morgan Stanley (E*Trade)", last4: "·9782", insight: "Concentration", yield_: "+68.3%",  comment: "Concentration",          collateral: "" };
+    if (d.includes("bank of america") && d.includes("single stock"))        return { name: "E*Trade Brokerage — Bank of America Corp. (BAC)", inst: "Morgan Stanley (E*Trade)",        last4: "·9782", insight: "Concentration", yield_: "+12.0%",  comment: "Concentration",          collateral: "" };
+    if (d.includes("401"))                                                   return { name: "Fidelity Workplace 401(k) — Traditional",         inst: "Fidelity Investments · 401(k)",   last4: "·8821", insight: "Tax-deferred · pre-tax",  yield_: "+10.4%",    comment: "",                       collateral: "" };
+    if (d.includes("roth ira"))                                              return { name: "Fidelity Roth IRA",                               inst: "Fidelity Investments · Roth IRA", last4: "·4412", insight: "Tax-free growth",         yield_: "+11.8%",    comment: "",                       collateral: "" };
+    if (d.includes("coinbase"))                                              return { name: "Coinbase Custody — Bitcoin & Ethereum",           inst: "Coinbase, Inc.",                  last4: "",      insight: "BTC 60% / ETH 40%",       yield_: "+47.3%",    comment: "High volatility",        collateral: "" };
+    if (d.includes("carlyle") && d.includes("viii") && d.includes("carry")) return { name: "Carlyle Partners VIII — Carried Interest",        inst: "The Carlyle Group",               last4: "",      insight: "Est. fair market value",  yield_: "22.6% net", comment: "Illiquid",               collateral: "" };
+    if (d.includes("carlyle") && d.includes("ix") && d.includes("carry"))   return { name: "Carlyle Partners IX — Carried Interest",          inst: "The Carlyle Group",               last4: "",      insight: "Est. fair market value",  yield_: "26.1% net", comment: "Illiquid",               collateral: "" };
+    if (d.includes("carlyle") && d.includes("viii"))                        return { name: "Carlyle Partners VIII — LP Interest",             inst: "The Carlyle Group",               last4: "",      insight: "PE · NAV est.",           yield_: "12.4% IRR", comment: "Illiquid · 2028",        collateral: "" };
+    if (d.includes("carlyle") && d.includes("ix"))                          return { name: "Carlyle Partners IX — LP Interest",               inst: "The Carlyle Group",               last4: "",      insight: "PE · NAV est.",           yield_: "14.2% IRR", comment: "Illiquid · 2030",        collateral: "" };
+    if (d.includes("goldman"))                                               return { name: "Goldman Sachs Group, Inc. — RSU Award",           inst: "Goldman Sachs & Co. LLC",         last4: "",      insight: "Unvested · 2-yr cliff",   yield_: "+18.2%",    comment: "Unvested",               collateral: "" };
+    if (d.includes("tribeca") && d.includes("mortgage"))                    return { name: "Tribeca Condo Mortgage — 50 Warren St, Apt 12F",  inst: "Wells Fargo Bank, N.A.",          last4: "·4421", insight: "30-yr fixed · 3.25%",     yield_: "",          comment: "",                       collateral: "Tribeca Condo (50 Warren St)" };
+    if (d.includes("sarasota") && d.includes("mortgage"))                   return { name: "Sarasota Investment Property Mortgage",           inst: "Bank of America, N.A.",           last4: "·8863", insight: "30-yr fixed · 4.10%",     yield_: "",          comment: "",                       collateral: "1847 Siesta Dr · Sarasota, FL" };
+    if (d.includes("sapphire") || (d.includes("chase") && d.includes("amex"))) return { name: "Chase Sapphire Reserve & Amex Platinum",      inst: "JPMorgan Chase / Amex",           last4: "·6411 + ·3009", insight: "Paid monthly",    yield_: "",          comment: "",                       collateral: "None — unsecured" };
+    if (d.includes("student loan") && d.includes("sarah"))                   return { name: "Federal Student Loan — Sarah Kessler",           inst: "U.S. Dept. of Education",         last4: "·2214", insight: "Income-driven repayment", yield_: "",          comment: "",                       collateral: "None — unsecured" };
+    if (d.includes("student loan") && d.includes("michael"))                 return { name: "Private Student Loan — Michael Kessler",         inst: "Sallie Mae Bank",                 last4: "·5589", insight: "Fixed rate · private",    yield_: "",          comment: "",                       collateral: "None — unsecured" };
+    if (d.includes("student loan"))                                          return { name: "Student Loan",                                   inst: "Federal / Private",               last4: "·2214", insight: "",                        yield_: "",          comment: "",                       collateral: "None — unsecured" };
+    if (d.includes("professional loan") || (d.includes("pe fund") && d.includes("capital call"))) return { name: "Professional Capital Call Line of Credit", inst: "First Republic Bank",  last4: "·7731", insight: "Variable rate · SOFR+",   yield_: "", comment: "Secured by LP interest", collateral: "Carlyle Partners LP Interest" };
+    if (d.includes("remaining capital") || (d.includes("commitment") && d.includes("unfunded"))) return { name: "Unfunded Capital Commitment",              inst: "The Carlyle Group",    last4: "",      insight: "Carlyle IX · Unfunded",   yield_: "", comment: "Call anticipated 2026",  collateral: "Carlyle Partners IX" };
+    return { name: assetShortName(desc), inst: "", last4: "", insight: "", yield_: "", comment: "", collateral: "" };
+  }
+
+  // ── Weighted-average yield helper ──────────────────────────────────────────
+  function parseYieldPct(s: string): number | null {
+    if (!s || s === "—") return null;
+    const neg = s.trimStart().startsWith("-");
+    const m = s.match(/[\d.]+/);
+    if (!m) return null;
+    return (neg ? -1 : 1) * parseFloat(m[0]);
+  }
+  function calcWtdYield(items: Asset[]): string {
+    let wSum = 0, vSum = 0;
+    for (const a of items) {
+      const v = Number(a.value);
+      const y = parseYieldPct(acctMeta(a.description ?? "").yield_);
+      if (y !== null && v > 0) { wSum += v * y; vSum += v; }
+    }
+    if (vSum === 0) return "";
+    const avg = wSum / vSum;
+    return avg.toFixed(2) + "%";
+  }
+
+  // Bucket assets
+  const opCash    = assets.filter(a => assetBucketKey(a) === "reserve");
+  const resCash   = assets.filter(a => assetBucketKey(a) === "yield_");
+  const capBuild  = assets.filter(a => assetBucketKey(a) === "tactical");
+  const growth    = assets.filter(a => assetBucketKey(a) === "growth");
+  const altsAll   = assets.filter(a => assetBucketKey(a) === "alts");
+  const reAssets   = assets.filter(a => a.type === "real_estate");
+  const otherAlts  = altsAll.filter(a => a.type !== "real_estate");
+  // Tracked sub-groups: pure alts (PE/crypto investment), carry vehicles, RSU deferred comp
+  const pureAlts   = otherAlts.filter(a => { const d = (a.description ?? "").toLowerCase(); return !d.includes("carry") && !d.includes("rsu") && !d.includes("goldman"); });
+  const peAssets   = pureAlts.filter(a => (a.description ?? "").toLowerCase().includes("carlyle"));
+  const cryptoAssets = pureAlts.filter(a => (a.description ?? "").toLowerCase().includes("coinbase"));
+  // Alternative investments = pureAlts that are neither PE (carlyle) nor crypto (coinbase)
+  const altInvests = pureAlts.filter(a => { const d = (a.description ?? "").toLowerCase(); return !d.includes("carlyle") && !d.includes("coinbase"); });
+  const carryAlts  = otherAlts.filter(a => (a.description ?? "").toLowerCase().includes("carry"));
+  const rsuAlts    = otherAlts.filter(a => { const d = (a.description ?? "").toLowerCase(); return d.includes("rsu") || d.includes("goldman"); });
+
+  const growthEquity     = growth.filter(a => !isRetirementAsset(a));
+  const growthRetirement = growth.filter(a => isRetirementAsset(a));
+
+  // Zillow estimates (demo hardcoded)
+  function zillowVal(a: Asset): number {
+    const d = (a.description ?? "").toLowerCase();
+    if (d.includes("tribeca")) return 1875000;
+    if (d.includes("sarasota")) return 415000;
+    return Number(a.value);
+  }
+  function reAddr(a: Asset): string {
+    const d = (a.description ?? "").toLowerCase();
+    if (d.includes("tribeca")) return "50 Warren St, Apt 12F · New York, NY";
+    if (d.includes("sarasota")) return "1847 Siesta Drive · Sarasota, FL";
+    return "";
+  }
+
+  // Totals
+  const opTotal        = opCash.reduce((s, a) => s + Number(a.value), 0);
+  const resTotal       = resCash.reduce((s, a) => s + Number(a.value), 0);
+  const capTotal       = capBuild.reduce((s, a) => s + Number(a.value), 0);
+  const growTotal      = growth.reduce((s, a) => s + Number(a.value), 0);
+  const reTotalZillow   = reAssets.reduce((s, a) => s + zillowVal(a), 0);
+  const pureAltsTotal      = pureAlts.reduce((s, a) => s + Number(a.value), 0);
+  const peAssetsTotal      = peAssets.reduce((s, a) => s + Number(a.value), 0);
+  const cryptoTotal        = cryptoAssets.reduce((s, a) => s + Number(a.value), 0);
+  const altInvestsTotal    = altInvests.reduce((s, a) => s + Number(a.value), 0);
+  const carryTotal         = carryAlts.reduce((s, a) => s + Number(a.value), 0);
+  const rsuTotal           = rsuAlts.reduce((s, a) => s + Number(a.value), 0);
+  const otherAltsTotal     = pureAltsTotal + carryTotal + rsuTotal;
+
+  const totalAssetsZillow = opTotal + resTotal + capTotal + growTotal + reTotalZillow + otherAltsTotal;
+
+  const mortgages = liabilities.filter(l => l.type === "mortgage");
+  const consumer  = liabilities.filter(l => l.type === "credit_card" || l.type === "student_loan");
+  const profLoans = liabilities.filter(l => l.type === "personal_loan");
+  const mortTotal = mortgages.reduce((s, l) => s + Number(l.value), 0);
+  const consTotal = consumer.reduce((s, l) => s + Number(l.value), 0);
+  const profTotal = profLoans.reduce((s, l) => s + Number(l.value), 0);
+  const totalLiab = liabilities.reduce((s, l) => s + Number(l.value), 0);
+  const netWorth  = totalAssetsZillow - totalLiab;
+  const idleAmt   = resCash.filter(a => isIdleAsset(a)).reduce((s, a) => s + Number(a.value), 0);
+
+  const reNetEquity  = reTotalZillow - mortTotal;
+  const altNetOfLoan = otherAltsTotal - profTotal;
+
+  // ── Borrowing capacity ────────────────────────────────────────────────────
+  const growthEqAmt     = growthEquity.reduce((s, a) => s + Number(a.value), 0);
+  const sblCapacity     = Math.round(growthEqAmt * 0.50);          // 50% of eligible equity
+  const primaryRE2      = reAssets.find(a => (a.description ?? "").toLowerCase().includes("tribeca")) ?? reAssets[0];
+  const primaryVal2     = primaryRE2 ? zillowVal(primaryRE2) : 0;
+  const primaryMtg2     = mortgages.find(m => (m.description ?? "").toLowerCase().includes("tribeca")) ?? mortgages[0];
+  const primaryMtgBal2  = primaryMtg2 ? Number(primaryMtg2.value) : 0;
+  const helocCapacity   = Math.max(0, Math.round(primaryVal2 * 0.80 - primaryMtgBal2));
+  const primaryLTV2     = primaryVal2 > 0 ? Math.round((primaryMtgBal2 / primaryVal2) * 100) : 0;
+  const totalBorrowCap  = sblCapacity + helocCapacity;
+
+  function reMortgage(a: Asset): Liability | undefined {
+    const d = (a.description ?? "").toLowerCase();
+    return mortgages.find(m => {
+      const md = (m.description ?? "").toLowerCase();
+      if (d.includes("tribeca")) return md.includes("tribeca");
+      if (d.includes("sarasota")) return md.includes("sarasota");
+      return false;
+    });
+  }
+
+  // ── GURU liquidity-spectrum bucket colors ────────────────────────────────
+  const BC = { op: "#22c55e", res: "#84cc16", cap: "#eab308", inv: "#f97316", alts: "#dc2626", liab: "#9b2020", liabP: "#50287a" };
+
+  // ── Grid columns — 5-col layout keeps account+inst on left, balance+detail on right
+  // Col 3 (1fr) is a silent spacer so numbers hug the right margin regardless of screen width
+  const AG = "260px 175px 1fr 115px 135px";  // account | institution | spacer | balance | detail
+  const LG = "260px 175px 1fr 115px 72px";   // account | institution | spacer | balance | rate
+  const thSt = (right?: boolean): React.CSSProperties => ({ fontSize: 9, fontWeight: 600, letterSpacing: "0.09em", textTransform: "uppercase", color: "#9B9890", textAlign: right ? "right" : "left" });
+
+  // ── Asset group header (5-col — no tag badges, clean statement style) ──────
+  function GroupHead({ color, label, total, memo }: { color: string; label: string; total: number; memo?: string }) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: AG, padding: "9px 0", background: "#F5F3EF", borderTop: "1px solid #DAD8D2", borderBottom: "1px solid #E2E0DA", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ width: 7, height: 7, background: color, flexShrink: 0 }} />
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#2A2820" }}>{label}</span>
+          {memo && <span style={{ fontSize: 9, color: "#9B9890", fontVariantNumeric: "tabular-nums" }}>{memo}</span>}
+        </div>
+        <div />{/* institution col */}
+        <div />{/* spacer */}
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#1A1915", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(total)}</div>
+        <div />{/* detail col */}
+      </div>
+    );
+  }
+
+  // ── Liability group header (5-col) ────────────────────────────────────────
+  function LiabGroupHead({ label, total, color, note }: { label: string; total: number; color: string; note?: string }) {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: LG, padding: "9px 0", background: "#F5F3EF", borderTop: "1px solid #DAD8D2", borderBottom: "1px solid #E2E0DA", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <div style={{ width: 7, height: 7, background: color, flexShrink: 0 }} />
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#2A2820" }}>{label}</span>
+          {note && <span style={{ fontSize: 9, color: "#9B9890", fontStyle: "italic" }}>{note}</span>}
+        </div>
+        <div />{/* institution col */}
+        <div />{/* spacer */}
+        <div style={{ fontSize: 12, fontWeight: 600, color: "#9b2020", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>−{fmt(total)}</div>
+        <div />{/* rate col */}
+      </div>
+    );
+  }
+
+  // ── Asset row (5-col) ─────────────────────────────────────────────────────
+  function AssetRow({ a, dotColor }: { a: Asset; dotColor?: string }) {
+    const meta = acctMeta(a.description ?? "");
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: AG, paddingTop: 9, paddingBottom: 9, borderBottom: "1px solid #EEECE7", alignItems: "baseline" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 5, minWidth: 0, overflow: "hidden" }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: dotColor ?? "#C5C3BD", flexShrink: 0, marginTop: 3, alignSelf: "flex-start" }} />
+          <span style={{ fontSize: 12, color: "#1A1915", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta.name}</span>
+          {meta.last4 && <span style={{ fontSize: 10, color: "#B0AEA8", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flexShrink: 0 }}>{meta.last4}</span>}
+        </div>
+        <div style={{ fontSize: 11, color: "#6B6860" }}>{meta.inst}</div>
+        <div />{/* spacer */}
+        <div style={{ fontSize: 12, fontVariantNumeric: "tabular-nums", color: "#1A1915", textAlign: "right" }}>{fmt(Number(a.value))}</div>
+        <div style={{ fontSize: 11, color: "#9B9890", textAlign: "right" }}>{meta.insight}</div>
+      </div>
+    );
+  }
+
+  // ── RE expandable row (5-col) ─────────────────────────────────────────────
+  function RERow({ a }: { a: Asset }) {
+    const zv       = zillowVal(a);
+    const addr     = reAddr(a);
+    const mtg      = reMortgage(a);
+    const isOpen   = expandedRE.has(a.id);
+    const d        = (a.description ?? "").toLowerCase();
+    const isRental = d.includes("rented") || d.includes("rental") || d.includes("investment, fl");
+    const gain     = zv - Number(a.value);
+    const gainPct  = ((gain / Number(a.value)) * 100).toFixed(1);
+    const propName = d.includes("tribeca") ? "Tribeca Condo" : "Sarasota Property";
+    return (
+      <React.Fragment>
+        <div
+          style={{ display: "grid", gridTemplateColumns: AG, paddingTop: 9, paddingBottom: 9, borderBottom: isOpen ? "none" : "1px solid #EEECE7", alignItems: "baseline", cursor: "pointer", background: isOpen ? "#F7F5F0" : undefined }}
+          onClick={() => setExpandedRE(prev => { const s = new Set(prev); s.has(a.id) ? s.delete(a.id) : s.add(a.id); return s; })}
+        >
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
+            <span style={{ fontSize: 10, color: "#9B9890", flexShrink: 0, userSelect: "none", alignSelf: "center" }}>{isOpen ? "▾" : "▸"}</span>
+            <span style={{ fontSize: 12, color: "#1A1915", whiteSpace: "nowrap" }}>{propName}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: isRental ? "#7A5000" : "#1A3F72", letterSpacing: "0.05em", textTransform: "uppercase", flexShrink: 0 }}>{isRental ? "Rental" : "Primary"}</span>
+          </div>
+          <div style={{ fontSize: 11, color: "#6B6860", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={addr}>{addr}</div>
+          <div />{/* spacer */}
+          <div style={{ fontSize: 12, fontVariantNumeric: "tabular-nums", color: "#1A1915", textAlign: "right" }}>{fmt(zv)}</div>
+          <div style={{ fontSize: 10, color: "#3A6FAB", textAlign: "right" }}>Zillow est.</div>
+        </div>
+        {isOpen && (
+          <div style={{ background: "#F7F5F0", borderBottom: "1px solid #DAD8D2", padding: "10px 0 10px 22px" }}>
+            <div style={{ display: "flex", gap: 28, fontSize: 11, flexWrap: "wrap" }}>
+              <div><span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9B9890" }}>Purchase Price </span><span style={{ fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(Number(a.value))}</span></div>
+              <div><span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9B9890" }}>Zillow Est. </span><span style={{ fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(zv)}</span></div>
+              <div><span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#1A5C32" }}>Unrealized Gain </span><span style={{ fontVariantNumeric: "tabular-nums", color: "#1A5C32" }}>+{fmt(gain)} (+{gainPct}%)</span></div>
+              {mtg && <div><span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#9B9890" }}>Mortgage </span><span style={{ fontVariantNumeric: "tabular-nums", color: "#9b2020" }}>−{fmt(Number(mtg.value))}</span>{" @ "}{Number(mtg.interestRate).toFixed(2)}%</div>}
+            </div>
+          </div>
+        )}
+      </React.Fragment>
+    );
+  }
+
+  // ── Liability row (5-col) ─────────────────────────────────────────────────
+  function LiabRow({ l, dim }: { l: Liability; dim?: boolean }) {
+    const rate = Number(l.interestRate);
+    const d    = (l.description ?? "").toLowerCase();
+    const isCommitment = d.includes("commitment") || d.includes("unfunded");
+    const rateEl = isCommitment
+      ? <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#50287a" }}>Unfunded</span>
+      : <span style={{ fontSize: 12, fontVariantNumeric: "tabular-nums", color: "#9B9890" }}>{rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(2)}%</span>;
+    const meta = acctMeta(l.description ?? "");
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: LG, paddingTop: 9, paddingBottom: 9, borderBottom: "1px solid #EEECE7", alignItems: "baseline", opacity: dim ? 0.55 : 1 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 5, minWidth: 0, overflow: "hidden" }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#9b2020", flexShrink: 0, marginTop: 3, alignSelf: "flex-start" }} />
+          <span style={{ fontSize: 12, color: "#1A1915", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta.name}</span>
+          {meta.last4 && <span style={{ fontSize: 10, color: "#B0AEA8", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flexShrink: 0 }}>{meta.last4}</span>}
+        </div>
+        <div style={{ fontSize: 11, color: "#6B6860" }}>{meta.inst}</div>
+        <div />{/* spacer */}
+        <div style={{ fontSize: 12, fontVariantNumeric: "tabular-nums", color: "#9b2020", textAlign: "right" }}>−{fmt(Number(l.value))}</div>
+        <div style={{ textAlign: "right" }}>{rateEl}</div>
+      </div>
+    );
+  }
+
+  // ── Section sub-label ─────────────────────────────────────────────────────
+  function SectionLabel({ text }: { text: string }) {
+    return <div style={{ padding: "5px 0 3px 22px", fontSize: 8, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase", color: "#AEACA6" }}>{text}</div>;
+  }
+
+  // ── Tracked section divider ───────────────────────────────────────────────
+  function TrackedDivider() {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0 8px" }}>
+        <div style={{ flex: 1, height: "1px", background: "linear-gradient(to right, transparent, #C8C6C0)" }} />
+        <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase", color: "#AEACA6", whiteSpace: "nowrap" }}>Tracked — Outside GURU Model</span>
+        <div style={{ flex: 1, height: "1px", background: "linear-gradient(to left, transparent, #C8C6C0)" }} />
+      </div>
+    );
+  }
+
+  // ── Real estate assets with Zillow-adjusted values for card display ──────
+  const reAssetsZillow = reAssets.map(a => ({ ...a, value: String(zillowVal(a)) }));
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#ECEAE4" }}>
+      <div style={{ padding: "36px 48px 80px" }}>
+
+        {/* ── HERO BAR — Option C: 50% left title · 2×2 right grid ── */}
+        {/* ALIGNMENT RULE: numbers in the same row share the same top baseline.
+            Any cell with extra content above its number (e.g. GURU eyebrow) must
+            have an invisible spacer of equal height in its paired cell. */}
+        <div style={{ display: "grid", gridTemplateColumns: "50% 1fr", alignItems: "stretch", marginBottom: 32, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+
+          {/* ── Left: identity strip ── */}
+          <div style={{ padding: "16px 40px 16px 0", borderRight: "1px solid rgba(0,0,0,0.08)", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.35)", marginBottom: 6 }}>Financial Model</div>
+            <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 34, fontWeight: 400, color: "hsl(222,45%,12%)", lineHeight: 1.18, letterSpacing: "-0.02em", marginBottom: 10 }}>Sarah &amp; Michael Kessler</div>
+            <div style={{ width: 24, height: 1, background: "rgba(0,0,0,0.12)", marginBottom: 10 }} />
+            <div style={{ fontSize: 9, fontWeight: 400, color: "rgba(0,0,0,0.48)", letterSpacing: "0.005em", lineHeight: 1.55 }}>
+              A complete view of every account, asset, and obligation — monitored continuously by{" "}
+              <span style={{ color: "rgba(71,113,174,0.78)", fontWeight: 500 }}>GURU</span>.
+            </div>
+          </div>
+
+          {/* ── Right: 2×2 stat grid — target total height ≤160px ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto 1fr 1fr" }}>
+
+            {/* Date bar */}
+            <div style={{ gridColumn: "1 / -1", padding: "4px 18px", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)", letterSpacing: "0.03em" }}>As of April 6, 2026</div>
+            </div>
+
+            {/* TOP LEFT: Net Worth — 26px, primary stat */}
+            <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column" as const, justifyContent: "center", borderBottom: "1px solid rgba(0,0,0,0.07)", borderRight: "1px solid rgba(0,0,0,0.08)" }}>
+              {/* spacer matches GURU eyebrow height — keeps numbers on same horizontal line */}
+              <div style={{ height: 13, marginBottom: 6 }} />
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.40)", marginBottom: 2 }}>Net Worth</div>
+              <div style={{ fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.030em", lineHeight: 1, color: "hsl(222,45%,12%)", marginBottom: 3 }}>{fmt(netWorth)}</div>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)" }}>incl. real estate at Zillow estimates</div>
+            </div>
+
+            {/* TOP RIGHT: GURU Excess Liquidity — 20px, same tier as assets */}
+            <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column" as const, justifyContent: "center", borderBottom: "1px solid rgba(91,143,204,0.18)", background: "rgba(91,143,204,0.06)", borderLeft: "3px solid rgba(91,143,204,0.30)" }}>
+              {/* GURU eyebrow — height 13px + mb 6px matches spacer in Net Worth cell */}
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6, height: 13 }}>
+                <div style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(91,143,204,0.75)", flexShrink: 0 }} />
+                <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(71,113,174,0.65)" }}>GURU Intelligence</div>
+              </div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(71,113,174,0.55)", marginBottom: 2 }}>Excess Liquidity Identified</div>
+              <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", lineHeight: 1, color: "rgba(30,118,68,0.90)", marginBottom: 3 }}>{fmt(idleAmt)}</div>
+              <div style={{ fontSize: 9.5, color: "rgba(71,113,174,0.52)", lineHeight: 1.3 }}>Above reserve floor · deployable now</div>
+            </div>
+
+            {/* BOTTOM LEFT: Total Assets — 20px, secondary */}
+            <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column" as const, justifyContent: "center", borderRight: "1px solid rgba(0,0,0,0.08)" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.40)", marginBottom: 2 }}>Total Assets</div>
+              <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", lineHeight: 1, color: "hsl(222,45%,12%)", marginBottom: 3 }}>{fmt(totalAssetsZillow)}</div>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)" }}>{assets.length} positions across all accounts</div>
+            </div>
+
+            {/* BOTTOM RIGHT: Total Liabilities — 20px, secondary */}
+            <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.40)", marginBottom: 2 }}>Total Liabilities</div>
+              <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", lineHeight: 1, color: "#9b2020", marginBottom: 3 }}>−{fmt(totalLiab)}</div>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)" }}>{liabilities.length} obligations · {((totalLiab / totalAssetsZillow) * 100).toFixed(1)}% debt-to-asset</div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ── BUCKET CARDS — 5 buckets full width ── */}
+        {(() => {
+          const monthlyExp   = 20939;
+          const opFloor      = monthlyExp * 2;
+          const resFloor     = monthlyExp * 12;
+          const opCoverage   = (opTotal / monthlyExp).toFixed(1);
+          const resCoverage  = (resTotal / monthlyExp).toFixed(1);
+          const capCoverage  = (capTotal / monthlyExp).toFixed(1);
+          const opExcess     = Math.max(0, opTotal - opFloor);
+          const resExcess    = Math.max(0, resTotal - resFloor);
+          const growthEqAmt  = growthEquity.reduce((s,a)=>s+Number(a.value),0);
+          const growthRetAmt = growthRetirement.reduce((s,a)=>s+Number(a.value),0);
+          const growthEqPct  = growTotal > 0 ? ((growthEqAmt / growTotal)*100).toFixed(0) : "0";
+          const growthRetPct = growTotal > 0 ? ((growthRetAmt / growTotal)*100).toFixed(0) : "0";
+          // ── Next-month liquid projection ──
+          const nmForecast = (() => {
+            if (!cashFlows.length) return null;
+            const nm  = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+            const key = format(nm, "MMM yy");
+            const d   = buildMonthMap(cashFlows)[key];
+            if (!d) return null;
+            const net = d.inflow - d.outflow;
+            const liquidTotal = opTotal + resTotal + capTotal;
+            const label = format(nm, "MMM ''yy");
+            return { label, net, opNext: opTotal + net, resNext: resTotal, capNext: capTotal };
+          })();
+          return (
+            <div style={{ marginBottom: 32 }}>
+
+              {/* ── Bucket Cards — 5 buckets, individual rounded cards ── */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+                <BSBucketCard
+                  color={GURU_BUCKETS.reserve.color} border={`${GURU_BUCKETS.reserve.color}40`}
+                  name="Operating Cash"
+                  tagline="2–3 months of core expenses. Instant access. No rate optimization."
+                  bullets={[
+                    "Covers day-to-day expenses and scheduled debt payments. Kept instantly accessible.",
+                    "The priority is availability, not yield. Earning a return on this capital is not the goal.",
+                    "Sized to the household's actual need. Capital above the floor is better deployed elsewhere.",
+                  ]}
+                  balance={opTotal}
+                  nextBalance={nmForecast?.opNext} nextMonth={nmForecast?.label}
+                  stats={[
+                    { label: "Coverage",     value: `${opCoverage} mo`,  note: "monthly expenses" },
+                    { label: "Yield",        value: "< 0.1%",             note: "checking" },
+                    { label: "Floor Target", value: fmt(opFloor),         note: "2 months exp." },
+                    { label: "Deployable",   value: fmt(opExcess),        note: "above floor" },
+                  ]} />
+                <BSBucketCard
+                  color={GURU_BUCKETS.yield.color} border={`${GURU_BUCKETS.yield.color}40`}
+                  name="Liquidity Reserve"
+                  tagline="12–18 months of anticipated outflows plus a buffer."
+                  bullets={[
+                    "Covers the next 12–18 months of anticipated outflows, with room for timing variation.",
+                    "The priority is value preservation and accessibility. Growth is not the objective here.",
+                    "Sized intentionally larger than known needs. The buffer itself is what provides the security.",
+                  ]}
+                  balance={resTotal}
+                  nextBalance={nmForecast?.resNext} nextMonth={nmForecast?.label}
+                  stats={[
+                    { label: "Coverage",     value: `${resCoverage} mo`, note: "monthly expenses" },
+                    { label: "Excess",       value: fmt(resExcess),       note: "above floor" },
+                    { label: "Floor Target", value: fmt(resFloor),        note: "trough target" },
+                  ]} />
+                <BSBucketCard
+                  color={GURU_BUCKETS.tactical.color} border={`${GURU_BUCKETS.tactical.color}40`}
+                  name="Capital Build"
+                  tagline="Saving for a specific goal with a known target and deadline."
+                  bullets={[
+                    "Set aside for a specific large expenditure with a defined target and timeline.",
+                    "The priority is protecting principal while allowing measured growth. The deadline shapes every decision.",
+                    "Dedicated to a single purpose. Using this bucket for other needs undermines its function.",
+                  ]}
+                  balance={capTotal}
+                  nextBalance={nmForecast?.capNext} nextMonth={nmForecast?.label}
+                  stats={[
+                    { label: "Instrument",  value: "US Treasuries",      note: "current deployment" },
+                    { label: "Maturity",    value: "Mar 2026",            note: "at par" },
+                    { label: "Coverage",    value: `${capCoverage} mo`,  note: "of expenses" },
+                  ]} />
+                <BSBucketCard
+                  color={GURU_BUCKETS.growth.color} border={`${GURU_BUCKETS.growth.color}40`}
+                  name="Investments"
+                  tagline="Long-term growth across brokerage and retirement accounts."
+                  bullets={[
+                    "Oriented toward long-term wealth growth across brokerage and retirement accounts.",
+                    "The priority is after-tax compounding over a multi-decade horizon. Short-term fluctuation is expected and part of the strategy.",
+                  ]}
+                  balance={growthEqAmt}
+                  stats={[
+                    { label: "Managed",       value: fmt(growthEquity.find(a => (a.description ?? "").toLowerCase().includes("cresset")) ? Number(growthEquity.find(a => (a.description ?? "").toLowerCase().includes("cresset"))!.value) : 0), note: "Cresset · CIO" },
+                    { label: "Single Stocks", value: fmt(growthEquity.filter(a => { const d = (a.description ?? "").toLowerCase(); return d.includes("meta") || d.includes("bank of america"); }).reduce((s,a)=>s+Number(a.value),0)), note: "Concentration risk" },
+                    { label: "Exp. Return",   value: "6–8% gross",       note: "long-term" },
+                    { label: "Retirement",    value: fmt(growthRetAmt),   note: "401k + Roth · excl." },
+                  ]} />
+                <BSBucketCard
+                  color={GURU_BUCKETS.alternatives.color} border={`${GURU_BUCKETS.alternatives.color}40`}
+                  name="Other Assets"
+                  tagline="Real estate, private equity, and stock compensation. Not liquid."
+                  bullets={[
+                    "Includes real estate, private equity, and compensation-linked assets that cannot be quickly accessed.",
+                    "The priority is accurate valuation and visibility — ensuring the financial picture is complete.",
+                    "Managed separately from liquidity planning. Values are estimates based on available market data.",
+                  ]}
+                  balance={reTotalZillow + otherAltsTotal}
+                  stats={[
+                    { label: "Real Estate",              value: fmt(reTotalZillow),              note: "Zillow est." },
+                    { label: "Real estate net equity",   value: fmt(reNetEquity),                note: "after mortgages" },
+                    { label: "Private equity and carry", value: fmt(pureAltsTotal + carryTotal), note: "est. fair market value" },
+                    { label: "RSUs",                     value: fmt(rsuTotal),                   note: "unvested" },
+                  ]} />
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── BORROWING CAPACITY ── */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(0,0,0,0.32)", marginBottom: 10 }}>Borrowing Capacity</div>
+          <div style={{ display: "flex", gap: 10 }}>
+
+            {/* Securities-Based Lending */}
+            <div style={{ flex: "1 1 0", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ height: 3, background: "#3A6FAB" }} />
+              <div style={{ padding: "14px 18px 16px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#3A6FAB", marginBottom: 10 }}>Securities-Based Lending</div>
+                <div style={{ display: "flex", gap: 24, marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Available</div>
+                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1 }}>{fmt(sblCapacity)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Eligible Portfolio</div>
+                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "rgba(0,0,0,0.55)", lineHeight: 1 }}>{fmt(growthEqAmt)}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 11, color: "rgba(0,0,0,0.50)", lineHeight: 1.4 }}>
+                  <span>· Pledged against taxable brokerage holdings (Cresset, Schwab, E*Trade)</span>
+                  <span>· Typically 50% advance rate on diversified equity</span>
+                  <span>· No credit check · same-day availability · rate ~SOFR + 1.5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* HELOC */}
+            <div style={{ flex: "1 1 0", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ height: 3, background: "#1A5C32" }} />
+              <div style={{ padding: "14px 18px 16px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#1A5C32", marginBottom: 10 }}>HELOC — Tribeca Condo</div>
+                <div style={{ display: "flex", gap: 24, marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Available at 80% LTV</div>
+                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1 }}>{fmt(helocCapacity)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Current LTV</div>
+                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "rgba(0,0,0,0.55)", lineHeight: 1 }}>{primaryLTV2}%</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 11, color: "rgba(0,0,0,0.50)", lineHeight: 1.4 }}>
+                  <span>· Home value {fmt(primaryVal2)} · Mortgage {fmt(primaryMtgBal2)}</span>
+                  <span>· Variable rate · typically Prime + 0.50%</span>
+                  <span>· Revolving draw — interest only during draw period</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Combined capacity summary */}
+            <div style={{ flex: "0 0 180px", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, background: "rgba(0,0,0,0.025)", padding: "14px 18px 16px", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 10 }}>Total Capacity</div>
+              <div style={{ fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.03em", color: "hsl(222,45%,12%)", lineHeight: 1, marginBottom: 6 }}>{fmt(totalBorrowCap)}</div>
+              <div style={{ fontSize: 10, color: "rgba(0,0,0,0.38)", lineHeight: 1.5 }}>SBL + HELOC combined<br/>No approval required</div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ── Separator between bucket cards and detail tables ── */}
+        <div style={{ margin: "20px 0 16px", display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+          <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(0,0,0,0.28)" }}>Account Detail</span>
+          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+        </div>
+
+        {/* ── COMBINED LEDGER: ASSETS + LIABILITIES ── */}
+        {(() => {
+          // Colors matching AssetOvBucketCard exactly — bg: row tint; subtotalBg: stronger tint for C3Total rows
+          const TC = {
+            op:    { c: GURU_BUCKETS.reserve.color,  bg: `${GURU_BUCKETS.reserve.color}0e`,  subtotalBg: `${GURU_BUCKETS.reserve.color}28`  },
+            res:   { c: GURU_BUCKETS.yield.color,    bg: `${GURU_BUCKETS.yield.color}0e`,    subtotalBg: `${GURU_BUCKETS.yield.color}28`    },
+            cap:   { c: GURU_BUCKETS.tactical.color, bg: `${GURU_BUCKETS.tactical.color}0e`, subtotalBg: `${GURU_BUCKETS.tactical.color}28` },
+            inv:   { c: GURU_BUCKETS.growth.color,   bg: `${GURU_BUCKETS.growth.color}0e`,   subtotalBg: `${GURU_BUCKETS.growth.color}28`   },
+            alts:  { c: "#6B6050",                   bg: "rgba(107,96,80,0.055)",             subtotalBg: "rgba(107,96,80,0.12)"             },
+            liab:  { c: "#9b2020", bg: "rgba(155,32,32,0.055)",  subtotalBg: "rgba(155,32,32,0.09)"  },
+            liabP: { c: "#50287a", bg: "rgba(80,40,122,0.055)",  subtotalBg: "rgba(80,40,122,0.09)"  },
+          };
+          // 5-col asset grid: name | institution | balance | yield/return | comments
+          const AG2 = "minmax(0,1fr) 100px 110px 90px minmax(0,160px)";
+          // 4-col liability grid: name | balance | rate | collateral
+          const LG2 = "minmax(0,1fr) 105px 50px minmax(0,150px)";
+          const th2 = (right?: boolean): React.CSSProperties => ({
+            fontSize: 7.5, fontWeight: 700, letterSpacing: "0.09em",
+            textTransform: "uppercase" as const, color: "rgba(0,0,0,0.28)",
+            textAlign: right ? "right" : "left",
+          });
+          // Account row — indented, tinted, no dot
+          const AR2 = ({ a, tc }: { a: Asset; tc: { c: string; bg: string } }) => {
+            const meta = acctMeta(a.description ?? "");
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "4px 0 4px 16px", background: tc.bg, borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "baseline" }}>
+                <div style={{ fontSize: 11, color: "#1A1915", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {meta.name}
+                  {meta.last4 && <span style={{ fontSize: 9, color: "#B0AEA8", marginLeft: 5, fontVariantNumeric: "tabular-nums" }}>{meta.last4}</span>}
+                </div>
+                <div style={{ fontSize: 10.5, color: "#6B6860", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta.inst}</div>
+                <div style={{ fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(Number(a.value))}</div>
+                <div style={{ fontSize: 10.5, textAlign: "right", color: meta.yield_ && meta.yield_ !== "—" ? "#2a6e3f" : "#9B9890", fontVariantNumeric: "tabular-nums" }}>{meta.yield_}</div>
+                <div style={{ fontSize: 10, color: "#9B9890", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: 8 }}>{meta.comment}</div>
+              </div>
+            );
+          };
+          // RE row (simplified for narrower grid)
+          const RE2 = ({ a }: { a: Asset }) => {
+            const zv = zillowVal(a);
+            const addr = reAddr(a);
+            const d = (a.description ?? "").toLowerCase();
+            const isRental = d.includes("rented") || d.includes("rental") || d.includes("investment, fl");
+            const propName = d.includes("tribeca") ? "Tribeca Condo" : "Sarasota Property";
+            const reYield = d.includes("tribeca") ? "+4.2% (1yr)" : "+6.1% (1yr)";
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "4px 0 4px 16px", background: TC.alts.bg, borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "baseline" }}>
+                <div style={{ fontSize: 11, color: "#1A1915", display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{propName}</span>
+                  <span style={{ fontSize: 8.5, fontWeight: 700, color: isRental ? "#7A5000" : "#1A3F72", letterSpacing: "0.05em", textTransform: "uppercase" as const, flexShrink: 0 }}>{isRental ? "Rental" : "Primary"}</span>
+                </div>
+                <div style={{ fontSize: 10.5, color: "#6B6860", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={addr}>{addr}</div>
+                <div style={{ fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(zv)}</div>
+                <div style={{ fontSize: 10.5, textAlign: "right", color: "#2a6e3f", fontVariantNumeric: "tabular-nums" }}>{reYield}</div>
+                <div style={{ fontSize: 10, color: "#3A6FAB", paddingLeft: 8 }}>Zillow est. · {isRental ? "Rental" : "Primary"}</div>
+              </div>
+            );
+          };
+          // Bucket subtotal — BELOW accounts, bigger font, colored label
+          const BktTotal = ({ tc, label, total, note }: { tc: { c: string; bg: string }; label: string; total: number; note?: string }) => (
+            <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "5px 0 5px 0", borderTop: "1px solid #DAD8D2", borderBottom: "2px solid #E4E2DC", marginBottom: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: tc.c, letterSpacing: "0.04em", textTransform: "uppercase" as const, display: "flex", alignItems: "baseline", gap: 8 }}>
+                {label}
+                {note && <span style={{ fontSize: 9, fontWeight: 400, color: "#9B9890", textTransform: "none" as const, letterSpacing: 0 }}>{note}</span>}
+              </div>
+              <div />
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#1A1915", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(total)}</div>
+              <div />
+              <div />
+            </div>
+          );
+          // Liability account row
+          const LR2 = ({ l, tc, dim }: { l: Liability; tc: { c: string; bg: string }; dim?: boolean }) => {
+            const rate = Number(l.interestRate);
+            const d = (l.description ?? "").toLowerCase();
+            const isCommit = d.includes("commitment") || d.includes("unfunded");
+            const meta = acctMeta(l.description ?? "");
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: LG2, padding: "6px 0 6px 16px", background: tc.bg, borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "baseline", opacity: dim ? 0.55 : 1 }}>
+                <div style={{ fontSize: 11, color: "#1A1915", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {meta.name}
+                  {meta.last4 && <span style={{ fontSize: 9, color: "#B0AEA8", marginLeft: 5, fontVariantNumeric: "tabular-nums" }}>{meta.last4}</span>}
+                </div>
+                <div style={{ fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#9b2020" }}>−{fmt(Number(l.value))}</div>
+                <div style={{ textAlign: "right" }}>
+                  {isCommit
+                    ? <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "#50287a" }}>Unfunded</span>
+                    : <span style={{ fontSize: 11.5, fontVariantNumeric: "tabular-nums", color: "#9B9890" }}>{rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(2)}%</span>}
+                </div>
+                <div style={{ fontSize: 10, color: "#9B9890", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: 8 }}>{meta.collateral}</div>
+              </div>
+            );
+          };
+          // Liability subtotal — BELOW accounts
+          const LTotal = ({ tc, label, total, note }: { tc: { c: string; bg: string }; label: string; total: number; note?: string }) => (
+            <div style={{ display: "grid", gridTemplateColumns: LG2, padding: "7px 0 8px 0", borderTop: "1px solid #DAD8D2", borderBottom: "2px solid #E4E2DC", marginBottom: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: tc.c, letterSpacing: "0.04em", textTransform: "uppercase" as const, display: "flex", alignItems: "baseline", gap: 8 }}>
+                {label}
+                {note && <span style={{ fontSize: 9, fontWeight: 400, color: "#9B9890", textTransform: "none" as const, letterSpacing: 0 }}>{note}</span>}
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#9b2020", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>−{fmt(total)}</div>
+              <div />
+              <div />
+            </div>
+          );
+          const SubLabel = ({ text }: { text: string }) => (
+            <div style={{ padding: "4px 0 2px 16px", fontSize: 8.5, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#C0BEB8" }}>{text}</div>
+          );
+
+          // ── Embedded liability row — uses AG2 grid so columns align with asset rows ──
+          const EmbeddedLiab = ({ l, tc }: { l: Liability; tc: { c: string; bg: string } }) => {
+            const rate = Number(l.interestRate);
+            const d = (l.description ?? "").toLowerCase();
+            const isCommit = d.includes("commitment") || d.includes("unfunded");
+            const meta = acctMeta(l.description ?? "");
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "4px 0 4px 24px", background: "rgba(155,32,32,0.032)", borderBottom: "1px solid rgba(155,32,32,0.07)", alignItems: "baseline" }}>
+                <div style={{ fontSize: 11, color: "#9b2020", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {meta.name}
+                  {meta.last4 && <span style={{ fontSize: 9, color: "#B0AEA8", marginLeft: 5, fontVariantNumeric: "tabular-nums" }}>{meta.last4}</span>}
+                </div>
+                <div style={{ fontSize: 10.5, color: "#6B6860", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta.inst}</div>
+                <div style={{ fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#9b2020" }}>−{fmt(Number(l.value))}</div>
+                <div style={{ textAlign: "right" }}>
+                  {isCommit
+                    ? <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "#50287a" }}>Unfunded</span>
+                    : <span style={{ fontSize: 11.5, fontVariantNumeric: "tabular-nums", color: "#9B9890" }}>{rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(2)}%</span>}
+                </div>
+                <div style={{ fontSize: 10, color: "#9B9890", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: 8 }}>{meta.collateral}</div>
+              </div>
+            );
+          };
+
+          // ── Embedded liability subtotal ──
+          const EmbeddedLiabTotal = ({ label, total, note }: { label: string; total: number; note?: string }) => (
+            <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "5px 0 5px 0", borderTop: "1px solid rgba(155,32,32,0.14)", borderBottom: "2px solid rgba(155,32,32,0.16)", marginBottom: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#9b2020", letterSpacing: "0.04em", textTransform: "uppercase" as const, display: "flex", alignItems: "baseline", gap: 8 }}>
+                {label}
+                {note && <span style={{ fontSize: 9, fontWeight: 400, color: "#9B9890", textTransform: "none" as const, letterSpacing: 0 }}>{note}</span>}
+              </div>
+              <div />
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#9b2020", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>−{fmt(total)}</div>
+              <div /><div />
+            </div>
+          );
+
+          // ── Shared column headers ──
+          const ColHeader = () => (
+            <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "4px 0 4px 16px", borderBottom: "1px solid #DAD8D2", background: "rgba(0,0,0,0.012)" }}>
+              <div style={th2()}>Account</div>
+              <div style={th2()}>Institution</div>
+              <div style={th2(true)}>Balance</div>
+              <div style={th2(true)}>Yield / Return</div>
+              <div style={{ ...th2(), paddingLeft: 8 }}>Comments</div>
+            </div>
+          );
+          const ObligColHeader = () => (
+            <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "3px 0 3px 24px", background: "rgba(155,32,32,0.022)" }}>
+              <div style={th2()}>Obligation</div>
+              <div style={th2()}>Lender</div>
+              <div style={th2(true)}>Balance</div>
+              <div style={th2(true)}>Rate</div>
+              <div style={{ ...th2(), paddingLeft: 8 }}>Collateral</div>
+            </div>
+          );
+
+          // ── Obligations section divider ──
+          const ObligDivider = ({ label }: { label: string }) => (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 16px", background: "rgba(155,32,32,0.04)", borderTop: "1px solid rgba(155,32,32,0.09)", borderBottom: "1px solid rgba(155,32,32,0.09)" }}>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(155,32,32,0.55)" }}>↳ {label}</span>
+            </div>
+          );
+
+          // ── Net position footer ──
+          const NetRow = ({ label, amount }: { label: string; amount: number }) => (
+            <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "8px 16px", background: "#F0EEE8", borderTop: "2px solid #DAD8D2" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "#1A1915" }}>{label}</div>
+              <div /><div style={{ fontSize: 22, fontWeight: 300, letterSpacing: "-0.025em", color: amount < 0 ? "#9b2020" : "#1A1915", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(amount)}</div>
+              <div /><div />
+            </div>
+          );
+
+          // ── Table header band ──
+          const TableBand = ({ title, gross, netLabel, net, tc }: { title: string; gross: number; netLabel: string; net: number; tc: { c: string; bg: string } }) => (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 16px", background: tc.bg, borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: tc.c }}>{title}</span>
+              <div style={{ display: "flex", gap: 28, alignItems: "baseline" }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 8.5, fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.35)", marginBottom: 2 }}>Gross</div>
+                  <div style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", color: "#3A3830" }}>{fmt(gross)}</div>
+                </div>
+                <div style={{ width: 1, height: 28, background: "rgba(0,0,0,0.12)" }} />
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: tc.c, marginBottom: 2 }}>{netLabel}</div>
+                  <div style={{ fontSize: 18, fontWeight: 300, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.022em", color: net < 0 ? "#9b2020" : tc.c }}>{fmt(net)}</div>
+                </div>
+              </div>
+            </div>
+          );
+
+          // ── Compact 3-panel row components ──
+          // Grid: Account (flex) | Balance (82px) | Next Mo. (76px) | Yield (58px) | Notes (100px flex)
+          const C3  = "minmax(0,1fr) 82px 76px 58px minmax(0,110px)"; // 5-col — Panel 1 (has next month)
+          const C3B = "minmax(0,1fr) 82px 58px minmax(0,110px)";       // 4-col — Panels 2 & 3
+          const c3th = (right?: boolean): React.CSSProperties => ({
+            fontSize: 9, fontWeight: 700, letterSpacing: "0.09em",
+            textTransform: "uppercase" as const, color: "rgba(0,0,0,0.30)",
+            textAlign: right ? "right" : "left",
+          });
+          // ── Column headers
+          const C3Header = ({ showNext = false, col3Label = "Pre-Tax / 1yr Ret.", col4Label = "Notes", g }: { showNext?: boolean; col3Label?: string; col4Label?: string; g?: string }) => (
+            <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "4px 0 4px 0", minHeight: 30, alignItems: "end", borderBottom: "1px solid #E8E6E0", background: "#F7F6F4" }}>
+              <div style={{ ...c3th(), paddingLeft: 12 }}>Account</div>
+              <div style={c3th(true)}>Balance</div>
+              {!g && <div style={{ ...c3th(true), color: showNext ? "rgba(0,0,0,0.30)" : "transparent" }}>Next Mo.</div>}
+              <div style={{ ...c3th(true), paddingRight: 0 }}>{col3Label}</div>
+              <div style={{ ...c3th(true), paddingRight: 8 }}>{col4Label}</div>
+            </div>
+          );
+          // ── Section divider (Equities, Retirement, etc.)
+          const C3SubLabel = ({ text }: { text: string }) => (
+            <div style={{ padding: "4px 0 3px 12px", fontSize: 7.5, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "#B8B6B0", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>{text}</div>
+          );
+          // ── Account row — indented name, balance stays flush with subtotals
+          const C3Row = ({ a, tc, instMode, g, nextVal }: { a: Asset; tc: { c: string; bg: string }; instMode?: boolean; g?: string; nextVal?: number }) => {
+            const meta = acctMeta(a.description ?? "");
+            const displayName = instMode && meta.inst ? meta.inst : meta.name;
+            const noteText    = instMode ? (meta.insight || meta.comment) : meta.comment;
+            const isAdvisor   = instMode && meta.insight?.toLowerCase().includes("advisor");
+            const isSingle    = instMode && meta.insight?.toLowerCase().includes("single");
+            const hasFlag     = !!noteText;
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 0", minHeight: 30, background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+                <div style={{ minWidth: 0, paddingLeft: 20 }}>
+                  <div style={{ fontSize: 10.5, color: "#1A1915", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {displayName}{meta.last4 && <span style={{ fontSize: 8.5, color: "#B0AEA8", marginLeft: 4 }}>{meta.last4}</span>}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(Number(a.value))}</div>
+                {!g && <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.32)" }}>{nextVal !== undefined ? fmt(nextVal) : ""}</div>}
+                <div style={{ fontSize: 10, textAlign: "right", color: meta.yield_ && meta.yield_ !== "—" ? "#2a6e3f" : "#9B9890", fontVariantNumeric: "tabular-nums" }}>{meta.yield_}</div>
+                <div style={{ paddingLeft: 6, paddingRight: 8, textAlign: "right" }}>
+                  {hasFlag && <span style={{ fontSize: 9, fontWeight: 600, lineHeight: 1.3, display: "block", textAlign: "right",
+                    color: isAdvisor ? "#1a5c8f"
+                         : isSingle  ? "#9b2020"
+                         : noteText?.includes("Excess") || noteText?.includes("deployable") || noteText?.includes("Below potential") ? "rgba(154,123,60,0.85)"
+                         : noteText?.includes("risk") || noteText?.includes("volat") || noteText?.includes("Concentration") ? "#9b2020"
+                         : noteText?.includes("Illiquid") || noteText?.includes("Unvested") || noteText?.includes("restriction") ? "#7A5C2A"
+                         : noteText?.includes("Maturing") ? "#1a5c8f"
+                         : "#6B6860" }}>{noteText}</span>}
+                </div>
+              </div>
+            );
+          };
+          // ── Bucket subtotal — LARGER than account rows, full-width, prominent
+          const C3Total = ({ tc, label, total, nextTotal, note, wtdYield: wty, g }: { tc: { c: string; bg: string; subtotalBg?: string }; label: string; total: number; nextTotal?: number; note?: string; wtdYield?: string; g?: string }) => (
+            <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 0", borderTop: "1px solid #E8E6E0", borderBottom: "1px solid #E8E6E0", background: (tc as any).subtotalBg ?? "#F7F6F4", marginBottom: 2 }}>
+              <div style={{ paddingLeft: 12, fontSize: 10.5, fontWeight: 700, color: tc.c, letterSpacing: "0.03em", textTransform: "uppercase" as const, display: "flex", alignItems: "baseline", gap: 6 }}>
+                {label}
+                {note && <span style={{ fontSize: 8.5, fontWeight: 400, color: "#9B9890", textTransform: "none" as const, letterSpacing: 0 }}>{note}</span>}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1915", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(total)}</div>
+              {!g && <div style={{ fontSize: 11, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.32)" }}>
+                {nextTotal !== undefined ? fmt(nextTotal) : ""}
+              </div>}
+              <div style={{ fontSize: 9.5, textAlign: "right", color: wty ? "#2a6e3f" : "transparent", fontVariantNumeric: "tabular-nums", fontWeight: 500, paddingRight: 2 }}>{wty ?? ""}</div>
+              <div />
+            </div>
+          );
+          // ── Liability row — slightly more indented (under obligations divider)
+          const C3LiabRow = ({ l, g }: { l: Liability; g?: string }) => {
+            const rate = Number(l.interestRate);
+            const d = (l.description ?? "").toLowerCase();
+            const isCommit = d.includes("commitment") || d.includes("unfunded");
+            const meta = acctMeta(l.description ?? "");
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 0", minHeight: 30, background: "rgba(155,32,32,0.028)", borderBottom: "1px solid rgba(155,32,32,0.06)", alignItems: "center" }}>
+                <div style={{ minWidth: 0, paddingLeft: 20 }}>
+                  <div style={{ fontSize: 10.5, color: "#9b2020", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {meta.name}{meta.last4 && <span style={{ fontSize: 8.5, color: "#B0AEA8", marginLeft: 4 }}>{meta.last4}</span>}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#9b2020" }}>−{fmt(Number(l.value))}</div>
+                {!g && <div />}{/* next month — empty for liabilities */}
+                <div style={{ textAlign: "right" }}>
+                  {!isCommit && <span style={{ fontSize: 10, color: "#9B9890", fontVariantNumeric: "tabular-nums" }}>{rate.toFixed(2)}%</span>}
+                </div>
+                <div style={{ fontSize: 9.5, color: "#9B9890", lineHeight: 1.3, paddingLeft: 6, paddingRight: 8 }}>{l.type === "mortgage" ? meta.collateral : ""}</div>
+              </div>
+            );
+          };
+          // ── Liability subtotal
+          const C3LiabTotal = ({ label, total, g }: { label: string; total: number; g?: string }) => (
+            <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 0", borderTop: "1.5px solid rgba(155,32,32,0.2)", borderBottom: "2px solid rgba(155,32,32,0.18)", background: "rgba(155,32,32,0.018)", marginBottom: 2 }}>
+              <div style={{ paddingLeft: 12, fontSize: 10.5, fontWeight: 700, color: "#9b2020", letterSpacing: "0.03em", textTransform: "uppercase" as const }}>{label}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#9b2020", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>−{fmt(total)}</div>
+              {!g && <div />}<div /><div />
+            </div>
+          );
+          // ── Obligations section divider
+          const C3ObligDiv = ({ label }: { label: string }) => (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 12px", background: "rgba(155,32,32,0.05)", borderTop: "1px solid rgba(155,32,32,0.10)" }}>
+              <span style={{ fontSize: 7.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(155,32,32,0.55)" }}>↳ {label}</span>
+            </div>
+          );
+          // ── Two-row panel footer — Total Assets + Net position, both grid-aligned
+          const C3NetRow = ({ grossLabel, gross, netLabel, net, nextNet, g }: { grossLabel: string; gross: number; netLabel: string; net: number; nextNet?: number; g?: string }) => (
+            <div style={{ borderTop: "2px solid #D8D6D0", background: "#F7F6F4", marginBottom: 0 }}>
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 12px 3px" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#1A1915", letterSpacing: "0.03em", textTransform: "uppercase" as const }}>{grossLabel}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1A1915", textAlign: "right" }}>{fmt(gross)}</span>
+                {!g ? <><div /><div /><div /></> : <><div /><div /></>}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "3px 12px 7px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#2A2820", letterSpacing: "0.03em", textTransform: "uppercase" as const }}>{netLabel}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: net < 0 ? "#9b2020" : "#1A1915", textAlign: "right" }}>{fmt(net)}</span>
+                {!g && <span style={{ fontSize: 11, fontWeight: 600, fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.32)", textAlign: "right" }}>
+                  {nextNet !== undefined ? fmt(nextNet) : ""}
+                </span>}
+                <div /><div />
+              </div>
+            </div>
+          );
+          // ── Panel header band — card-style number
+          const C3Band = ({ title, netLabel, net, tc }: { title: string; netLabel: string; net: number; tc: { c: string; bg: string } }) => (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: tc.bg, borderBottom: `2px solid ${tc.c}30` }}>
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: tc.c }}>{title}</span>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.35)", marginBottom: 2 }}>{netLabel}</div>
+                <div style={{ fontSize: 18, fontWeight: 300, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.025em", color: net < 0 ? "#9b2020" : "#1A1915", lineHeight: 1 }}>{fmt(net)}</div>
+              </div>
+            </div>
+          );
+          // ── Real estate row with mortgage + NAV inline
+          const C3ReWithMort = ({ a, g }: { a: Asset; g?: string }) => {
+            const d = (a.description ?? "").toLowerCase();
+            const isTribeca = d.includes("tribeca");
+            const propMort = mortgages.find(l => (l.description ?? "").toLowerCase().includes(isTribeca ? "tribeca" : "sarasota"));
+            const zv = zillowVal(a);
+            const mortAmt = propMort ? Number(propMort.value) : 0;
+            const propNav = zv - mortAmt;
+            const addr = reAddr(a);
+            const isRental = d.includes("rented") || d.includes("rental") || d.includes("investment, fl");
+            const propName = isTribeca ? "Tribeca Condo" : "Sarasota Property";
+            // Pre-tax return on equity: 1yr appreciation (%) × current value ÷ NAV
+            const reYieldBasePct = isTribeca ? 0.042 : 0.061;
+            const reProfit = zv * reYieldBasePct;
+            const navReturnPct = propNav > 0 ? `+${((reProfit / propNav) * 100).toFixed(1)}%` : "—";
+            const mortMeta = propMort ? acctMeta(propMort.description ?? "") : null;
+            const gc = g ?? C3;
+            return (
+              <React.Fragment>
+                {/* Property row — address inline to the right of name */}
+                <div style={{ display: "grid", gridTemplateColumns: gc, padding: "5px 0", minHeight: 30, background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+                  <div style={{ minWidth: 0, paddingLeft: 20, overflow: "hidden" }}>
+                    <div style={{ fontSize: 10.5, color: "#1A1915", display: "flex", alignItems: "baseline", gap: 5, overflow: "hidden" }}>
+                      <span style={{ whiteSpace: "nowrap", flexShrink: 0, color: "#1A1915" }}>{propName}</span>
+                      <span style={{ fontSize: 10.5, color: "#9B9890", flexShrink: 0 }}>({isRental ? "rental" : "primary"})</span>
+                      <span style={{ fontSize: 9, color: "#B0AEA8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{addr}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(zv)}</div>
+                  {!g && <div />}{/* next month */}
+                  <div style={{ fontSize: 10, textAlign: "right", color: "#2a6e3f", fontVariantNumeric: "tabular-nums" }}>{navReturnPct}</div>
+                  <div style={{ fontSize: 9, color: "#3A6FAB", paddingLeft: 6, paddingRight: 8, textAlign: "right" }}>Zillow est.</div>
+                </div>
+                {/* Mortgage row — label: "Mortgage" */}
+                {propMort && (
+                  <div style={{ display: "grid", gridTemplateColumns: gc, padding: "5px 0", minHeight: 30, background: "rgba(155,32,32,0.028)", borderBottom: "1px solid rgba(155,32,32,0.06)", alignItems: "center" }}>
+                    <div style={{ minWidth: 0, paddingLeft: 28 }}>
+                      <div style={{ fontSize: 10, color: "#9b2020", display: "flex", alignItems: "baseline", gap: 4 }}>
+                        <span style={{ fontSize: 8, color: "rgba(155,32,32,0.4)", flexShrink: 0 }}>↳</span>
+                        <span>Mortgage</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#9b2020" }}>−{fmt(Number(propMort.value))}</div>
+                    {!g && <div />}{/* next month */}
+                    <div style={{ fontSize: 10, textAlign: "right", color: "#9B9890", fontVariantNumeric: "tabular-nums" }}>{Number(propMort.interestRate).toFixed(2)}%</div>
+                    <div style={{ fontSize: 9, color: "#9B9890", paddingLeft: 6, paddingRight: 8, textAlign: "right" }}>30-yr fixed</div>
+                  </div>
+                )}
+                {/* Net Asset Value row */}
+                <div style={{ display: "grid", gridTemplateColumns: gc, padding: "5px 0", background: "rgba(0,0,0,0.022)", borderBottom: "2px solid #E0DED8" }}>
+                  <div style={{ paddingLeft: 20, fontSize: 10, fontWeight: 700, color: "#3A3830", letterSpacing: "0.02em" }}>{propName} · Net Asset Value</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", color: propNav >= 0 ? "#1A6640" : "#9b2020" }}>{propNav >= 0 ? fmt(propNav) : `−${fmt(-propNav)}`}</div>
+                  {!g && <div />}<div /><div />
+                </div>
+              </React.Fragment>
+            );
+          };
+
+          // ── PE fund row with pro-rata liability allocation ─────────────────────
+          // Splits all profLoans pro-rata by fund value / total PE value,
+          // then shows each allocated slice inline under the fund row.
+          const C3PEWithAlloc = ({ a, g }: { a: Asset; g?: string }) => {
+            const fundVal  = Number(a.value);
+            const meta     = acctMeta(a.description ?? "");
+            const share    = peAssetsTotal > 0 ? fundVal / peAssetsTotal : 0;
+            const d        = (a.description ?? "").toLowerCase();
+            const fundName = d.includes("viii") ? "Carlyle VIII" : d.includes("ix") ? "Carlyle IX" : meta.name;
+            const fundNav  = fundVal - Math.round(profTotal * share);
+            const gc = g ?? C3;
+            return (
+              <React.Fragment>
+                {/* Fund row — white, no tint */}
+                <div style={{ display: "grid", gridTemplateColumns: gc, padding: "5px 0", minHeight: 30, background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+                  <div style={{ minWidth: 0, paddingLeft: 20 }}>
+                    <div style={{ fontSize: 10.5, color: "#1A1915", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {meta.name}{meta.last4 && <span style={{ fontSize: 8.5, color: "#B0AEA8", marginLeft: 4 }}>{meta.last4}</span>}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(fundVal)}</div>
+                  {!g && <div />}{/* next month */}
+                  <div style={{ fontSize: 10, textAlign: "right", color: "#2a6e3f", fontVariantNumeric: "tabular-nums" }}>{meta.yield_}</div>
+                  <div />
+                </div>
+                {/* Allocated liabilities — one row per profLoan */}
+                {profLoans.map((l, i) => {
+                  const lMeta   = acctMeta(l.description ?? "");
+                  const alloc   = Math.round(Number(l.value) * share);
+                  const rate    = Number(l.interestRate);
+                  const isCommit = (l.description ?? "").toLowerCase().includes("commitment") || (l.description ?? "").toLowerCase().includes("unfunded");
+                  return (
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: gc, padding: "5px 0", minHeight: 30, background: "rgba(155,32,32,0.028)", borderBottom: "1px solid rgba(155,32,32,0.06)", alignItems: "center" }}>
+                      <div style={{ minWidth: 0, paddingLeft: 28 }}>
+                        <div style={{ fontSize: 10, color: "#9b2020", display: "flex", alignItems: "baseline", gap: 4, overflow: "hidden" }}>
+                          <span style={{ fontSize: 8, color: "rgba(155,32,32,0.4)", flexShrink: 0 }}>↳</span>
+                          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lMeta.name}</span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#9b2020" }}>−{fmt(alloc)}</div>
+                      {!g && <div />}{/* next month */}
+                      <div style={{ textAlign: "right" }}>
+                        {!isCommit && <span style={{ fontSize: 10, color: "#9B9890", fontVariantNumeric: "tabular-nums" }}>{rate.toFixed(2)}%</span>}
+                      </div>
+                      <div style={{ fontSize: 9, color: "#9B9890", paddingLeft: 6, paddingRight: 8, textAlign: "right" }}>{(share * 100).toFixed(0)}% alloc.</div>
+                    </div>
+                  );
+                })}
+                {/* Net equity row */}
+                <div style={{ display: "grid", gridTemplateColumns: gc, padding: "5px 0", background: "rgba(0,0,0,0.022)", borderBottom: "2px solid #E0DED8" }}>
+                  <div style={{ paddingLeft: 20, fontSize: 10, fontWeight: 700, color: "#3A3830", letterSpacing: "0.02em" }}>{fundName} · Net Equity</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", color: fundNav >= 0 ? "#1A6640" : "#9b2020" }}>{fundNav >= 0 ? fmt(fundNav) : `−${fmt(-fundNav)}`}</div>
+                  {!g && <div />}<div /><div />
+                </div>
+              </React.Fragment>
+            );
+          };
+
+          // ── Net calculations ──
+          const growthEqAmt    = growthEquity.reduce((s, a) => s + Number(a.value), 0);
+          const growthRetAmt   = growthRetirement.reduce((s, a) => s + Number(a.value), 0);
+          const liquidGross    = opTotal + resTotal + capTotal;
+          const netLiquid      = liquidGross - consTotal;
+          // Panel 2: Investments = growth buckets + crypto (moved from alts)
+          const lt2Net         = growTotal + cryptoTotal;
+          // Panel 3: Other Assets = real estate (net of mortgages) + PE (net of pro-rata loans) + alt investments + carry + RSUs
+          const otherAssetsNet = reTotalZillow - mortTotal + (peAssetsTotal - profTotal) + altInvestsTotal + carryTotal + rsuTotal;
+          const netLongTerm    = lt2Net + otherAssetsNet;
+
+          // ── Next-month liquid projection ──
+          const nextMonthForecast = (() => {
+            if (!cashFlows.length) return null;
+            const now = new Date();
+            const nm  = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            const key = format(nm, "MMM yy");
+            const map = buildMonthMap(cashFlows);
+            const d   = map[key];
+            if (!d) return null;
+            const net = d.inflow - d.outflow;
+            return { month: format(nm, "MMM yyyy"), net, balance: netLiquid + net };
+          })();
+
+          return (
+            <div style={{ marginBottom: 32 }}>
+              {/* ══ THREE-PANEL LEDGER ══ */}
+              <div style={{ display: "grid", gridTemplateColumns: "1.25fr 1fr 1fr", gap: 14, alignItems: "start" }}>
+
+                {/* ── PANEL 1: LIQUID ASSETS ── */}
+                <div style={{ border: "1px solid #D8D6D0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
+                  <C3Band title="Liquid Assets" netLabel="Net Liquid" net={netLiquid} tc={TC.res} />
+                  <C3Header showNext col3Label="Rate" col4Label="Notes" />
+                  {opCash.map((a, i) => <C3Row key={i} a={a} tc={TC.op} nextVal={nextMonthForecast && opTotal > 0 ? Math.round(Number(a.value) + nextMonthForecast.net * (Number(a.value) / opTotal)) : undefined} />)}
+                  <C3Total tc={TC.op} label="Operating Cash" total={opTotal} nextTotal={nextMonthForecast ? opTotal + nextMonthForecast.net : undefined} wtdYield={calcWtdYield(opCash)} />
+                  {resCash.map((a, i) => <C3Row key={i} a={a} tc={TC.res} nextVal={nextMonthForecast ? Number(a.value) : undefined} />)}
+                  <C3Total tc={TC.res} label="Liquidity Reserve" total={resTotal} nextTotal={nextMonthForecast ? resTotal : undefined} wtdYield={calcWtdYield(resCash)} />
+                  {capBuild.map((a, i) => <C3Row key={i} a={a} tc={TC.cap} nextVal={nextMonthForecast ? Number(a.value) : undefined} />)}
+                  <C3Total tc={TC.cap} label="Capital Build" total={capTotal} nextTotal={nextMonthForecast ? capTotal : undefined} wtdYield={calcWtdYield(capBuild)} />
+                  <C3ObligDiv label="Unsecured Obligations" />
+                  {consumer.map((l, i) => <C3LiabRow key={i} l={l} />)}
+                  <C3LiabTotal label="Credit Cards & Loans" total={consTotal} />
+                  <C3NetRow grossLabel="Total Liquid Assets" gross={liquidGross} netLabel="Net Liquid Position" net={netLiquid} nextNet={nextMonthForecast?.balance} />
+                </div>
+
+                {/* ── PANEL 2: INVESTMENTS ── */}
+                <div style={{ border: "1px solid #D8D6D0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
+                  <C3Band title="Investments" netLabel="Net Investments" net={lt2Net} tc={TC.inv} />
+                  <C3Header g={C3B} />
+                  {growthEquity.length > 0 && <C3SubLabel text="Taxable Brokerage" />}
+                  {growthEquity.map((a, i) => <C3Row key={i} a={a} tc={TC.inv} instMode g={C3B} />)}
+                  {growthEquity.length > 0 && <C3Total tc={TC.inv} label="Taxable Brokerage" total={growthEqAmt} wtdYield={calcWtdYield(growthEquity)} g={C3B} />}
+                  {growthRetirement.length > 0 && <C3SubLabel text="Retirement Accounts" />}
+                  {growthRetirement.map((a, i) => <C3Row key={i} a={a} tc={TC.inv} instMode g={C3B} />)}
+                  {growthRetirement.length > 0 && <C3Total tc={TC.inv} label="Retirement Accounts" total={growthRetAmt} wtdYield={calcWtdYield(growthRetirement)} g={C3B} />}
+                  {cryptoAssets.length > 0 && <>
+                    <C3SubLabel text="Digital Assets" />
+                    {cryptoAssets.map((a, i) => <C3Row key={i} a={a} tc={TC.inv} g={C3B} />)}
+                    <C3Total tc={TC.inv} label="Digital Assets" total={cryptoTotal} wtdYield={calcWtdYield(cryptoAssets)} g={C3B} />
+                  </>}
+                  <C3NetRow grossLabel="Total Investments" gross={lt2Net} netLabel="Net Investments" net={lt2Net} g={C3B} />
+                </div>
+
+                {/* ── PANEL 3: OTHER ASSETS ── */}
+                <div style={{ border: "1px solid #D8D6D0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
+                  <C3Band title="Other Assets" netLabel="Net Other Assets" net={otherAssetsNet} tc={TC.alts} />
+                  <C3Header g={C3B} />
+                  {reAssets.length > 0 && <C3SubLabel text="Real Estate" />}
+                  {reAssets.map((a, i) => <C3ReWithMort key={i} a={a} g={C3B} />)}
+                  {reAssets.length > 0 && <C3Total tc={TC.alts} label="Real Estate" total={reTotalZillow} note={`net eq. ${fmt(reNetEquity)}`} g={C3B} />}
+                  {peAssets.length > 0 && <C3SubLabel text="Private Equity" />}
+                  {peAssets.map((a, i) => <C3PEWithAlloc key={i} a={a} g={C3B} />)}
+                  {peAssets.length > 0 && <C3Total tc={TC.alts} label="Private Equity" total={peAssetsTotal - profTotal} note="net equity" wtdYield={calcWtdYield(peAssets)} g={C3B} />}
+                  {altInvests.length > 0 && <>
+                    <C3SubLabel text="Alternative Investments" />
+                    {altInvests.map((a, i) => <C3Row key={i} a={a} tc={TC.alts} g={C3B} />)}
+                    <C3Total tc={TC.alts} label="Alternative Investments" total={altInvestsTotal} wtdYield={calcWtdYield(altInvests)} g={C3B} />
+                  </>}
+                  {carryAlts.length > 0 && <>
+                    <C3SubLabel text="Carry Vehicles" />
+                    {carryAlts.map((a, i) => <C3Row key={i} a={a} tc={TC.alts} g={C3B} />)}
+                    <C3Total tc={TC.alts} label="Carry Vehicles" total={carryTotal} wtdYield={calcWtdYield(carryAlts)} g={C3B} />
+                  </>}
+                  {rsuAlts.length > 0 && <>
+                    <C3SubLabel text="Deferred Comp · RSUs" />
+                    {rsuAlts.map((a, i) => <C3Row key={i} a={a} tc={TC.alts} g={C3B} />)}
+                    <C3Total tc={TC.alts} label="RSUs" total={rsuTotal} wtdYield={calcWtdYield(rsuAlts)} g={C3B} />
+                  </>}
+                  <C3NetRow grossLabel="Total Other Assets" gross={reTotalZillow + peAssetsTotal - profTotal + altInvestsTotal + carryTotal + rsuTotal} netLabel="Net Other Assets" net={otherAssetsNet} g={C3B} />
+                </div>
+
+              </div>
+            </div>
+          );
+        })()}
+
+
+        {/* ── PAGE FOOTER ── */}
+        <div style={{ fontSize: 10, color: "#B0AEA8", marginTop: 36, paddingTop: 12, borderTop: "1px solid #DAD8D2", display: "flex", justifyContent: "space-between", letterSpacing: "0.04em" }}>
+          <span>Balances as of April 6, 2026 · Real estate values are Zillow estimates · For advisor use only</span>
+          <span>GURU Financial · Kessler Family · Private &amp; Confidential</span>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
 type ActiveView =
+  | "balancesheet"
   | "investments"
   | "advisorbrief"
+  | "assetoverview"
   | "financials"
   | "guru"
   | "guru_v1"
@@ -9088,7 +10649,7 @@ type ActiveView =
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
-  const [activeView, setActiveView] = useState<ActiveView>("advisorbrief");
+  const [activeView, setActiveView] = useState<ActiveView>("assetoverview");
   const [guruLanding, setGuruLanding] = useState(true);
   const [financialsTab, setFinancialsTab] = useState<"balancesheet" | "cashflow">("balancesheet");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
@@ -9463,10 +11024,12 @@ export default function ClientDashboard() {
 
       {/* Tabs — left group */}
       {([
-        { label: "Advisor Brief",  view: "advisorbrief" as ActiveView },
-        { label: "Allocation",     view: "guru"         as ActiveView },
-        { label: "Allocation v1",  view: "guru_v1"      as ActiveView },
-        { label: "Investments",    view: "investments"  as ActiveView },
+        { label: "Balance Sheet",  view: "balancesheet"  as ActiveView },
+        { label: "Asset Overview", view: "assetoverview" as ActiveView },
+        { label: "Advisor Brief",  view: "advisorbrief"  as ActiveView },
+        { label: "Allocation",     view: "guru"          as ActiveView },
+        { label: "Allocation v1",  view: "guru_v1"       as ActiveView },
+        { label: "Investments",    view: "investments"   as ActiveView },
       ] as Array<{ label: string; view: ActiveView; sub?: "cashflow" | "balancesheet" }>).map(tab => (
         <button
           key={tab.label}
@@ -9537,9 +11100,17 @@ export default function ClientDashboard() {
           />
         </div>
       )}
+      {/* ── Balance Sheet ──────────────────────────────────────────────────────── */}
+      {activeView === "balancesheet" && (
+        <BalanceSheetView assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
+      )}
+      {/* ── Asset Overview ─────────────────────────────────────────────────────── */}
+      {activeView === "assetoverview" && (
+        <AssetOverviewView assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
+      )}
       {/* ── Client Financials & Forecast ───────────────────────────────────────── */}
       {activeView === "financials" && (
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           {financialsTab === "balancesheet" && (
             <DetailsView
               assets={assets}
