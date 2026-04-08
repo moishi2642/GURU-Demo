@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allocation Landing v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0d1829;
+    --surface: #111e30;
+    --border:  rgba(255,255,255,0.07);
+    --muted:   rgba(255,255,255,0.30);
+    --dim:     rgba(255,255,255,0.16);
+    --white:   rgba(255,255,255,0.90);
+    --gold:    rgba(212,168,67,0.95);
+    --green:   rgba(94,204,138,0.90);
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--white);
+    min-height: 100vh;
+  }
+
+  @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  @keyframes shimmer {
+    0%   { background-position: 0% 0, 100% 0, 100% 100%, 0% 100%; }
+    100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    height: 44px; padding: 0 28px;
+    display: flex; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: rgba(13,24,41,0.95); backdrop-filter: blur(6px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-name  { font-size: 12px; font-weight: 600; color: var(--white); letter-spacing: 0.02em; }
+  .topbar-sep   { margin: 0 8px; color: var(--dim); }
+  .topbar-sect  { font-size: 12px; color: var(--muted); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .topbar-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); animation: pulse 2.5s infinite; }
+  .topbar-flag  { font-size: 10px; color: var(--dim); letter-spacing: 0.02em; }
+
+  /* ── Page layout ── */
+  .page { padding: 28px 28px 44px; max-width: 1300px; margin: 0 auto; }
+
+  /* ── Client header row ── */
+  .client-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .client-header-left {}
+  .client-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 6px;
+  }
+  .client-total {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 40px; font-weight: 400; color: var(--white); letter-spacing: -0.025em; line-height: 1;
+  }
+  .client-header-right {
+    text-align: right;
+  }
+  .liquid-label { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
+  .liquid-val   { font-size: 14px; font-weight: 300; color: var(--muted); letter-spacing: -0.01em; }
+
+  /* ── Main grid ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto auto;
+    gap: 10px;
+  }
+
+  /* ── Bucket panel (left) ── */
+  .bucket-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .bucket-panel-header {
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .bucket-panel-title {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--dim);
+  }
+  /* Proportional allocation strip */
+  .alloc-strip {
+    display: flex; height: 3px; background: rgba(255,255,255,0.05); overflow: hidden;
+  }
+  .alloc-strip-seg { height: 100%; }
+
+  /* Bucket rows */
+  .bucket-row {
+    display: grid;
+    grid-template-columns: 3px 1fr 110px 60px 80px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .bucket-row:last-child { border-bottom: none; }
+  .bucket-row:hover { background: rgba(255,255,255,0.025); }
+
+  .bkt-accent { height: 100%; align-self: stretch; }
+  .bkt-info   { padding: 11px 14px; }
+  .bkt-name   { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--white); margin-bottom: 2px; }
+  .bkt-desc   { font-size: 9px; font-style: italic; color: var(--dim); }
+
+  .bkt-bar-col { padding-right: 4px; }
+  .bkt-bar-track { height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+  .bkt-bar-fill  { height: 100%; border-radius: 2px; }
+
+  .bkt-balance {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 15px; font-weight: 400; color: var(--white); letter-spacing: -0.02em; text-align: right;
+    padding-right: 4px;
+  }
+  .bkt-meta { padding-right: 16px; text-align: right; }
+  .bkt-yield {
+    display: inline-block; font-size: 9px; font-weight: 600; letter-spacing: 0.02em;
+    padding: 1px 6px; border-radius: 10px;
+    background: rgba(255,255,255,0.07); color: var(--muted);
+  }
+  .bkt-excess {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    background: rgba(190,42,44,0.18); color: rgba(220,80,80,0.90);
+    border: 1px solid rgba(190,42,44,0.30);
+    padding: 2px 6px; border-radius: 10px; margin-top: 3px;
+  }
+  .bkt-excess::before { content:''; display:block; width:4px; height:4px; border-radius:50%; background:rgba(220,80,80,0.80); }
+
+  /* ── GURU panel (right) ── */
+  .guru-panel {
+    grid-row: 1 / 3;
+    position: relative; overflow: hidden;
+    background: linear-gradient(160deg, #1a3a6b 0%, #132d55 55%, #0e2040 100%);
+    border: 1px solid rgba(91,143,204,0.22);
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+  }
+  .guru-panel::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:12px;
+    background:
+      linear-gradient(90deg,transparent 0%,rgba(91,143,204,0.55) 50%,transparent 100%) top/200% 1.5px no-repeat,
+      linear-gradient(180deg,transparent 0%,rgba(91,143,204,0.25) 50%,transparent 100%) right/1.5px 200% no-repeat,
+      linear-gradient(90deg,transparent 0%,rgba(91,143,204,0.38) 50%,transparent 100%) bottom/200% 1.5px no-repeat,
+      linear-gradient(180deg,transparent 0%,rgba(91,143,204,0.25) 50%,transparent 100%) left/1.5px 200% no-repeat;
+    animation: shimmer 7s linear infinite;
+  }
+
+  .guru-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: relative; z-index: 2;
+  }
+  .guru-badge { display: flex; align-items: center; gap: 6px; }
+  .guru-dot   {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #5ecc8a; box-shadow: 0 0 6px rgba(94,204,138,0.70);
+    animation: pulse 2.2s infinite;
+  }
+  .guru-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(94,204,138,0.85); }
+  .guru-ai  {
+    font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.30); padding: 2px 7px;
+    border: 1px solid rgba(91,143,204,0.20); border-radius: 2px;
+    background: rgba(91,143,204,0.06);
+  }
+
+  .guru-panel-body {
+    padding: 18px 18px 0;
+    position: relative; z-index: 2;
+    flex: 1;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .guru-headline {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px; font-weight: 400; color: rgba(255,255,255,0.90);
+    line-height: 1.2; letter-spacing: -0.01em;
+  }
+
+  .guru-narrative {
+    font-size: 12px; line-height: 1.72; color: rgba(255,255,255,0.46);
+  }
+  .guru-narrative em { color: var(--gold); font-style: normal; font-weight: 500; }
+
+  /* Excess callout box */
+  .guru-excess {
+    background: rgba(94,204,138,0.08);
+    border: 1px solid rgba(94,204,138,0.20);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .guru-excess-label {
+    font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(94,204,138,0.55); margin-bottom: 5px;
+  }
+  .guru-excess-amount {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 32px; font-weight: 400; color: rgba(94,204,138,0.95);
+    letter-spacing: -0.025em; line-height: 1;
+  }
+  .guru-excess-sub {
+    font-size: 10px; color: rgba(94,204,138,0.45); margin-top: 4px;
+  }
+
+  /* Stat row */
+  .guru-stat-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .guru-stat {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 9px 12px;
+  }
+  .guru-stat-l { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.28); margin-bottom: 3px; }
+  .guru-stat-v { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; color: rgba(255,255,255,0.72); letter-spacing: -0.01em; }
+
+  .guru-panel-footer {
+    padding: 14px 18px 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    position: relative; z-index: 2; margin-top: auto;
+  }
+  .guru-cta {
+    width: 100%;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    background: rgba(94,204,138,0.15); color: rgba(94,204,138,0.95);
+    border: 1px solid rgba(94,204,138,0.28); padding: 13px 0; border-radius: 7px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.15s;
+  }
+  .guru-cta:hover { background: rgba(94,204,138,0.25); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.40); }
+
+  /* ── Summary strip (spans below bucket panel) ── */
+  .summary-strip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: grid; grid-template-columns: repeat(4,1fr);
+  }
+  .summary-cell {
+    padding: 12px 16px;
+    border-right: 1px solid var(--border);
+  }
+  .summary-cell:last-child { border-right: none; }
+  .summary-cell-l { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
+  .summary-cell-v { font-size: 15px; font-weight: 300; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <span class="topbar-name">Kessler Family</span>
+  <span class="topbar-sep">·</span>
+  <span class="topbar-sect">Asset Allocation</span>
+  <div class="topbar-right">
+    <div class="topbar-dot"></div>
+    <span class="topbar-flag">GURU flagged 2 items · last checked 4 hours ago</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Client header -->
+  <div class="client-header">
+    <div class="client-header-left">
+      <div class="client-label">Total Assets Under Management</div>
+      <div class="client-total">$6,087,862</div>
+    </div>
+    <div class="client-header-right">
+      <div class="liquid-label">Liquid Assets</div>
+      <div class="liquid-val">$867,636</div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- Bucket panel -->
+    <div class="bucket-panel">
+      <div class="bucket-panel-header">
+        <span class="bucket-panel-title">Portfolio Allocation</span>
+      </div>
+
+      <!-- Alloc strip -->
+      <div class="alloc-strip">
+        <div class="alloc-strip-seg" style="flex:132050;  background:#1d4ed8;"></div>
+        <div class="alloc-strip-seg" style="flex:426586;  background:#8a6920;"></div>
+        <div class="alloc-strip-seg" style="flex:309000;  background:#1e4d30;"></div>
+        <div class="alloc-strip-seg" style="flex:2229726; background:#3d1a6e;"></div>
+        <div class="alloc-strip-seg" style="flex:2989500; background:rgba(255,255,255,0.14);"></div>
+      </div>
+
+      <!-- Operating Cash -->
+      <div class="bucket-row">
+        <div class="bkt-accent" style="background:#1d4ed8;"></div>
+        <div class="bkt-info">
+          <div class="bkt-name">Operating Cash</div>
+          <div class="bkt-desc">Daily operations &amp; upcoming expenditures</div>
+        </div>
+        <div class="bkt-bar-col">
+          <div class="bkt-bar-track"><div class="bkt-bar-fill" style="width:4.4%;background:#1d4ed8;"></div></div>
+        </div>
+        <div class="bkt-balance">$132,050</div>
+        <div class="bkt-meta"><span class="bkt-yield">0.01%</span></div>
+      </div>
+
+      <!-- Reserve Cash -->
+      <div class="bucket-row">
+        <div class="bkt-accent" style="background:#8a6920;"></div>
+        <div class="bkt-info">
+          <div class="bkt-name">Reserve Cash</div>
+          <div class="bkt-desc">Actively managed · optimized for yield</div>
+        </div>
+        <div class="bkt-bar-col">
+          <div class="bkt-bar-track"><div class="bkt-bar-fill" style="width:14.3%;background:#8a6920;"></div></div>
+        </div>
+        <div class="bkt-balance">$426,586</div>
+        <div class="bkt-meta">
+          <span class="bkt-yield">4.60%</span>
+          <div class="bkt-excess">Excess</div>
+        </div>
+      </div>
+
+      <!-- Capital Build -->
+      <div class="bucket-row">
+        <div class="bkt-accent" style="background:#1e4d30;"></div>
+        <div class="bkt-info">
+          <div class="bkt-name">Capital Build</div>
+          <div class="bkt-desc">Short-duration ladder · near-term goals</div>
+        </div>
+        <div class="bkt-bar-col">
+          <div class="bkt-bar-track"><div class="bkt-bar-fill" style="width:10.3%;background:#1e4d30;"></div></div>
+        </div>
+        <div class="bkt-balance">$309,000</div>
+        <div class="bkt-meta">
+          <span class="bkt-yield">4.85%</span>
+          <div class="bkt-excess">Excess</div>
+        </div>
+      </div>
+
+      <!-- Investments -->
+      <div class="bucket-row">
+        <div class="bkt-accent" style="background:#3d1a6e;"></div>
+        <div class="bkt-info">
+          <div class="bkt-name">Investments</div>
+          <div class="bkt-desc">CIO-managed · long-term compounded growth</div>
+        </div>
+        <div class="bkt-bar-col">
+          <div class="bkt-bar-track"><div class="bkt-bar-fill" style="width:74.5%;background:#3d1a6e;"></div></div>
+        </div>
+        <div class="bkt-balance">$2,229,726</div>
+        <div class="bkt-meta"><span class="bkt-yield">3.95%</span></div>
+      </div>
+
+      <!-- Other Assets -->
+      <div class="bucket-row">
+        <div class="bkt-accent" style="background:rgba(255,255,255,0.14);"></div>
+        <div class="bkt-info">
+          <div class="bkt-name">Other Assets</div>
+          <div class="bkt-desc">Real estate &amp; alternatives</div>
+        </div>
+        <div class="bkt-bar-col">
+          <div class="bkt-bar-track"><div class="bkt-bar-fill" style="width:100%;background:rgba(255,255,255,0.12);"></div></div>
+        </div>
+        <div class="bkt-balance">$2,989,500</div>
+        <div class="bkt-meta" style="color:rgba(255,255,255,0.18);font-size:12px;">—</div>
+      </div>
+
+    </div><!-- /bucket-panel -->
+
+    <!-- GURU panel — right column, spans 2 rows -->
+    <div class="guru-panel">
+      <div class="guru-panel-header">
+        <div class="guru-badge">
+          <div class="guru-dot"></div>
+          <div class="guru-lbl">GURU Intelligence</div>
+        </div>
+        <div class="guru-ai">Editorial · AI</div>
+      </div>
+
+      <div class="guru-panel-body">
+        <div class="guru-headline">Strong Liquidity.<br>Time to Generate<br>More Alpha.</div>
+
+        <div class="guru-narrative">
+          The Kesslers are sitting on excess liquidity for 47 days after a $753,000 cash bonus.
+          GURU identified <em>$417,192 in excess liquidity</em> that can be put to work across
+          fixed income optimization and their growth strategy.
+        </div>
+
+        <div class="guru-excess">
+          <div class="guru-excess-label">Deployable Excess</div>
+          <div class="guru-excess-amount">$417,192</div>
+          <div class="guru-excess-sub">Reserve Cash + Capital Build · 47 days idle</div>
+        </div>
+
+        <div class="guru-stat-row">
+          <div class="guru-stat">
+            <div class="guru-stat-l">Annual Pickup</div>
+            <div class="guru-stat-v" style="color:rgba(94,204,138,0.90);">+$18,023</div>
+          </div>
+          <div class="guru-stat">
+            <div class="guru-stat-l">Coverage</div>
+            <div class="guru-stat-v">18 mo</div>
+          </div>
+          <div class="guru-stat">
+            <div class="guru-stat-l">Target</div>
+            <div class="guru-stat-v">12 mo</div>
+          </div>
+          <div class="guru-stat">
+            <div class="guru-stat-l">Buckets</div>
+            <div class="guru-stat-v">2 of 5</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="guru-panel-footer">
+        <button class="guru-cta">
+          Rebalance and Maximize Wealth
+          <span style="font-size:13px;">→</span>
+        </button>
+      </div>
+    </div><!-- /guru-panel -->
+
+    <!-- Summary strip (bottom-left) -->
+    <div class="summary-strip">
+      <div class="summary-cell">
+        <div class="summary-cell-l">Total Assets</div>
+        <div class="summary-cell-v" style="color:rgba(255,255,255,0.80);">$6,087,862</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-cell-l">Liquid Assets</div>
+        <div class="summary-cell-v" style="color:rgba(255,255,255,0.80);">$867,636</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-cell-l">Deployable Excess</div>
+        <div class="summary-cell-v" style="color:var(--gold);">$417,192</div>
+      </div>
+      <div class="summary-cell">
+        <div class="summary-cell-l">After-Tax Pickup</div>
+        <div class="summary-cell-v" style="color:var(--green);">+$18,023/yr</div>
+      </div>
+    </div>
+
+  </div><!-- /main-grid -->
+</div>
+
+</body>
+</html>

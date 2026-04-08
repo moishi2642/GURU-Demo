@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU Financial · Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F0EDE8;
+  --card: #FFFFFF;
+  --border: rgba(0,0,0,0.08);
+  --text: #1A1915;
+  --muted: #9A9890;
+  --accent: #183B6E;
+  --green: #1e6b45;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 680px;
+  width: 100%;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 28px 24px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.18s, transform 0.18s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+  transform: translateY(-2px);
+}
+
+.card-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.card-title {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.card-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.card-arrow {
+  margin-top: 6px;
+  font-size: 18px;
+  color: var(--accent);
+}
+
+.card.brief { border-top: 3px solid #183B6E; }
+.card.balance { border-top: 3px solid var(--green); }
+
+footer {
+  margin-top: 52px;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">GURU Financial</div>
+  <h1>Kessler Family · Demo</h1>
+  <div class="subtitle">Advisor demo pages · For internal use only</div>
+</div>
+
+<div class="cards">
+
+  <a href="advisor-brief.html" class="card brief">
+    <div class="card-tag">Advisor</div>
+    <div class="card-title">Advisor Brief</div>
+    <div class="card-desc">Pre-meeting intelligence, action items, and position recommendations for the Kessler client meeting.</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+  <a href="balance-sheet-mockup.html" class="card balance">
+    <div class="card-tag">Balance Sheet</div>
+    <div class="card-title">Balance Sheet Overview</div>
+    <div class="card-desc">Full household balance sheet with liquid assets, investments, real estate, and net worth summary.</div>
+    <div class="card-arrow">→</div>
+  </a>
+
+</div>
+
+<footer>GURU Financial · Private &amp; Confidential · April 2026</footer>
+
+</body>
+</html>

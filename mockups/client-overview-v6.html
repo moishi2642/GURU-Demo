@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Overview — Kessler Family</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F0EDE8;
+  --card: #FFFFFF;
+  --text: #1A1915;
+  --muted: #9A9890;
+  --accent: #183B6E;
+  --green: #1e6b45;
+  --amber: #9A6B10;
+  --danger: #8B2020;
+  --border: rgba(0,0,0,0.08);
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { font-family:'Inter',system-ui,sans-serif; background:#f0ece5; color:#1a1a1a; min-height:100vh; }
+
+/* ── NAV ── */
+.nav { background:rgba(240,236,229,0.97); border-bottom:1px solid rgba(0,0,0,0.08); padding:0 40px; height:50px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; backdrop-filter:blur(4px); }
+.nav-l { display:flex; align-items:center; gap:8px; font-size:13px; }
+.nav-client { font-weight:500; }
+.nav-sep { color:rgba(0,0,0,0.18); }
+.nav-page { color:rgba(0,0,0,0.42); }
+.nav-r { display:flex; align-items:center; gap:5px; }
+.nav-dot { width:5px; height:5px; border-radius:50%; background:#44e08a; animation:pulse 2.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+.nav-live { font-size:9px; font-weight:700; letter-spacing:0.11em; text-transform:uppercase; color:rgba(0,0,0,0.30); }
+
+.body { padding:24px 40px 90px; }
+
+/* ── TOP STAT CARDS ── */
+.top-cards { display:grid; grid-template-columns:auto 1fr 1fr 1fr 1fr; gap:1px; background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.08); border-radius:10px; overflow:hidden; margin-bottom:14px; }
+.tc { background:#fff; padding:14px 20px; }
+.tc.hero { padding:16px 24px; }
+.tc-lbl { font-size:8px; font-weight:700; letter-spacing:0.11em; text-transform:uppercase; color:rgba(0,0,0,0.28); margin-bottom:5px; }
+.tc-val { font-family:'Playfair Display',Georgia,serif; font-size:34px; font-weight:400; color:hsl(222,45%,12%); letter-spacing:-0.03em; line-height:1; }
+.tc-delta { font-size:9.5px; font-weight:500; color:#1e6e42; margin-top:4px; }
+.tc-num { font-size:18px; font-weight:300; font-variant-numeric:tabular-nums; letter-spacing:-0.025em; color:#1a1a1a; line-height:1; margin-bottom:2px; }
+.tc-num.neg { color:#9b2020; }
+.tc-num.grn { color:#1e6e42; }
+.tc-num.dim { color:rgba(0,0,0,0.38); }
+.tc-sub { font-size:8.5px; color:rgba(0,0,0,0.32); }
+
+/* ── GURU SIGNALS ── */
+.guru-bar { background:#0c1828; border-radius:8px; padding:11px 18px; margin-bottom:14px; display:flex; align-items:stretch; }
+.guru-label { display:flex; flex-direction:column; justify-content:center; padding-right:16px; border-right:1px solid rgba(255,255,255,0.07); margin-right:16px; flex-shrink:0; gap:2px; }
+.guru-wordmark { font-size:8px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.25); }
+.guru-count { font-size:10px; font-weight:500; color:rgba(255,255,255,0.45); }
+.guru-sigs { display:flex; flex:1; }
+.gsig { flex:1; padding:0 14px; border-right:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; justify-content:center; gap:3px; }
+.gsig:last-child { border-right:none; }
+.gsig-type { font-size:7px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; }
+.t-opp  { color:rgba(68,224,138,0.65); }
+.t-exec { color:rgba(91,156,246,0.65); }
+.t-mon  { color:rgba(255,200,60,0.65); }
+.gsig-text { font-size:10px; color:rgba(255,255,255,0.65); line-height:1.38; }
+.gsig-pill { display:inline-block; font-size:7px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:2px 6px; border-radius:2px; margin-top:1px; align-self:flex-start; }
+.p-opp  { background:rgba(68,224,138,0.09); border:1px solid rgba(68,224,138,0.22); color:#44e08a; }
+.p-exec { background:rgba(91,156,246,0.09); border:1px solid rgba(91,156,246,0.22); color:rgba(91,156,246,0.85); }
+.p-mon  { background:rgba(255,200,60,0.07); border:1px solid rgba(255,200,60,0.20); color:rgba(255,200,60,0.82); }
+
+/* ── GURU CATEGORY CARDS ── */
+.cat-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:rgba(0,0,0,0.08); border:1px solid rgba(0,0,0,0.08); border-radius:10px; overflow:hidden; margin-bottom:14px; }
+.cat-card { background:#fff; padding:14px 16px 13px; display:flex; flex-direction:column; border-left:3px solid transparent; }
+.cat-card.c1 { border-left-color:#22c55e; }
+.cat-card.c2 { border-left-color:#84cc16; }
+.cat-card.c3 { border-left-color:#f97316; }
+.cat-card.c4 { border-left-color:#dc2626; }
+.cc-label { font-size:7.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(0,0,0,0.35); margin-bottom:3px; }
+.cc-name { font-size:12px; font-weight:600; color:#1a1a1a; margin-bottom:3px; line-height:1.2; }
+.cc-def { font-size:9.5px; color:rgba(0,0,0,0.40); line-height:1.45; margin-bottom:9px; flex:1; }
+.cc-amt { font-size:19px; font-weight:300; font-variant-numeric:tabular-nums; letter-spacing:-0.025em; color:#1a1a1a; margin-bottom:6px; line-height:1; }
+.cc-status { font-size:10px; color:rgba(0,0,0,0.50); line-height:1.45; border-top:1px solid rgba(0,0,0,0.06); padding-top:6px; }
+.cc-status .ok     { color:#1e6e42; font-weight:600; }
+.cc-status .warn   { color:rgba(184,92,0,0.90); font-weight:600; }
+.cc-status .info   { color:rgba(30,77,140,0.75); font-weight:600; }
+.cc-status .neutral{ color:rgba(0,0,0,0.36); font-weight:500; }
+
+/* ── TWO-COLUMN — equal split ── */
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start; }
+
+/* ── TABLE CARD ── */
+.tcard { background:#fff; border:1px solid rgba(0,0,0,0.08); border-radius:10px; overflow:hidden; }
+.tcard-head { padding:10px 16px; border-bottom:1px solid rgba(0,0,0,0.07); display:flex; justify-content:space-between; align-items:center; }
+.tcard-title { font-size:10px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:rgba(0,0,0,0.45); }
+.tcard-total { font-size:15px; font-weight:300; font-variant-numeric:tabular-nums; letter-spacing:-0.02em; }
+.tcard-total.neg { color:#9b2020; }
+
+/* ── GRIDS ── */
+/* Assets: bar(6px) | name | institution | balance | next month | yield */
+.ag { display:grid; grid-template-columns:6px 1fr 92px 90px 90px 50px; gap:0 9px; padding:0 14px; align-items:center; }
+/* Liabilities: name | institution | balance | next month | rate */
+.lg { display:grid; grid-template-columns:1fr 92px 86px 86px 48px; gap:0 9px; padding:0 14px; align-items:center; }
+
+/* ── COLUMN HEADERS ── */
+.col-head { padding:4px 0; border-bottom:1px solid rgba(0,0,0,0.07); background:rgba(0,0,0,0.014); }
+.ch { font-size:7px; font-weight:700; letter-spacing:0.09em; text-transform:uppercase; color:rgba(0,0,0,0.25); }
+.ch.r { text-align:right; }
+
+/* Liquidity legend */
+.liq-legend { display:flex; align-items:center; gap:9px; padding:4px 14px; border-bottom:1px solid rgba(0,0,0,0.05); background:rgba(0,0,0,0.010); }
+.ll-title { font-size:7px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:rgba(0,0,0,0.24); white-space:nowrap; }
+.ll-items { display:flex; gap:9px; }
+.ll-item  { display:flex; align-items:center; gap:3px; }
+.ll-dot   { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.ll-lbl   { font-size:7.5px; color:rgba(0,0,0,0.35); white-space:nowrap; }
+
+/* ── ACCOUNT ROWS ── */
+.row { padding-top:3px; padding-bottom:3px; border-bottom:1px solid rgba(0,0,0,0.028); }
+.r-name { font-size:10.5px; font-weight:400; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; padding-left:9px; }
+.r-acct { font-size:7.5px; color:rgba(0,0,0,0.28); margin-top:1px; font-variant-numeric:tabular-nums; padding-left:9px; }
+.r-inst { font-size:9.5px; color:rgba(0,0,0,0.38); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.r-bal  { font-size:10.5px; font-weight:400; font-variant-numeric:tabular-nums; color:rgba(0,0,0,0.62); text-align:right; }
+.r-bal.neg { color:#9b2020; }
+.r-bal.grn { color:#1e6e42; font-weight:500; }
+.r-next { font-size:10.5px; font-weight:300; font-variant-numeric:tabular-nums; color:rgba(0,0,0,0.35); text-align:right; }
+.r-next.up  { color:#1e6e42; }
+.r-next.neg { color:rgba(155,32,32,0.62); }
+.r-next.dash { color:rgba(0,0,0,0.18); }
+.r-yld  { font-size:10px; font-variant-numeric:tabular-nums; color:rgba(0,0,0,0.36); text-align:right; }
+.r-yld.neg { color:#9b2020; }
+.tag { font-size:6.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+.tag-excess   { color:rgba(184,92,0,0.82); }
+.tag-idle     { color:rgba(184,92,0,0.82); }
+.tag-illiquid { color:rgba(80,40,120,0.68); }
+.tag-unvested { color:rgba(80,40,120,0.68); }
+.tag-carry    { color:rgba(30,77,140,0.72); }
+.tag-primary  { color:rgba(26,26,74,0.48); }
+.tag-rental   { color:rgba(100,60,20,0.72); }
+.tag-unfunded { color:rgba(80,40,120,0.68); }
+.tag-crypto   { color:rgba(234,179,8,0.80); }
+
+/* ── SUBTOTAL ROWS — PROMINENT ── */
+.subtotal {
+  padding-top:7px; padding-bottom:8px;
+  background:rgba(0,0,0,0.026);
+  border-top:1px solid rgba(0,0,0,0.09);
+  border-bottom:2px solid rgba(0,0,0,0.07);
+}
+/* st-lbl cell = flex container: label left, memo right */
+.st-lbl-cell { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.st-lbl {
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  color:rgba(0,0,0,0.65);
+  white-space:nowrap;
+}
+/* Memo annotation — sits inline right of section name */
+.st-memo {
+  font-size:8.5px;
+  font-weight:500;
+  font-variant-numeric:tabular-nums;
+  color:rgba(0,0,0,0.38);
+  background:rgba(0,0,0,0.040);
+  border:1px dashed rgba(0,0,0,0.14);
+  padding:2px 7px;
+  border-radius:3px;
+  white-space:nowrap;
+  letter-spacing:0.01em;
+  flex-shrink:0;
+}
+.st-memo .memo-lbl { font-weight:400; color:rgba(0,0,0,0.26); margin-right:3px; }
+.st-val {
+  font-size:14px;
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+  color:rgba(0,0,0,0.72);
+}
+.st-val.neg { color:#9b2020; }
+.st-val.grn { color:#1e6e42; }
+.st-next { font-size:11px; font-weight:400; font-variant-numeric:tabular-nums; color:rgba(0,0,0,0.40); text-align:right; }
+.st-next.neg { color:rgba(155,32,32,0.65); }
+
+/* Grand total row */
+.total-row { border-top:2px solid rgba(0,0,0,0.11); padding-top:9px; padding-bottom:10px; background:rgba(0,0,0,0.016); }
+.tr-lbl { font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:rgba(0,0,0,0.50); padding-left:9px; }
+.tr-val { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; text-align:right; color:#1a1a1a; }
+.tr-val.neg { color:#9b2020; }
+
+/* Tracked divider */
+.tracked-div { display:flex; align-items:center; gap:10px; padding:9px 14px 5px; border-top:1px solid rgba(0,0,0,0.06); margin-top:1px; }
+.td-line  { flex:1; height:1px; background:rgba(0,0,0,0.06); }
+.td-label { font-size:7px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(0,0,0,0.24); white-space:nowrap; }
+
+/* ── RE PROPERTY ROWS — expandable ── */
+.re-row { cursor:pointer; }
+.re-row:hover { background:rgba(220,38,38,0.025); }
+.re-expand { font-size:9px; color:rgba(0,0,0,0.28); cursor:pointer; line-height:1; padding-left:2px; user-select:none; }
+.re-detail { background:rgba(220,38,38,0.025); border-bottom:1px solid rgba(220,38,38,0.08); display:none; padding:5px 14px 6px; }
+.re-detail-inner { padding-left:15px; display:flex; gap:20px; align-items:baseline; }
+.re-detail-lbl { font-size:8.5px; color:rgba(0,0,0,0.36); }
+.re-detail-val { font-size:10px; font-weight:500; color:rgba(0,0,0,0.55); font-variant-numeric:tabular-nums; }
+.re-detail-gain { font-size:8.5px; color:#1e6e42; font-weight:500; }
+
+/* RE subtotal — reddish tint */
+.re-subtotal {
+  padding-top:7px; padding-bottom:8px;
+  background:rgba(220,38,38,0.032);
+  border-top:1px solid rgba(220,38,38,0.10);
+  border-bottom:2px solid rgba(0,0,0,0.07);
+}
+
+/* Zillow badge */
+.zillow-sub { font-size:7px; color:rgba(0,0,100,0.40); padding-left:9px; margin-top:1px; letter-spacing:0.01em; }
+
+/* Mortgage reference in liabilities */
+.mtg-ref { padding:5px 14px; background:rgba(0,0,0,0.010); border-bottom:1px solid rgba(0,0,0,0.05); display:flex; justify-content:space-between; align-items:baseline; }
+.mtg-ref-lbl { font-size:9px; color:rgba(0,0,0,0.35); }
+.mtg-ref-amt { font-size:10px; font-weight:500; color:#9b2020; font-variant-numeric:tabular-nums; }
+.mtg-ref-note { font-size:7.5px; color:rgba(0,0,0,0.24); font-style:italic; margin-left:5px; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-l"><span class="nav-client">Kessler Family</span><span class="nav-sep">·</span><span class="nav-page">Client Overview</span></div>
+  <div class="nav-r"><div class="nav-dot"></div><span class="nav-live">GURU Live · April 6, 2026</span></div>
+</div>
+
+<div class="body">
+
+  <!-- ── TOP STAT CARDS ── -->
+  <div class="top-cards">
+    <div class="tc hero">
+      <div class="tc-lbl">Net Worth</div>
+      <div class="tc-val">$5,039,696</div>
+      <div class="tc-delta">↑ +$18,240 vs. last month</div>
+    </div>
+    <div class="tc">
+      <div class="tc-lbl">Total Assets</div>
+      <div class="tc-num">$6,387,862</div>
+      <div class="tc-sub">22 positions · incl. Zillow est.</div>
+    </div>
+    <div class="tc">
+      <div class="tc-lbl">Total Liabilities</div>
+      <div class="tc-num neg">−$1,348,166</div>
+      <div class="tc-sub">6 positions</div>
+    </div>
+    <div class="tc">
+      <div class="tc-lbl">GURU Managed</div>
+      <div class="tc-num grn">$2,923,362</div>
+      <div class="tc-sub">Liquid &amp; investable</div>
+    </div>
+    <div class="tc">
+      <div class="tc-lbl">Tracked Only</div>
+      <div class="tc-num dim">$3,464,500</div>
+      <div class="tc-sub">Outside model · at market</div>
+    </div>
+  </div>
+
+  <!-- ── GURU SIGNALS ── -->
+  <div class="guru-bar">
+    <div class="guru-label">
+      <div class="guru-wordmark">GURU Intelligence</div>
+      <div class="guru-count">3 active signals</div>
+    </div>
+    <div class="guru-sigs">
+      <div class="gsig">
+        <span class="gsig-type t-opp">Opportunity</span>
+        <span class="gsig-text">$186,586 idle at 2.50% — ladder into Treasuries adds ~$4,650/yr</span>
+        <span class="gsig-pill p-opp">Review Allocation</span>
+      </div>
+      <div class="gsig">
+        <span class="gsig-type t-exec">Executing</span>
+        <span class="gsig-text">$135,000 Treasury matures Mar 31 — auto-rolling at 3.95%</span>
+        <span class="gsig-pill p-exec">Auto-Rolling</span>
+      </div>
+      <div class="gsig">
+        <span class="gsig-type t-mon">Monitoring</span>
+        <span class="gsig-text">PE Fund II capital call opens May 1 — $50K unfunded commitment</span>
+        <span class="gsig-pill p-mon">Next Meeting</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GURU CATEGORY CARDS ── -->
+  <div class="cat-cards">
+
+    <div class="cat-card c1">
+      <div class="cc-label">Operating Cash</div>
+      <div class="cc-name">Immediate Reserve</div>
+      <div class="cc-def">Day-to-day spending and immediate access. GURU maintains a 2-month buffer minimum.</div>
+      <div class="cc-amt">$132,050</div>
+      <div class="cc-status"><span class="ok">✓ On target</span> — 2.3× monthly run rate · within buffer range</div>
+    </div>
+
+    <div class="cat-card c2">
+      <div class="cc-label">Reserve Cash</div>
+      <div class="cc-name">Yield-Optimized Capital</div>
+      <div class="cc-def">Liquid savings earning yield. GURU continuously optimizes product selection and rates.</div>
+      <div class="cc-amt">$561,586</div>
+      <div class="cc-status"><span class="warn">↑ Opportunity</span> — $186K idle at 2.50% · blended rate improvable to 3.80%+</div>
+    </div>
+
+    <div class="cat-card c3">
+      <div class="cc-label">Investment Portfolio</div>
+      <div class="cc-name">Growth Capital</div>
+      <div class="cc-def">Managed accounts, public equities, and tax-advantaged retirement vehicles. 5+ year horizon.</div>
+      <div class="cc-amt">$2,229,726</div>
+      <div class="cc-status"><span class="info">Advisor managed</span> — Cresset oversight · GURU monitoring tax drag &amp; rebalancing signals</div>
+    </div>
+
+    <div class="cat-card c4">
+      <div class="cc-label">Long-Term Wealth · Tracked Only</div>
+      <div class="cc-name">Outside GURU Model</div>
+      <div class="cc-def">Real estate, private equity, carry interests, and unvested equity. Tracked, not managed.</div>
+      <div class="cc-amt">$3,464,500</div>
+      <div class="cc-status"><span class="neutral">Not in model</span> — RE net equity $1.20M · PE &amp; carry NAV $1.17M · RSUs $80K</div>
+    </div>
+
+  </div>
+
+  <!-- ── TWO COLUMN ── -->
+  <div class="two-col">
+
+    <!-- ASSETS TABLE -->
+    <div class="tcard">
+      <div class="tcard-head">
+        <span class="tcard-title">Assets</span>
+        <span class="tcard-total">$6,387,862</span>
+      </div>
+
+      <div class="liq-legend">
+        <span class="ll-title">Liquidity</span>
+        <div class="ll-items">
+          <div class="ll-item"><div class="ll-dot" style="background:#22c55e;"></div><span class="ll-lbl">Immediate</span></div>
+          <div class="ll-item"><div class="ll-dot" style="background:#84cc16;"></div><span class="ll-lbl">Same-day</span></div>
+          <div class="ll-item"><div class="ll-dot" style="background:#eab308;"></div><span class="ll-lbl">1–3 days</span></div>
+          <div class="ll-item"><div class="ll-dot" style="background:#f97316;"></div><span class="ll-lbl">Weeks</span></div>
+          <div class="ll-item"><div class="ll-dot" style="background:#dc2626;"></div><span class="ll-lbl">Committed</span></div>
+        </div>
+      </div>
+
+      <div class="ag col-head">
+        <div></div>
+        <div class="ch" style="padding-left:9px;">Account</div>
+        <div class="ch">Institution</div>
+        <div class="ch r">Balance</div>
+        <div class="ch r">Next Month</div>
+        <div class="ch r">Yield</div>
+      </div>
+
+      <!-- ═══ OPERATING CASH ═══ -->
+      <div class="ag row" style="padding-top:5px;">
+        <div></div>
+        <div><div class="r-name">Chase Total Checking</div><div class="r-acct">·7842</div></div>
+        <div class="r-inst">JPMorgan Chase</div>
+        <div class="r-bal">$25,050</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Citizens Private Banking Checking</div><div class="r-acct">·2847</div></div>
+        <div class="r-inst">Citizens Bank</div>
+        <div class="r-bal">$107,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld"><span class="tag tag-excess">excess</span></div>
+      </div>
+      <div class="ag subtotal">
+        <div style="width:3px;background:#22c55e;align-self:stretch;border-radius:1px;"></div>
+        <div class="st-lbl-cell"><span class="st-lbl">Operating Cash</span></div>
+        <div></div>
+        <div class="st-val">$132,050</div>
+        <div class="st-next">$132,050</div>
+        <div></div>
+      </div>
+
+      <!-- ═══ RESERVE CASH ═══ -->
+      <div class="ag row" style="padding-top:5px;">
+        <div></div>
+        <div><div class="r-name">Citizens Private Bank Money Market</div><div class="r-acct">·7204</div></div>
+        <div class="r-inst">Citizens Bank</div>
+        <div class="r-bal">$225,000</div>
+        <div class="r-next up">$225,684</div>
+        <div class="r-yld">3.65%</div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Capital One 360 Performance Savings</div><div class="r-acct">·1482</div></div>
+        <div class="r-inst">Capital One</div>
+        <div class="r-bal">$15,000</div>
+        <div class="r-next up">$15,047</div>
+        <div class="r-yld">3.78%</div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Fidelity Cash Sweep / Money Market</div><div class="r-acct">·4976</div></div>
+        <div class="r-inst">Fidelity</div>
+        <div class="r-bal">$186,586</div>
+        <div class="r-next up">$186,975</div>
+        <div class="r-yld"><span class="tag tag-idle">2.50% idle</span></div>
+      </div>
+      <div class="ag subtotal">
+        <div style="width:3px;background:#84cc16;align-self:stretch;border-radius:1px;"></div>
+        <div class="st-lbl-cell"><span class="st-lbl">Reserve Cash</span></div>
+        <div></div>
+        <div class="st-val">$426,586</div>
+        <div class="st-next">$427,706</div>
+        <div></div>
+      </div>
+
+      <!-- ═══ CAPITAL BUILD ═══ -->
+      <div class="ag row" style="padding-top:5px;">
+        <div></div>
+        <div><div class="r-name">US Treasuries</div><div class="r-acct">·1142 · Matures Mar 31</div></div>
+        <div class="r-inst">Fidelity</div>
+        <div class="r-bal">$135,000</div>
+        <div class="r-next up">$135,445</div>
+        <div class="r-yld">3.95%</div>
+      </div>
+      <div class="ag subtotal">
+        <div style="width:3px;background:#eab308;align-self:stretch;border-radius:1px;"></div>
+        <div class="st-lbl-cell"><span class="st-lbl">Capital Build</span></div>
+        <div></div>
+        <div class="st-val">$135,000</div>
+        <div class="st-next">$135,445</div>
+        <div></div>
+      </div>
+
+      <!-- ═══ INVESTMENTS ═══ -->
+      <div class="ag row" style="padding-top:5px;">
+        <div></div>
+        <div><div class="r-name">Cresset Capital — US ETFs &amp; Mutual Funds</div><div class="r-acct">·3391 · Advisor Managed</div></div>
+        <div class="r-inst">Cresset</div>
+        <div class="r-bal">$814,877</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Schwab International Index</div><div class="r-acct">·7678</div></div>
+        <div class="r-inst">Charles Schwab</div>
+        <div class="r-bal">$116,538</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">E*Trade — Meta Platforms</div><div class="r-acct">·9782 · Single Stock</div></div>
+        <div class="r-inst">E*Trade</div>
+        <div class="r-bal">$238,311</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">E*Trade — Bank of America</div><div class="r-acct">·9782 · Single Stock</div></div>
+        <div class="r-inst">E*Trade</div>
+        <div class="r-bal">$60,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Fidelity 401(k) / Traditional IRA</div><div class="r-acct">·8821 · Tax-Deferred</div></div>
+        <div class="r-inst">Fidelity</div>
+        <div class="r-bal">$620,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Fidelity Roth IRA</div><div class="r-acct">·4412 · Tax-Free</div></div>
+        <div class="r-inst">Fidelity</div>
+        <div class="r-bal">$380,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="ag subtotal">
+        <div style="width:3px;background:#f97316;align-self:stretch;border-radius:1px;"></div>
+        <div class="st-lbl-cell"><span class="st-lbl">Investments</span></div>
+        <div></div>
+        <div class="st-val">$2,229,726</div>
+        <div class="st-next" style="color:rgba(0,0,0,0.22);font-size:9px;">Market</div>
+        <div></div>
+      </div>
+
+      <!-- TRACKED DIVIDER -->
+      <div class="tracked-div">
+        <div class="td-line"></div>
+        <span class="td-label">Tracked · Not in GURU Cash Management Model</span>
+        <div class="td-line"></div>
+      </div>
+
+      <!-- ═══ REAL ESTATE — Zillow market values, expandable ═══ -->
+      <div class="ag col-head" style="background:rgba(220,38,38,0.025);border-top:1px solid rgba(220,38,38,0.07);">
+        <div></div>
+        <div class="ch" style="padding-left:9px;">Property</div>
+        <div class="ch">—</div>
+        <div class="ch r">Mkt Value</div>
+        <div class="ch r">Next Month</div>
+        <div class="ch r">—</div>
+      </div>
+
+      <!-- Tribeca Condo -->
+      <div class="ag row re-row" style="padding-top:6px;padding-bottom:6px;" onclick="toggleDetail('tribeca')">
+        <div></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span class="r-name" style="padding-left:9px;">Tribeca Condo</span>
+            <span class="re-expand" id="tribeca-arrow">▸</span>
+          </div>
+          <div class="r-acct">50 Warren St, Apt 12F · New York, NY 10007 · <span class="tag tag-primary">primary</span></div>
+          <div class="zillow-sub">Zillow estimate</div>
+        </div>
+        <div class="r-inst">—</div>
+        <div class="r-bal">$1,875,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="re-detail" id="tribeca-detail">
+        <div class="re-detail-inner">
+          <div><span class="re-detail-lbl">Purchase price</span> &nbsp;<span class="re-detail-val">$1,525,000</span></div>
+          <div><span class="re-detail-lbl">Est. purchased</span> &nbsp;<span class="re-detail-val">Mar 2018</span></div>
+          <div><span class="re-detail-lbl">Unrealized gain</span> &nbsp;<span class="re-detail-val">+$350,000</span> &nbsp;<span class="re-detail-gain">+22.9%</span></div>
+        </div>
+      </div>
+
+      <!-- Sarasota -->
+      <div class="ag row re-row" style="padding-top:6px;padding-bottom:6px;" onclick="toggleDetail('sarasota')">
+        <div></div>
+        <div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span class="r-name" style="padding-left:9px;">Sarasota Property</span>
+            <span class="re-expand" id="sarasota-arrow">▸</span>
+          </div>
+          <div class="r-acct">1847 Siesta Drive · Sarasota, FL 34242 · <span class="tag tag-rental">rental</span></div>
+          <div class="zillow-sub">Zillow estimate</div>
+        </div>
+        <div class="r-inst">—</div>
+        <div class="r-bal">$415,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld">—</div>
+      </div>
+      <div class="re-detail" id="sarasota-detail">
+        <div class="re-detail-inner">
+          <div><span class="re-detail-lbl">Purchase price</span> &nbsp;<span class="re-detail-val">$290,000</span></div>
+          <div><span class="re-detail-lbl">Est. purchased</span> &nbsp;<span class="re-detail-val">Jun 2021</span></div>
+          <div><span class="re-detail-lbl">Unrealized gain</span> &nbsp;<span class="re-detail-val">+$125,000</span> &nbsp;<span class="re-detail-gain">+43.1%</span></div>
+        </div>
+      </div>
+
+      <!-- RE Subtotal with Net Equity memo -->
+      <div class="ag re-subtotal">
+        <div style="width:3px;background:#dc2626;align-self:stretch;border-radius:1px;"></div>
+        <div class="st-lbl-cell">
+          <span class="st-lbl">Real Estate</span>
+          <span class="st-memo"><span class="memo-lbl">Net equity</span>$1,198,000</span>
+        </div>
+        <div></div>
+        <div class="st-val">$2,290,000</div>
+        <div class="st-next" style="color:rgba(0,0,0,0.22);font-size:9px;">—</div>
+        <div></div>
+      </div>
+
+      <!-- ═══ ALTERNATIVES & CARRY ═══ -->
+      <div class="ag row" style="padding-top:5px;">
+        <div></div>
+        <div><div class="r-name">Coinbase — Crypto</div><div class="r-acct">BTC / ETH</div></div>
+        <div class="r-inst">Coinbase</div>
+        <div class="r-bal">$9,500</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld"><span class="tag tag-crypto">crypto</span></div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Carlyle Partners VIII</div><div class="r-acct">Private Equity · NAV</div></div>
+        <div class="r-inst">Carlyle Group</div>
+        <div class="r-bal">$75,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld"><span class="tag tag-illiquid">illiquid</span></div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Carlyle Partners IX</div><div class="r-acct">Private Equity · NAV</div></div>
+        <div class="r-inst">Carlyle Group</div>
+        <div class="r-bal">$175,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld"><span class="tag tag-illiquid">illiquid</span></div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Carlyle Partners VIII — Carry</div><div class="r-acct">Est. Fair Market Value</div></div>
+        <div class="r-inst">Carlyle Group</div>
+        <div class="r-bal">$325,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld"><span class="tag tag-carry">carry</span></div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Carlyle Partners IX — Carry</div><div class="r-acct">Est. Fair Market Value</div></div>
+        <div class="r-inst">Carlyle Group</div>
+        <div class="r-bal">$510,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld"><span class="tag tag-carry">carry</span></div>
+      </div>
+      <div class="ag row">
+        <div></div>
+        <div><div class="r-name">Goldman Sachs RSUs</div><div class="r-acct">Unvested · 2-yr cliff</div></div>
+        <div class="r-inst">Goldman Sachs</div>
+        <div class="r-bal">$80,000</div>
+        <div class="r-next dash">—</div>
+        <div class="r-yld"><span class="tag tag-unvested">unvested</span></div>
+      </div>
+      <!-- Alts Subtotal with Net-of-Loan memo -->
+      <div class="ag subtotal">
+        <div style="width:3px;background:#dc2626;align-self:stretch;border-radius:1px;"></div>
+        <div class="st-lbl-cell">
+          <span class="st-lbl">Alts &amp; Carry</span>
+          <span class="st-memo"><span class="memo-lbl">Net of loan</span>$1,049,500</span>
+        </div>
+        <div></div>
+        <div class="st-val">$1,174,500</div>
+        <div class="st-next" style="color:rgba(0,0,0,0.20);font-size:9px;">—</div>
+        <div></div>
+      </div>
+
+      <!-- Grand total -->
+      <div class="ag total-row">
+        <div></div>
+        <div class="tr-lbl">Total Assets</div>
+        <div></div>
+        <div class="tr-val">$6,387,862</div>
+        <div></div>
+        <div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN — LIABILITIES -->
+    <div>
+      <div class="tcard">
+        <div class="tcard-head">
+          <span class="tcard-title">Liabilities</span>
+          <span class="tcard-total neg">−$1,348,166</span>
+        </div>
+
+        <!-- Mortgage reference -->
+        <div class="mtg-ref">
+          <div>
+            <span class="mtg-ref-lbl">Mortgages</span>
+            <span class="mtg-ref-note">· shown with each property</span>
+          </div>
+          <span class="mtg-ref-amt">−$1,092,000</span>
+        </div>
+
+        <div class="lg col-head">
+          <div class="ch">Account</div>
+          <div class="ch">Institution</div>
+          <div class="ch r">Balance</div>
+          <div class="ch r">Next Month</div>
+          <div class="ch r">Rate</div>
+        </div>
+
+        <!-- Consumer -->
+        <div class="lg row" style="padding-top:5px;">
+          <div><div class="r-name" style="padding-left:0;">Chase Sapphire + Amex</div><div class="r-acct" style="padding-left:0;">·6411 + ·3009</div></div>
+          <div class="r-inst">Chase / Amex</div>
+          <div class="r-bal neg">−$11,466</div>
+          <div class="r-next dash">—</div>
+          <div class="r-yld neg">22.99%</div>
+        </div>
+        <div class="lg row">
+          <div><div class="r-name" style="padding-left:0;">Student Loans</div><div class="r-acct" style="padding-left:0;">·2214 + ·5589</div></div>
+          <div class="r-inst">Federal / Private</div>
+          <div class="r-bal neg">−$69,700</div>
+          <div class="r-next neg">−$69,500</div>
+          <div class="r-yld">4.50%</div>
+        </div>
+        <div class="lg subtotal">
+          <div class="st-lbl-cell"><span class="st-lbl">Consumer</span></div>
+          <div></div>
+          <div class="st-val neg">−$81,166</div>
+          <div class="st-next neg">−$81,000</div>
+          <div></div>
+        </div>
+
+        <!-- Investment Financing -->
+        <div class="lg row" style="padding-top:5px;">
+          <div><div class="r-name" style="padding-left:0;">Professional Loan — PE Fund II</div><div class="r-acct" style="padding-left:0;">·7731 · Variable</div></div>
+          <div class="r-inst">First Republic</div>
+          <div class="r-bal neg">−$125,000</div>
+          <div class="r-next neg">−$125,677</div>
+          <div class="r-yld neg">6.50%</div>
+        </div>
+        <div class="lg row">
+          <div><div class="r-name" style="padding-left:0;">Remaining Capital Commitment</div><div class="r-acct" style="padding-left:0;">PE Fund II · Unfunded</div></div>
+          <div class="r-inst">Carlyle Group</div>
+          <div class="r-bal neg">−$50,000</div>
+          <div class="r-next dash">—</div>
+          <div class="r-yld"><span class="tag tag-unfunded">unfunded</span></div>
+        </div>
+        <div class="lg subtotal">
+          <div class="st-lbl-cell"><span class="st-lbl">Inv. Financing</span></div>
+          <div></div>
+          <div class="st-val neg">−$175,000</div>
+          <div class="st-next neg">−$175,677</div>
+          <div></div>
+        </div>
+
+        <!-- Mortgages (shown for reference, reconcile total) -->
+        <div class="lg row" style="padding-top:5px; opacity:0.65;">
+          <div><div class="r-name" style="padding-left:0;">Tribeca Condo Mortgage</div><div class="r-acct" style="padding-left:0;">·4421 · 30-yr fixed · Wells Fargo</div></div>
+          <div class="r-inst">Wells Fargo</div>
+          <div class="r-bal neg">−$945,000</div>
+          <div class="r-next neg">−$944,400</div>
+          <div class="r-yld">3.15%</div>
+        </div>
+        <div class="lg row" style="padding-top:3px;padding-bottom:5px; opacity:0.65;">
+          <div><div class="r-name" style="padding-left:0;">Sarasota Investment Mortgage</div><div class="r-acct" style="padding-left:0;">·8863 · 30-yr fixed · Bank of America</div></div>
+          <div class="r-inst">Bank of America</div>
+          <div class="r-bal neg">−$147,000</div>
+          <div class="r-next neg">−$146,720</div>
+          <div class="r-yld">2.55%</div>
+        </div>
+        <div class="lg subtotal" style="opacity:0.70;">
+          <div class="st-lbl-cell"><span class="st-lbl">Mortgages</span><span class="st-memo"><span class="memo-lbl">Net RE equity</span>$1,198,000</span></div>
+          <div></div>
+          <div class="st-val neg">−$1,092,000</div>
+          <div class="st-next neg">−$1,091,120</div>
+          <div></div>
+        </div>
+
+        <div class="lg total-row">
+          <div class="tr-lbl" style="padding-left:0;">Total Liabilities</div>
+          <div></div>
+          <div class="tr-val neg">−$1,348,166</div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end two-col -->
+</div>
+
+<script>
+function toggleDetail(id) {
+  const detail = document.getElementById(id + '-detail');
+  const arrow  = document.getElementById(id + '-arrow');
+  if (!detail) return;
+  const isOpen = detail.style.display === 'block';
+  detail.style.display = isOpen ? 'none' : 'block';
+  arrow.textContent = isOpen ? '▸' : '▾';
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU · Net Worth — Balance Sheet Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --intel-bg:         hsl(152,38%,7%);
+    --intel-bg-raised:  hsl(152,32%,9%);
+    --intel-bg-overlay: hsl(152,28%,11%);
+    --intel-border:     rgba(255,255,255,0.07);
+    --intel-text-primary:   hsl(152,15%,88%);
+    --intel-text-secondary: hsl(152,10%,62%);
+    --intel-text-muted:     hsl(152,8%,38%);
+    --intel-positive:  hsl(152,62%,52%);
+    --intel-negative:  hsl(4,68%,55%);
+    --intel-warning:   hsl(42,92%,58%);
+    --intel-green:     hsl(152,52%,44%);
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  body {
+    background: var(--intel-bg);
+    color: var(--intel-text-primary);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER BAR ── */
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 18px;
+    background: var(--intel-bg-raised);
+    border-bottom: 2px solid var(--intel-border);
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 8px; }
+  .header-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--intel-green); flex-shrink: 0;
+  }
+  .header-title {
+    font-family: var(--mono);
+    font-size: 13px; font-weight: 800;
+    color: var(--intel-text-primary);
+    letter-spacing: 0.05em;
+  }
+  .header-badge {
+    font-family: var(--mono);
+    font-size: 8.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--intel-text-muted);
+    background: var(--intel-bg-overlay);
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .header-date {
+    font-family: var(--mono);
+    font-size: 9.5px; color: var(--intel-text-muted);
+  }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip {
+    display: flex;
+    border-bottom: 1px solid var(--intel-border);
+    flex-shrink: 0;
+  }
+  .kpi-cell {
+    flex: 1;
+    padding: 9px 16px;
+    border-right: 1px solid var(--intel-border);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .kpi-cell:last-child { border-right: none; }
+  .kpi-label {
+    font-family: var(--mono);
+    font-size: 8.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--intel-text-muted);
+  }
+  .kpi-value {
+    font-family: var(--mono);
+    font-size: 21px; font-weight: 800; line-height: 1.1;
+  }
+  .kpi-sub {
+    font-size: 9.5px;
+    color: var(--intel-text-muted);
+  }
+
+  /* ── MAIN BODY ── */
+  .main-body {
+    display: flex; flex: 1; overflow: hidden; min-height: 0;
+  }
+
+  /* ── TABLE PANEL ── */
+  .table-panel {
+    flex: 1; overflow-y: auto; overflow-x: auto;
+  }
+  .table-panel + .table-panel {
+    border-left: 2px solid var(--intel-border);
+  }
+
+  /* ── BS TABLE ── */
+  table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--mono);
+  }
+
+  /* Sticky title row */
+  .th-title {
+    position: sticky; top: 0; z-index: 4;
+    padding: 7px 14px;
+    background: hsl(152,38%,6%);
+    font-size: 11px; font-weight: 900;
+    letter-spacing: 0.08em;
+    text-align: left;
+    color: var(--intel-text-primary);
+    border-bottom: 2px solid var(--intel-border);
+  }
+  /* Sticky period header */
+  .th-per {
+    position: sticky; top: 32px; z-index: 3;
+    padding: 6px 10px;
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    border-bottom: 2px solid var(--intel-border);
+    white-space: nowrap;
+    background: hsl(152,32%,8.5%);
+    color: var(--intel-text-muted);
+  }
+  .th-per.right { text-align: right; }
+
+  /* Group header row */
+  .tr-group td {
+    padding: 5px 14px 4px;
+    background: hsl(152,38%,5%);
+    font-size: 9px; font-weight: 900;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: hsl(152,28%,38%);
+    border-bottom: 1px solid var(--intel-border);
+    border-top: 1px solid var(--intel-border);
+  }
+
+  /* Item row */
+  .tr-item td {
+    padding: 4px 10px;
+    font-size: 10.5px;
+    border-bottom: 1px solid hsl(152,20%,10%);
+  }
+  .tr-item.alt td { background: hsl(152,24%,9%); }
+  .tr-item td.label-col {
+    font-weight: 400;
+    color: var(--intel-text-muted);
+    border-right: 1px solid var(--intel-border);
+    min-width: 200px;
+    padding-left: 22px;
+  }
+  .tr-item td.label-col .item-sub {
+    display: block;
+    font-size: 8.5px; font-weight: 500;
+    color: hsl(152,8%,30%);
+    margin-top: 1px;
+    letter-spacing: 0.03em;
+  }
+  .tr-item td.val-col {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--intel-text-primary);
+  }
+  .tr-item td.rate-col {
+    text-align: right;
+    font-size: 9px;
+    color: var(--intel-text-muted);
+  }
+  .tr-item td.pct-col {
+    text-align: right;
+    font-size: 9px;
+    color: hsl(152,18%,40%);
+  }
+
+  /* Subtotal row */
+  .tr-sub td {
+    padding: 4px 10px;
+    font-size: 11px; font-weight: 700;
+    border-top: 1px solid hsl(152,38%,20%);
+    border-bottom: 2px solid hsl(152,38%,20%);
+    background: hsl(152,28%,12%);
+    color: var(--intel-text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  .tr-sub td.label-col {
+    border-left: 3px solid var(--intel-green);
+    padding-left: 11px;
+    border-right: 1px solid var(--intel-border);
+  }
+  .tr-sub td.val-col { text-align: right; }
+  .tr-sub td.rate-col { text-align: right; font-size: 9px; }
+  .tr-sub td.pct-col { text-align: right; font-size: 9px; }
+
+  /* Total row */
+  .tr-total td {
+    padding: 6px 10px;
+    font-size: 12px; font-weight: 900;
+    border-top: 2px solid hsl(152,42%,26%);
+    border-bottom: 2px solid hsl(152,42%,26%);
+    background: hsl(152,38%,10%);
+    font-variant-numeric: tabular-nums;
+  }
+  .tr-total td.label-col {
+    border-left: 3px solid var(--intel-green);
+    padding-left: 11px;
+    border-right: 1px solid var(--intel-border);
+    color: var(--intel-text-primary);
+  }
+  .tr-total td.val-col { text-align: right; }
+  .tr-total td.rate-col { text-align: right; font-size: 10px; }
+  .tr-total td.pct-col { text-align: right; font-size: 10px; }
+
+  /* NET WORTH row */
+  .tr-networth td {
+    padding: 8px 14px;
+    font-size: 14px; font-weight: 900;
+    background: hsl(152,38%,11%);
+    border-top: 3px solid hsl(152,48%,32%);
+    font-variant-numeric: tabular-nums;
+  }
+  .tr-networth td.label-col {
+    color: var(--intel-positive);
+    border-left: 4px solid var(--intel-positive);
+  }
+  .tr-networth td.val-col {
+    text-align: right;
+    color: var(--intel-positive);
+  }
+
+  .positive { color: var(--intel-positive); }
+  .negative { color: var(--intel-negative); }
+  .warning  { color: var(--intel-warning); }
+  .muted    { color: var(--intel-text-muted); }
+
+  /* Gap spacer */
+  .tr-gap td {
+    height: 6px; padding: 0;
+    background: var(--intel-bg);
+    border: none;
+  }
+
+  /* LIABILITIES — red accent */
+  .liab .tr-sub td.label-col { border-left-color: var(--intel-negative); }
+  .liab .tr-total td.label-col { border-left-color: var(--intel-negative); }
+  .liab .tr-total td { background: hsl(4,28%,9%); border-color: hsl(4,42%,22%); }
+  .liab .tr-networth td { background: hsl(4,28%,11%); border-top-color: hsl(4,52%,30%); }
+
+  /* ── MINI ALLOCATION BARS ── */
+  .alloc-bar-container {
+    display: flex; height: 5px;
+    border-radius: 3px; overflow: hidden;
+    margin: 0 10px 8px;
+    gap: 1px;
+  }
+  .alloc-seg { height: 100%; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER BAR ─────────────────────────────────────────── -->
+<div class="header-bar">
+  <div class="header-left">
+    <div class="header-dot"></div>
+    <span class="header-title">NET WORTH</span>
+    <span class="header-badge">Balance Sheet · As of Q1 2026</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="header-date">Last updated: Jan 2026</span>
+    <button style="font-family:var(--mono);font-size:10px;font-weight:700;background:hsl(152,42%,18%);color:var(--intel-positive);border:1px solid hsl(152,38%,28%);border-radius:6px;padding:5px 12px;cursor:pointer;letter-spacing:0.04em;">+ Add Asset</button>
+    <button style="font-family:var(--mono);font-size:10px;font-weight:700;background:hsl(4,28%,12%);color:var(--intel-negative);border:1px solid hsl(4,38%,24%);border-radius:6px;padding:5px 12px;cursor:pointer;letter-spacing:0.04em;">+ Add Liability</button>
+  </div>
+</div>
+
+<!-- ── KPI STRIP ──────────────────────────────────────────── -->
+<div class="kpi-strip">
+  <div class="kpi-cell">
+    <div class="kpi-label">Total Assets</div>
+    <div class="kpi-value positive">$7,842,400</div>
+    <div class="kpi-sub">Across all accounts &amp; holdings</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kpi-label">Total Liabilities</div>
+    <div class="kpi-value negative">$1,218,600</div>
+    <div class="kpi-sub">Mortgages, loans &amp; obligations</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kpi-label">Net Worth</div>
+    <div class="kpi-value" style="color:var(--intel-positive);">$6,623,800</div>
+    <div class="kpi-sub">+$312K YTD</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kpi-label">Asset / Liability Ratio</div>
+    <div class="kpi-value" style="color:var(--intel-positive);">6.4×</div>
+    <div class="kpi-sub">Well-capitalized</div>
+  </div>
+  <div class="kpi-cell">
+    <div class="kpi-label">Liquid Assets</div>
+    <div class="kpi-value" style="color:hsl(213,68%,62%);">$507,800</div>
+    <div class="kpi-sub">Cash + short-duration</div>
+  </div>
+</div>
+
+<!-- ── ALLOCATION BAR ───────────────────────────────────────── -->
+<div class="alloc-bar-container" style="margin-top:8px;">
+  <div class="alloc-seg" style="flex:6.5;background:hsl(213,68%,45%);opacity:0.85;" title="Investments 65%"></div>
+  <div class="alloc-seg" style="flex:2.0;background:hsl(152,52%,40%);opacity:0.85;" title="Retirement 20%"></div>
+  <div class="alloc-seg" style="flex:0.65;background:hsl(195,55%,45%);opacity:0.85;" title="Liquid 6.5%"></div>
+  <div class="alloc-seg" style="flex:0.5;background:hsl(270,40%,50%);opacity:0.85;" title="Real Estate 5%"></div>
+  <div class="alloc-seg" style="flex:0.35;background:hsl(42,72%,45%);opacity:0.75;" title="Other 3.5%"></div>
+</div>
+<div style="display:flex;gap:14px;padding:0 10px 8px;border-bottom:1px solid var(--intel-border);">
+  <span style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--intel-text-muted);">
+    <span style="width:8px;height:6px;border-radius:2px;background:hsl(213,68%,45%);display:inline-block;"></span>Investments 65%
+  </span>
+  <span style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--intel-text-muted);">
+    <span style="width:8px;height:6px;border-radius:2px;background:hsl(152,52%,40%);display:inline-block;"></span>Retirement 20%
+  </span>
+  <span style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--intel-text-muted);">
+    <span style="width:8px;height:6px;border-radius:2px;background:hsl(195,55%,45%);display:inline-block;"></span>Liquid 6.5%
+  </span>
+  <span style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--intel-text-muted);">
+    <span style="width:8px;height:6px;border-radius:2px;background:hsl(270,40%,50%);display:inline-block;"></span>Real Estate 5%
+  </span>
+  <span style="display:flex;align-items:center;gap:4px;font-size:8px;color:var(--intel-text-muted);">
+    <span style="width:8px;height:6px;border-radius:2px;background:hsl(42,72%,45%);display:inline-block;"></span>Other 3.5%
+  </span>
+</div>
+
+<!-- ── MAIN BODY: Assets left, Liabilities right ── -->
+<div class="main-body">
+
+  <!-- ────────── ASSETS ────────── -->
+  <div class="table-panel">
+    <table>
+      <thead>
+        <tr><th class="th-title" colspan="4">ASSETS</th></tr>
+        <tr>
+          <th class="th-per" style="min-width:200px;border-right:1px solid var(--intel-border);">Account / Holding</th>
+          <th class="th-per right" style="min-width:110px;">Value</th>
+          <th class="th-per right" style="min-width:60px;">Rate / Yield</th>
+          <th class="th-per right" style="min-width:54px;">% Total</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- LIQUID CASH -->
+        <tr class="tr-group"><td colspan="4">LIQUID CASH</td></tr>
+        <tr class="tr-item"><td class="label-col">Chase Checking<span class="item-sub">Demand deposit — operating account</span></td><td class="val-col">$42,800</td><td class="rate-col muted">—</td><td class="pct-col">0.5%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">Citizens MM Savings<span class="item-sub">HYSA — 4.60% APY</span></td><td class="val-col">$215,000</td><td class="rate-col positive">4.60%</td><td class="pct-col">2.7%</td></tr>
+        <tr class="tr-item"><td class="label-col">Chase Savings<span class="item-sub">Emergency reserve</span></td><td class="val-col">$88,400</td><td class="rate-col muted">0.01%</td><td class="pct-col">1.1%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">Fidelity Cash Sweep<span class="item-sub">SPAXX — 4.95% 7-day yield</span></td><td class="val-col">$161,600</td><td class="rate-col positive">4.95%</td><td class="pct-col">2.1%</td></tr>
+        <tr class="tr-sub"><td class="label-col">Total Liquid Cash</td><td class="val-col positive">$507,800</td><td class="rate-col positive">4.32%</td><td class="pct-col">6.5%</td></tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- TAXABLE BROKERAGE -->
+        <tr class="tr-group"><td colspan="4">TAXABLE BROKERAGE</td></tr>
+        <tr class="tr-item"><td class="label-col">Cresset Capital Mgmt<span class="item-sub">Managed — Diversified Growth</span></td><td class="val-col">$1,842,000</td><td class="rate-col muted">7.2% est.</td><td class="pct-col">23.5%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">E*Trade<span class="item-sub">Meta Platforms (RSU proceeds)</span></td><td class="val-col">$620,400</td><td class="rate-col muted">—</td><td class="pct-col">7.9%</td></tr>
+        <tr class="tr-item"><td class="label-col">Schwab<span class="item-sub">International Index (ETF)</span></td><td class="val-col">$418,200</td><td class="rate-col muted">—</td><td class="pct-col">5.3%</td></tr>
+        <tr class="tr-sub"><td class="label-col">Total Taxable Brokerage</td><td class="val-col positive">$2,880,600</td><td class="rate-col muted">—</td><td class="pct-col">36.7%</td></tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- RETIREMENT ACCOUNTS -->
+        <tr class="tr-group"><td colspan="4">RETIREMENT ACCOUNTS</td></tr>
+        <tr class="tr-item"><td class="label-col">Fidelity 401(k) — Partner 1<span class="item-sub">Pre-tax · Target Date 2045</span></td><td class="val-col">$684,000</td><td class="rate-col muted">—</td><td class="pct-col">8.7%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">Fidelity 401(k) — Partner 2<span class="item-sub">Pre-tax · S&amp;P 500 Index</span></td><td class="val-col">$512,000</td><td class="rate-col muted">—</td><td class="pct-col">6.5%</td></tr>
+        <tr class="tr-item"><td class="label-col">Roth IRA — Partner 1<span class="item-sub">After-tax · Growth allocation</span></td><td class="val-col">$148,000</td><td class="rate-col muted">—</td><td class="pct-col">1.9%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">Roth IRA — Partner 2<span class="item-sub">After-tax · Growth allocation</span></td><td class="val-col">$112,000</td><td class="rate-col muted">—</td><td class="pct-col">1.4%</td></tr>
+        <tr class="tr-sub"><td class="label-col">Total Retirement</td><td class="val-col positive">$1,456,000</td><td class="rate-col muted">—</td><td class="pct-col">18.6%</td></tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- PRIVATE / ILLIQUID -->
+        <tr class="tr-group"><td colspan="4">PRIVATE &amp; ILLIQUID</td></tr>
+        <tr class="tr-item"><td class="label-col">PE Fund II — Professional Loan<span class="item-sub">Called capital · 2022 vintage</span></td><td class="val-col">$380,000</td><td class="rate-col" style="color:hsl(42,72%,55%);">Illiquid</td><td class="pct-col">4.8%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">RSU — Meta Platforms (unvested)<span class="item-sub">4-year vest · Q2 2026 tranche</span></td><td class="val-col">$218,000</td><td class="rate-col" style="color:hsl(42,72%,55%);">Unvested</td><td class="pct-col">2.8%</td></tr>
+        <tr class="tr-sub"><td class="label-col">Total Private / Illiquid</td><td class="val-col" style="color:hsl(42,72%,55%);">$598,000</td><td class="rate-col muted">—</td><td class="pct-col">7.6%</td></tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- REAL ESTATE -->
+        <tr class="tr-group"><td colspan="4">REAL ESTATE</td></tr>
+        <tr class="tr-item"><td class="label-col">Tribeca — Primary Residence<span class="item-sub">NYC · purchased 2019</span></td><td class="val-col">$2,050,000</td><td class="rate-col muted">—</td><td class="pct-col">26.1%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">Sarasota — Investment Property<span class="item-sub">FL · short-term rental</span></td><td class="val-col">$350,000</td><td class="rate-col positive">Est. 8.4% yield</td><td class="pct-col">4.5%</td></tr>
+        <tr class="tr-sub"><td class="label-col">Total Real Estate</td><td class="val-col positive">$2,400,000</td><td class="rate-col muted">—</td><td class="pct-col">30.6%</td></tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- TOTAL ASSETS -->
+        <tr class="tr-total">
+          <td class="label-col">TOTAL ASSETS</td>
+          <td class="val-col positive">$7,842,400</td>
+          <td class="rate-col positive">4.32% avg.</td>
+          <td class="pct-col" style="color:var(--intel-text-secondary);">100%</td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ────────── LIABILITIES ────────── -->
+  <div class="table-panel liab">
+    <table>
+      <thead>
+        <tr><th class="th-title" colspan="4" style="color:hsl(4,55%,65%);">LIABILITIES</th></tr>
+        <tr>
+          <th class="th-per" style="min-width:200px;border-right:1px solid var(--intel-border);">Obligation</th>
+          <th class="th-per right" style="min-width:110px;">Balance</th>
+          <th class="th-per right" style="min-width:60px;">Rate</th>
+          <th class="th-per right" style="min-width:54px;">% Total</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- MORTGAGES -->
+        <tr class="tr-group"><td colspan="4">MORTGAGES</td></tr>
+        <tr class="tr-item"><td class="label-col">Tribeca Mortgage<span class="item-sub">30-yr fixed · Chase · 3.25%</span></td><td class="val-col negative">$810,000</td><td class="rate-col" style="color:hsl(152,52%,52%);">3.25%</td><td class="pct-col">66.5%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">Sarasota Mortgage<span class="item-sub">15-yr fixed · Chase · 4.10%</span></td><td class="val-col negative">$280,000</td><td class="rate-col" style="color:hsl(152,40%,48%);">4.10%</td><td class="pct-col">23.0%</td></tr>
+        <tr class="tr-sub" style="--accent:var(--intel-negative);"><td class="label-col" style="border-left-color:var(--intel-negative);">Total Mortgages</td><td class="val-col negative">$1,090,000</td><td class="rate-col" style="color:hsl(152,42%,50%);">3.47% wtd.</td><td class="pct-col">89.5%</td></tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- PERSONAL LOANS -->
+        <tr class="tr-group"><td colspan="4">PERSONAL LOANS</td></tr>
+        <tr class="tr-item"><td class="label-col">PE Fund II — Capital Call Loan<span class="item-sub">Subscription credit facility · 6.80%</span></td><td class="val-col negative">$84,200</td><td class="rate-col warning">6.80%</td><td class="pct-col">6.9%</td></tr>
+        <tr class="tr-item alt"><td class="label-col">Student Loan — Partner 2<span class="item-sub">Federal · Income-driven repayment</span></td><td class="val-col negative">$44,400</td><td class="rate-col" style="color:hsl(152,40%,48%);">4.50%</td><td class="pct-col">3.6%</td></tr>
+        <tr class="tr-sub"><td class="label-col" style="border-left-color:var(--intel-negative);">Total Personal Loans</td><td class="val-col negative">$128,600</td><td class="rate-col warning">6.08% wtd.</td><td class="pct-col">10.5%</td></tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- TOTAL LIABILITIES -->
+        <tr class="tr-total" style="background:hsl(4,22%,9%);">
+          <td class="label-col" style="border-left-color:var(--intel-negative);color:var(--intel-text-primary);">TOTAL LIABILITIES</td>
+          <td class="val-col negative">$1,218,600</td>
+          <td class="rate-col warning">3.83% wtd.</td>
+          <td class="pct-col" style="color:var(--intel-text-secondary);">100%</td>
+        </tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- NET WORTH -->
+        <tr class="tr-networth">
+          <td class="label-col" colspan="2" style="border-left:4px solid var(--intel-positive);">NET WORTH</td>
+          <td class="val-col positive" colspan="2">$6,623,800</td>
+        </tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- ── DEBT SUMMARY PANEL ── -->
+        <tr class="tr-group"><td colspan="4">DEBT SUMMARY</td></tr>
+        <tr class="tr-item">
+          <td class="label-col" colspan="2" style="font-size:9.5px;color:var(--intel-text-secondary);">Debt-to-Asset Ratio</td>
+          <td class="val-col" colspan="2" style="color:var(--intel-positive);font-weight:700;">15.5% <span style="font-size:8.5px;font-weight:500;color:var(--intel-text-muted);">healthy</span></td>
+        </tr>
+        <tr class="tr-item alt">
+          <td class="label-col" colspan="2" style="font-size:9.5px;color:var(--intel-text-secondary);">Debt-to-Net Worth</td>
+          <td class="val-col" colspan="2" style="color:var(--intel-positive);font-weight:700;">18.4%</td>
+        </tr>
+        <tr class="tr-item">
+          <td class="label-col" colspan="2" style="font-size:9.5px;color:var(--intel-text-secondary);">Wtd. Avg. Interest Rate</td>
+          <td class="val-col" colspan="2" style="color:hsl(42,72%,58%);font-weight:700;">3.83%</td>
+        </tr>
+        <tr class="tr-item alt">
+          <td class="label-col" colspan="2" style="font-size:9.5px;color:var(--intel-text-secondary);">Annual Debt Service</td>
+          <td class="val-col" colspan="2" style="color:var(--intel-negative);font-weight:700;">($17,232)</td>
+        </tr>
+        <tr class="tr-gap"><td colspan="4"></td></tr>
+
+        <!-- ── GURU SIGNAL ── -->
+        <tr>
+          <td colspan="4" style="padding:10px 12px;">
+            <div style="border-radius:7px;border:1px solid hsl(42,65%,26%);background:hsl(42,55%,7%);padding:9px 12px;display:flex;align-items:flex-start;gap:8px;">
+              <span style="font-size:13px;line-height:1;margin-top:2px;flex-shrink:0;">⚠</span>
+              <div>
+                <p style="font-size:10px;font-weight:900;color:hsl(42,92%,62%);letter-spacing:0.04em;margin-bottom:3px;">HIGH-RATE DEBT SIGNAL</p>
+                <p style="font-size:9px;color:hsl(42,70%,46%);line-height:1.5;">PE Fund II capital call loan at <strong style="color:hsl(42,92%,62%);">6.80%</strong> exceeds expected after-tax return on liquid cash. Consider early payoff from Fidelity sweep.</p>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>
