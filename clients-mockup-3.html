@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU · Clients — Option C: The Book</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: hsl(222,45%,12%);
+  --gold: #9a7b3c;
+  --gold-l: #f9f4eb;
+  --green: #2e7a52;
+  --green-b: #5ecc8a;
+  --green-l: #edf7f3;
+  --linen: #f0ece5;
+  --cream: #faf8f4;
+  --white: #fff;
+  --border: rgba(0,0,0,0.08);
+  --muted: rgba(0,0,0,0.40);
+  --faint: rgba(0,0,0,0.20);
+  --INTER: Inter, system-ui, sans-serif;
+}
+body { font-family: var(--INTER); background: var(--linen); color: var(--navy); min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+
+/* ── Sticky header ── */
+.site-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+}
+.header-top {
+  padding: 0 44px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-logo { display: flex; align-items: baseline; gap: 12px; }
+.header-wordmark { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: var(--navy); }
+.header-title { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 400; color: var(--navy); }
+.header-subtitle { font-size: 11px; color: var(--muted); letter-spacing: 0.03em; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.header-add {
+  background: var(--navy); color: #fff; border: none;
+  padding: 9px 20px; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.06em; border-radius: 5px; cursor: pointer;
+  display: flex; align-items: center; gap: 7px; font-family: var(--INTER);
+  transition: background 0.12s;
+}
+.header-add:hover { background: hsl(222,45%,18%); }
+
+/* ── KPI bar ── */
+.kpi-bar {
+  background: var(--cream);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 44px;
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+}
+.kpi-item {
+  flex: 1;
+  padding: 0 28px 0 0;
+  border-right: 1px solid var(--border);
+}
+.kpi-item:first-child { padding-left: 0; }
+.kpi-item:last-child { border-right: none; }
+.kpi-num {
+  font-size: 28px; font-weight: 300; color: var(--navy);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.8px;
+  line-height: 1; margin-bottom: 5px;
+}
+.kpi-num .unit { font-size: 16px; font-weight: 400; }
+.kpi-num.gold { color: var(--gold); }
+.kpi-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--muted); margin-bottom: 2px; }
+.kpi-sub { font-size: 11px; color: var(--faint); }
+
+/* GURU signal card */
+.guru-signal-card {
+  background: var(--navy);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1.5;
+  margin-left: 32px;
+}
+.guru-signal-icon { flex-shrink: 0; }
+.guru-signal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-b); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+.guru-signal-body { flex: 1; }
+.guru-signal-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--green-b); margin-bottom: 4px; }
+.guru-signal-text { font-size: 12px; color: rgba(255,255,255,0.75); line-height: 1.5; }
+.guru-signal-text strong { color: #fff; font-weight: 600; }
+.guru-signal-cta {
+  font-size: 11px; font-weight: 600; color: var(--navy);
+  background: var(--green-b); border: none; border-radius: 4px;
+  padding: 7px 14px; cursor: pointer; font-family: var(--INTER);
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── Content ── */
+.content { flex: 1; padding: 28px 44px 60px; }
+
+/* ── Active book ── */
+.book-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 18px;
+}
+.book-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--muted); }
+.book-sort { font-size: 11px; color: var(--faint); cursor: pointer; }
+
+/* ── Client rows (rich) ── */
+.client-row {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: box-shadow 0.12s, border-color 0.12s;
+  overflow: hidden;
+}
+.client-row:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.14); }
+.client-row.signaled { border-left: 3px solid var(--gold); }
+.client-row.onboarding { border-left: 3px solid rgba(154,123,60,0.40); }
+
+.client-row-inner {
+  display: grid;
+  grid-template-columns: 260px 120px 1fr 1fr 1fr 1fr 100px;
+  align-items: center;
+  padding: 16px 20px;
+  gap: 0;
+}
+
+.crow-name { display: flex; align-items: center; gap: 12px; }
+.crow-avatar { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.crow-name-txt { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 2px; }
+.crow-name-sub { font-size: 10px; color: var(--muted); }
+.crow-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 10px; margin-top: 3px;
+}
+.crow-tag.gold { background: rgba(154,123,60,0.10); color: var(--gold); border: 1px solid rgba(154,123,60,0.20); }
+.crow-tag.green { background: rgba(46,122,82,0.10); color: var(--green); border: 1px solid rgba(46,122,82,0.18); }
+
+.crow-risk { display: flex; align-items: center; gap: 7px; }
+.crow-risk-dot { width: 6px; height: 6px; border-radius: 50%; }
+.crow-risk-lbl { font-size: 12px; color: var(--navy); }
+
+.crow-col { }
+.crow-col-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); margin-bottom: 4px; }
+.crow-col-val { font-size: 14px; font-weight: 500; color: var(--navy); font-variant-numeric: tabular-nums; }
+.crow-col-val.gold { color: var(--gold); }
+.crow-col-val.green { color: var(--green); }
+.crow-col-val.muted { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+/* Inline GURU alert in row */
+.guru-inline {
+  background: rgba(154,123,60,0.08);
+  border: 1px solid rgba(154,123,60,0.18);
+  border-radius: 6px;
+  padding: 7px 10px;
+  margin: 0 20px 14px;
+}
+.guru-inline-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--gold); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.guru-inline-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+.guru-inline-text { font-size: 11px; color: rgba(0,0,0,0.55); line-height: 1.5; }
+.guru-inline-text strong { color: var(--navy); font-weight: 600; }
+
+.crow-action { text-align: right; }
+.crow-action-btn {
+  font-size: 11px; font-weight: 600; color: var(--navy);
+  background: var(--linen); border: 1px solid var(--border);
+  border-radius: 5px; padding: 6px 12px; cursor: pointer; font-family: var(--INTER);
+  white-space: nowrap;
+}
+.crow-action-btn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+.crow-action-btn:hover { filter: brightness(0.94); }
+
+/* Locked band */
+.locked-section { margin-top: 24px; }
+.locked-divider { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.locked-divider-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--faint); white-space: nowrap; }
+.locked-divider-line { flex: 1; height: 1px; background: var(--border); }
+
+.locked-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.locked-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0.38;
+}
+.locked-avatar { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.locked-name { font-size: 12px; font-weight: 500; color: var(--navy); margin-bottom: 2px; }
+.locked-meta { font-size: 10px; color: var(--muted); }
+.locked-vals { margin-left: auto; text-align: right; }
+.locked-val { font-size: 12px; font-weight: 500; color: var(--navy); font-variant-numeric: tabular-nums; }
+.locked-val-lbl { font-size: 9px; color: var(--faint); }
+.locked-lock { font-size: 11px; margin-left: 10px; color: var(--faint); }
+</style>
+</head>
+<body>
+
+<!-- STICKY HEADER -->
+<div class="site-header">
+  <div class="header-top">
+    <div class="header-logo">
+      <div class="header-wordmark">GURU</div>
+      <div class="header-title">Your Book of Business</div>
+      <div class="header-subtitle">Advisor Intelligence</div>
+    </div>
+    <div class="header-right">
+      <button class="header-add">＋ Add Family</button>
+    </div>
+  </div>
+
+  <!-- KPI bar + GURU signal -->
+  <div class="kpi-bar">
+    <div class="kpi-item">
+      <div class="kpi-lbl">Total AUM</div>
+      <div class="kpi-num">$30.9<span class="unit">M</span></div>
+      <div class="kpi-sub">Under management</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-lbl">Total Household Wealth</div>
+      <div class="kpi-num">$48.5<span class="unit">M</span></div>
+      <div class="kpi-sub">Across all families</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-lbl">Clients</div>
+      <div class="kpi-num">73</div>
+      <div class="kpi-sub">Active book</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-lbl">Action Items</div>
+      <div class="kpi-num gold">3</div>
+      <div class="kpi-sub">Need attention today</div>
+    </div>
+
+    <!-- GURU live signal -->
+    <div class="guru-signal-card">
+      <div class="guru-signal-icon"><div class="guru-signal-dot"></div></div>
+      <div class="guru-signal-body">
+        <div class="guru-signal-label">GURU Signal — Live</div>
+        <div class="guru-signal-text"><strong>Kessler family:</strong> $299,966 sitting idle at 0.30% for 47 days. Deployable with no liquidity risk — potential <strong>+$12,959/yr</strong> after-tax.</div>
+      </div>
+      <button class="guru-signal-cta">Review →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+  <div class="book-header">
+    <div class="book-title">Active Families in GURU · 2</div>
+    <div class="book-sort">Sort by activity ↓</div>
+  </div>
+
+  <!-- Kessler Row (with inline signal) -->
+  <div class="client-row signaled">
+    <div class="client-row-inner">
+      <div class="crow-name">
+        <div class="crow-avatar" style="background:hsl(222,45%,88%);color:hsl(222,45%,12%)">SK</div>
+        <div>
+          <div class="crow-name-txt">Sarah & Michael Kessler</div>
+          <div class="crow-name-sub">Age 44 · Today 2:34 PM</div>
+          <div class="crow-tag gold">⚡ GURU signal</div>
+        </div>
+      </div>
+      <div class="crow-risk">
+        <div class="crow-risk-dot" style="background:#2e7a52"></div>
+        <div class="crow-risk-lbl">Moderate</div>
+      </div>
+      <div class="crow-col">
+        <div class="crow-col-lbl">Total Assets</div>
+        <div class="crow-col-val">$5.91M</div>
+      </div>
+      <div class="crow-col">
+        <div class="crow-col-lbl">AUM</div>
+        <div class="crow-col-val">$814K</div>
+      </div>
+      <div class="crow-col">
+        <div class="crow-col-lbl">Excess Liquidity</div>
+        <div class="crow-col-val gold">$299,966</div>
+      </div>
+      <div class="crow-col">
+        <div class="crow-col-lbl">Upcoming Cash</div>
+        <div class="crow-col-val green">$5,511</div>
+      </div>
+      <div class="crow-action">
+        <button class="crow-action-btn primary">Open →</button>
+      </div>
+    </div>
+    <!-- Inline GURU alert -->
+    <div class="guru-inline">
+      <div class="guru-inline-label"><div class="guru-inline-dot"></div>GURU recommends action</div>
+      <div class="guru-inline-text">Idle cash earning <strong>0.30%</strong> in Reserve account. <strong>$299,966</strong> deployable into Cresset Short Duration at 5.40% — no liquidity risk. GURU has pre-filled all 3 steps.</div>
+    </div>
+  </div>
+
+  <!-- Mari Oishi Row -->
+  <div class="client-row onboarding">
+    <div class="client-row-inner">
+      <div class="crow-name">
+        <div class="crow-avatar" style="background:hsl(36,55%,88%);color:#5a3d10">MO</div>
+        <div>
+          <div class="crow-name-txt">Mari Oishi</div>
+          <div class="crow-name-sub">Age 29 · 3 days ago</div>
+          <div class="crow-tag gold">Onboarding in progress</div>
+        </div>
+      </div>
+      <div class="crow-risk">
+        <div class="crow-risk-dot" style="background:#9a7b3c"></div>
+        <div class="crow-risk-lbl">Moderate</div>
+      </div>
+      <div class="crow-col">
+        <div class="crow-col-lbl">Total Assets</div>
+        <div class="crow-col-val muted">Pending survey</div>
+      </div>
+      <div class="crow-col">
+        <div class="crow-col-lbl">AUM</div>
+        <div class="crow-col-val muted">—</div>
+      </div>
+      <div class="crow-col">
+        <div class="crow-col-lbl">GURU Signal</div>
+        <div class="crow-col-val muted">—</div>
+      </div>
+      <div class="crow-col">
+        <div class="crow-col-lbl">Upcoming Cash</div>
+        <div class="crow-col-val muted">—</div>
+      </div>
+      <div class="crow-action">
+        <button class="crow-action-btn">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Locked section -->
+  <div class="locked-section">
+    <div class="locked-divider">
+      <div class="locked-divider-label">Coming Soon · Migrating to GURU</div>
+      <div class="locked-divider-line"></div>
+    </div>
+    <div class="locked-grid">
+      <div class="locked-card">
+        <div class="locked-avatar" style="background:hsl(222,45%,88%);color:hsl(222,45%,12%)">JH</div>
+        <div>
+          <div class="locked-name">James & Patricia Harrington</div>
+          <div class="locked-meta">Age 67 · Conservative · 2 weeks ago</div>
+        </div>
+        <div class="locked-vals">
+          <div class="locked-val-lbl">AUM</div>
+          <div class="locked-val">$8.4M</div>
+        </div>
+        <div class="locked-lock">🔒</div>
+      </div>
+      <div class="locked-card">
+        <div class="locked-avatar" style="background:hsl(160,40%,87%);color:#174030">OC</div>
+        <div>
+          <div class="locked-name">Olivia Chen</div>
+          <div class="locked-meta">Age 38 · Aggressive · 5 days ago</div>
+        </div>
+        <div class="locked-vals">
+          <div class="locked-val-lbl">AUM</div>
+          <div class="locked-val">$3.1M</div>
+        </div>
+        <div class="locked-lock">🔒</div>
+      </div>
+      <div class="locked-card">
+        <div class="locked-avatar" style="background:hsl(196,50%,88%);color:#113045">RD</div>
+        <div>
+          <div class="locked-name">Robert & Susan Delacroix</div>
+          <div class="locked-meta">Age 55 · Moderate · 3 days ago</div>
+        </div>
+        <div class="locked-vals">
+          <div class="locked-val-lbl">AUM</div>
+          <div class="locked-val">$12.7M</div>
+        </div>
+        <div class="locked-lock">🔒</div>
+      </div>
+      <div class="locked-card">
+        <div class="locked-avatar" style="background:hsl(36,55%,88%);color:#5a3d10">MT</div>
+        <div>
+          <div class="locked-name">Marcus Thornton</div>
+          <div class="locked-meta">Age 42 · Aggressive · 1 week ago</div>
+        </div>
+        <div class="locked-vals">
+          <div class="locked-val-lbl">AUM</div>
+          <div class="locked-val">$5.9M</div>
+        </div>
+        <div class="locked-lock">🔒</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="position:fixed;bottom:12px;right:16px;font-size:10px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:rgba(0,0,0,0.22);pointer-events:none;">Option C · The Book</div>
+</body>
+</html>

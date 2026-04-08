@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Overview — Kessler Family</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { font-family:'Inter', system-ui, sans-serif; background:#f0ece5; color:#1a1a1a; min-height:100vh; }
+
+.header-bar { background:rgba(240,236,229,0.97); border-bottom:1px solid rgba(0,0,0,0.08); padding:0 48px; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; backdrop-filter:blur(4px); }
+.hb-left { display:flex; align-items:center; gap:10px; }
+.hb-client { font-size:13px; font-weight:500; }
+.hb-sep { color:rgba(0,0,0,0.20); }
+.hb-page { font-size:13px; color:rgba(0,0,0,0.50); }
+.hb-right { display:flex; align-items:center; gap:6px; }
+.hb-dot { width:5px; height:5px; border-radius:50%; background:#5ecc8a; }
+.hb-status { font-size:10px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:rgba(0,0,0,0.35); }
+
+.body { padding:36px 48px 80px; }
+
+.page-eyebrow { font-size:10px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:rgba(154,123,60,0.75); margin-bottom:10px; }
+.page-headline { font-family:'Playfair Display', Georgia, serif; font-size:30px; font-weight:400; color:hsl(222,45%,12%); line-height:1.20; letter-spacing:-0.02em; margin-bottom:8px; }
+.page-sub { font-size:13px; color:rgba(0,0,0,0.45); line-height:1.65; max-width:560px; }
+
+.nw-strip { display:flex; border:1px solid rgba(0,0,0,0.08); border-radius:8px; background:#fff; margin:22px 0 28px; overflow:hidden; }
+.nw-item { flex:1; padding:14px 20px; border-right:1px solid rgba(0,0,0,0.07); }
+.nw-item:last-child { border-right:none; }
+.nw-label { font-size:9px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:rgba(0,0,0,0.32); margin-bottom:4px; }
+.nw-val { font-size:19px; font-weight:300; font-variant-numeric:tabular-nums; letter-spacing:-0.025em; color:hsl(222,45%,12%); line-height:1; }
+.nw-val.neg { color:#9b2020; }
+.nw-note { font-size:10px; color:rgba(0,0,0,0.38); margin-top:3px; }
+.nw-delta { font-size:10px; font-weight:500; color:#1e6e42; margin-top:3px; }
+
+.guru-signal { background:#0c1828; border-radius:8px; padding:10px 16px; display:flex; align-items:center; gap:16px; margin-bottom:28px; }
+.gs-label { font-size:9px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:rgba(255,255,255,0.28); white-space:nowrap; }
+.gs-row { display:flex; align-items:center; gap:8px; border-left:2px solid #44e08a; padding-left:10px; }
+.gs-dot { width:5px; height:5px; border-radius:50%; background:#44e08a; flex-shrink:0; }
+.gs-id { font-size:10px; font-weight:700; letter-spacing:0.08em; color:#fff; text-transform:uppercase; }
+.gs-desc { font-size:10px; color:rgba(255,255,255,0.55); }
+.gs-badge { font-size:9px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; border:1px solid rgba(68,224,138,0.35); color:#44e08a; padding:2px 7px; border-radius:2px; white-space:nowrap; }
+
+.section-label { font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(0,0,0,0.30); margin-bottom:12px; }
+.bucket-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:14px; margin-bottom:32px; }
+
+.bb-card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); overflow:hidden; transition:box-shadow 0.15s; animation:bbFadeIn 0.3s ease both; }
+.bb-card:hover { box-shadow:0 4px 18px rgba(0,0,0,0.08); }
+@keyframes bbFadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.bc-top-bar { height:3px; opacity:0.85; }
+.bc-inner { padding:18px 20px 0; }
+.bc-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.bc-name { font-size:11px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; opacity:0.85; margin-bottom:4px; }
+.bc-tagline { font-size:12px; color:rgba(0,0,0,0.55); line-height:1.45; }
+.bc-bal-col { text-align:right; flex-shrink:0; margin-left:12px; }
+.bc-balance { font-size:22px; font-weight:300; font-variant-numeric:tabular-nums; letter-spacing:-0.025em; color:#1a1a1a; line-height:1; }
+.bc-balance.neg { color:#9b2020; }
+.bc-target { font-size:9px; color:rgba(0,0,0,0.32); margin-top:3px; }
+
+.bc-approach { border-radius:6px; padding:9px 12px; margin-bottom:14px; }
+.bc-approach-lbl { font-size:9px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; opacity:0.75; margin-bottom:3px; }
+.bc-approach-txt { font-size:10.5px; color:rgba(0,0,0,0.55); line-height:1.55; }
+
+/* ── SUBACCOUNTS TABLE (3-col — Next Month hidden) ── */
+.bc-table-wrap { margin:0 -20px; border-top:1px solid rgba(0,0,0,0.07); }
+
+.bc-th-row,
+.bc-tr {
+  display:grid;
+  grid-template-columns:1fr 92px 58px;
+  padding:0 20px;
+}
+.bc-th-row {
+  padding-top:6px; padding-bottom:5px;
+  border-bottom:1px solid rgba(0,0,0,0.07);
+  background:rgba(0,0,0,0.018);
+}
+.bc-th {
+  font-size:7.5px; font-weight:700; letter-spacing:0.09em;
+  text-transform:uppercase; color:rgba(0,0,0,0.30);
+}
+.bc-th:not(:first-child) { text-align:right; }
+
+.bc-tr {
+  padding-top:6px; padding-bottom:6px;
+  border-bottom:1px solid rgba(0,0,0,0.04);
+  align-items:center;
+}
+.bc-tr:last-child { border-bottom:none; padding-bottom:13px; }
+
+/* Exposure category sub-header */
+.bc-exposure-hdr {
+  grid-column:1/-1;
+  font-size:7.5px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase;
+  color:rgba(0,0,0,0.28);
+  padding:7px 0 3px;
+  border-top:1px solid rgba(0,0,0,0.05);
+  margin-top:2px;
+}
+.bc-exposure-hdr:first-child { border-top:none; margin-top:0; padding-top:3px; }
+
+.bc-td-name { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.bc-td-main { font-size:11px; font-weight:500; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bc-td-ref  { font-size:8.5px; color:rgba(0,0,0,0.38); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.bc-td-bal  { font-size:11px; font-weight:400; font-variant-numeric:tabular-nums; color:rgba(0,0,0,0.70); text-align:right; }
+.bc-td-bal.neg { color:#9b2020; }
+.bc-td-yield { font-size:10.5px; font-weight:400; font-variant-numeric:tabular-nums; color:rgba(0,0,0,0.42); text-align:right; }
+.bc-td-yield.neg { color:#9b2020; }
+
+/* tag inside table */
+.bc-tag { font-size:7.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+.tag-excess    { color:rgba(184,92,0,0.85); }
+.tag-active    { color:rgba(20,100,60,0.80); }
+.tag-locked    { color:rgba(30,77,140,0.80); }
+.tag-illiquid  { color:rgba(80,40,120,0.80); }
+.tag-unvested  { color:rgba(80,40,120,0.80); }
+.tag-primary   { color:rgba(26,26,74,0.55); }
+.tag-rental    { color:rgba(100,60,20,0.80); }
+.tag-carry     { color:rgba(30,77,140,0.75); }
+.tag-fixed     { color:rgba(30,77,140,0.75); }
+.tag-revolving { color:rgba(155,32,32,0.80); }
+.tag-commitment{ color:rgba(80,40,120,0.80); }
+
+.nw-footer { position:fixed; bottom:0; left:0; right:0; background:#0c1828; border-top:1px solid rgba(255,255,255,0.05); height:50px; display:flex; align-items:center; justify-content:space-between; padding:0 48px; z-index:40; }
+.nwf-left { display:flex; align-items:center; gap:16px; }
+.nwf-label { font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.28); }
+.nwf-val { font-size:22px; font-weight:300; font-variant-numeric:tabular-nums; letter-spacing:-0.025em; color:#fff; }
+.nwf-right { display:flex; align-items:center; gap:32px; }
+.nwf-item { display:flex; flex-direction:column; align-items:flex-end; gap:1px; }
+.nwf-item-lbl { font-size:8px; color:rgba(255,255,255,0.28); letter-spacing:0.08em; text-transform:uppercase; }
+.nwf-item-val { font-size:13px; font-weight:300; font-variant-numeric:tabular-nums; color:rgba(255,255,255,0.55); }
+.nwf-item-val.green { color:#44e08a; }
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <div class="hb-left">
+    <span class="hb-client">Kessler Family</span>
+    <span class="hb-sep">·</span>
+    <span class="hb-page">Asset Overview</span>
+  </div>
+  <div class="hb-right">
+    <div class="hb-dot"></div>
+    <span class="hb-status">April 6, 2026</span>
+  </div>
+</div>
+
+<div class="body">
+
+  <div class="page-eyebrow">Kessler Family · Financial Picture</div>
+  <div class="page-headline">Where the money lives — and how it is working.</div>
+  <div class="page-sub">Every position, organized by purpose. Balances and yields as of today.</div>
+
+  <div class="nw-strip">
+    <div class="nw-item">
+      <div class="nw-label">Net Worth</div>
+      <div class="nw-val">$4,555,196</div>
+      <div class="nw-delta">↑ +$18,240 vs. last month</div>
+    </div>
+    <div class="nw-item">
+      <div class="nw-label">Total Assets</div>
+      <div class="nw-val">$5,903,362</div>
+      <div class="nw-note">21 positions · 5 categories</div>
+    </div>
+    <div class="nw-item">
+      <div class="nw-label">Total Liabilities</div>
+      <div class="nw-val neg">−$1,348,166</div>
+      <div class="nw-note">6 positions</div>
+    </div>
+    <div class="nw-item">
+      <div class="nw-label">Liquid Assets</div>
+      <div class="nw-val">$558,636</div>
+      <div class="nw-note">9.5% of total assets</div>
+    </div>
+    <div class="nw-item">
+      <div class="nw-label">Annual Income</div>
+      <div class="nw-val">$21,302</div>
+      <div class="nw-note">Monthly · yield + rental</div>
+    </div>
+  </div>
+
+  <div class="guru-signal">
+    <span class="gs-label">GURU Intelligence</span>
+    <div class="gs-row">
+      <div class="gs-dot"></div>
+      <span class="gs-id">LQ-7</span>
+      <span class="gs-desc">$186,586 sitting in 2.50% idle sweep — opportunity to ladder into Treasuries at current rates</span>
+      <span class="gs-badge">Opportunity · Review Allocation</span>
+    </div>
+  </div>
+
+  <div class="section-label">Assets · $5,903,362</div>
+
+  <div class="bucket-grid">
+
+    <!-- OPERATING CASH -->
+    <div class="bb-card" style="border:1px solid rgba(29,78,216,0.18);">
+      <div class="bc-top-bar" style="background:#1d4ed8;"></div>
+      <div class="bc-inner">
+        <div class="bc-header">
+          <div>
+            <div class="bc-name" style="color:#1d4ed8;">Operating Cash</div>
+            <div class="bc-tagline">Daily liquidity &amp; upcoming expenditures</div>
+          </div>
+          <div class="bc-bal-col">
+            <div class="bc-balance">$132,050</div>
+            <div class="bc-target">5.7 mo. covered</div>
+          </div>
+        </div>
+        <div class="bc-approach" style="background:rgba(29,78,216,0.06);">
+          <div class="bc-approach-lbl" style="color:#1d4ed8;">GURU's Approach</div>
+          <div class="bc-approach-txt">Covers 2–3 months of core expenses. Instantly accessible. No rate optimization — pure safety net.</div>
+        </div>
+      </div>
+      <div class="bc-table-wrap">
+        <div class="bc-th-row">
+          <div class="bc-th">Subaccounts</div>
+          <div class="bc-th">Balance</div>
+          <div class="bc-th">Yield</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Chase Total Checking</span><span class="bc-td-ref">Main Account · Citizens Bank</span></div>
+          <div class="bc-td-bal">$25,050</div>
+          <div class="bc-td-yield">—</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Citizens Private Banking Checking</span><span class="bc-td-ref">Excess · Citizens Bank</span></div>
+          <div class="bc-td-bal">$107,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-excess">excess</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESERVE CASH -->
+    <div class="bb-card" style="border:1px solid rgba(138,105,32,0.18);">
+      <div class="bc-top-bar" style="background:#8a6920;"></div>
+      <div class="bc-inner">
+        <div class="bc-header">
+          <div>
+            <div class="bc-name" style="color:#8a6920;">Reserve Cash</div>
+            <div class="bc-tagline">Active cash management with full liquidity</div>
+          </div>
+          <div class="bc-bal-col">
+            <div class="bc-balance">$426,586</div>
+            <div class="bc-target">12-month reserve target</div>
+          </div>
+        </div>
+        <div class="bc-approach" style="background:rgba(138,105,32,0.06);">
+          <div class="bc-approach-lbl" style="color:#8a6920;">GURU's Approach</div>
+          <div class="bc-approach-txt">Targets 12 months of anticipated outflows. Deployed in high-yield instruments that can be liquidated same-day.</div>
+        </div>
+      </div>
+      <div class="bc-table-wrap">
+        <div class="bc-th-row">
+          <div class="bc-th">Subaccounts</div>
+          <div class="bc-th">Balance</div>
+          <div class="bc-th">Yield</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Citizens Private Bank Money Market</span><span class="bc-td-ref">Citizens Bank</span></div>
+          <div class="bc-td-bal">$225,000</div>
+          <div class="bc-td-yield">3.65%</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Capital One 360 Performance Savings</span><span class="bc-td-ref">Capital One</span></div>
+          <div class="bc-td-bal">$15,000</div>
+          <div class="bc-td-yield">3.78%</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Fidelity Cash Sweep / Money Market</span><span class="bc-td-ref">Fidelity · Idle</span></div>
+          <div class="bc-td-bal">$186,586</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-excess">2.50% idle</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAPITAL BUILD -->
+    <div class="bb-card" style="border:1px solid rgba(30,77,48,0.18);">
+      <div class="bc-top-bar" style="background:#1e4d30;"></div>
+      <div class="bc-inner">
+        <div class="bc-header">
+          <div>
+            <div class="bc-name" style="color:#1e4d30;">Capital Build</div>
+            <div class="bc-tagline">Short-duration — 1–3 year horizon</div>
+          </div>
+          <div class="bc-bal-col">
+            <div class="bc-balance">$135,000</div>
+            <div class="bc-target">Goal-directed</div>
+          </div>
+        </div>
+        <div class="bc-approach" style="background:rgba(30,77,48,0.06);">
+          <div class="bc-approach-lbl" style="color:#1e4d30;">GURU's Approach</div>
+          <div class="bc-approach-txt">Capital earmarked for near-term goals deployed in short-duration Treasury ladders to protect principal while earning yield.</div>
+        </div>
+      </div>
+      <div class="bc-table-wrap">
+        <div class="bc-th-row">
+          <div class="bc-th">Subaccounts</div>
+          <div class="bc-th">Balance</div>
+          <div class="bc-th">Yield</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">US Treasuries</span><span class="bc-td-ref">Fidelity · Short Duration</span></div>
+          <div class="bc-td-bal">$135,000</div>
+          <div class="bc-td-yield">3.95%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVESTMENTS -->
+    <div class="bb-card" style="border:1px solid rgba(61,26,110,0.18);">
+      <div class="bc-top-bar" style="background:#3d1a6e;"></div>
+      <div class="bc-inner">
+        <div class="bc-header">
+          <div>
+            <div class="bc-name" style="color:#3d1a6e;">Investments</div>
+            <div class="bc-tagline">Long-term compounded growth</div>
+          </div>
+          <div class="bc-bal-col">
+            <div class="bc-balance">$2,559,726</div>
+            <div class="bc-target">5+ year horizon</div>
+          </div>
+        </div>
+        <div class="bc-approach" style="background:rgba(61,26,110,0.06);">
+          <div class="bc-approach-lbl" style="color:#3d1a6e;">GURU's Approach</div>
+          <div class="bc-approach-txt">Capital with a 5+ year horizon managed through CIO-led strategies and tax-advantaged retirement accounts. Not touched for liquidity needs.</div>
+        </div>
+      </div>
+      <div class="bc-table-wrap">
+        <div class="bc-th-row">
+          <div class="bc-th">Subaccounts</div>
+          <div class="bc-th">Balance</div>
+          <div class="bc-th">5yr Ret.</div>
+        </div>
+        <!-- EQUITIES -->
+        <div class="bc-tr"><div class="bc-exposure-hdr">Equities</div></div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Cresset Capital — US ETFs &amp; Mutual Funds</span><span class="bc-td-ref">Advisor Managed</span></div>
+          <div class="bc-td-bal">$814,877</div>
+          <div class="bc-td-yield">—</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Schwab International Index</span><span class="bc-td-ref">ETF · Schwab</span></div>
+          <div class="bc-td-bal">$116,538</div>
+          <div class="bc-td-yield">—</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">E*Trade — Meta Platforms</span><span class="bc-td-ref">Single Stock Concentration</span></div>
+          <div class="bc-td-bal">$238,311</div>
+          <div class="bc-td-yield">—</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">E*Trade — Bank of America</span><span class="bc-td-ref">Single Stock Concentration</span></div>
+          <div class="bc-td-bal">$60,000</div>
+          <div class="bc-td-yield">—</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Goldman Sachs RSUs</span><span class="bc-td-ref">Unvested · 2-yr cliff</span></div>
+          <div class="bc-td-bal">$80,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-unvested">unvested</span></div>
+        </div>
+        <!-- RETIREMENT -->
+        <div class="bc-tr"><div class="bc-exposure-hdr">Retirement</div></div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Fidelity 401(k) / Traditional IRA</span><span class="bc-td-ref">Fidelity · Tax-Deferred</span></div>
+          <div class="bc-td-bal">$620,000</div>
+          <div class="bc-td-yield">—</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Fidelity Roth IRA</span><span class="bc-td-ref">Fidelity · Tax-Free</span></div>
+          <div class="bc-td-bal">$380,000</div>
+          <div class="bc-td-yield">—</div>
+        </div>
+        <!-- ALTERNATIVES -->
+        <div class="bc-tr"><div class="bc-exposure-hdr">Alternatives</div></div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Carlyle Partners VIII</span><span class="bc-td-ref">Private Equity Fund · NAV</span></div>
+          <div class="bc-td-bal">$75,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-illiquid">illiquid</span></div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Carlyle Partners IX</span><span class="bc-td-ref">Private Equity Fund · NAV</span></div>
+          <div class="bc-td-bal">$175,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-illiquid">illiquid</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OTHER ASSETS -->
+    <div class="bb-card" style="border:1px solid rgba(74,74,74,0.18);">
+      <div class="bc-top-bar" style="background:#4a4a4a;"></div>
+      <div class="bc-inner">
+        <div class="bc-header">
+          <div>
+            <div class="bc-name" style="color:#4a4a4a;">Other Assets</div>
+            <div class="bc-tagline">Real estate, carried interest &amp; illiquid positions</div>
+          </div>
+          <div class="bc-bal-col">
+            <div class="bc-balance">$2,650,000</div>
+            <div class="bc-target">Tracked · not actively managed</div>
+          </div>
+        </div>
+        <div class="bc-approach" style="background:rgba(74,74,74,0.06);">
+          <div class="bc-approach-lbl" style="color:#4a4a4a;">GURU's Approach</div>
+          <div class="bc-approach-txt">Illiquid or hard-to-rebalance holdings. Tracked for net worth context but excluded from liquidity planning.</div>
+        </div>
+      </div>
+      <div class="bc-table-wrap">
+        <div class="bc-th-row">
+          <div class="bc-th">Subaccounts</div>
+          <div class="bc-th">Balance</div>
+          <div class="bc-th">Type</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Tribeca Condo</span><span class="bc-td-ref">Primary Residence · NYC</span></div>
+          <div class="bc-td-bal">$1,525,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-primary">primary</span></div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Sarasota Property</span><span class="bc-td-ref">Investment · FL — $2,100/mo rental</span></div>
+          <div class="bc-td-bal">$290,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-rental">rental</span></div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Carlyle Partners VIII — Carry</span><span class="bc-td-ref">Carried Interest · Est. Fair Market Value</span></div>
+          <div class="bc-td-bal">$325,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-carry">carry</span></div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Carlyle Partners IX — Carry</span><span class="bc-td-ref">Carried Interest · Est. Fair Market Value</span></div>
+          <div class="bc-td-bal">$510,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-carry">carry</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LIABILITIES -->
+  <div class="section-label" style="margin-top:8px;">Liabilities · −$1,348,166</div>
+
+  <div class="bucket-grid">
+
+    <!-- MORTGAGES -->
+    <div class="bb-card" style="border:1px solid rgba(155,32,32,0.18);">
+      <div class="bc-top-bar" style="background:#9b2020;"></div>
+      <div class="bc-inner">
+        <div class="bc-header">
+          <div>
+            <div class="bc-name" style="color:#9b2020;">Mortgages</div>
+            <div class="bc-tagline">Real estate debt obligations</div>
+          </div>
+          <div class="bc-bal-col">
+            <div class="bc-balance neg">−$1,092,000</div>
+            <div class="bc-target">81.0% of liabilities</div>
+          </div>
+        </div>
+        <div class="bc-approach" style="background:rgba(155,32,32,0.05);">
+          <div class="bc-approach-lbl" style="color:#9b2020;">GURU's Approach</div>
+          <div class="bc-approach-txt">Both mortgages are fixed-rate locked pre-2023 at advantaged rates. Cost of debt is below current market — no action recommended.</div>
+        </div>
+      </div>
+      <div class="bc-table-wrap">
+        <div class="bc-th-row">
+          <div class="bc-th">Subaccounts</div>
+          <div class="bc-th">Balance</div>
+          <div class="bc-th">Rate</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Tribeca Condo Mortgage</span><span class="bc-td-ref">Wells Fargo · 30-yr fixed</span></div>
+          <div class="bc-td-bal neg">−$945,000</div>
+          <div class="bc-td-yield">3.15%</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Sarasota Investment Property Mortgage</span><span class="bc-td-ref">Bank of America · 30-yr fixed</span></div>
+          <div class="bc-td-bal neg">−$147,000</div>
+          <div class="bc-td-yield">2.55%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONSUMER LIABILITIES -->
+    <div class="bb-card" style="border:1px solid rgba(155,32,32,0.18);">
+      <div class="bc-top-bar" style="background:#9b2020;"></div>
+      <div class="bc-inner">
+        <div class="bc-header">
+          <div>
+            <div class="bc-name" style="color:#9b2020;">Consumer Liabilities</div>
+            <div class="bc-tagline">Credit cards &amp; student loans</div>
+          </div>
+          <div class="bc-bal-col">
+            <div class="bc-balance neg">−$81,166</div>
+            <div class="bc-target">6.0% of liabilities</div>
+          </div>
+        </div>
+        <div class="bc-approach" style="background:rgba(155,32,32,0.05);">
+          <div class="bc-approach-lbl" style="color:#9b2020;">GURU's Approach</div>
+          <div class="bc-approach-txt">Credit card balances assumed paid monthly — cost of carry is negligible. Student loan rate is below refi threshold; monitored annually.</div>
+        </div>
+      </div>
+      <div class="bc-table-wrap">
+        <div class="bc-th-row">
+          <div class="bc-th">Subaccounts</div>
+          <div class="bc-th">Balance</div>
+          <div class="bc-th">Rate</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Chase Sapphire + Amex</span><span class="bc-td-ref">Credit Cards · Paid monthly</span></div>
+          <div class="bc-td-bal neg">−$11,466</div>
+          <div class="bc-td-yield neg">22.99%</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Student Loans</span><span class="bc-td-ref">Partner 1 + Partner 2</span></div>
+          <div class="bc-td-bal neg">−$69,700</div>
+          <div class="bc-td-yield">4.50%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVESTMENT FINANCING -->
+    <div class="bb-card" style="border:1px solid rgba(80,40,120,0.18);">
+      <div class="bc-top-bar" style="background:#50287a;"></div>
+      <div class="bc-inner">
+        <div class="bc-header">
+          <div>
+            <div class="bc-name" style="color:#50287a;">Investment Financing</div>
+            <div class="bc-tagline">Private equity capital obligations</div>
+          </div>
+          <div class="bc-bal-col">
+            <div class="bc-balance neg">−$175,000</div>
+            <div class="bc-target">13.0% of liabilities</div>
+          </div>
+        </div>
+        <div class="bc-approach" style="background:rgba(80,40,120,0.05);">
+          <div class="bc-approach-lbl" style="color:#50287a;">GURU's Approach</div>
+          <div class="bc-approach-txt">Professional loan used to fund capital calls into PE Fund II. Remaining unfunded commitment tracked separately. Rate review recommended at next meeting.</div>
+        </div>
+      </div>
+      <div class="bc-table-wrap">
+        <div class="bc-th-row">
+          <div class="bc-th">Subaccounts</div>
+          <div class="bc-th">Balance</div>
+          <div class="bc-th">Rate</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Professional Loan — PE Fund II Capital Call</span><span class="bc-td-ref">Variable Rate</span></div>
+          <div class="bc-td-bal neg">−$125,000</div>
+          <div class="bc-td-yield neg">6.50%</div>
+        </div>
+        <div class="bc-tr">
+          <div class="bc-td-name"><span class="bc-td-main">Remaining Capital Commitment — PE Fund II</span><span class="bc-td-ref">Unfunded commitment</span></div>
+          <div class="bc-td-bal neg">−$50,000</div>
+          <div class="bc-td-yield"><span class="bc-tag tag-commitment">unfunded</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="nw-footer">
+  <div class="nwf-left">
+    <span class="nwf-label">Net Worth</span>
+    <span class="nwf-val">$4,555,196</span>
+  </div>
+  <div class="nwf-right">
+    <div class="nwf-item">
+      <span class="nwf-item-lbl">Total Assets</span>
+      <span class="nwf-item-val">$5,903,362</span>
+    </div>
+    <div class="nwf-item">
+      <span class="nwf-item-lbl">Total Liabilities</span>
+      <span class="nwf-item-val">−$1,348,166</span>
+    </div>
+    <div class="nwf-item">
+      <span class="nwf-item-lbl">Liquid Cash</span>
+      <span class="nwf-item-val green">$558,636</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

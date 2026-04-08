@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GURU — Client Roster</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #f0ede8;
+      font-family: 'Inter', sans-serif;
+      color: #1c1917;
+      overflow-x: hidden;
+    }
+
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Left Navigation Strip */
+    .nav-strip {
+      width: 48px;
+      background-color: hsl(222, 45%, 12%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 20px;
+      gap: 40px;
+    }
+
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #faf9f7;
+      letter-spacing: 0.5px;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
+
+    .nav-dots {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: rgba(250, 249, 247, 0.3);
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .nav-dot:hover {
+      background-color: rgba(250, 249, 247, 0.6);
+    }
+
+    .nav-dot.active {
+      background-color: #9a7b3c;
+    }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Page Header */
+    .page-header {
+      background-color: #faf9f7;
+      padding: 32px 40px;
+      border-bottom: 1px solid #ddd8d1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 500;
+      color: hsl(222, 45%, 12%);
+      margin-bottom: 2px;
+    }
+
+    .header-subtitle {
+      font-size: 10px;
+      letter-spacing: 0.6px;
+      color: #a8a29e;
+      text-transform: uppercase;
+    }
+
+    .add-client-btn {
+      background-color: hsl(222, 45%, 12%);
+      color: #faf9f7;
+      border: none;
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      border-radius: 3px;
+      text-transform: uppercase;
+      transition: opacity 0.2s ease;
+    }
+
+    .add-client-btn:hover {
+      opacity: 0.85;
+    }
+
+    /* KPI Strip */
+    .kpi-strip {
+      background-color: #faf9f7;
+      border-bottom: 1px solid #ddd8d1;
+      padding: 24px 40px;
+      display: flex;
+      gap: 48px;
+    }
+
+    .kpi-block {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kpi-value {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 28px;
+      font-weight: 400;
+      color: hsl(222, 45%, 12%);
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
+    }
+
+    .kpi-label {
+      font-size: 9px;
+      letter-spacing: 0.6px;
+      color: #78716c;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      background-color: #fffaf5;
+      border-left: 3px solid #9a7b3c;
+      padding: 16px 40px;
+      margin: 20px 40px 0;
+      border-radius: 3px;
+    }
+
+    .alert-text {
+      font-size: 12px;
+      color: #1c1917;
+      line-height: 1.5;
+    }
+
+    .alert-icon {
+      display: inline-block;
+      margin-right: 8px;
+      color: #9a7b3c;
+      font-weight: 600;
+    }
+
+    /* Content Wrapper */
+    .content-wrapper {
+      flex: 1;
+      padding: 32px 40px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* Client Table */
+    .client-table {
+      background-color: #faf9f7;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: grid;
+      grid-template-columns: 200px 120px 140px 100px 100px 80px;
+      gap: 16px;
+      padding: 16px 24px;
+      background-color: #faf9f7;
+      border-bottom: 1px solid #ddd8d1;
+      align-items: center;
+    }
+
+    .table-header-cell {
+      font-size: 9.5px;
+      letter-spacing: 0.5px;
+      color: #78716c;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .table-rows {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 200px 120px 140px 100px 100px 80px;
+      gap: 16px;
+      padding: 12px 24px;
+      align-items: center;
+      border-bottom: 1px solid #e8e4df;
+      min-height: 48px;
+      transition: background-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .table-row:hover {
+      background-color: #fdf9f5;
+    }
+
+    .table-row.coming-soon-label {
+      padding: 20px 24px 12px;
+      border-bottom: none;
+      cursor: default;
+      font-size: 9px;
+      letter-spacing: 0.6px;
+      color: #a8a29e;
+      text-transform: uppercase;
+      font-weight: 600;
+      min-height: auto;
+      margin-top: 12px;
+    }
+
+    .table-row.coming-soon-label:hover {
+      background-color: transparent;
+    }
+
+    .table-row.dimmed {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    .table-row.dimmed:hover {
+      background-color: transparent;
+    }
+
+    /* Cell Content */
+    .cell-client {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .client-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #1c1917;
+      margin-bottom: 2px;
+    }
+
+    .client-age {
+      font-size: 11px;
+      color: #a8a29e;
+    }
+
+    .cell-risk {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #1c1917;
+    }
+
+    .risk-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .risk-moderate {
+      background-color: #9a7b3c;
+    }
+
+    .risk-conservative {
+      background-color: #2e7a52;
+    }
+
+    .risk-aggressive {
+      background-color: #c41e3a;
+    }
+
+    .cell-assets {
+      font-size: 12px;
+      color: #1c1917;
+      font-family: 'Instrument Serif', Georgia, serif;
+    }
+
+    .cell-aum {
+      font-size: 12px;
+      color: #1c1917;
+      font-family: 'Instrument Serif', Georgia, serif;
+    }
+
+    .cell-managed {
+      font-size: 12px;
+      color: #2e7a52;
+      font-weight: 500;
+    }
+
+    .cell-alerts {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-badge {
+      background-color: #9a7b3c;
+      color: #faf9f7;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .alert-triangle {
+      width: 0;
+      height: 0;
+      border-left: 3px solid transparent;
+      border-right: 3px solid transparent;
+      border-bottom: 5px solid #faf9f7;
+    }
+
+    .onboarding-tag {
+      background-color: #fffaf5;
+      color: #9a7b3c;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 9px;
+      font-weight: 600;
+      border: 1px solid #9a7b3c;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .chevron {
+      color: #a8a29e;
+      font-size: 14px;
+    }
+
+    .lock-icon {
+      color: #a8a29e;
+      font-size: 12px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Left Navigation Strip -->
+    <div class="nav-strip">
+      <div class="nav-logo">GURU</div>
+      <div class="nav-dots">
+        <div class="nav-dot active"></div>
+        <div class="nav-dot"></div>
+        <div class="nav-dot"></div>
+        <div class="nav-dot"></div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <div class="header-title">Clients</div>
+          <div class="header-subtitle">Advisor intelligence layer · GURU</div>
+        </div>
+        <button class="add-client-btn">+ Add Client</button>
+      </div>
+
+      <!-- KPI Strip -->
+      <div class="kpi-strip">
+        <div class="kpi-block">
+          <div class="kpi-value">$30.9M</div>
+          <div class="kpi-label">Total AUM</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-value">$48.5M</div>
+          <div class="kpi-label">Total Assets</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-value">2</div>
+          <div class="kpi-label">Active Clients</div>
+        </div>
+        <div class="kpi-block">
+          <div class="kpi-value">3</div>
+          <div class="kpi-label">Action Items</div>
+        </div>
+      </div>
+
+      <!-- Alert Banner -->
+      <div class="alert-banner">
+        <span class="alert-icon">⚠</span>
+        <span class="alert-text"><strong>3 action items flagged for Sarah & Michael Kessler</strong> — excess liquidity, rebalancing, and a tax-loss harvest window</span>
+      </div>
+
+      <!-- Content Wrapper -->
+      <div class="content-wrapper">
+        <!-- Client Table -->
+        <div class="client-table">
+          <!-- Table Header -->
+          <div class="table-header">
+            <div class="table-header-cell">Client</div>
+            <div class="table-header-cell">Risk Profile</div>
+            <div class="table-header-cell">Total Assets</div>
+            <div class="table-header-cell">AUM</div>
+            <div class="table-header-cell">% Managed</div>
+            <div class="table-header-cell">Alerts</div>
+          </div>
+
+          <!-- Table Rows -->
+          <div class="table-rows">
+            <!-- Active Client 1: Sarah & Michael Kessler -->
+            <div class="table-row">
+              <div class="cell-client">
+                <div class="client-name">Sarah & Michael Kessler</div>
+                <div class="client-age">44</div>
+              </div>
+              <div class="cell-risk">
+                <div class="risk-dot risk-moderate"></div>
+                Moderate
+              </div>
+              <div class="cell-assets">$5.9M</div>
+              <div class="cell-aum">$815K</div>
+              <div class="cell-managed">14%</div>
+              <div class="cell-alerts">
+                <div class="alert-badge">
+                  <div class="alert-triangle"></div>
+                  3
+                </div>
+                <span class="chevron">›</span>
+              </div>
+            </div>
+
+            <!-- Active Client 2: Mari Oishi -->
+            <div class="table-row">
+              <div class="cell-client">
+                <div class="client-name">Mari Oishi</div>
+                <div class="client-age">29</div>
+              </div>
+              <div class="cell-risk">
+                <div class="risk-dot risk-moderate"></div>
+                Moderate
+              </div>
+              <div class="cell-assets">$0</div>
+              <div class="cell-aum">$0</div>
+              <div class="cell-managed">—</div>
+              <div class="cell-alerts">
+                <div class="onboarding-tag">Onboarding</div>
+                <span class="chevron">›</span>
+              </div>
+            </div>
+
+            <!-- Coming Soon Section -->
+            <div class="table-row coming-soon-label">Coming Soon</div>
+
+            <!-- Locked Client 1 -->
+            <div class="table-row dimmed">
+              <div class="cell-client">
+                <div class="client-name">James & Patricia Harrington</div>
+                <div class="client-age">58</div>
+              </div>
+              <div class="cell-risk">
+                <div class="risk-dot risk-conservative"></div>
+                Conservative
+              </div>
+              <div class="cell-assets">$8.2M</div>
+              <div class="cell-aum">$1.1M</div>
+              <div class="cell-managed">13%</div>
+              <div class="cell-alerts">
+                <span class="lock-icon">🔒</span>
+              </div>
+            </div>
+
+            <!-- Locked Client 2 -->
+            <div class="table-row dimmed">
+              <div class="cell-client">
+                <div class="client-name">Olivia Chen</div>
+                <div class="client-age">36</div>
+              </div>
+              <div class="cell-risk">
+                <div class="risk-dot risk-aggressive"></div>
+                Aggressive
+              </div>
+              <div class="cell-assets">$12.3M</div>
+              <div class="cell-aum">$2.4M</div>
+              <div class="cell-managed">20%</div>
+              <div class="cell-alerts">
+                <span class="lock-icon">🔒</span>
+              </div>
+            </div>
+
+            <!-- Locked Client 3 -->
+            <div class="table-row dimmed">
+              <div class="cell-client">
+                <div class="client-name">Robert & Susan Delacroix</div>
+                <div class="client-age">52</div>
+              </div>
+              <div class="cell-risk">
+                <div class="risk-dot risk-moderate"></div>
+                Moderate
+              </div>
+              <div class="cell-assets">$15.6M</div>
+              <div class="cell-aum">$2.8M</div>
+              <div class="cell-managed">18%</div>
+              <div class="cell-alerts">
+                <span class="lock-icon">🔒</span>
+              </div>
+            </div>
+
+            <!-- Locked Client 4 -->
+            <div class="table-row dimmed">
+              <div class="cell-client">
+                <div class="client-name">Marcus Thornton</div>
+                <div class="client-age">41</div>
+              </div>
+              <div class="cell-risk">
+                <div class="risk-dot risk-aggressive"></div>
+                Aggressive
+              </div>
+              <div class="cell-assets">$6.5M</div>
+              <div class="cell-aum">$1.2M</div>
+              <div class="cell-managed">18%</div>
+              <div class="cell-alerts">
+                <span class="lock-icon">🔒</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

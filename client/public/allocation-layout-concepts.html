@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allocation Layout Concepts — GURU</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --page:   #f0ece5;
+  --card:   #ffffff;
+  --navy:   #1a2e4a;
+  --gold:   #8a6920;
+  --forest: #1e4d30;
+  --border: rgba(0,0,0,0.09);
+  --divider:rgba(0,0,0,0.06);
+  --text:   #1a1a1a;
+  --mid:    rgba(0,0,0,0.55);
+  --dim:    rgba(0,0,0,0.45);
+}
+body { background: var(--page); font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: var(--text); }
+
+/* ── PAGE HEADER ── */
+.ph { display: flex; align-items: center; justify-content: space-between; padding: 11px 32px; background: var(--card); border-bottom: 1px solid var(--border); }
+.ph-wordmark { font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--navy); }
+.ph-sep { width: 1px; height: 14px; background: rgba(0,0,0,0.12); margin: 0 16px; }
+.ph-tab { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.45); }
+.ph-tab.active { color: var(--navy); border-bottom: 2px solid var(--navy); padding-bottom: 1px; }
+.ph-right { display: flex; align-items: center; gap: 16px; }
+.ph-client { font-size: 11px; color: var(--mid); letter-spacing: 0.03em; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+@keyframes cfm-pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+@keyframes borderRunBlue {
+  0%   { background-position: 0% 0, 100% 0, 100% 100%, 0% 100%; }
+  100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+}
+
+/* ── CONCEPT LABEL ── */
+.concept-lbl {
+  padding: 14px 32px 10px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(0,0,0,0.35);
+  display: flex; align-items: center; gap: 14px;
+}
+.concept-lbl::after { content: ''; flex: 1; height: 1px; background: rgba(0,0,0,0.10); }
+.concept-lbl span { background: var(--navy); color: #fff; border-radius: 3px; padding: 2px 9px; font-size: 9px; letter-spacing: 0.14em; }
+
+/* ══════════════════════════════════════════════
+   ROUNDED GURU INSIGHTS HERO BAR
+   (shared by both layouts)
+══════════════════════════════════════════════ */
+.insights-hero {
+  margin: 20px 32px 0;
+  border-radius: 12px;
+  background: linear-gradient(150deg, #0e1d31 0%, #152238 55%, #1a2d47 100%);
+  padding: 22px 28px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 28px;
+  align-items: center;
+  position: relative; overflow: hidden;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.18);
+}
+.insights-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; border-radius: 12px 12px 0 0;
+  background: linear-gradient(90deg, rgba(212,168,67,0.6), rgba(212,168,67,0.15) 50%, transparent);
+}
+.insights-hero::after {
+  content: ''; position: absolute; inset: 0; border-radius: 12px;
+  background-image: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,255,255,0.006) 40px, rgba(255,255,255,0.006) 41px);
+  pointer-events: none;
+}
+
+.insight-narrative { width: 100%; position: relative; z-index: 2; }
+.insight-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.insight-dot { width: 5px; height: 5px; border-radius: 50%; background: #d4a843; flex-shrink: 0; animation: ipulse 2.8s infinite; }
+@keyframes ipulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.insight-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(212,168,67,0.8); }
+.insight-hl { font-size: 20px; font-weight: 300; color: rgba(255,255,255,0.92); letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 10px; }
+.insight-body { font-size: 11px; line-height: 1.7; color: rgba(255,255,255,0.50); }
+.insight-body em { color: rgba(255,255,255,0.78); font-style: italic; }
+.insight-pills { display: flex; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+.insight-pill {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 7px 14px;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+}
+.ip-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.36); }
+.ip-val { font-size: 14px; font-weight: 300; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.82); letter-spacing: -0.01em; }
+
+/* GURU INTELLIGENCE CARD inside insights hero */
+.guru-intel-card {
+  position: relative; overflow: hidden; z-index: 2;
+  background: linear-gradient(160deg, #1a3a6b 0%, #163060 55%, #0f2248 100%);
+  border: 1px solid rgba(91,143,204,0.35); border-radius: 8px;
+  display: flex; flex-direction: column;
+  width: 296px; flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.30);
+}
+.guru-intel-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, rgba(91,143,204,0.7), rgba(91,143,204,0.1) 60%, transparent);
+  border-radius: 8px 8px 0 0; pointer-events: none;
+}
+.guru-intel-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1; border-radius: 8px;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.7) 50%, transparent 100%) top / 200% 2px no-repeat,
+    linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.4) 50%, transparent 100%) right / 2px 200% no-repeat,
+    linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.5) 50%, transparent 100%) bottom / 200% 2px no-repeat,
+    linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.4) 50%, transparent 100%) left / 2px 200% no-repeat;
+  animation: borderRunBlue 6s linear infinite;
+}
+.gic-hdr {
+  display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+  border-bottom: 1px solid rgba(91,143,204,0.15); position: relative; z-index: 2; flex-shrink: 0;
+}
+.gic-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ecc8a; box-shadow: 0 0 6px rgba(94,204,138,0.7); animation: cfm-pulse 2.2s infinite; }
+.gic-lbl { font-size: 9px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(94,204,138,0.85); }
+.gic-pill { margin-left: auto; display: flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid rgba(91,143,204,0.25); border-radius: 2px; background: rgba(91,143,204,0.06); }
+.gic-pill-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(91,143,204,0.9); animation: cfm-pulse 1.8s infinite; }
+.gic-pill-txt { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.52); }
+.gic-grid { display: grid; grid-template-columns: 1fr 1fr; position: relative; z-index: 2; }
+.gic-kpi {
+  display: flex; flex-direction: column; justify-content: center; gap: 3px;
+  padding: 11px 14px;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.gic-kpi:nth-child(even) { border-right: none; }
+.gic-kpi:nth-last-child(-n+2) { border-bottom: none; }
+.gic-kpi-lbl { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.42); }
+.gic-kpi-val { font-size: 14px; font-weight: 400; font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.90); letter-spacing: -0.01em; }
+
+
+/* ══════════════════════════════════════════════
+   LAYOUT A — Private Banking Cards
+   Color line top · $ and yield only
+══════════════════════════════════════════════ */
+.lya-section { padding: 16px 32px 24px; }
+.lya-row {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr 1fr 1fr;
+  gap: 10px;
+}
+.lya-card {
+  border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column;
+  padding: 18px 20px 16px;
+  position: relative;
+  min-height: 100px;
+}
+/* Top accent line */
+.lya-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.lya-total { background: #1a2e4a; }
+.lya-op    { background: #141f2e; }
+.lya-res   { background: #1a1205; }
+.lya-bld   { background: #0d1f14; }
+.lya-grow  { background: #111d2c; }
+.lya-total::before { background: rgba(255,255,255,0.20); }
+.lya-op::before    { background: #5b8fcc; }
+.lya-res::before   { background: #c49a28; }
+.lya-bld::before   { background: #3a8a5a; }
+.lya-grow::before  { background: rgba(91,143,204,0.55); }
+
+.lya-hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.lya-name { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.48); }
+.lya-yield { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.42); font-variant-numeric: tabular-nums; }
+.lya-bal { font-size: 26px; font-weight: 300; color: rgba(255,255,255,0.93); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.lya-sub { font-size: 10px; color: rgba(255,255,255,0.30); margin-top: 6px; }
+
+
+/* ══════════════════════════════════════════════
+   LAYOUT B — Expanded Dark Hero Bar
+   Total Assets + 4 buckets formatted like hero KPIs
+══════════════════════════════════════════════ */
+.lyb-section { padding: 16px 32px 24px; }
+.lyb-card {
+  border-radius: 10px; overflow: hidden;
+  background: linear-gradient(135deg, #111d2e 0%, #162438 55%, #1a2d45 100%);
+  display: grid;
+  grid-template-columns: 260px 1px 1fr 1px 1fr 1px 1fr 1px 1fr;
+  min-height: 108px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  position: relative; overflow: hidden;
+}
+.lyb-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, rgba(91,143,204,0.5), rgba(91,143,204,0.1) 60%, transparent);
+}
+/* left total assets col */
+.lyb-total {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 20px 28px;
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+.lyb-total-eyebrow { font-size: 9.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.38); margin-bottom: 8px; }
+.lyb-total-val { font-size: 32px; font-weight: 300; color: rgba(255,255,255,0.92); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px; }
+.lyb-total-sub { font-size: 10px; color: rgba(255,255,255,0.35); margin-bottom: 12px; }
+/* tier bar */
+.lyb-tier-bar { display: flex; height: 3px; border-radius: 1px; overflow: hidden; gap: 1px; width: 180px; margin-bottom: 5px; }
+.lyb-tier-labels { display: flex; gap: 2px; width: 180px; }
+.lyb-tbl-seg { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.lytb-op  { background: rgba(91,143,204,0.85); width: 19%; }
+.lytb-res { background: rgba(212,168,67,0.85);  width: 61.5%; }
+.lytb-bld { background: rgba(58,138,90,0.85);   width: 19.5%; }
+.lytl-op  { width: 19%;   color: rgba(91,143,204,0.65); }
+.lytl-res { width: 61.5%; color: rgba(212,168,67,0.65); }
+.lytl-bld { width: 19.5%; color: rgba(58,138,90,0.60); text-align: right; }
+
+/* divider */
+.lyb-div { background: rgba(255,255,255,0.07); }
+
+/* bucket col */
+.lyb-bucket {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 20px 26px;
+  position: relative;
+}
+/* colored top accent per bucket */
+.lyb-bucket::after {
+  content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 2px; border-radius: 0 0 2px 2px;
+}
+.lyb-bk-op::after  { background: rgba(91,143,204,0.7); }
+.lyb-bk-res::after { background: rgba(212,168,67,0.7); }
+.lyb-bk-bld::after { background: rgba(58,138,90,0.7); }
+.lyb-bk-grow::after{ background: rgba(91,143,204,0.4); }
+
+.lyb-bk-name-row { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+.lyb-bk-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.lyb-bk-name { font-size: 9.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+.lyb-bk-yield { margin-left: auto; font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.38); font-variant-numeric: tabular-nums; }
+.lyb-bk-bal { font-size: 24px; font-weight: 300; color: rgba(255,255,255,0.90); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.lyb-bk-note { font-size: 9.5px; color: rgba(255,255,255,0.30); margin-top: 5px; }
+
+</style>
+</head>
+<body>
+
+<!-- PAGE HEADER -->
+<div class="ph">
+  <div style="display:flex;align-items:center">
+    <span class="ph-wordmark">GURU</span>
+    <div class="ph-sep"></div>
+    <span class="ph-tab">Cashflow</span>
+    <div class="ph-sep"></div>
+    <span class="ph-tab active">Allocation</span>
+    <div class="ph-sep"></div>
+    <span class="ph-tab">Net Worth</span>
+  </div>
+  <div class="ph-right">
+    <span class="ph-client">Sarah &amp; Michael Kessler · Q1 2026</span>
+  </div>
+</div>
+
+
+<!-- ══ CONCEPT A ══ -->
+<div class="concept-lbl"><span>A</span> Private Banking Cards — color line · $ + yield only</div>
+
+<!-- SHARED: Rounded GURU Insights Hero -->
+<div class="insights-hero">
+  <div class="insight-narrative">
+    <div class="insight-eyebrow">
+      <div class="insight-dot"></div>
+      <div class="insight-lbl">GURU Insight · Kessler Family</div>
+    </div>
+    <div class="insight-hl">Strong liquidity, ready to work harder.</div>
+    <div class="insight-body">
+      The Kesslers are running well above liquidity policy — reserve sits at 23.6 months vs a 12-month target,
+      and operating cash covers 6.3 months when 2 is sufficient. That's approximately
+      <em>$300,000 above threshold</em>. Deploying that excess into short-duration strategies picks up
+      an estimated <em>$9,200 after tax per year</em> with no increase in risk profile.
+    </div>
+    <div class="insight-pills">
+      <div class="insight-pill">
+        <span class="ip-lbl">Excess Liquidity</span>
+        <span class="ip-val" style="color:rgba(212,168,67,0.9)">$299,926</span>
+      </div>
+      <div class="insight-pill">
+        <span class="ip-lbl">Liquid Coverage</span>
+        <span class="ip-val">27.5 months</span>
+      </div>
+      <div class="insight-pill">
+        <span class="ip-lbl">After-Tax Return Pickup</span>
+        <span class="ip-val" style="color:rgba(94,204,138,0.88)">+$9,200 / yr</span>
+      </div>
+      <div class="insight-pill">
+        <span class="ip-lbl">Annual Net Cash Flow</span>
+        <span class="ip-val" style="color:rgba(91,143,204,0.9)">+$66,338</span>
+      </div>
+    </div>
+  </div>
+  <!-- GURU Intelligence Card -->
+  <div class="guru-intel-card">
+    <div class="gic-hdr">
+      <div class="gic-dot"></div>
+      <span class="gic-lbl">GURU Intelligence</span>
+      <div class="gic-pill">
+        <div class="gic-pill-dot"></div>
+        <span class="gic-pill-txt">Live · Now</span>
+      </div>
+    </div>
+    <div class="gic-grid">
+      <div class="gic-kpi">
+        <span class="gic-kpi-lbl">Potential Excess Liquidity</span>
+        <span class="gic-kpi-val" style="color:rgba(212,168,67,0.95)">$299,926</span>
+      </div>
+      <div class="gic-kpi">
+        <span class="gic-kpi-lbl">After-Tax Return Pickup</span>
+        <span class="gic-kpi-val" style="color:rgba(94,204,138,0.92)">+$9,200</span>
+      </div>
+      <div class="gic-kpi">
+        <span class="gic-kpi-lbl">Annual Expenses</span>
+        <span class="gic-kpi-val">$299,268</span>
+      </div>
+      <div class="gic-kpi">
+        <span class="gic-kpi-lbl">Annual Net Cash Flow</span>
+        <span class="gic-kpi-val" style="color:rgba(91,143,204,0.95)">+$66,338</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Layout A Cards -->
+<div class="lya-section">
+  <div class="lya-row">
+
+    <div class="lya-card lya-total">
+      <div class="lya-hdr"><span class="lya-name">Total Assets</span></div>
+      <div class="lya-bal">$3,202,736</div>
+      <div class="lya-sub">Liquid + Long-Term</div>
+    </div>
+
+    <div class="lya-card lya-op">
+      <div class="lya-hdr">
+        <span class="lya-name">Operating</span>
+        <span class="lya-yield">0.01%</span>
+      </div>
+      <div class="lya-bal">$132,050</div>
+    </div>
+
+    <div class="lya-card lya-res">
+      <div class="lya-hdr">
+        <span class="lya-name">Reserve</span>
+        <span class="lya-yield">4.60%</span>
+      </div>
+      <div class="lya-bal">$426,586</div>
+    </div>
+
+    <div class="lya-card lya-bld">
+      <div class="lya-hdr">
+        <span class="lya-name">Build</span>
+        <span class="lya-yield">4.85%</span>
+      </div>
+      <div class="lya-bal">$135,000</div>
+    </div>
+
+    <div class="lya-card lya-grow">
+      <div class="lya-hdr">
+        <span class="lya-name">Grow</span>
+        <span class="lya-yield">3.95%</span>
+      </div>
+      <div class="lya-bal">$2,509,500</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══ CONCEPT B ══ -->
+<div class="concept-lbl" style="margin-top:20px"><span>B</span> Expanded Dark Hero Bar — buckets formatted like KPI columns</div>
+
+<!-- SAME Rounded GURU Insights Hero (repeated) -->
+<div class="insights-hero">
+  <div class="insight-narrative">
+    <div class="insight-eyebrow">
+      <div class="insight-dot"></div>
+      <div class="insight-lbl">GURU Insight · Kessler Family</div>
+    </div>
+    <div class="insight-hl">Strong liquidity, ready to work harder.</div>
+    <div class="insight-body">
+      The Kesslers are running well above liquidity policy — reserve sits at 23.6 months vs a 12-month target,
+      and operating cash covers 6.3 months when 2 is sufficient. That's approximately
+      <em>$300,000 above threshold</em>. Deploying that excess into short-duration strategies picks up
+      an estimated <em>$9,200 after tax per year</em> with no increase in risk profile.
+    </div>
+    <div class="insight-pills">
+      <div class="insight-pill">
+        <span class="ip-lbl">Excess Liquidity</span>
+        <span class="ip-val" style="color:rgba(212,168,67,0.9)">$299,926</span>
+      </div>
+      <div class="insight-pill">
+        <span class="ip-lbl">Liquid Coverage</span>
+        <span class="ip-val">27.5 months</span>
+      </div>
+      <div class="insight-pill">
+        <span class="ip-lbl">After-Tax Return Pickup</span>
+        <span class="ip-val" style="color:rgba(94,204,138,0.88)">+$9,200 / yr</span>
+      </div>
+      <div class="insight-pill">
+        <span class="ip-lbl">Annual Net Cash Flow</span>
+        <span class="ip-val" style="color:rgba(91,143,204,0.9)">+$66,338</span>
+      </div>
+    </div>
+  </div>
+  <div class="guru-intel-card">
+    <div class="gic-hdr">
+      <div class="gic-dot"></div>
+      <span class="gic-lbl">GURU Intelligence</span>
+      <div class="gic-pill">
+        <div class="gic-pill-dot"></div>
+        <span class="gic-pill-txt">Live · Now</span>
+      </div>
+    </div>
+    <div class="gic-grid">
+      <div class="gic-kpi">
+        <span class="gic-kpi-lbl">Potential Excess Liquidity</span>
+        <span class="gic-kpi-val" style="color:rgba(212,168,67,0.95)">$299,926</span>
+      </div>
+      <div class="gic-kpi">
+        <span class="gic-kpi-lbl">After-Tax Return Pickup</span>
+        <span class="gic-kpi-val" style="color:rgba(94,204,138,0.92)">+$9,200</span>
+      </div>
+      <div class="gic-kpi">
+        <span class="gic-kpi-lbl">Annual Expenses</span>
+        <span class="gic-kpi-val">$299,268</span>
+      </div>
+      <div class="gic-kpi">
+        <span class="gic-kpi-lbl">Annual Net Cash Flow</span>
+        <span class="gic-kpi-val" style="color:rgba(91,143,204,0.95)">+$66,338</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Layout B: Expanded dark hero bar -->
+<div class="lyb-section">
+  <div class="lyb-card">
+
+    <!-- Total Assets -->
+    <div class="lyb-total">
+      <div class="lyb-total-eyebrow">Assets Under Management</div>
+      <div class="lyb-total-val">$3,202,736</div>
+      <div class="lyb-total-sub">Liquid + Long-Term</div>
+      <div class="lyb-tier-bar">
+        <div class="lytb-op" style="background:rgba(91,143,204,0.85);height:100%"></div>
+        <div class="lytb-res" style="background:rgba(212,168,67,0.85);height:100%"></div>
+        <div class="lytb-bld" style="background:rgba(58,138,90,0.85);height:100%"></div>
+      </div>
+      <div class="lyb-tier-labels">
+        <span class="lyb-tbl-seg lytl-op">Op</span>
+        <span class="lyb-tbl-seg lytl-res">Reserve</span>
+        <span class="lyb-tbl-seg lytl-bld">Build</span>
+      </div>
+    </div>
+
+    <div class="lyb-div"></div>
+
+    <!-- Operating -->
+    <div class="lyb-bucket lyb-bk-op">
+      <div class="lyb-bk-name-row">
+        <div class="lyb-bk-dot" style="background:rgba(91,143,204,0.85)"></div>
+        <span class="lyb-bk-name">Operating</span>
+        <span class="lyb-bk-yield">0.01%</span>
+      </div>
+      <div class="lyb-bk-bal">$132,050</div>
+      <div class="lyb-bk-note">2.6 months coverage</div>
+    </div>
+
+    <div class="lyb-div"></div>
+
+    <!-- Reserve -->
+    <div class="lyb-bucket lyb-bk-res">
+      <div class="lyb-bk-name-row">
+        <div class="lyb-bk-dot" style="background:rgba(212,168,67,0.85)"></div>
+        <span class="lyb-bk-name">Reserve</span>
+        <span class="lyb-bk-yield">4.60%</span>
+      </div>
+      <div class="lyb-bk-bal">$426,586</div>
+      <div class="lyb-bk-note">23.6 months coverage</div>
+    </div>
+
+    <div class="lyb-div"></div>
+
+    <!-- Build -->
+    <div class="lyb-bucket lyb-bk-bld">
+      <div class="lyb-bk-name-row">
+        <div class="lyb-bk-dot" style="background:rgba(58,138,90,0.85)"></div>
+        <span class="lyb-bk-name">Build</span>
+        <span class="lyb-bk-yield">4.85%</span>
+      </div>
+      <div class="lyb-bk-bal">$135,000</div>
+      <div class="lyb-bk-note">CD + Treasuries ladder</div>
+    </div>
+
+    <div class="lyb-div"></div>
+
+    <!-- Grow -->
+    <div class="lyb-bucket lyb-bk-grow">
+      <div class="lyb-bk-name-row">
+        <div class="lyb-bk-dot" style="background:rgba(91,143,204,0.6)"></div>
+        <span class="lyb-bk-name">Grow</span>
+        <span class="lyb-bk-yield">3.95%</span>
+      </div>
+      <div class="lyb-bk-bal">$2,509,500</div>
+      <div class="lyb-bk-note">Long-term investments</div>
+    </div>
+
+  </div>
+</div>
+
+<div style="height:60px"></div>
+
+</body>
+</html>

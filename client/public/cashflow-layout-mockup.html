@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cashflow Tab — Layout Mockup v4</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:      #141c2b;
+    --card:    #1e2838;
+    --elev:    #1a2433;
+    --divider: rgba(255,255,255,0.07);
+    --green:   #5ecc8a;
+    --amber:   #ffc83c;
+    --red:     #ff6464;
+    --blue:    #5b8fcc;
+    --muted:   rgba(255,255,255,0.5);
+    --dim:     rgba(255,255,255,0.32);
+    --inter:   'Inter', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: rgba(255,255,255,0.88); font-family: var(--inter); font-size: 13px; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  @keyframes scan  { 0%{left:-60%} 100%{left:130%} }
+
+  /* ── PAGE HEADER ─────────────────────────────── */
+  .ph { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; border-bottom:1px solid rgba(42,74,110,0.4); }
+  .ph-title { font-family:var(--inter); font-size:15px; font-weight:700; letter-spacing:0.13em; text-transform:uppercase; }
+
+  /* ── BODY ─────────────────────────────────────── */
+  .body { padding:14px 20px; display:flex; flex-direction:column; gap:10px; }
+
+  /* ── SCAN BAR (full-width, above body) ─────────── */
+  .scan-bar {
+    padding: 5px 20px;
+    background: rgba(20,28,43,0.95);
+    border-bottom: 1px solid rgba(42,74,110,0.35);
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; overflow: hidden;
+  }
+  .scan-bar-line { position:absolute; top:0; left:-60%; width:35%; height:100%; background:linear-gradient(90deg,transparent,rgba(180,210,255,0.06),transparent); animation:scan 3.5s linear infinite; }
+  .scan-bar-left { display:flex; align-items:center; gap:16px; position:relative; }
+  .scan-bar-txt { font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:rgba(180,210,255,0.75); }
+  .scan-bar-sep { width:1px; height:10px; background:rgba(255,255,255,0.1); }
+  .scan-bar-alert { font-size:9px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:1px 7px; border-radius:2px; }
+  .scan-bar-right { font-size:9px; color:rgba(255,255,255,0.22); letter-spacing:0.05em; text-transform:uppercase; position:relative; }
+
+  /* ── TOP ROW: detection (480px) + liquidity (1fr) */
+  .top-row {
+    display: grid;
+    grid-template-columns: 480px 1fr;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  /* ── UNIFIED LIQUIDITY CARD ───────────────────── */
+  .liq-card {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .liq-full-header {
+    padding: 9px 14px 8px;
+    border-bottom: 1px solid var(--divider);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .liq-body {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Left donut sidebar */
+  .liq-donut {
+    width: 264px;
+    flex-shrink: 0;
+    padding: 14px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    border-right: 1px solid var(--divider);
+  }
+  .liq-donut-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.09em; color: rgba(255,255,255,0.82);
+    align-self: flex-start;
+  }
+  .donut-legend { display:flex; flex-direction:column; gap:7px; width:100%; }
+  .donut-legend-item { display:flex; align-items:center; gap:7px; }
+  .donut-legend-dot  { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+  .donut-legend-name { font-size:10px; color:var(--muted); flex:1; }
+  .donut-legend-val  { font-size:11px; color:rgba(255,255,255,0.72); font-variant-numeric:tabular-nums; }
+  .donut-legend-pct  { font-size:9px; color:var(--dim); min-width:26px; text-align:right; }
+  .donut-yields {
+    width: 100%;
+    border-top: 1px solid var(--divider);
+    padding-top: 10px;
+    display: flex;
+    gap: 10px;
+  }
+  .donut-yield-item { flex:1; }
+  .donut-yield-lbl { font-size:8px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--dim); margin-bottom:3px; }
+  .donut-yield-val { font-size:13px; font-weight:400; color:rgba(255,255,255,0.72); }
+
+  /* Right table side */
+  .liq-table-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .acct-header {
+    padding: 9px 14px 8px;
+    border-bottom: 1px solid var(--divider);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .acct-header-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.88); }
+  .acct-header-sub   { font-size:11px; color:var(--muted); }
+  .acct-table { width:100%; border-collapse:collapse; flex:1; }
+  .acct-th { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:rgba(255,255,255,0.82); padding:5px 10px; }
+  .acct-th:first-child { text-align:left; padding-left:14px; }
+  .acct-th:not(:first-child) { text-align:right; border-left:1px solid var(--divider); }
+  .acct-tr-acct { border-top:1px solid rgba(255,255,255,0.03); }
+  .acct-td-name { padding:5px 10px 5px 18px; font-size:11px; color:rgba(255,255,255,0.65); white-space:nowrap; }
+  .acct-td-name span { color:rgba(255,255,255,0.2); margin-left:3px; }
+  .acct-td-val { padding:5px 10px; font-size:12px; text-align:right; font-variant-numeric:tabular-nums; color:rgba(255,255,255,0.78); border-left:1px solid var(--divider); }
+  .acct-td-yld { padding:5px 10px; font-size:11px; text-align:right; color:var(--dim); border-left:1px solid var(--divider); }
+  .acct-tr-total { border-top:2px solid rgba(255,255,255,0.13); background:rgba(255,255,255,0.03); }
+  .acct-footer { padding:7px 12px; border-top:1px solid var(--divider); text-align:right; font-size:11px; color:rgba(91,143,204,0.8); cursor:pointer; flex-shrink:0; }
+  .sub-td-name { padding:5px 10px 5px 14px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.09em; white-space:nowrap; }
+  .sub-td-val  { padding:5px 10px; font-size:12px; font-weight:600; text-align:right; font-variant-numeric:tabular-nums; border-left:1px solid var(--divider); }
+  .sub-td-yld  { padding:5px 10px; font-size:11px; font-weight:600; text-align:right; border-left:1px solid var(--divider); }
+
+  /* ── DETECTION COLUMN ─────────────────────────── */
+  .det-col .panel-hdr { border-bottom-color: rgba(91,143,204,0.28); }
+  .det-col {
+    background: linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%);
+    border: 1px solid rgba(91,143,204,0.32);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .det-col::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(91,143,204,0.65), rgba(91,143,204,0.1) 60%, transparent);
+    pointer-events: none;
+  }
+  .det-ticker {
+    padding: 5px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: space-between;
+    position: relative; overflow: hidden; flex-shrink: 0;
+  }
+  .scan-line { position:absolute; top:0; left:-60%; width:35%; height:100%; background:linear-gradient(90deg,transparent,rgba(180,210,255,0.07),transparent); animation:scan 3.5s linear infinite; }
+  .det-ticker-txt { font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:rgba(180,210,255,0.85); position:relative; }
+  .det-header { display:flex; align-items:center; padding:7px 14px; flex-shrink:0; }
+  .det-dot   { width:6px; height:6px; border-radius:50%; background:var(--green); margin-right:8px; animation:pulse 2s infinite; flex-shrink:0; }
+  .det-title { font-size:11px; font-weight:600; letter-spacing:0.09em; text-transform:uppercase; color:rgba(180,215,255,0.95); }
+  .det-count { font-size:9px; color:rgba(255,255,255,0.3); margin-left:auto; }
+  @keyframes cardGlow0 { 0%,100%{box-shadow:0 0 0 1px rgba(91,143,204,0.12)} 50%{box-shadow:0 0 10px 1px rgba(91,143,204,0.45),0 0 0 1px rgba(91,143,204,0.5)} }
+  @keyframes cardGlow1 { 0%,100%{box-shadow:0 0 0 1px rgba(94,204,138,0.12)} 50%{box-shadow:0 0 10px 1px rgba(94,204,138,0.45),0 0 0 1px rgba(94,204,138,0.5)} }
+  @keyframes cardGlow2 { 0%,100%{box-shadow:0 0 0 1px rgba(255,200,60,0.12)} 50%{box-shadow:0 0 10px 1px rgba(255,200,60,0.4),0 0 0 1px rgba(255,200,60,0.45)} }
+  @keyframes cardGlow3 { 0%,100%{box-shadow:0 0 0 1px rgba(91,143,204,0.12)} 50%{box-shadow:0 0 10px 1px rgba(91,143,204,0.45),0 0 0 1px rgba(91,143,204,0.5)} }
+
+  /* rows stacked vertically */
+  .det-cards { display:flex; flex-direction:column; gap:6px; padding:0 10px 10px; flex:1; }
+  .det-card {
+    background: rgba(0,0,0,0.22);
+    border-radius: 5px;
+    border: 1px solid rgba(91,143,204,0.18);
+    padding: 9px 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  /* Hero card: full-width, big numbers — for EXCESS LIQUIDITY */
+  .det-card-hero {
+    background: rgba(0,0,0,0.26);
+    border-radius: 6px;
+    border: 1px solid rgba(94,204,138,0.28);
+    border-left: 2.5px solid rgba(94,204,138,0.55);
+    padding: 11px 14px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    animation: cardGlow1 3.2s ease-in-out infinite;
+    animation-delay: 0.8s;
+    cursor: pointer;
+  }
+  .det-card-hero::after {
+    content: '';
+    position: absolute;
+    top: -20px; right: -20px;
+    width: 180px; height: 120px;
+    background: radial-gradient(ellipse at center, rgba(94,204,138,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .det-card-hero-meta {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .det-card-hero-cat {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.11em; text-transform: uppercase;
+    color: rgba(94,204,138,0.88);
+  }
+  .det-card-hero-ttl {
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+    color: rgba(180,215,255,0.95); line-height: 1.2;
+  }
+  .det-card-hero-nums {
+    display: flex; align-items: flex-end; gap: 0;
+  }
+  .det-card-hero-num-block {
+    flex: 1; display: flex; flex-direction: column; gap: 3px;
+  }
+  .det-card-hero-num-block:first-child {
+    padding-right: 16px;
+    border-right: 1px solid rgba(255,255,255,0.07);
+  }
+  .det-card-hero-num-block:last-child {
+    padding-left: 16px;
+  }
+  .det-card-hero-num-label {
+    font-size: 8.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+    color: rgba(255,255,255,0.35); margin-bottom: 2px;
+  }
+  .det-card-hero-num {
+    font-size: 34px; font-weight: 300; line-height: 1;
+    color: var(--green); font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .det-card-hero-num-yr {
+    font-size: 13px; font-weight: 400; color: rgba(94,204,138,0.68); margin-left: 2px;
+  }
+  .det-card-hero-sub {
+    font-size: 9px; color: rgba(255,255,255,0.4); line-height: 1.4; margin-top: 2px;
+  }
+  .det-card-hero-sub em { color: rgba(94,204,138,0.65); font-style: normal; }
+  .det-card-hero-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 2px;
+  }
+  /* Regular small cards: first one gets margin-top spacing */
+  .det-card:first-of-type { animation: cardGlow0 3.2s ease-in-out infinite; animation-delay: 0s; margin-top: 0; }
+  .det-card:nth-of-type(2) { animation: cardGlow2 3.2s ease-in-out infinite; animation-delay: 1.6s; }
+  .det-card:nth-of-type(3) { animation: cardGlow3 3.2s ease-in-out infinite; animation-delay: 2.4s; }
+  .det-card-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .det-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:4px; margin-bottom:1px; }
+  .det-card-ttl { font-size:11.5px; font-weight:700; color:rgba(180,215,255,0.95); line-height:1.25; flex:1; }
+  .det-card-ts  { font-size:8px; color:rgba(255,255,255,0.25); flex-shrink:0; white-space:nowrap; }
+  .det-card-ln  { font-size:9px; color:rgba(255,255,255,0.52); line-height:1.3; }
+  .det-card-ln::before { content:'· '; color:rgba(255,255,255,0.22); }
+  .det-card-footer { display:flex; align-items:center; justify-content:space-between; margin-top:4px; }
+  .badge { display:inline-flex; align-items:center; gap:4px; padding:2px 7px; border-radius:3px; font-size:8.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+  .badge-green { background:rgba(94,204,138,0.09); border:1px solid rgba(94,204,138,0.35); color:var(--green); }
+  .badge-amber { background:rgba(255,200,60,0.09);  border:1px solid rgba(255,200,60,0.35);  color:var(--amber); }
+  .badge-blue  { background:rgba(91,143,204,0.09);  border:1px solid rgba(91,143,204,0.35);  color:var(--blue); }
+  .det-arrow { font-size:8.5px; font-weight:600; color:rgba(180,215,255,0.38); }
+  .det-card-right { display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; min-width:96px; }
+  .det-nav-arrow { font-size:8px; font-weight:600; color:rgba(180,215,255,0.38); cursor:pointer; white-space:nowrap; letter-spacing:0.04em; transition:color 0.15s; }
+  .det-nav-arrow:hover { color:rgba(180,215,255,0.75); }
+
+  /* ── UNIFIED PANEL HEADER ─────────────────────── */
+  .panel-hdr {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--divider);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .panel-hdr-left { display:flex; align-items:center; gap:9px; }
+  .panel-hdr-bar  { width:3px; height:18px; border-radius:2px; flex-shrink:0; }
+  .panel-hdr-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:rgba(255,255,255,0.88); }
+  .panel-hdr-sub   { font-size:11px; color:rgba(255,255,255,0.4); }
+
+  /* ── SECTION DIVIDER ──────────────────────────── */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+    padding: 8px 0 2px;
+  }
+  .section-accent {
+    width: 4px; height: 26px;
+    background: linear-gradient(to bottom, rgba(91,143,204,1), rgba(91,143,204,0.15));
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(91,143,204,0.35);
+  }
+  .section-title {
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 0.13em; text-transform: uppercase;
+    color: rgba(255,255,255,0.82);
+    white-space: nowrap;
+  }
+  .section-line { flex:1; height:2px; background: linear-gradient(to right, rgba(91,143,204,0.35), rgba(91,143,204,0.08) 50%, transparent); border-radius:1px; }
+  .section-badge {
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(91,143,204,0.5);
+    white-space: nowrap;
+    padding: 2px 8px;
+    border: 1px solid rgba(91,143,204,0.18);
+    border-radius: 3px;
+  }
+
+  /* ── FORECAST BODY: [left: hero+KPIs] [right: charts+walk] ── */
+  .forecast-body { display:grid; grid-template-columns:480px 1fr; gap:12px; align-items:stretch; }
+  .forecast-left { display:flex; flex-direction:column; gap:10px; height:100%; min-height:0; }
+  .forecast-right { display:grid; grid-template-columns:1fr; gap:10px; align-items:start; }
+
+  /* ── CHART ANNOTATION SIDEBAR ────────────────── */
+  .chart-aside {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 11px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .aside-row { padding: 8px 4px; display:flex; flex-direction:column; gap:2px; }
+  .aside-row + .aside-row { border-top: 1px solid rgba(255,255,255,0.05); }
+  .aside-lbl { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:0.09em; color:rgba(255,255,255,0.32); }
+  .aside-val  { font-size:18px; font-weight:300; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .aside-sub  { font-size:9px; color:rgba(255,255,255,0.32); }
+  /* alias for old kpi-row selectors that still exist */
+  .kpi-row { display:contents; }
+  .model-hero {
+    background: linear-gradient(135deg,#1a3a6b 0%,#163060 60%,#0f2248 100%);
+    border: 1px solid rgba(91,143,204,0.32);
+    border-radius: 8px; padding: 16px 22px; cursor: pointer;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center; gap: 7px;
+  }
+  .mh-top-line { position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,rgba(91,143,204,0.65),rgba(91,143,204,0.1) 60%,transparent); }
+  .mh-lbl  { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.09em; color:rgba(180,215,255,0.65); }
+  .mh-val  { font-size:34px; font-weight:300; line-height:1; color:var(--green); font-variant-numeric:tabular-nums; }
+  .mh-badge { font-size:9px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; padding:3px 8px; border-radius:4px; align-self:flex-start; background:rgba(94,204,138,0.08); border:1px solid rgba(94,204,138,0.2); color:var(--green); }
+  .mh-open-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; margin-top: 2px;
+    padding: 7px 0 0;
+    border-top: 1px solid rgba(91,143,204,0.18);
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+    color: rgba(91,143,204,0.85);
+  }
+  .kpi-wrap { background:var(--card); border:1px solid rgba(255,255,255,0.08); border-radius:8px; overflow:hidden; }
+  .kpi-table { width:100%; border-collapse:collapse; }
+  .kpi-tr { border-bottom:1px solid var(--divider); display:grid; grid-template-columns:1fr 130px; align-items:center; }
+  .kpi-tr:last-child { border-bottom:none; }
+  .kpi-tr-lbl { padding:11px 14px; }
+  .kpi-tr-val { padding:11px 14px; border-left:1px solid var(--divider); display:flex; flex-direction:column; align-items:flex-end; width:130px; }
+  .kpi-lbl-h { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:rgba(255,255,255,0.82); }
+  .kpi-lbl-h-sub { font-size:9.5px; font-weight:400; font-style:italic; text-transform:uppercase; letter-spacing:0.06em; color:rgba(255,255,255,0.45); }
+  .kpi-lbl-n { font-size:9px; color:rgba(255,255,255,0.48); margin-top:2px; }
+  .kpi-val  { font-size:20px; font-weight:300; font-variant-numeric:tabular-nums; line-height:1; text-align:right; }
+  .kpi-vsub { font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; opacity:0.7; margin-top:3px; text-align:right; }
+  .kpi-tr-indent .kpi-tr-lbl { padding-left:26px; background:rgba(255,255,255,0.015); }
+
+  /* ── FORECAST CHARTS ─────────────────────────── */
+  .fc-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start; }
+  .chart-card {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .chart-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .chart-title {
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.88);
+  }
+  .chart-legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--muted);
+  }
+  .chart-legend-dot { width:14px; height:2px; border-radius:1px; }
+  .chart-canvas-wrap { position: relative; }
+
+  /* walk table */
+  .walk-card { background:var(--card); border:1px solid rgba(255,255,255,0.08); border-radius:8px; overflow:hidden; }
+  .walk-header { padding:9px 14px 8px; border-bottom:1px solid var(--divider); }
+  .walk-title  { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:rgba(255,255,255,0.88); }
+  .walk-table  { width:100%; border-collapse:collapse; }
+  .wth { background:rgba(91,143,204,0.13); border-bottom:1px solid rgba(91,143,204,0.22); }
+  .wth th { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; padding:7px 14px; text-align:right; color:rgba(255,255,255,0.92); border-left:1px solid rgba(91,143,204,0.2); }
+  .wth th:first-child { text-align:left; border-left:none; width:150px; color:rgba(255,255,255,0.4); }
+  .wtd { font-size:12px; font-variant-numeric:tabular-nums; padding:7px 14px; text-align:right; border-left:1px solid rgba(255,255,255,0.07); color:rgba(255,255,255,0.82); }
+  .wtd:first-child { text-align:left; border-left:none; font-size:12px; color:var(--muted); }
+  .wtr     { border-top:1px solid rgba(255,255,255,0.04); }
+  .wtr-sep { border-top:1px solid rgba(255,255,255,0.06); }
+  .wtr-tot { border-top:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); }
+  .wtr-tot td { font-weight:700; color:rgba(255,255,255,0.92) !important; }
+  .amber { color:var(--amber) !important; }
+
+  /* ── MONTHLY MODEL TOTAL COLUMN ────────────────── */
+  .wtd-total { background:rgba(91,143,204,0.11) !important; border-left:1px solid rgba(91,143,204,0.32) !important; }
+
+  /* ── MONTHLY MODEL EXPAND/COLLAPSE ─────────────── */
+  /* Default: expanded. Add class 'collapsed' to hide detail rows. */
+  #monthly-model.collapsed .model-detail-row { display: none; }
+  #model-toggle-btn:hover { color:rgba(91,143,204,1) !important; border-color:rgba(91,143,204,0.5) !important; }
+
+  /* ── FULL-SCREEN MONTHLY MODEL MODAL ───────────────── */
+  /* ── GURU INTELLIGENCE LAYER: Full-Screen Modal ────── */
+  @keyframes borderRunBlue {
+    0%   { background-position: 0% 0, 100% 0, 100% 100%, 0% 100%; }
+    100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+  }
+  @keyframes cfm-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.85)} }
+  @keyframes cfm-scan {
+    0% { transform: translateY(-100%); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(100vh); opacity: 0; }
+  }
+
+  #cf-full-modal {
+    display: none;
+    position: fixed; inset: 0; z-index: 9000;
+    background: #0a1220;
+    flex-direction: column;
+    font-family: Inter, system-ui, sans-serif;
+  }
+
+  /* Running blue border on modal */
+  #cf-full-modal::before {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.8) 50%, transparent 100%) top / 200% 2px no-repeat,
+      linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.4) 50%, transparent 100%) right / 2px 200% no-repeat,
+      linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.5) 50%, transparent 100%) bottom / 200% 1px no-repeat,
+      linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.3) 50%, transparent 100%) left / 1px 200% no-repeat;
+    animation: borderRunBlue 6s linear infinite;
+  }
+
+  /* Scan line effect */
+  #cf-full-modal::after {
+    content: '';
+    position: absolute; left: 0; right: 0; height: 120px; pointer-events: none; z-index: 0;
+    background: linear-gradient(180deg, transparent, rgba(91,143,204,0.04), transparent);
+    animation: cfm-scan 8s ease-in-out infinite;
+  }
+
+  /* ── Intelligence Header ─────────────────────── */
+  .cfm-intel-hdr {
+    position: relative; z-index: 10; flex-shrink: 0;
+    background: linear-gradient(180deg, #0e1d31 0%, #0a1523 100%);
+    border-bottom: 1px solid rgba(91,143,204,0.2);
+    padding: 0 32px;
+  }
+  .cfm-intel-hdr::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, rgba(91,143,204,0.6) 0%, rgba(91,143,204,0.2) 40%, transparent 70%);
+  }
+
+  /* Top strip: GURU badge + title + close */
+  .cfm-top-strip {
+    display: flex; align-items: center; gap: 0;
+    height: 44px; border-bottom: 1px solid rgba(91,143,204,0.1);
+  }
+  .cfm-guru-badge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 20px 0 0; margin-right: 20px;
+    border-right: 1px solid rgba(91,143,204,0.18);
+  }
+  .cfm-guru-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #5ecc8a;
+    box-shadow: 0 0 6px rgba(94,204,138,0.7);
+    animation: cfm-pulse 2.2s ease-in-out infinite;
+  }
+  .cfm-guru-lbl {
+    font-size: 9px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(94,204,138,0.85);
+  }
+  .cfm-model-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(91,143,204,0.9); flex: 1;
+  }
+  .cfm-live-indicator {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border: 1px solid rgba(91,143,204,0.25);
+    border-radius: 2px; background: rgba(91,143,204,0.06);
+    margin-right: 16px;
+  }
+  .cfm-live-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(91,143,204,0.9); animation: cfm-pulse 1.8s infinite; }
+  .cfm-live-txt { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(91,143,204,0.7); }
+  .cfm-close {
+    width: 30px; height: 30px; border-radius: 2px;
+    background: rgba(91,143,204,0.06); border: 1px solid rgba(91,143,204,0.2);
+    color: rgba(255,255,255,0.45); font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  .cfm-close:hover { background: rgba(91,143,204,0.15); color: rgba(255,255,255,0.9); border-color: rgba(91,143,204,0.5); }
+
+  /* KPI bar: detection-system style */
+  .cfm-kpi-bar {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 0; height: 62px;
+  }
+  .cfm-kpi {
+    display: flex; flex-direction: column; justify-content: center; gap: 3px;
+    padding: 0 22px; border-right: 1px solid rgba(91,143,204,0.1);
+  }
+  .cfm-kpi:first-child { padding-left: 0; }
+  .cfm-kpi:last-child  { border-right: none; padding-left: 22px; }
+  .cfm-kpi-lbl {
+    font-size: 8.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(91,143,204,0.55);
+  }
+  .cfm-kpi-val {
+    font-size: 15px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+    color: rgba(255,255,255,0.88);
+  }
+
+  /* ── Body ─────────────────────────────────────── */
+  .cfm-body {
+    flex: 1; overflow: auto; position: relative; z-index: 5;
+    padding: 20px 28px 8px;
+    background: #0a1220;
+  }
+
+  /* Legend */
+  .cfm-legend {
+    display: flex; align-items: center; gap: 18px;
+    margin-bottom: 14px; font-size: 10px; color: rgba(91,143,204,0.45);
+    letter-spacing: 0.04em;
+  }
+  .cfm-legend-item { display: flex; align-items: center; gap: 5px; }
+  .cfm-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* ── GURU Calculator Panel (sticky bottom) ───── */
+  .cfm-calc-panel {
+    position: relative; z-index: 10; flex-shrink: 0;
+    background: linear-gradient(180deg, #091422 0%, #0d1c2e 100%);
+    border-top: 2px solid rgba(91,143,204,0.45);
+    padding: 0 32px;
+  }
+  .cfm-calc-panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, rgba(91,143,204,0.7) 0%, rgba(91,143,204,0.2) 60%, transparent);
+  }
+  .cfm-calc-inner {
+    display: flex; align-items: stretch; gap: 0; height: 72px;
+  }
+  .cfm-calc-badge {
+    display: flex; flex-direction: column; justify-content: center; gap: 4px;
+    padding-right: 28px; border-right: 1px solid rgba(91,143,204,0.15);
+    min-width: 160px; flex-shrink: 0;
+  }
+  .cfm-calc-badge-eye {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .cfm-calc-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(91,143,204,0.8); animation: cfm-pulse 2s infinite; }
+  .cfm-calc-lbl { font-size: 8.5px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(91,143,204,0.6); }
+  .cfm-calc-title { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(91,143,204,0.85); }
+  .cfm-calc-metrics {
+    display: flex; flex: 1; align-items: stretch;
+  }
+  .cfm-calc-metric {
+    display: flex; flex-direction: column; justify-content: center; gap: 3px;
+    padding: 0 26px; border-right: 1px solid rgba(91,143,204,0.1); flex: 1;
+  }
+  .cfm-calc-metric:last-child { border-right: none; }
+  .cfm-calc-metric-lbl {
+    font-size: 8px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(91,143,204,0.5);
+  }
+  .cfm-calc-metric-val {
+    font-size: 19px; font-weight: 200; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; color: rgba(255,255,255,0.88);
+    line-height: 1;
+  }
+  .cfm-calc-metric-sub {
+    font-size: 9px; color: rgba(91,143,204,0.45); letter-spacing: 0.04em; margin-top: 1px;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- PAGE HEADER (compact — GURU app shell provides main nav context) -->
+<div class="ph" style="padding:7px 20px">
+  <div style="display:flex;align-items:center">
+    <span style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.65)">Sarah &amp; Michael Kessler</span>
+    <span style="width:1px;height:10px;background:rgba(42,74,110,0.6);display:inline-block;margin:0 12px"></span>
+    <span style="font-size:10px;color:rgba(255,255,255,0.38);letter-spacing:0.04em">Annual Cash Flow &middot; Jan – Dec 2026</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px">
+    <span style="width:5px;height:5px;border-radius:50%;background:hsl(152,40%,48%);display:inline-block;animation:pulse 2s infinite"></span>
+    <span style="font-size:10px;font-weight:600;color:rgba(90,154,126,0.7);letter-spacing:0.08em;text-transform:uppercase">Live</span>
+  </div>
+</div>
+
+<!-- FULL-WIDTH SCAN BAR -->
+<div class="scan-bar">
+  <div class="scan-bar-line"></div>
+  <div class="scan-bar-left">
+    <span class="scan-bar-txt">▶ GURU AI · Scan active</span>
+    <span class="scan-bar-sep"></span>
+    <span class="scan-bar-alert" style="background:rgba(94,204,138,0.1);border:1px solid rgba(94,204,138,0.25);color:var(--green)">● LIVE</span>
+    <span class="scan-bar-txt" style="color:rgba(255,255,255,0.3)">6 accounts synced · Mar 18, 2026 · 9:42 AM</span>
+    <span class="scan-bar-sep"></span>
+    <span class="scan-bar-alert" style="background:rgba(255,200,60,0.08);border:1px solid rgba(255,200,60,0.22);color:rgba(255,200,60,0.8)">2 actions pending</span>
+    <span class="scan-bar-alert" style="background:rgba(91,143,204,0.08);border:1px solid rgba(91,143,204,0.22);color:rgba(180,210,255,0.7)">1 opportunity</span>
+  </div>
+  <span class="scan-bar-right">GURU AI · Detection System</span>
+</div>
+
+<!-- ══ SECTION TITLE ══ -->
+<div style="padding:18px 32px 0;display:flex;align-items:baseline;gap:12px">
+  <h1 style="font-size:22px;font-weight:300;color:rgba(255,255,255,0.88);letter-spacing:-0.01em;margin:0;font-family:'Inter',system-ui,sans-serif">Cash Flow</h1>
+  <span style="font-size:11px;color:rgba(255,255,255,0.32);letter-spacing:0.04em;font-family:'Inter',system-ui,sans-serif">Kessler Family · Jan – Dec 2026</span>
+</div>
+
+<div class="body">
+
+  <!-- ── TOP ROW: liquidity card + detection system ── -->
+  <div class="top-row">
+
+    <!-- DETECTION COLUMN -->
+    <div class="det-col">
+      <div class="panel-hdr">
+        <div class="panel-hdr-left">
+          <div class="panel-hdr-bar" style="background:var(--green)"></div>
+          <span class="det-dot" style="margin-left:2px"></span>
+          <span class="panel-hdr-title" style="color:rgba(180,215,255,0.92)">Detection System</span>
+        </div>
+        <span style="font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.28)">4 Active</span>
+      </div>
+      <div class="det-cards">
+        <div class="det-card">
+          <div class="det-card-body">
+            <div class="det-card-top">
+              <span class="det-card-ttl">DATA SYNC COMPLETE</span>
+              <span class="det-card-ts" style="margin-left:auto">Mar 16, 9:42 AM</span>
+            </div>
+            <span class="det-card-ln">6 accounts refreshed · 2 new transactions</span>
+            <span class="det-card-ln">Q1 salary deposit +$52,000 detected · Citizens ···3858</span>
+          </div>
+          <div class="det-card-right">
+            <span class="badge badge-green">● LIVE</span>
+            <span class="det-nav-arrow">→ Sync Log</span>
+          </div>
+        </div>
+        <!-- ── HERO: Excess Liquidity ── -->
+        <div class="det-card-hero">
+          <!-- Top meta row -->
+          <div class="det-card-hero-meta">
+            <div class="det-card-hero-cat">
+              <span class="det-dot" style="margin-right:0;flex-shrink:0"></span>
+              LIQUIDITY SIGNAL
+            </div>
+            <span class="det-card-ts">6h ago</span>
+          </div>
+          <!-- Title -->
+          <div class="det-card-hero-ttl">EXCESS LIQUIDITY DETECTED</div>
+          <!-- Big numbers row -->
+          <div class="det-card-hero-nums">
+            <div class="det-card-hero-num-block">
+              <div class="det-card-hero-num-label">Excess Liquidity</div>
+              <div class="det-card-hero-num">$311K</div>
+              <div class="det-card-hero-sub">Above 3-mo reserve floor &nbsp;·&nbsp; <em>deployable now</em></div>
+            </div>
+            <div class="det-card-hero-num-block">
+              <div class="det-card-hero-num-label">Potential Income Pickup</div>
+              <div class="det-card-hero-num">+$21.7K<span class="det-card-hero-num-yr">/yr</span></div>
+              <div class="det-card-hero-sub">If deployed at current rates &nbsp;·&nbsp; <em>~7% after-tax</em></div>
+            </div>
+          </div>
+          <!-- Footer -->
+          <div class="det-card-hero-footer">
+            <span class="badge badge-green">OPPORTUNITY</span>
+            <span class="det-nav-arrow">→ Allocation ↗</span>
+          </div>
+        </div>
+        <div class="det-card">
+          <div class="det-card-body">
+            <div class="det-card-top">
+              <span class="det-card-ttl">APRIL · HIGH EXPENSE CLUSTER</span>
+              <span class="det-card-ts" style="margin-left:auto">4d ago</span>
+            </div>
+            <span class="det-card-ln">$57,400 flagged: Tuition $31,000 + Est. taxes $26,000</span>
+            <span class="det-card-ln">Prepare Apr 3 transfer: Fidelity CD → Chase ···2680</span>
+          </div>
+          <div class="det-card-right">
+            <span class="badge badge-amber">ACTION</span>
+            <span class="det-nav-arrow">→ Cash Flow</span>
+          </div>
+        </div>
+        <div class="det-card">
+          <div class="det-card-body">
+            <div class="det-card-top">
+              <span class="det-card-ttl">OUTFLOW STREAK · MAY–NOV</span>
+              <span class="det-card-ts" style="margin-left:auto">12h ago</span>
+            </div>
+            <span class="det-card-ln">Cumulative deficit peaks ($129,385) in Nov</span>
+            <span class="det-card-ln">Reserve covers 5× trough · No action required</span>
+          </div>
+          <div class="det-card-right">
+            <span class="badge badge-blue">WATCH</span>
+            <span class="det-nav-arrow">→ Runway</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIFIED LIQUIDITY CARD — RIGHT -->
+    <div class="liq-card">
+
+      <!-- Full-width header spanning donut + table — section-divider style -->
+      <div style="padding:8px 14px 7px;border-bottom:1px solid rgba(42,74,110,0.4);display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <div style="width:4px;height:26px;background:linear-gradient(to bottom,rgba(91,143,204,1),rgba(91,143,204,0.15));border-radius:2px;flex-shrink:0;box-shadow:0 0 8px rgba(91,143,204,0.35)"></div>
+        <span style="font-size:14px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:rgba(255,255,255,0.82);white-space:nowrap">Today's Liquidity Position</span>
+        <div style="flex:1;height:2px;background:linear-gradient(to right,rgba(91,143,204,0.35),rgba(91,143,204,0.08) 50%,transparent);border-radius:1px"></div>
+        <span style="font-size:9px;font-weight:500;color:rgba(255,255,255,0.3);letter-spacing:0.05em;white-space:nowrap">6 accounts · Mar 18, 2026</span>
+      </div>
+
+      <div class="liq-body">
+
+      <!-- Left: Donut sidebar -->
+      <div class="liq-donut">
+        <span class="liq-donut-title">Cash &amp; Treasuries</span>
+        <span style="font-size:9px;color:rgba(255,255,255,0.28);margin-top:-8px;align-self:flex-start">December 29</span>
+        <svg viewBox="0 0 180 180" width="188" height="188">
+          <circle cx="90" cy="90" r="68" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="20"/>
+          <circle cx="90" cy="90" r="68" fill="none" stroke="#4d9de0" stroke-width="20"
+            stroke-dasharray="81 346" stroke-dashoffset="-107"/>
+          <circle cx="90" cy="90" r="68" fill="none" stroke="#e8a830" stroke-width="20"
+            stroke-dasharray="264 163" stroke-dashoffset="-191"/>
+          <circle cx="90" cy="90" r="68" fill="none" stroke="#2a9a5a" stroke-width="20"
+            stroke-dasharray="79 348" stroke-dashoffset="-458"/>
+          <text x="90" y="86" text-anchor="middle" fill="rgba(255,255,255,0.88)" font-size="22" font-weight="300" font-family="Inter,system-ui">$693,636</text>
+          <text x="90" y="104" text-anchor="middle" fill="rgba(255,255,255,0.52)" font-size="13" font-weight="500" font-family="Inter,system-ui" letter-spacing="1">TOTAL LIQUID</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="donut-legend-item">
+            <div class="donut-legend-dot" style="background:#4d9de0"></div>
+            <span class="donut-legend-name">Operating</span>
+            <span class="donut-legend-val">$132,050</span>
+            <span class="donut-legend-pct">19%</span>
+          </div>
+          <div class="donut-legend-item">
+            <div class="donut-legend-dot" style="background:#e8a830"></div>
+            <span class="donut-legend-name">Reserve</span>
+            <span class="donut-legend-val">$426,586</span>
+            <span class="donut-legend-pct">62%</span>
+          </div>
+          <div class="donut-legend-item">
+            <div class="donut-legend-dot" style="background:#2a9a5a"></div>
+            <span class="donut-legend-name">Build</span>
+            <span class="donut-legend-val">$135,000</span>
+            <span class="donut-legend-pct">19%</span>
+          </div>
+        </div>
+        <div class="donut-yields">
+          <div class="donut-yield-item">
+            <div class="donut-yield-lbl">Blended Yield</div>
+            <div class="donut-yield-val">3.87%</div>
+          </div>
+          <div class="donut-yield-item">
+            <div class="donut-yield-lbl">Tax-Effected</div>
+            <div class="donut-yield-val">2.44%</div>
+          </div>
+        </div>
+      </div><!-- end liq-donut -->
+
+      <!-- Right: Account table -->
+      <div class="liq-table-side">
+        <table class="acct-table">
+          <colgroup>
+            <col>
+            <col style="width:96px">
+            <col style="width:96px">
+            <col style="width:96px">
+          </colgroup>
+          <thead>
+            <tr style="background:var(--elev);border-bottom:1px solid var(--divider)">
+              <th class="acct-th">Account</th>
+              <th class="acct-th" style="text-align:right;border-left:1px solid var(--divider)">Balance</th>
+              <th class="acct-th" style="text-align:right;border-left:1px solid var(--divider)">Yield</th>
+              <th class="acct-th" style="text-align:right;border-left:1px solid var(--divider)">Tax-Effected Yield</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Operating -->
+            <tr class="acct-tr-acct" style="background:rgba(77,157,224,0.07)">
+              <td class="acct-td-name">Chase Checking<span>···2680</span></td>
+              <td class="acct-td-val">$25,050</td><td class="acct-td-yld">0.01%</td><td class="acct-td-yld">0.01%</td>
+            </tr>
+            <tr class="acct-tr-acct" style="background:rgba(77,157,224,0.07)">
+              <td class="acct-td-name">Citizens Checking<span>···3858</span></td>
+              <td class="acct-td-val">$107,000</td><td class="acct-td-yld">0.05%</td><td class="acct-td-yld">0.03%</td>
+            </tr>
+            <tr style="background:rgba(77,157,224,0.19);border-top:1px solid rgba(77,157,224,0.22)">
+              <td class="sub-td-name" style="color:#4d9de0"><span style="font-size:8px;margin-right:5px">⬤</span>Operating</td>
+              <td class="sub-td-val" style="color:#4d9de0">$132,050</td>
+              <td class="sub-td-yld" style="color:#4d9de0;opacity:0.72">0.04%</td>
+              <td class="sub-td-yld" style="color:#4d9de0;opacity:0.72">0.03%</td>
+            </tr>
+            <!-- Reserve -->
+            <tr class="acct-tr-acct" style="background:rgba(232,168,48,0.07)">
+              <td class="acct-td-name">Citizens Money Mkt<span>···4421</span></td>
+              <td class="acct-td-val">$225,000</td><td class="acct-td-yld">4.45%</td><td class="acct-td-yld">2.80%</td>
+            </tr>
+            <tr class="acct-tr-acct" style="background:rgba(232,168,48,0.07)">
+              <td class="acct-td-name">Goldman Savings<span>···7710</span></td>
+              <td class="acct-td-val">$116,586</td><td class="acct-td-yld">4.65%</td><td class="acct-td-yld">2.93%</td>
+            </tr>
+            <tr class="acct-tr-acct" style="background:rgba(232,168,48,0.07)">
+              <td class="acct-td-name">Fidelity CD<span>···9031</span></td>
+              <td class="acct-td-val">$85,000</td><td class="acct-td-yld">5.15%</td><td class="acct-td-yld">3.24%</td>
+            </tr>
+            <tr style="background:rgba(232,168,48,0.19);border-top:1px solid rgba(232,168,48,0.22)">
+              <td class="sub-td-name" style="color:#e8a830"><span style="font-size:8px;margin-right:5px">⬤</span>Reserve</td>
+              <td class="sub-td-val" style="color:#e8a830">$426,586</td>
+              <td class="sub-td-yld" style="color:#e8a830;opacity:0.72">4.60%</td>
+              <td class="sub-td-yld" style="color:#e8a830;opacity:0.72">2.90%</td>
+            </tr>
+            <!-- Build -->
+            <tr class="acct-tr-acct" style="background:rgba(42,154,90,0.07)">
+              <td class="acct-td-name">Fidelity Brokerage Cash<span>···9031</span></td>
+              <td class="acct-td-val">$135,000</td><td class="acct-td-yld">4.85%</td><td class="acct-td-yld">3.06%</td>
+            </tr>
+            <tr style="background:rgba(42,154,90,0.19);border-top:1px solid rgba(42,154,90,0.22)">
+              <td class="sub-td-name" style="color:#2a9a5a"><span style="font-size:8px;margin-right:5px">⬤</span>Build</td>
+              <td class="sub-td-val" style="color:#2a9a5a">$135,000</td>
+              <td class="sub-td-yld" style="color:#2a9a5a;opacity:0.72">4.85%</td>
+              <td class="sub-td-yld" style="color:#2a9a5a;opacity:0.72">3.06%</td>
+            </tr>
+            <!-- Total -->
+            <tr class="acct-tr-total">
+              <td style="padding:7px 10px 7px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.88)">Total Liquidity</td>
+              <td style="padding:7px 10px;font-size:12px;font-weight:700;text-align:right;color:rgba(255,255,255,0.92);font-variant-numeric:tabular-nums;border-left:1px solid var(--divider)">$693,636</td>
+              <td style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;color:var(--muted);border-left:1px solid var(--divider)">3.87%</td>
+              <td style="padding:7px 10px;font-size:11px;font-weight:700;text-align:right;color:var(--muted);border-left:1px solid var(--divider)">2.44%</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="acct-footer">Optimize in Allocation Tool →</div>
+      </div><!-- end liq-table-side -->
+
+      </div><!-- end liq-body -->
+    </div><!-- end liq-card -->
+
+  </div><!-- end top-row -->
+
+  <!-- ── SECTION BREAK: 12-Month Cash Flow Forecast ── -->
+  <div class="section-divider">
+    <div class="section-accent"></div>
+    <span class="section-title">12-Month Cash Flow Forecast</span>
+    <div class="section-line"></div>
+    <span class="section-badge">Jan – Dec 2026</span>
+  </div>
+
+  <!-- ── FORECAST: [left: hero+KPIs] [right: both charts stacked] ── -->
+  <div class="forecast-body">
+
+    <!-- LEFT COLUMN: Annual Net CF hero → KPI table below -->
+    <div class="forecast-left">
+
+      <div class="model-hero">
+        <div class="mh-top-line"></div>
+        <span class="mh-lbl">Annual Net Cash Flow</span>
+        <div class="mh-val">+$66,338</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="mh-badge">▲ Cash positive</span>
+          <div style="text-align:right">
+            <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:rgba(180,210,255,0.35)">Income / Expenses</div>
+            <div style="font-size:11px;font-weight:300;color:rgba(255,255,255,0.42);font-variant-numeric:tabular-nums">$680,000 / $612,000</div>
+          </div>
+        </div>
+        <div class="mh-open-row" onclick="openMonthlyModel()" style="cursor:pointer">⊞ Open 12-Month Model →</div>
+      </div>
+
+      <div class="kpi-wrap" id="kpi-metrics">
+        <div class="kpi-table">
+
+          <!-- Annual Income -->
+          <div class="kpi-tr">
+            <div class="kpi-tr-lbl"><div class="kpi-lbl-h">Annual Income (Pre-Tax)</div><div class="kpi-lbl-n">Gross earned income + distributions</div></div>
+            <div class="kpi-tr-val"><div class="kpi-val" style="color:rgba(255,255,255,0.82)">$856,000</div></div>
+          </div>
+
+          <!-- Total Annual Expenses — negative, parenthetical -->
+          <div class="kpi-tr">
+            <div class="kpi-tr-lbl"><div class="kpi-lbl-h">Total Annual Expenses</div><div class="kpi-lbl-n">Core living + taxes + one-time</div></div>
+            <div class="kpi-tr-val"><div class="kpi-val" style="color:rgba(255,255,255,0.82)">($612,000)</div></div>
+          </div>
+
+          <!-- Coverage Ratio — indented -->
+          <div class="kpi-tr kpi-tr-indent">
+            <div class="kpi-tr-lbl"><div class="kpi-lbl-h">Coverage Ratio</div><div class="kpi-lbl-n">Annual net income ÷ expenses</div></div>
+            <div class="kpi-tr-val"><div class="kpi-val" style="color:#5ecc8a;font-size:16px">111%</div></div>
+          </div>
+
+          <!-- Monthly Burn — red -->
+          <div class="kpi-tr">
+            <div class="kpi-tr-lbl"><div class="kpi-lbl-h">Monthly Burn</div><div class="kpi-lbl-n">Average monthly outflows</div></div>
+            <div class="kpi-tr-val"><div class="kpi-val" style="color:#ff6464">$51,000</div></div>
+          </div>
+
+          <!-- Cash Runway — indented -->
+          <div class="kpi-tr kpi-tr-indent">
+            <div class="kpi-tr-lbl"><div class="kpi-lbl-h">Cash Runway</div><div class="kpi-lbl-n">Total liquidity ÷ average monthly burn</div></div>
+            <div class="kpi-tr-val"><div class="kpi-val" style="color:rgba(255,255,255,0.65);font-size:16px">13.6 months</div></div>
+          </div>
+
+          <!-- Cash Flow Trough -->
+          <div class="kpi-tr">
+            <div class="kpi-tr-lbl"><div class="kpi-lbl-h">Cash Flow Trough</div><div class="kpi-lbl-n">Cumulative low point</div></div>
+            <div class="kpi-tr-val"><div class="kpi-val" style="color:#ffc83c">($129,385)</div><div class="kpi-vsub" style="color:#ffc83c">NOVEMBER</div></div>
+          </div>
+
+          <!-- Median Monthly Cash Flow -->
+          <div class="kpi-tr" style="border-bottom:none">
+            <div class="kpi-tr-lbl"><div class="kpi-lbl-h">Median Monthly Cash Flow</div><div class="kpi-lbl-n">50th percentile, monthly</div></div>
+            <div class="kpi-tr-val"><div class="kpi-val" style="color:#ffc83c">($4,400)</div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Upcoming large payments -->
+      <div class="kpi-wrap" id="upcoming-payments" style="margin-top:0;flex-shrink:0">
+        <div class="panel-hdr" style="border-bottom-color:rgba(255,200,60,0.22)">
+          <div class="panel-hdr-left">
+            <div class="panel-hdr-bar" style="background:rgba(255,200,60,0.75)"></div>
+            <span class="panel-hdr-title">Upcoming Large Payments</span>
+          </div>
+          <span style="font-size:9px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,200,60,0.55);border:1px solid rgba(255,200,60,0.2);border-radius:3px;padding:2px 7px">3 scheduled</span>
+        </div>
+        <!-- Apr 1 — 14 days — URGENT -->
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--divider);background:rgba(255,200,60,0.04);flex:1">
+          <div style="flex-shrink:0;width:36px;text-align:center">
+            <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,200,60,0.8)">APR</div>
+            <div style="font-size:18px;font-weight:300;line-height:1.1;color:rgba(255,200,60,0.9)">1</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Private School Tuition — Spring</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.38);margin-top:3px">Dalton School · Acct #8840 · Wire → Chase ···2680</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:16px;font-weight:300;color:rgba(255,200,60,0.9);font-variant-numeric:tabular-nums">$15,000</div>
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.06em;color:rgba(255,200,60,0.65);margin-top:2px">14 DAYS</div>
+          </div>
+        </div>
+        <!-- Apr 15 — 28 days -->
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--divider);background:rgba(255,200,60,0.02);flex:1">
+          <div style="flex-shrink:0;width:36px;text-align:center">
+            <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,200,60,0.6)">APR</div>
+            <div style="font-size:18px;font-weight:300;line-height:1.1;color:rgba(255,200,60,0.7)">15</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Federal Estimated Income Tax — Q1</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.38);margin-top:3px">IRS EFTPS · ACH → Citizens ···3858</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:16px;font-weight:300;color:rgba(255,200,60,0.75);font-variant-numeric:tabular-nums">$30,000</div>
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.06em;color:rgba(255,255,255,0.3);margin-top:2px">28 DAYS</div>
+          </div>
+        </div>
+        <!-- Jul 15 -->
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;flex:1">
+          <div style="flex-shrink:0;width:36px;text-align:center">
+            <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.28)">JUL</div>
+            <div style="font-size:18px;font-weight:300;line-height:1.1;color:rgba(255,255,255,0.4)">15</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.6)">NYC Property Tax — 2nd Installment</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px">NYC Dept. of Finance · Acct #4821 · Wire → Citizens</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:16px;font-weight:300;color:rgba(255,255,255,0.52);font-variant-numeric:tabular-nums">$17,500</div>
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.06em;color:rgba(255,255,255,0.2);margin-top:2px">119 DAYS</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end forecast-left -->
+
+    <!-- RIGHT COLUMN: charts + annotation sidebars, walk below -->
+    <div class="forecast-right" id="forecast-right-col">
+
+      <!-- CF Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Cumulative Cash Flow</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#5ecc8a"></span>Net CF</div>
+            <div class="chart-legend-item"><span style="display:inline-block;width:14px;border-top:2px dashed var(--amber)"></span>Nov trough</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:210px">
+          <canvas id="cfChart"></canvas>
+        </div>
+      </div>
+
+
+      <!-- Runway Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Liquidity Runway</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#5b8fcc"></span>Cash balance</div>
+            <div class="chart-legend-item"><span style="display:inline-block;width:14px;border-top:2px dashed rgba(94,204,138,0.6)"></span>Reserve floor</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:195px">
+          <canvas id="runwayChart"></canvas>
+        </div>
+        <div style="padding:6px 0 0;margin-top:8px;border-top:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:8px">
+          <span style="display:inline-block;width:16px;flex-shrink:0;border-top:1.5px dashed rgba(94,204,138,0.5)"></span>
+          <span style="font-size:10px;color:var(--dim)"><strong style="color:rgba(94,204,138,0.7)">Reserve floor $194,000</strong> — 3 months core expenses. Balance above is deployable.</span>
+        </div>
+      </div>
+
+
+      <!-- Cash Balance Walk — full width under both charts -->
+      <div class="walk-card" style="grid-column:1/-1">
+        <div class="walk-header"><span class="walk-title">Cash Balance Walk</span></div>
+        <table class="walk-table">
+          <thead>
+            <tr class="wth">
+              <th style="text-align:left;border-left:none;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:7px 14px;color:rgba(255,255,255,0.4)"></th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:7px 14px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Q1</th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:7px 14px;text-align:right;color:var(--amber);border-left:1px solid rgba(91,143,204,0.2)">Q2 ⚠</th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:7px 14px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Q3</th>
+              <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:7px 14px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Q4</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="wtr"><td class="wtd">Start Balance</td><td class="wtd">$693,636</td><td class="wtd amber">$751,636</td><td class="wtd">$675,636</td><td class="wtd">$643,636</td></tr>
+            <tr class="wtr"><td class="wtd">Cash Inflow</td><td class="wtd">$155,000</td><td class="wtd amber">$145,000</td><td class="wtd">$160,000</td><td class="wtd">$220,000</td></tr>
+            <tr class="wtr"><td class="wtd">Core Expenses</td><td class="wtd">($93,000)</td><td class="wtd amber">($103,000)</td><td class="wtd">($98,000)</td><td class="wtd">($102,000)</td></tr>
+            <tr class="wtr-sep"><td class="wtd">One-Time Expenses</td><td class="wtd">($4,000)</td><td class="wtd amber">($118,000)</td><td class="wtd">($94,000)</td><td class="wtd">—</td></tr>
+            <tr class="wtr-tot"><td class="wtd">End Balance</td><td class="wtd">$751,636</td><td class="wtd amber">$675,636</td><td class="wtd">$643,636</td><td class="wtd">$761,636</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- end forecast-right -->
+
+  </div><!-- end forecast-body -->
+
+
+  <!-- ── SECTION BREAK: Monthly Summary Model ── -->
+  <div class="section-divider" style="margin-top:10px">
+    <div class="section-accent"></div>
+    <span class="section-title">Monthly Summary Model</span>
+    <div class="section-line"></div>
+    <span class="section-badge">Jan – Dec 2026</span>
+    <span class="section-badge" id="model-toggle-btn" onclick="toggleModelDetail()" style="cursor:pointer;color:rgba(91,143,204,0.75);border-color:rgba(91,143,204,0.28);transition:all 0.15s">⊟ Collapse</span>
+    <span class="section-badge" onclick="openMonthlyModel()" style="cursor:pointer;color:rgba(180,215,255,0.8);border-color:rgba(91,143,204,0.35);background:rgba(91,143,204,0.08);letter-spacing:0.07em;transition:all 0.15s" onmouseenter="this.style.background='rgba(91,143,204,0.16)'" onmouseleave="this.style.background='rgba(91,143,204,0.08)'">⊞ Open Full 12-Month Model →</span>
+  </div>
+
+  <!-- ── MONTHLY DETAILED CASH FLOW TABLE ── -->
+  <div class="walk-card" style="overflow-x:auto" id="monthly-model">
+    <table class="walk-table" style="min-width:900px">
+      <thead>
+        <tr style="background:rgba(91,143,204,0.13);border-bottom:1px solid rgba(91,143,204,0.22)">
+          <th style="text-align:left;border-left:none;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 14px;color:rgba(255,255,255,0.4);width:160px"></th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Jan</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Feb</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:rgba(180,215,255,0.95);border-left:1px solid rgba(91,143,204,0.2)">Mar ◀</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:var(--amber);border-left:1px solid rgba(91,143,204,0.2)">Apr ⚠</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:var(--amber);border-left:1px solid rgba(91,143,204,0.2)">May ⚠</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Jun</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Jul</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Aug</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Sep</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:rgba(255,255,255,0.92);border-left:1px solid rgba(91,143,204,0.2)">Oct</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:var(--amber);border-left:1px solid rgba(91,143,204,0.2)">Nov ▼</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 10px;text-align:right;color:var(--green);border-left:1px solid rgba(91,143,204,0.2)">Dec</th>
+          <th style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:8px 12px;text-align:right;color:rgba(180,215,255,0.85);border-left:1px solid rgba(91,143,204,0.3);background:rgba(91,143,204,0.14)">Full Year</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- INCOME SECTION HEADER -->
+        <tr style="background:rgba(94,204,138,0.04);border-top:1px solid rgba(255,255,255,0.05)">
+          <td colspan="14" style="padding:5px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(94,204,138,0.55)">Income</td>
+        </tr>
+        <!-- Cash Compensation -->
+        <tr class="wtr model-detail-row">
+          <td class="wtd" style="padding-left:20px;font-size:11px;color:rgba(255,255,255,0.55)">Cash Compensation</td>
+          <td class="wtd">$45,000</td><td class="wtd">$47,000</td><td class="wtd">$47,000</td>
+          <td class="wtd amber">$45,000</td><td class="wtd amber">$45,000</td><td class="wtd">$45,000</td>
+          <td class="wtd">$45,000</td><td class="wtd">$48,000</td><td class="wtd">$49,000</td>
+          <td class="wtd">$28,000</td><td class="wtd amber">$28,000</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55)">$472,000</td>
+        </tr>
+        <!-- Bonus / RSU Vest -->
+        <tr class="wtr model-detail-row">
+          <td class="wtd" style="padding-left:20px;font-size:11px;color:rgba(255,255,255,0.55)">Bonus / RSU Vest</td>
+          <td class="wtd" style="color:rgba(255,255,255,0.35)">—</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td>
+          <td class="wtd amber" style="color:rgba(255,200,60,0.35)">—</td><td class="wtd amber" style="color:rgba(255,200,60,0.35)">—</td><td class="wtd">$4,000</td>
+          <td class="wtd" style="color:rgba(255,255,255,0.35)">—</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td><td class="wtd">$2,000</td>
+          <td class="wtd" style="color:rgba(255,255,255,0.35)">—</td><td class="wtd amber">$2,000</td><td class="wtd" style="color:var(--green)">$50,000</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55)">$58,000</td>
+        </tr>
+        <!-- Partnership Distributions -->
+        <tr class="wtr model-detail-row">
+          <td class="wtd" style="padding-left:20px;font-size:11px;color:rgba(255,255,255,0.55)">Partnership Distributions</td>
+          <td class="wtd">$10,000</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td>
+          <td class="wtd amber" style="color:rgba(255,200,60,0.35)">—</td><td class="wtd amber" style="color:rgba(255,200,60,0.35)">—</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td>
+          <td class="wtd">$10,000</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td><td class="wtd" style="color:rgba(255,255,255,0.35)">—</td>
+          <td class="wtd" style="color:rgba(255,255,255,0.35)">—</td><td class="wtd amber" style="color:rgba(255,200,60,0.35)">—</td><td class="wtd" style="color:var(--green)">$106,000</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55)">$126,000</td>
+        </tr>
+        <!-- Interest & Dividends -->
+        <tr class="wtr model-detail-row">
+          <td class="wtd" style="padding-left:20px;font-size:11px;color:rgba(255,255,255,0.55)">Interest &amp; Dividends</td>
+          <td class="wtd">$2,000</td><td class="wtd">$2,000</td><td class="wtd">$2,000</td>
+          <td class="wtd amber">$2,000</td><td class="wtd amber">$2,000</td><td class="wtd">$2,000</td>
+          <td class="wtd">$2,000</td><td class="wtd">$2,000</td><td class="wtd">$2,000</td>
+          <td class="wtd">$2,000</td><td class="wtd amber">$2,000</td><td class="wtd">$2,000</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55)">$24,000</td>
+        </tr>
+        <!-- Total Income -->
+        <tr class="wtr-tot" style="background:rgba(94,204,138,0.06)">
+          <td class="wtd" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:rgba(94,204,138,0.85)">Total Income</td>
+          <td class="wtd" style="color:rgba(94,204,138,0.85)">$57,000</td><td class="wtd" style="color:rgba(94,204,138,0.85)">$49,000</td><td class="wtd" style="color:rgba(94,204,138,0.85)">$49,000</td>
+          <td class="wtd amber">$47,000</td><td class="wtd amber">$47,000</td><td class="wtd" style="color:rgba(94,204,138,0.85)">$51,000</td>
+          <td class="wtd" style="color:rgba(94,204,138,0.85)">$57,000</td><td class="wtd" style="color:rgba(94,204,138,0.85)">$50,000</td><td class="wtd" style="color:rgba(94,204,138,0.85)">$53,000</td>
+          <td class="wtd" style="color:rgba(94,204,138,0.85)">$30,000</td><td class="wtd amber">$32,000</td><td class="wtd" style="color:var(--green)">$158,000</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(94,204,138,0.9);font-weight:700">$680,000</td>
+        </tr>
+        <!-- EXPENSES SECTION HEADER -->
+        <tr style="background:rgba(255,100,100,0.04);border-top:1px solid rgba(255,255,255,0.05)">
+          <td colspan="14" style="padding:5px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,100,100,0.5)">Expenses</td>
+        </tr>
+        <tr class="wtr model-detail-row">
+          <td class="wtd" style="padding-left:20px;font-size:11px;color:rgba(255,255,255,0.55)">Core Living</td>
+          <td class="wtd">($31,000)</td><td class="wtd">($31,000)</td><td class="wtd">($31,000)</td>
+          <td class="wtd amber">($35,000)</td><td class="wtd amber">($34,000)</td><td class="wtd">($34,000)</td>
+          <td class="wtd">($30,000)</td><td class="wtd">($33,000)</td><td class="wtd">($35,000)</td>
+          <td class="wtd">($36,000)</td><td class="wtd amber">($35,000)</td><td class="wtd">($31,000)</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55)">($396,000)</td>
+        </tr>
+        <tr class="wtr model-detail-row">
+          <td class="wtd" style="padding-left:20px;font-size:11px;color:rgba(255,255,255,0.55)">Taxes</td>
+          <td class="wtd">—</td><td class="wtd">—</td><td class="wtd">—</td>
+          <td class="wtd amber">($26,000)</td><td class="wtd amber">($30,000)</td><td class="wtd">—</td>
+          <td class="wtd">—</td><td class="wtd">—</td><td class="wtd">—</td>
+          <td class="wtd">—</td><td class="wtd amber">—</td><td class="wtd">—</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55)">($56,000)</td>
+        </tr>
+        <tr class="wtr model-detail-row">
+          <td class="wtd" style="padding-left:20px;font-size:11px;color:rgba(255,255,255,0.55)">Education</td>
+          <td class="wtd">—</td><td class="wtd">—</td><td class="wtd">—</td>
+          <td class="wtd amber">—</td><td class="wtd amber">($35,000)</td><td class="wtd">($27,000)</td>
+          <td class="wtd">—</td><td class="wtd">($15,000)</td><td class="wtd">($15,000)</td>
+          <td class="wtd">—</td><td class="wtd amber">—</td><td class="wtd">—</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55)">($92,000)</td>
+        </tr>
+        <tr class="wtr model-detail-row">
+          <td class="wtd" style="padding-left:20px;font-size:11px;color:rgba(255,255,255,0.55)">Travel &amp; Other</td>
+          <td class="wtd">($4,000)</td><td class="wtd">—</td><td class="wtd">—</td>
+          <td class="wtd amber">—</td><td class="wtd amber">—</td><td class="wtd">—</td>
+          <td class="wtd">($21,000)</td><td class="wtd">($24,000)</td><td class="wtd">($19,000)</td>
+          <td class="wtd">—</td><td class="wtd amber">—</td><td class="wtd">—</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.55)">($68,000)</td>
+        </tr>
+        <tr class="wtr-tot" style="background:rgba(255,100,100,0.05)">
+          <td class="wtd" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:rgba(255,130,130,0.85)">Total Expenses</td>
+          <td class="wtd" style="color:rgba(255,130,130,0.85)">($35,000)</td><td class="wtd" style="color:rgba(255,130,130,0.85)">($31,000)</td><td class="wtd" style="color:rgba(255,130,130,0.85)">($31,000)</td>
+          <td class="wtd amber">($61,000)</td><td class="wtd amber">($99,000)</td><td class="wtd" style="color:rgba(255,130,130,0.85)">($61,000)</td>
+          <td class="wtd" style="color:rgba(255,130,130,0.85)">($51,000)</td><td class="wtd" style="color:rgba(255,130,130,0.85)">($72,000)</td><td class="wtd" style="color:rgba(255,130,130,0.85)">($69,000)</td>
+          <td class="wtd" style="color:rgba(255,130,130,0.85)">($36,000)</td><td class="wtd amber">($35,000)</td><td class="wtd" style="color:rgba(255,130,130,0.85)">($31,000)</td>
+          <td class="wtd" style="border-left:1px solid rgba(255,255,255,0.12);color:rgba(255,130,130,0.9);font-weight:700">($612,000)</td>
+        </tr>
+        <!-- NET CASH FLOW -->
+        <tr style="background:rgba(91,143,204,0.18);border-top:2px solid rgba(91,143,204,0.45);border-bottom:1px solid rgba(91,143,204,0.25)">
+          <td class="wtd" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:rgba(91,143,204,0.95)">Net Cash Flow</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($19,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($2,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($2,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.95);font-weight:600">($47,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($6,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($3,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($22,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($17,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($2,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($2,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.95);font-weight:600">($6,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">+$193,170</td>
+          <td class="wtd" style="border-left:1px solid rgba(91,143,204,0.35);color:rgba(91,143,204,0.95);font-weight:700">+$66,338</td>
+        </tr>
+        <!-- CUMULATIVE CASH FLOW -->
+        <tr style="background:rgba(91,143,204,0.18);border-top:2px solid rgba(91,143,204,0.35);border-bottom:1px solid rgba(91,143,204,0.25)">
+          <td class="wtd" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:rgba(91,143,204,0.95)">Cumulative Cash Flow</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($19,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($21,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($23,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($70,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($76,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($79,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($101,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($118,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($120,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($122,000)</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">($128,170) ▼</td>
+          <td class="wtd" style="color:rgba(91,143,204,0.85);font-weight:600">+$65,168</td>
+          <td class="wtd" style="border-left:1px solid rgba(91,143,204,0.35);color:rgba(91,143,204,0.95);font-weight:700">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- end body -->
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- FULL-SCREEN 12-MONTH MODEL MODAL                        -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div id="cf-full-modal">
+  <!-- ── Intelligence Header ── -->
+  <div class="cfm-intel-hdr">
+    <div class="cfm-top-strip">
+      <div class="cfm-guru-badge">
+        <div class="cfm-guru-dot"></div>
+        <span class="cfm-guru-lbl">GURU Intelligence Layer</span>
+      </div>
+      <span class="cfm-model-title">12-Month Cash Flow Model &middot; Jan &ndash; Dec 2026</span>
+      <div class="cfm-live-indicator">
+        <div class="cfm-live-dot"></div>
+        <span class="cfm-live-txt">Live · 4s ago</span>
+      </div>
+      <button class="cfm-close" onclick="closeMonthlyModel()" title="Close (Esc)">✕</button>
+    </div>
+    <div class="cfm-kpi-bar">
+      <div class="cfm-kpi">
+        <span class="cfm-kpi-lbl">Client</span>
+        <span class="cfm-kpi-val">Sarah &amp; Michael Kessler</span>
+      </div>
+      <div class="cfm-kpi">
+        <span class="cfm-kpi-lbl">Annual Net Cash Flow</span>
+        <span class="cfm-kpi-val" style="color:rgba(91,143,204,0.9)">+$66,338</span>
+      </div>
+      <div class="cfm-kpi">
+        <span class="cfm-kpi-lbl">Cash Trough</span>
+        <span class="cfm-kpi-val" style="color:var(--amber)">($128,170) &middot; November</span>
+      </div>
+      <div class="cfm-kpi">
+        <span class="cfm-kpi-lbl">Total Income</span>
+        <span class="cfm-kpi-val" style="color:rgba(94,204,138,0.85)">$680,000</span>
+      </div>
+      <div class="cfm-kpi">
+        <span class="cfm-kpi-lbl">Total Expenses</span>
+        <span class="cfm-kpi-val" style="color:rgba(255,130,130,0.85)">($612,000)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Scrollable Table Body ── -->
+  <div class="cfm-body">
+    <div class="cfm-legend">
+      <div class="cfm-legend-item"><div class="cfm-legend-dot" style="background:var(--amber)"></div>Elevated-spend months</div>
+      <div class="cfm-legend-item"><div class="cfm-legend-dot" style="background:var(--green)"></div>Bonus / distribution month</div>
+      <div class="cfm-legend-item"><div class="cfm-legend-dot" style="background:rgba(91,143,204,0.7)"></div>Net &amp; cumulative cash flow</div>
+      <div class="cfm-legend-item"><div class="cfm-legend-dot" style="background:rgba(180,215,255,0.6)"></div>Current month</div>
+    </div>
+    <div id="modal-tbl-wrap" style="overflow-x:auto"></div>
+  </div>
+
+  <!-- ── GURU Calculator Panel (pinned bottom) ── -->
+  <div class="cfm-calc-panel">
+    <div class="cfm-calc-inner">
+      <div class="cfm-calc-badge">
+        <div class="cfm-calc-badge-eye">
+          <div class="cfm-calc-dot"></div>
+          <span class="cfm-calc-lbl">GURU</span>
+        </div>
+        <span class="cfm-calc-title">Cash Model</span>
+      </div>
+      <div class="cfm-calc-metrics">
+        <div class="cfm-calc-metric">
+          <span class="cfm-calc-metric-lbl">Annual Net Cash Flow</span>
+          <span class="cfm-calc-metric-val" style="color:rgba(91,143,204,0.9)">+$66,338</span>
+          <span class="cfm-calc-metric-sub">Income − Expenses</span>
+        </div>
+        <div class="cfm-calc-metric">
+          <span class="cfm-calc-metric-lbl">Monthly Average Expense</span>
+          <span class="cfm-calc-metric-val">$51,000</span>
+          <span class="cfm-calc-metric-sub">$612K / 12 months</span>
+        </div>
+        <div class="cfm-calc-metric">
+          <span class="cfm-calc-metric-lbl">Cash Trough</span>
+          <span class="cfm-calc-metric-val" style="color:var(--amber)">($128,170)</span>
+          <span class="cfm-calc-metric-sub">Lowest point · November</span>
+        </div>
+        <div class="cfm-calc-metric">
+          <span class="cfm-calc-metric-lbl">Total Income</span>
+          <span class="cfm-calc-metric-val" style="color:rgba(94,204,138,0.85)">$680,000</span>
+          <span class="cfm-calc-metric-sub">12-month gross</span>
+        </div>
+        <div class="cfm-calc-metric">
+          <span class="cfm-calc-metric-lbl">Total Expenses</span>
+          <span class="cfm-calc-metric-val" style="color:rgba(255,115,115,0.85)">($612,000)</span>
+          <span class="cfm-calc-metric-sub">12-month total outflow</span>
+        </div>
+        <div class="cfm-calc-metric">
+          <span class="cfm-calc-metric-lbl">Savings Rate</span>
+          <span class="cfm-calc-metric-val" style="color:rgba(94,204,138,0.85)">9.8%</span>
+          <span class="cfm-calc-metric-sub">Net / Gross income</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = 'rgba(255,255,255,0.4)';
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+
+/* ── Monthly Model expand/collapse (inline) ── */
+function toggleModelDetail() {
+  const tbl = document.getElementById('monthly-model');
+  const btn = document.getElementById('model-toggle-btn');
+  const collapsed = tbl.classList.toggle('collapsed');
+  btn.innerHTML = collapsed ? '⊞ Expand Detail' : '⊟ Collapse';
+}
+
+/* ── Open full-screen modal ── */
+function _showModalInPage() {
+  const modal = document.getElementById('cf-full-modal');
+  const target = document.getElementById('modal-tbl-wrap');
+  const src = document.getElementById('monthly-model').cloneNode(true);
+  src.id = ''; src.style.overflow = 'visible';
+  src.classList.remove('collapsed');
+  target.innerHTML = '';
+  target.appendChild(src);
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function openMonthlyModel() {
+  // If embedded in an iframe inside the React app, post to parent for true fullscreen
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'OPEN_CF_MODAL' }, '*');
+    return;
+  }
+  _showModalInPage();
+}
+function closeMonthlyModel() {
+  document.getElementById('cf-full-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMonthlyModel(); });
+
+/* ── Monthly Model: apply total-column class to last <td> in each row ── */
+function applyTotalColClass() {
+  const tbl = document.getElementById('monthly-model');
+  if (!tbl) return;
+  tbl.querySelectorAll('tbody tr').forEach(row => {
+    const cells = row.querySelectorAll('td');
+    if (cells.length > 1) {
+      const last = cells[cells.length - 1];
+      last.classList.add('wtd-total');
+      // strip old inline border-left so CSS class wins
+      last.style.borderLeft = '';
+    }
+  });
+}
+
+/* ── KPI height equalization ── */
+function equalizeKpiHeight() {
+  const right = document.getElementById('forecast-right-col');
+  const kpi   = document.getElementById('kpi-metrics');
+  const up    = document.getElementById('upcoming-payments');
+  const hero  = document.querySelector('.model-hero');
+  if (!right || !kpi || !up || !hero) return;
+
+  const rightH   = right.getBoundingClientRect().height;
+  const heroH    = hero.getBoundingClientRect().height;
+  const upH      = up.getBoundingClientRect().height;
+  const gap      = 10 * 2; // two gaps between 3 items
+  const target   = rightH - heroH - upH - gap;
+  if (target > kpi.getBoundingClientRect().height) {
+    kpi.style.minHeight = target + 'px';
+  }
+}
+
+window.addEventListener('load', () => {
+  applyTotalColClass();
+  equalizeKpiHeight();
+  // When loaded with ?modal=1 (e.g. from the React full-screen overlay), auto-show the model
+  if (new URLSearchParams(window.location.search).get('modal') === '1') {
+    _showModalInPage();
+  }
+});
+window.addEventListener('resize', equalizeKpiHeight);
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* ── helper: round rect on canvas ─────────────── */
+function rRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+/* ── CUMULATIVE CF CHART ───────────────────────── */
+// Cumulative net CF from Jan 1 start. Ends +$65,000 (matches annual net ~$66,000).
+// Trough at Nov = -$128.17K. Dec recovers strongly on year-end bonus/distributions.
+const cfData = [-19, -21, -23, -70, -76, -79, -101, -118, -120, -122, -128.17, 65];
+
+const cfAnnotationPlugin = {
+  id: 'cfAnnotation',
+  afterDraw(chart) {
+    const { ctx, scales: { x, y } } = chart;
+    const xi = x.getPixelForValue(10); // Nov index
+    const yi = y.getPixelForValue(-128.17);
+    ctx.save();
+    // dashed stem upward
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = 'rgba(255,200,60,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xi, yi - 8);
+    ctx.lineTo(xi, yi - 52);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // tooltip box
+    const bw = 96, bh = 36, bx = xi - bw/2, by = yi - 52 - bh - 2;
+    rRect(ctx, bx, by, bw, bh, 4);
+    ctx.fillStyle = 'rgba(6,14,28,0.97)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,200,60,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // value text
+    ctx.fillStyle = '#ffc83c';
+    ctx.font = '700 14px Inter, system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('($129,385)', xi, by + 17);
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.font = '700 8px Inter, system-ui';
+    ctx.letterSpacing = '0.08em';
+    ctx.fillText('NOV TROUGH', xi, by + 29);
+    ctx.restore();
+  }
+};
+
+/* "today" vertical line plugin — shown at March (index 2) */
+const todayLinePlugin = {
+  id: 'todayLine',
+  afterDraw(chart) {
+    const { ctx, scales: { x, chartArea: ca } } = chart;
+    if (!x) return;
+    const xi = x.getPixelForValue(2); // March = index 2
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xi, chart.chartArea.top);
+    ctx.lineTo(xi, chart.chartArea.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.font = '600 8px Inter, system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('TODAY', xi, chart.chartArea.top - 3);
+    ctx.restore();
+  }
+};
+
+new Chart(document.getElementById('cfChart'), {
+  type: 'line',
+  data: {
+    labels: MONTHS,
+    datasets: [{
+      data: cfData,
+      borderWidth: 2,
+      tension: 0.15,
+      pointRadius: cfData.map((_, i) => i === 10 ? 6 : 3),
+      pointBackgroundColor: cfData.map((v, i) => i === 10 ? '#ffc83c' : v >= 0 ? '#5ecc8a' : 'rgba(255,100,100,0.85)'),
+      pointBorderColor: '#141c2b',
+      pointBorderWidth: 1.5,
+      fill: {
+        target: 'origin',
+        above: 'rgba(94,204,138,0.09)',
+        below: 'rgba(255,80,80,0.18)'
+      },
+      segment: {
+        borderColor: ctx => {
+          const y0 = ctx.p0.parsed.y, y1 = ctx.p1.parsed.y;
+          if (ctx.p0DataIndex >= 2) return (y0 < 0 || y1 < 0) ? 'rgba(255,100,100,0.7)' : '#5ecc8a';
+          return (y0 < 0 || y1 < 0) ? 'rgba(255,100,100,0.9)' : '#5ecc8a';
+        },
+        borderDash: ctx => ctx.p0DataIndex >= 2 ? [5, 3] : []
+      }
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    layout: { padding: { top: 14, right: 10, bottom: 0, left: 4 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(6,14,28,0.95)',
+        borderColor: 'rgba(91,143,204,0.3)',
+        borderWidth: 1,
+        titleFont: { size: 10, weight: '700' },
+        bodyFont: { size: 11, weight: '300' },
+        callbacks: {
+          title: items => MONTHS[items[0].dataIndex],
+          label: item => {
+            const v = item.parsed.y;
+            return v >= 0 ? `  +$${Math.round(v * 1000).toLocaleString()}` : `  ($${Math.round(Math.abs(v) * 1000).toLocaleString()})`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { display: false },
+        ticks: { font: { size: 9 }, color: ctx => ctx.index === 10 ? '#ffc83c' : ctx.index === 2 ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)' }
+      },
+      y: {
+        grid: {
+          color: ctx => ctx.tick.value === 0 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.05)',
+          lineWidth: ctx => ctx.tick.value === 0 ? 1.5 : 1,
+        },
+        border: { display: false },
+        ticks: { font: { size: 9 }, maxTicksLimit: 6, callback: v => v === 0 ? '$0' : (v > 0 ? `+$${v}K` : `-$${Math.abs(v)}K`) }
+      }
+    }
+  },
+  plugins: [cfAnnotationPlugin, todayLinePlugin]
+});
+
+/* ── LIQUIDITY RUNWAY CHART ────────────────────── */
+// Monthly-end cash balance = $693,636 starting + cumulative CF through that month.
+// Q-end matches walk table: Mar=$751,636  Jun=$675,636  Sep=$643,636  Dec=$761,636
+const runData = [716, 734, 752, 738, 686, 676, 682, 660, 644, 638, 635, 762];
+const RESERVE = 194;
+
+const runAnnotationPlugin = {
+  id: 'runAnnotation',
+  afterDraw(chart) {
+    const { ctx, scales: { x, y } } = chart;
+    const xi = x.getPixelForValue(10);
+    const yi = y.getPixelForValue(635);
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(255,200,60,0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xi, yi);
+    ctx.lineTo(xi, yi - 42);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const bw = 88, bh = 30, bx = xi - bw/2, by = yi - 42 - bh - 2;
+    rRect(ctx, bx, by, bw, bh, 4);
+    ctx.fillStyle = 'rgba(6,14,28,0.97)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,200,60,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#ffc83c';
+    ctx.font = '700 13px Inter, system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('$635,000', xi, by + 14);
+    ctx.fillStyle = 'rgba(255,200,60,0.55)';
+    ctx.font = '700 8px Inter, system-ui';
+    ctx.fillText('NOV LOW', xi, by + 26);
+    ctx.restore();
+  }
+};
+
+new Chart(document.getElementById('runwayChart'), {
+  type: 'bar',
+  data: {
+    labels: MONTHS,
+    datasets: [
+      {
+        label: 'Cash Balance',
+        data: runData,
+        backgroundColor: ctx => {
+          if (ctx.dataIndex === 10) return 'rgba(255,200,60,0.55)'; // Nov = amber
+          const chart = ctx.chart;
+          if (!chart.chartArea) return 'rgba(91,143,204,0.75)';
+          const { top, bottom } = chart.chartArea;
+          const g = chart.ctx.createLinearGradient(0, top, 0, bottom);
+          g.addColorStop(0, 'rgba(91,143,204,0.85)');
+          g.addColorStop(1, 'rgba(40,72,130,0.4)');
+          return g;
+        },
+        borderRadius: 2,
+        borderSkipped: false,
+        order: 2,
+      },
+      {
+        label: 'Reserve Floor',
+        data: Array(12).fill(RESERVE),
+        type: 'line',
+        borderColor: 'rgba(94,204,138,0.55)',
+        borderWidth: 1.5,
+        borderDash: [5, 4],
+        pointRadius: 0,
+        fill: {
+          target: 'origin',
+          above: 'rgba(94,204,138,0.06)'
+        },
+        order: 1,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    layout: { padding: { top: 45, right: 10, bottom: 0, left: 4 } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(6,14,28,0.95)',
+        borderColor: 'rgba(91,143,204,0.3)',
+        borderWidth: 1,
+        titleFont: { size: 10, weight: '700' },
+        bodyFont: { size: 11, weight: '300' },
+        filter: item => item.datasetIndex === 0,
+        callbacks: {
+          title: items => MONTHS[items[0].dataIndex],
+          label: item => `  $${Math.round(item.parsed.y).toLocaleString()}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        border: { display: false },
+        ticks: { font: { size: 9 }, color: ctx => ctx.index === 10 ? '#ffc83c' : 'rgba(255,255,255,0.38)' }
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.05)', lineWidth: 1 },
+        border: { display: false },
+        min: 0,
+        ticks: {
+          font: { size: 9 },
+          maxTicksLimit: 5,
+          callback: v => `$${Math.round(v/1000)}K`
+        }
+      }
+    }
+  },
+  plugins: [runAnnotationPlugin]
+});
+</script>
+</body>
+</html>

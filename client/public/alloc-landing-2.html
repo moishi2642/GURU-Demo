@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GURU Allocation — Landing Mockup 2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --page:    #f0ece5;
+      --card:    #f5f1ec;
+      --navy:    #1a2e4a;
+      --gold:    #8a6920;
+      --forest:  #1e4d30;
+      --rust:    #8b3a2a;
+      --border:  rgba(0,0,0,0.09);
+      --divider: rgba(0,0,0,0.06);
+      --text:    #1a1a1a;
+      --mid:     rgba(0,0,0,0.55);
+      --dim:     rgba(0,0,0,0.40);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--page);
+      color: var(--text);
+    }
+
+    @keyframes pulse       { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    @keyframes ipulse      { 0%,100%{opacity:1} 50%{opacity:0.30} }
+    @keyframes cfm-pulse   { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    @keyframes borderRunBlue {
+      0%   { background-position: 0% 0,   100% 0,   100% 100%, 0% 100%; }
+      100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+    }
+
+    /* ── PAGE HEADER ── */
+    .ph {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; height: 44px;
+      background: #fff; border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+    .ph-left {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.10em;
+      text-transform: uppercase; color: var(--navy);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ph-sep { color: rgba(0,0,0,0.20); }
+    .ph-tab { color: var(--mid); }
+    .ph-right { font-size: 10px; color: var(--dim); }
+
+    /* ── HERO BAR ── */
+    .hero-bar {
+      background: linear-gradient(135deg, #142238 0%, #1a2e4a 55%, #1e3555 100%);
+      padding: 0 32px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 48px;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      position: relative; overflow: hidden;
+    }
+    .hero-bar::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg,rgba(138,105,32,0.5),rgba(138,105,32,0.15) 40%,transparent);
+    }
+    .hero-bar::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,255,255,0.012) 40px, rgba(255,255,255,0.012) 41px);
+      pointer-events: none;
+    }
+    .hero-client { display: flex; align-items: center; gap: 18px; padding: 22px 0; border-right: 1px solid rgba(255,255,255,0.07); padding-right: 48px; }
+    .hero-monogram {
+      width: 46px; height: 46px; border-radius: 3px;
+      background: rgba(138,105,32,0.22); border: 1px solid rgba(138,105,32,0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; letter-spacing: 0.08em;
+      color: rgba(255,215,120,0.82); flex-shrink: 0;
+    }
+    .hero-client-info { display: flex; flex-direction: column; gap: 4px; }
+    .hero-client-name { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.9); letter-spacing: 0.02em; }
+    .hero-client-since { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+    .hero-aum { display: flex; flex-direction: column; gap: 6px; padding: 22px 0; }
+    .hero-aum-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+    .hero-aum-val { font-size: 36px; font-weight: 300; color: rgba(255,255,255,0.92); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+    .hero-tier-bar-wrap { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+    .hero-tier-bar { display: flex; height: 4px; border-radius: 1px; overflow: hidden; gap: 1px; width: 280px; }
+    .htb-seg { height: 100%; }
+    .htb-op  { background: rgba(91,143,204,0.8);  width: 19%; }
+    .htb-res { background: rgba(138,105,32,0.85); width: 61.5%; }
+    .htb-bld { background: rgba(30,77,48,0.85);   width: 19.5%; }
+    .hero-stats { display: flex; align-items: stretch; gap: 0; border-left: 1px solid rgba(255,255,255,0.07); }
+    .hero-stat { display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 24px 32px; border-right: 1px solid rgba(255,255,255,0.07); }
+    .hero-stat-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.42); }
+    .hero-stat-val { font-size: 24px; font-weight: 300; color: rgba(255,255,255,0.90); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+    .hero-stat-note { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.38); letter-spacing: 0.04em; }
+    .hero-status-badge {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 14px; border: 1px solid rgba(58,138,90,0.3);
+      border-radius: 2px; background: rgba(58,138,90,0.08); margin-left: 8px;
+    }
+    .hsb-dot { width: 5px; height: 5px; border-radius: 50%; background: #3a8a5a; animation: pulse 2.5s infinite; }
+    .hsb-txt { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(58,138,90,0.8); }
+
+    /* ── INSIGHT ROW ── */
+    .insight-row {
+      display: flex; gap: 18px; align-items: stretch;
+      margin: 20px 32px 0;
+    }
+
+    /* Dark narrative card */
+    .insight-bar {
+      background: #1e2838;
+      border-radius: 12px;
+      padding: 22px 28px;
+      flex: 1;
+      position: relative; overflow: hidden;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.18);
+    }
+    .insight-bar::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg,rgba(94,204,138,0.35),rgba(94,204,138,0.08) 40%,transparent);
+    }
+    .insight-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; }
+    .insight-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ecc8a; flex-shrink: 0; box-shadow: 0 0 6px rgba(94,204,138,0.65); animation: ipulse 2.8s infinite; }
+    .insight-lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(94,204,138,0.85); }
+    .insight-hl { font-size: 21px; font-weight: 300; color: rgba(255,255,255,0.92); letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 11px; }
+    .insight-body { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.52); }
+    .insight-body em { color: rgba(255,255,255,0.78); font-style: italic; }
+
+    /* GURU Intelligence blue card */
+    .guru-model-card {
+      position: relative; overflow: hidden;
+      background: linear-gradient(160deg, #1a3a6b 0%, #163060 55%, #0f2248 100%);
+      border: 1px solid rgba(91,143,204,0.35);
+      border-radius: 12px;
+      display: flex; flex-direction: column;
+      width: 520px; flex-shrink: 0;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.28), 0 0 0 1px rgba(91,143,204,0.12);
+    }
+    .guru-model-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; pointer-events: none;
+      background: linear-gradient(90deg, rgba(91,143,204,0.65), rgba(91,143,204,0.1) 60%, transparent);
+    }
+    .guru-model-card::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.75) 50%, transparent 100%) top / 200% 2px no-repeat,
+        linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.45) 50%, transparent 100%) right / 2px 200% no-repeat,
+        linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.55) 50%, transparent 100%) bottom / 200% 2px no-repeat,
+        linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.45) 50%, transparent 100%) left / 2px 200% no-repeat;
+      border-radius: 8px;
+      animation: borderRunBlue 6s linear infinite;
+    }
+    .gmc-top-strip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(91,143,204,0.15);
+      position: relative; z-index: 2; flex-shrink: 0;
+    }
+    .gmc-guru-badge { display: flex; align-items: center; gap: 7px; }
+    .gmc-guru-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ecc8a; box-shadow: 0 0 6px rgba(94,204,138,0.7); animation: cfm-pulse 2.2s ease-in-out infinite; }
+    .gmc-guru-lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(94,204,138,0.85); }
+    .gmc-live-pill {
+      margin-left: auto; display: flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border: 1px solid rgba(91,143,204,0.25);
+      border-radius: 2px; background: rgba(91,143,204,0.06);
+    }
+    .gmc-live-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(91,143,204,0.9); animation: cfm-pulse 1.8s infinite; }
+    .gmc-live-txt { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+    .gmc-kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; flex: 1; position: relative; z-index: 2; }
+    .gmc-kpi { display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 14px 16px; border-right: 1px solid rgba(255,255,255,0.07); }
+    .gmc-kpi:last-child { border-right: none; }
+    .gmc-kpi-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.48); }
+    .gmc-kpi-val { font-size: 17px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: rgba(255,255,255,0.90); }
+
+    /* ── HBC BUCKET STRIP ── */
+    .hbc-section {
+      margin: 20px 32px 0;
+    }
+    .hbc-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--card); }
+    .hbc-card {
+      padding: 16px 18px;
+      border-right: 1px solid var(--border);
+      border-left: 3px solid transparent;
+      display: flex; flex-direction: column;
+    }
+    .hbc-card:last-child { border-right: none; }
+    .hbc-op   { border-left-color: var(--navy); }
+    .hbc-res  { border-left-color: var(--gold); }
+    .hbc-bld  { border-left-color: var(--forest); }
+    .hbc-grow { border-left-color: rgba(0,0,0,0.15); }
+    .hbc-oth  { border-left-color: rgba(0,0,0,0.10); }
+    .hbc-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .hbc-name { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); }
+    .hbc-yield { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
+    .hbc-bal { font-size: 20px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--text); line-height: 1; margin-bottom: 8px; }
+    .hbc-bar-track { height: 2px; background: rgba(0,0,0,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 8px; }
+    .hbc-bar-fill { height: 100%; border-radius: 1px; }
+    .hbc-op   .hbc-bar-fill { background: var(--navy); }
+    .hbc-res  .hbc-bar-fill { background: var(--gold); }
+    .hbc-bld  .hbc-bar-fill { background: var(--forest); }
+    .hbc-grow .hbc-bar-fill { background: rgba(0,0,0,0.25); }
+    .hbc-oth  .hbc-bar-fill { background: rgba(0,0,0,0.18); }
+    .hbc-desc { font-size: 9px; color: var(--dim); line-height: 1.4; margin-top: auto; }
+
+    /* ── DIVIDER between buckets and begin section ── */
+    .section-divider {
+      margin: 28px 32px 0;
+      height: 1px; background: rgba(0,0,0,0.08);
+    }
+
+    /* ── BEGIN SECTION (centered) ── */
+    .begin-section {
+      max-width: 860px; margin: 0 auto;
+      padding: 36px 32px 52px;
+      text-align: center;
+    }
+
+    .bs-flag-row {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 14px; border-radius: 2px;
+      background: rgba(26,46,74,0.07); border: 1px solid rgba(26,46,74,0.14);
+      margin-bottom: 18px;
+    }
+    .bs-flag-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--navy); animation: pulse 2.5s infinite; }
+    .bs-flag-txt { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--navy); }
+
+    .bs-headline {
+      font-size: 26px; font-weight: 300; color: var(--text);
+      letter-spacing: -0.02em; line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .bs-subhead {
+      font-size: 14px; color: var(--mid); line-height: 1.6;
+      margin-bottom: 36px; max-width: 580px; margin-left: auto; margin-right: auto;
+    }
+
+    /* Step cards */
+    .step-row {
+      display: grid; grid-template-columns: 1fr 40px 1fr 40px 1fr;
+      align-items: center;
+      margin-bottom: 36px;
+    }
+    .step-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 22px 20px;
+      text-align: left;
+      position: relative;
+    }
+    .step-card-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--navy); color: rgba(255,255,255,0.92);
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+    }
+    .step-card-name {
+      font-size: 12px; font-weight: 600; color: var(--text);
+      letter-spacing: 0.02em; margin-bottom: 6px;
+    }
+    .step-card-desc {
+      font-size: 11px; color: var(--mid); line-height: 1.6;
+    }
+    .step-card-tag {
+      display: inline-block; margin-top: 12px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.10em;
+      text-transform: uppercase; padding: 3px 9px;
+      border-radius: 2px;
+    }
+    .tag-guru { background: rgba(26,46,74,0.08); color: var(--navy); border: 1px solid rgba(26,46,74,0.14); }
+    .tag-auto { background: rgba(30,77,48,0.08); color: var(--forest); border: 1px solid rgba(30,77,48,0.14); }
+
+    .step-arrow {
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(0,0,0,0.22); font-size: 18px;
+    }
+
+    /* CTA button */
+    .begin-cta {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .btn-begin {
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      background: var(--navy); color: rgba(255,255,255,0.92);
+      border: none; cursor: pointer;
+      padding: 14px 48px;
+      border-radius: 2px;
+      transition: background 0.15s;
+    }
+    .btn-begin:hover { background: #0f1d30; }
+    .btn-begin-note {
+      font-size: 10px; color: var(--dim); letter-spacing: 0.02em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Page header -->
+  <div class="ph">
+    <div class="ph-left">GURU <span class="ph-sep">·</span> <span class="ph-tab">Asset Allocation</span></div>
+    <div class="ph-right">Demo Mockup 2</div>
+  </div>
+
+  <!-- Hero bar (same as existing) -->
+  <div class="hero-bar">
+    <div class="hero-client">
+      <div class="hero-monogram">KF</div>
+      <div class="hero-client-info">
+        <div class="hero-client-name">Kessler Family</div>
+        <div class="hero-client-since">Client since 2018</div>
+      </div>
+    </div>
+    <div class="hero-aum">
+      <div class="hero-aum-eyebrow">Total Assets Under Management</div>
+      <div class="hero-aum-val">$6,148,236</div>
+      <div class="hero-tier-bar-wrap">
+        <div class="hero-tier-bar">
+          <div class="htb-seg htb-op"></div>
+          <div class="htb-seg htb-res"></div>
+          <div class="htb-seg htb-bld"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-lbl">Annual Income</div>
+        <div class="hero-stat-val">$365,606</div>
+        <div class="hero-stat-note">Pre-tax</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-lbl">Annual Expenses</div>
+        <div class="hero-stat-val">$299,268</div>
+        <div class="hero-stat-note">Estimated</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-lbl">Net Cash Flow</div>
+        <div class="hero-stat-val" style="color:rgba(94,204,138,0.9)">+$66,338</div>
+        <div class="hero-stat-note">Surplus</div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 24px">
+        <div class="hero-status-badge">
+          <div class="hsb-dot"></div>
+          <span class="hsb-txt">GURU Active</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insight row: narrative + GURU Intelligence -->
+  <div class="insight-row">
+    <div class="insight-bar">
+      <div class="insight-eyebrow">
+        <div class="insight-dot"></div>
+        <div class="insight-lbl">GURU Insight · Kessler Family</div>
+      </div>
+      <div class="insight-hl">Strong liquidity, ready to work harder.</div>
+      <div class="insight-body">
+        The Kesslers are running well above liquidity policy — reserve sits at 23.6 months vs a 12-month target,
+        and operating cash covers 6.3 months when 2 is sufficient. That's approximately
+        <em>$300,000 above threshold</em>. Deploying that excess into short-duration strategies
+        picks up an estimated <em>$9,200 after tax per year</em> with no increase in risk profile.
+      </div>
+    </div>
+
+    <div class="guru-model-card">
+      <div class="gmc-top-strip">
+        <div class="gmc-guru-badge">
+          <div class="gmc-guru-dot"></div>
+          <span class="gmc-guru-lbl">GURU Intelligence</span>
+        </div>
+        <div class="gmc-live-pill">
+          <div class="gmc-live-dot"></div>
+          <span class="gmc-live-txt">Live · Now</span>
+        </div>
+      </div>
+      <div class="gmc-kpi-grid">
+        <div class="gmc-kpi">
+          <span class="gmc-kpi-lbl">Potential Excess Liquidity</span>
+          <span class="gmc-kpi-val" style="color:rgba(212,168,67,0.95)">$299,926</span>
+        </div>
+        <div class="gmc-kpi">
+          <span class="gmc-kpi-lbl">After-Tax Return Pickup</span>
+          <span class="gmc-kpi-val" style="color:rgba(94,204,138,0.92)">+$9,200 / yr</span>
+        </div>
+        <div class="gmc-kpi">
+          <span class="gmc-kpi-lbl">Annual Expenses</span>
+          <span class="gmc-kpi-val">$299,268</span>
+        </div>
+        <div class="gmc-kpi">
+          <span class="gmc-kpi-lbl">Annual Net Cash Flow</span>
+          <span class="gmc-kpi-val" style="color:rgba(91,143,204,0.95)">+$66,338</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bucket strip -->
+  <div class="hbc-section">
+    <div style="display:flex;align-items:baseline;gap:10px;padding:0 0 8px">
+      <span style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,0,0,0.35)">Total Assets</span>
+      <span style="font-size:22px;font-weight:300;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;color:var(--navy)">$6,148,236</span>
+    </div>
+    <div class="hbc-row">
+      <div class="hbc-card hbc-op">
+        <div class="hbc-header"><span class="hbc-name">Operating Cash</span><span class="hbc-yield">0.01%</span></div>
+        <div class="hbc-bal">$132,050</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19%"></div></div>
+        <div class="hbc-desc">Cash for upcoming expenditures</div>
+      </div>
+      <div class="hbc-card hbc-res">
+        <div class="hbc-header"><span class="hbc-name">Reserve Cash</span><span class="hbc-yield">4.60%</span></div>
+        <div class="hbc-bal">$426,586</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:62%"></div></div>
+        <div class="hbc-desc">Active cash management for what's next</div>
+      </div>
+      <div class="hbc-card hbc-bld">
+        <div class="hbc-header"><span class="hbc-name">Capital Build</span><span class="hbc-yield">4.85%</span></div>
+        <div class="hbc-bal">$135,000</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19.5%"></div></div>
+        <div class="hbc-desc">Disciplined saving for goals on the horizon</div>
+      </div>
+      <div class="hbc-card hbc-grow">
+        <div class="hbc-header"><span class="hbc-name">Investments</span><span class="hbc-yield">3.95%</span></div>
+        <div class="hbc-bal">$2,509,500</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:78%"></div></div>
+        <div class="hbc-desc">Long-term compounded growth</div>
+      </div>
+      <div class="hbc-card hbc-oth">
+        <div class="hbc-header"><span class="hbc-name">Other Assets</span><span class="hbc-yield" style="opacity:0">—</span></div>
+        <div class="hbc-bal">$2,945,100</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:92%"></div></div>
+        <div class="hbc-desc">Real estate &amp; alternatives</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div class="section-divider"></div>
+
+  <!-- Centered begin section -->
+  <div class="begin-section">
+
+    <div class="bs-flag-row">
+      <div class="bs-flag-dot"></div>
+      <span class="bs-flag-txt">GURU flagged 2 imbalances — last checked 4 hours ago</span>
+    </div>
+
+    <div class="bs-headline">Ready to act on GURU's findings?</div>
+    <div class="bs-subhead">
+      GURU continuously monitors the Kessler portfolio. Three short steps to confirm,
+      adjust, and execute the recommended changes.
+    </div>
+
+    <div class="step-row">
+      <div class="step-card">
+        <div class="step-card-num">1</div>
+        <div class="step-card-name">Asset Allocation Rebalancing</div>
+        <div class="step-card-desc">Review GURU's suggested coverage targets. Set transfer amounts across liquidity buckets.</div>
+        <div class="step-card-tag tag-guru">GURU suggests amounts</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-card">
+        <div class="step-card-num">2</div>
+        <div class="step-card-name">Product Selection</div>
+        <div class="step-card-desc">Choose specific instruments — money markets, T-bills, mutual funds. GURU ranks by after-tax yield.</div>
+        <div class="step-card-tag tag-guru">Ranked by AT yield</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step-card">
+        <div class="step-card-num">3</div>
+        <div class="step-card-name">Confirm &amp; Execute</div>
+        <div class="step-card-desc">Review the full before/after ledger. Send for execution or let GURU handle it automatically.</div>
+        <div class="step-card-tag tag-auto">Auto-execute available</div>
+      </div>
+    </div>
+
+    <div class="begin-cta">
+      <button class="btn-begin">Review GURU's Recommendations →</button>
+      <span class="btn-begin-note">Estimated time: 5–8 minutes · Changes can be undone at any step</span>
+    </div>
+
+  </div>
+
+</body>
+</html>

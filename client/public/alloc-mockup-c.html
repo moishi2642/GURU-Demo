@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GURU Allocation — Mockup C: Warm Editorial</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8f6f1;
+      color: #1a1a1a;
+    }
+
+    /* ── TOP BAR ────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 32px;
+      border-bottom: 1px solid rgba(26, 26, 26, 0.08);
+      background: #ffffff;
+    }
+
+    .tb-left {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #1a1a1a;
+    }
+
+    .tb-left span {
+      margin: 0 4px;
+      color: rgba(26, 26, 26, 0.35);
+    }
+
+    .tb-right {
+      font-size: 10px;
+      color: rgba(26, 26, 26, 0.50);
+    }
+
+    /* ── MOCKUP LABEL ────────────────────────────── */
+    .mockup-label {
+      padding: 8px 32px;
+      background: #ffffff;
+      border-bottom: 1px solid rgba(26, 26, 26, 0.08);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #1a1a1a;
+    }
+
+    /* ── MAIN SECTION ────────────────────────────── */
+    .main {
+      padding: 56px 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── TOTAL ASSETS HEADER ─────────────────────────── */
+    .total-assets {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .ta-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(26, 26, 26, 0.45);
+      margin-bottom: 12px;
+    }
+
+    .ta-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      font-weight: 400;
+      color: #1a1a1a;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── BUCKET CARDS GRID ────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .bucket-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(26, 26, 26, 0.06);
+      transition: box-shadow 0.2s, transform 0.2s;
+      cursor: pointer;
+      border-top: 4px solid;
+    }
+
+    .bucket-card:hover {
+      box-shadow: 0 4px 12px rgba(26, 26, 26, 0.10);
+      transform: translateY(-2px);
+    }
+
+    /* Bucket color accents — top border */
+    .bucket-card.op { border-top-color: #1a2e4a; }
+    .bucket-card.res { border-top-color: #c49a28; }
+    .bucket-card.bld { border-top-color: #1e4d30; }
+    .bucket-card.grow { border-top-color: #5b8fcc; }
+    .bucket-card.other { border-top-color: #708090; }
+
+    /* Card name — serif */
+    .card-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    /* Balance */
+    .card-balance {
+      font-size: 24px;
+      font-weight: 300;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      color: #1a1a1a;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    /* Yield badge/pill */
+    .card-yield-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 10px;
+      background: rgba(26, 26, 26, 0.06);
+      border-radius: 12px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      align-self: flex-start;
+    }
+
+    .bucket-card.op .card-yield-badge {
+      background: rgba(26, 46, 74, 0.08);
+      color: #1a2e4a;
+    }
+
+    .bucket-card.res .card-yield-badge {
+      background: rgba(196, 154, 40, 0.10);
+      color: #a67d1f;
+    }
+
+    .bucket-card.bld .card-yield-badge {
+      background: rgba(30, 77, 48, 0.08);
+      color: #1e4d30;
+    }
+
+    .bucket-card.grow .card-yield-badge {
+      background: rgba(91, 143, 204, 0.10);
+      color: #4a6fa8;
+    }
+
+    .bucket-card.other .card-yield-badge {
+      background: rgba(112, 128, 144, 0.08);
+      color: #708090;
+    }
+
+    /* Progress bar — more prominent */
+    .card-bar-track {
+      height: 6px;
+      background: rgba(26, 26, 26, 0.06);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .card-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    .bucket-card.op .card-bar-fill { background: #1a2e4a; }
+    .bucket-card.res .card-bar-fill { background: #c49a28; }
+    .bucket-card.bld .card-bar-fill { background: #1e4d30; }
+    .bucket-card.grow .card-bar-fill { background: #5b8fcc; }
+    .bucket-card.other .card-bar-fill { background: #708090; }
+
+    /* Description */
+    .card-desc {
+      font-size: 11px;
+      color: rgba(26, 26, 26, 0.55);
+      line-height: 1.5;
+      margin-top: auto;
+    }
+
+    /* ── ACTION BUTTON ────────────────────────── */
+    .cta-section {
+      display: flex;
+      justify-content: center;
+      padding-top: 20px;
+    }
+
+    .btn-allocate {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #ffffff;
+      background: #1a2e4a;
+      border: none;
+      cursor: pointer;
+      padding: 12px 32px;
+      border-radius: 24px;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .btn-allocate:hover {
+      background: #0f1d30;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="tb-left">
+      GURU<span>·</span><span style="color: #1a1a1a;">Kessler Family</span><span>·</span>Allocation
+    </div>
+    <div class="tb-right">Demo Mockup</div>
+  </div>
+
+  <!-- Mockup Label -->
+  <div class="mockup-label">Option C: Warm Editorial</div>
+
+  <!-- Main Section -->
+  <div class="main">
+
+    <!-- Total Assets Header -->
+    <div class="total-assets">
+      <div class="ta-label">Your Wealth Foundation</div>
+      <div class="ta-title">$6,148,236</div>
+    </div>
+
+    <!-- Bucket Cards Grid -->
+    <div class="cards-grid">
+      <!-- Operating Cash -->
+      <div class="bucket-card op">
+        <div class="card-name">Operating Cash</div>
+        <div class="card-balance">$132,050</div>
+        <div class="card-yield-badge">0.01%</div>
+        <div class="card-bar-track"><div class="card-bar-fill" style="width:19%"></div></div>
+        <div class="card-desc">Cash for upcoming expenditures</div>
+      </div>
+
+      <!-- Reserve Cash -->
+      <div class="bucket-card res">
+        <div class="card-name">Reserve Cash</div>
+        <div class="card-balance">$426,586</div>
+        <div class="card-yield-badge">4.60%</div>
+        <div class="card-bar-track"><div class="card-bar-fill" style="width:62%"></div></div>
+        <div class="card-desc">Active cash management</div>
+      </div>
+
+      <!-- Capital Build -->
+      <div class="bucket-card bld">
+        <div class="card-name">Capital Build</div>
+        <div class="card-balance">$135,000</div>
+        <div class="card-yield-badge">4.85%</div>
+        <div class="card-bar-track"><div class="card-bar-fill" style="width:19.5%"></div></div>
+        <div class="card-desc">Disciplined saving for goals</div>
+      </div>
+
+      <!-- Investments -->
+      <div class="bucket-card grow">
+        <div class="card-name">Investments</div>
+        <div class="card-balance">$2,509,500</div>
+        <div class="card-yield-badge">10.0%</div>
+        <div class="card-bar-track"><div class="card-bar-fill" style="width:78%"></div></div>
+        <div class="card-desc">Long-term compounded growth</div>
+      </div>
+
+      <!-- Other Assets -->
+      <div class="bucket-card other">
+        <div class="card-name">Other Assets</div>
+        <div class="card-balance">$2,945,100</div>
+        <div class="card-yield-badge">Unallocated</div>
+        <div class="card-bar-track"><div class="card-bar-fill" style="width:92%"></div></div>
+        <div class="card-desc">Real estate & alternatives</div>
+      </div>
+    </div>
+
+    <!-- CTA Button -->
+    <div class="cta-section">
+      <button class="btn-allocate">Start Allocation</button>
+    </div>
+
+  </div>
+
+</body>
+</html>

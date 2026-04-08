@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU · Clients — Option B: Portfolio Command</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: hsl(222,45%,12%);
+  --gold: #9a7b3c;
+  --green: #2e7a52;
+  --green-b: #5ecc8a;
+  --linen: #f0ece5;
+  --panel: #faf9f7;
+  --white: #fff;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.13);
+  --muted: rgba(0,0,0,0.42);
+  --faint: rgba(0,0,0,0.22);
+  --INTER: Inter, system-ui, sans-serif;
+}
+body { font-family: var(--INTER); background: var(--panel); color: var(--navy); min-height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+
+/* ── Command header ── */
+.cmd-header {
+  background: var(--navy);
+  padding: 0 40px;
+  flex-shrink: 0;
+}
+.cmd-toprow {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.cmd-logo { display: flex; align-items: center; gap: 14px; }
+.cmd-logo-word { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: #fff; }
+.cmd-logo-sep { width: 1px; height: 14px; background: rgba(255,255,255,0.12); }
+.cmd-logo-title { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; font-weight: 400; color: rgba(255,255,255,0.78); }
+.cmd-logo-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; padding: 3px 8px; border-radius: 3px; background: rgba(94,204,138,0.15); color: var(--green-b); border: 1px solid rgba(94,204,138,0.25); margin-left: 4px; }
+.cmd-actions { display: flex; align-items: center; gap: 10px; }
+.cmd-date { font-size: 11px; color: rgba(255,255,255,0.28); letter-spacing: 0.04em; }
+.cmd-btn {
+  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.75);
+  border: 1px solid rgba(255,255,255,0.14); padding: 6px 14px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+  border-radius: 4px; cursor: pointer; font-family: var(--INTER);
+  display: flex; align-items: center; gap: 6px;
+  transition: background 0.12s;
+}
+.cmd-btn:hover { background: rgba(255,255,255,0.14); }
+.cmd-btn.primary { background: var(--green-b); color: var(--navy); border-color: transparent; }
+.cmd-btn.primary:hover { filter: brightness(0.92); }
+
+/* ── Stats strip inside header ── */
+.cmd-stats {
+  display: flex;
+  padding: 14px 0;
+  gap: 0;
+}
+.cmd-stat { flex: 1; padding: 0 24px 0 0; border-right: 1px solid rgba(255,255,255,0.07); }
+.cmd-stat:first-child { padding-left: 0; }
+.cmd-stat:last-child { border-right: none; }
+.cmd-stat-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.25); margin-bottom: 4px; }
+.cmd-stat-val { font-size: 20px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: -0.4px; line-height: 1; margin-bottom: 3px; }
+.cmd-stat-val.gold { color: #c9a057; }
+.cmd-stat-val.green { color: var(--green-b); }
+.cmd-stat-sub { font-size: 10px; color: rgba(255,255,255,0.28); }
+
+/* ── Intelligence ticker ── */
+.ticker {
+  background: hsl(222,40%,10%);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 8px 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.ticker-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--green-b); flex-shrink: 0;
+  display: flex; align-items: center; gap: 6px;
+}
+.ticker-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green-b); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.ticker-sep { color: rgba(255,255,255,0.15); }
+.ticker-item { font-size: 11px; color: rgba(255,255,255,0.45); }
+.ticker-item strong { color: rgba(255,255,255,0.75); font-weight: 500; }
+.ticker-item .hi { color: #c9a057; font-weight: 500; }
+.ticker-item .pos { color: var(--green-b); font-weight: 500; }
+
+/* ── Main roster ── */
+.main { flex: 1; overflow-y: auto; }
+
+/* ── Filter bar ── */
+.filter-bar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.filter-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--faint); }
+.filter-chip {
+  font-size: 11px; font-weight: 500; padding: 4px 12px; border-radius: 3px;
+  border: 1px solid var(--border); cursor: pointer; color: var(--muted);
+  transition: all 0.1s;
+}
+.filter-chip:hover { border-color: rgba(0,0,0,0.20); color: var(--navy); }
+.filter-chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.filter-spacer { flex: 1; }
+.search-box {
+  padding: 5px 12px; font-size: 12px; border: 1px solid var(--border);
+  border-radius: 4px; outline: none; width: 180px; color: var(--navy);
+  background: var(--white); font-family: var(--INTER);
+}
+.search-box:focus { border-color: rgba(27,61,110,0.35); }
+
+/* ── Table ── */
+.roster-table { width: 100%; padding: 0 40px 60px; }
+
+.roster-thead {
+  display: grid;
+  grid-template-columns: 1fr 110px 140px 130px 140px 90px 130px 24px;
+  padding: 9px 16px;
+  border-bottom: 2px solid var(--border-strong);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 10;
+  margin-top: 0;
+}
+.th { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--faint); }
+.th.r { text-align: right; }
+
+.section-divider {
+  padding: 10px 16px 8px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.10em; color: var(--faint);
+  background: #f5f3ef;
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 2px;
+}
+
+.roster-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 140px 130px 140px 90px 130px 24px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.10s;
+  background: var(--white);
+}
+.roster-row:hover { background: #fdfaf6; }
+.roster-row.onboarding-row { background: #fffdf9; }
+.roster-row.onboarding-row:hover { background: #fdf8ef; }
+
+.row-name-cell { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.row-avatar { width: 34px; height: 34px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.row-name { font-size: 13px; font-weight: 500; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.row-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 2px 7px; border-radius: 10px; margin-top: 2px; }
+.row-tag.gold { background: rgba(154,123,60,0.10); color: var(--gold); border: 1px solid rgba(154,123,60,0.20); }
+.row-tag.green { background: rgba(46,122,82,0.10); color: var(--green); border: 1px solid rgba(46,122,82,0.18); }
+.row-tag.blue { background: rgba(37,99,235,0.08); color: #1b3f8a; border: 1px solid rgba(37,99,235,0.16); }
+
+.row-risk { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--navy); }
+.risk-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.row-val { font-size: 13px; color: var(--navy); font-variant-numeric: tabular-nums; text-align: right; }
+.row-val.gold { color: var(--gold); font-weight: 500; }
+.row-val.green { color: var(--green); font-weight: 500; }
+.row-val.muted { color: var(--muted); }
+.row-val-sub { font-size: 10px; color: var(--faint); text-align: right; margin-top: 1px; }
+.row-center { text-align: center; }
+.row-arrow { color: var(--faint); font-size: 11px; text-align: right; }
+
+/* intelligence badge inline */
+.intel-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 500;
+  padding: 3px 8px; border-radius: 3px;
+}
+.intel-badge.gold { background: rgba(154,123,60,0.10); color: var(--gold); }
+.intel-badge.none { color: var(--faint); font-size: 11px; }
+
+.locked-band { opacity: 0.33; }
+</style>
+</head>
+<body>
+
+<!-- COMMAND HEADER -->
+<div class="cmd-header">
+  <div class="cmd-toprow">
+    <div class="cmd-logo">
+      <div class="cmd-logo-word">GURU</div>
+      <div class="cmd-logo-sep"></div>
+      <div class="cmd-logo-title">Current Client Portfolio</div>
+      <div class="cmd-logo-badge">Advisor Intelligence</div>
+    </div>
+    <div class="cmd-actions">
+      <div class="cmd-date">Thu, Apr 2 · 2:34 PM</div>
+      <button class="cmd-btn">↓ Export</button>
+      <button class="cmd-btn primary">＋ Add Family</button>
+    </div>
+  </div>
+  <div class="cmd-stats">
+    <div class="cmd-stat">
+      <div class="cmd-stat-lbl">Total AUM</div>
+      <div class="cmd-stat-val">$30.9M</div>
+      <div class="cmd-stat-sub">Under management</div>
+    </div>
+    <div class="cmd-stat">
+      <div class="cmd-stat-lbl">Total Household Assets</div>
+      <div class="cmd-stat-val">$48.5M</div>
+      <div class="cmd-stat-sub">Across all families</div>
+    </div>
+    <div class="cmd-stat">
+      <div class="cmd-stat-lbl">Active Clients</div>
+      <div class="cmd-stat-val">73</div>
+      <div class="cmd-stat-sub">Book of business</div>
+    </div>
+    <div class="cmd-stat">
+      <div class="cmd-stat-lbl">Action Items</div>
+      <div class="cmd-stat-val gold">3</div>
+      <div class="cmd-stat-sub">Need attention today</div>
+    </div>
+    <div class="cmd-stat">
+      <div class="cmd-stat-lbl">Deployable Capital</div>
+      <div class="cmd-stat-val green">$299K</div>
+      <div class="cmd-stat-sub">Idle · flagged by GURU</div>
+    </div>
+  </div>
+</div>
+
+<!-- INTELLIGENCE TICKER -->
+<div class="ticker">
+  <div class="ticker-label"><div class="ticker-dot"></div>GURU Intelligence</div>
+  <div class="ticker-sep">·</div>
+  <div class="ticker-item"><strong>Kessler</strong> — <span class="hi">$299,966</span> idle at 0.30% · 47 days · potential <span class="pos">+$12,959/yr</span></div>
+  <div class="ticker-sep">·</div>
+  <div class="ticker-item"><strong>Harrington</strong> — equity drift flagged · rebalance window open</div>
+  <div class="ticker-sep">·</div>
+  <div class="ticker-item"><strong>Thornton</strong> — RMD deadline in <span class="hi">14 days</span></div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <div class="filter-label">View</div>
+  <div class="filter-chip active">All</div>
+  <div class="filter-chip">Flagged</div>
+  <div class="filter-chip">Onboarding</div>
+  <div class="filter-chip">High AUM</div>
+  <div class="filter-spacer"></div>
+  <input class="search-box" placeholder="Search families…">
+</div>
+
+<!-- ROSTER TABLE -->
+<div class="roster-table">
+  <div class="roster-thead">
+    <div class="th">Family</div>
+    <div class="th">Risk</div>
+    <div class="th r">Total Assets</div>
+    <div class="th r">AUM</div>
+    <div class="th r">GURU Signal</div>
+    <div class="th r">Upcoming Cash</div>
+    <div class="th r">Last Active</div>
+    <div></div>
+  </div>
+
+  <!-- Active section -->
+  <div class="section-divider">Active · 2 families in GURU</div>
+
+  <!-- Kessler -->
+  <div class="roster-row">
+    <div class="row-name-cell">
+      <div class="row-avatar" style="background:hsl(222,45%,88%);color:hsl(222,45%,12%)">SK</div>
+      <div>
+        <div class="row-name">Sarah & Michael Kessler</div>
+        <div class="row-sub">Age 44</div>
+        <div class="row-tag gold">⚡ Signal detected</div>
+      </div>
+    </div>
+    <div class="row-risk"><div class="risk-dot" style="background:#2e7a52"></div>Moderate</div>
+    <div>
+      <div class="row-val">$5,912,862</div>
+      <div class="row-val-sub">Total wealth</div>
+    </div>
+    <div>
+      <div class="row-val">$814,877</div>
+      <div class="row-val-sub">Managed</div>
+    </div>
+    <div>
+      <div class="intel-badge gold">$299,966 idle cash</div>
+    </div>
+    <div>
+      <div class="row-val green">$5,511</div>
+      <div class="row-val-sub">Q2 dividend</div>
+    </div>
+    <div class="row-val muted" style="font-size:12px">Today 2:34 PM</div>
+    <div class="row-arrow">›</div>
+  </div>
+
+  <!-- Mari Oishi -->
+  <div class="roster-row onboarding-row">
+    <div class="row-name-cell">
+      <div class="row-avatar" style="background:hsl(36,55%,88%);color:#5a3d10">MO</div>
+      <div>
+        <div class="row-name">Mari Oishi</div>
+        <div class="row-sub">Age 29</div>
+        <div class="row-tag gold">Onboarding in progress</div>
+      </div>
+    </div>
+    <div class="row-risk"><div class="risk-dot" style="background:#9a7b3c"></div>Moderate</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted">—</div>
+    <div class="intel-badge none">Complete survey first</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted" style="font-size:12px">3 days ago</div>
+    <div class="row-arrow" style="color:var(--gold)">›</div>
+  </div>
+
+  <!-- Locked section -->
+  <div class="section-divider" style="margin-top:8px">Coming Soon — Migrating to GURU · 4 families</div>
+
+  <div class="roster-row locked-band">
+    <div class="row-name-cell">
+      <div class="row-avatar" style="background:hsl(222,45%,88%);color:hsl(222,45%,12%)">JH</div>
+      <div>
+        <div class="row-name">James & Patricia Harrington</div>
+        <div class="row-sub">Age 67</div>
+      </div>
+    </div>
+    <div class="row-risk"><div class="risk-dot" style="background:#2e7a52"></div>Conservative</div>
+    <div class="row-val">$11,200,000</div>
+    <div class="row-val">$8,400,000</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted" style="font-size:12px">2 weeks ago</div>
+    <div style="font-size:10px;text-align:right;color:var(--faint)">🔒</div>
+  </div>
+  <div class="roster-row locked-band">
+    <div class="row-name-cell">
+      <div class="row-avatar" style="background:hsl(160,40%,87%);color:#174030">OC</div>
+      <div>
+        <div class="row-name">Olivia Chen</div>
+        <div class="row-sub">Age 38</div>
+      </div>
+    </div>
+    <div class="row-risk"><div class="risk-dot" style="background:#c0392b"></div>Aggressive</div>
+    <div class="row-val">$4,800,000</div>
+    <div class="row-val">$3,100,000</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted" style="font-size:12px">5 days ago</div>
+    <div style="font-size:10px;text-align:right;color:var(--faint)">🔒</div>
+  </div>
+  <div class="roster-row locked-band">
+    <div class="row-name-cell">
+      <div class="row-avatar" style="background:hsl(196,50%,88%);color:#113045">RD</div>
+      <div>
+        <div class="row-name">Robert & Susan Delacroix</div>
+        <div class="row-sub">Age 55</div>
+      </div>
+    </div>
+    <div class="row-risk"><div class="risk-dot" style="background:#9a7b3c"></div>Moderate</div>
+    <div class="row-val">$18,500,000</div>
+    <div class="row-val">$12,700,000</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted" style="font-size:12px">3 days ago</div>
+    <div style="font-size:10px;text-align:right;color:var(--faint)">🔒</div>
+  </div>
+  <div class="roster-row locked-band">
+    <div class="row-name-cell">
+      <div class="row-avatar" style="background:hsl(36,55%,88%);color:#5a3d10">MT</div>
+      <div>
+        <div class="row-name">Marcus Thornton</div>
+        <div class="row-sub">Age 42</div>
+      </div>
+    </div>
+    <div class="row-risk"><div class="risk-dot" style="background:#c0392b"></div>Aggressive</div>
+    <div class="row-val">$8,100,000</div>
+    <div class="row-val">$5,900,000</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted">—</div>
+    <div class="row-val muted" style="font-size:12px">1 week ago</div>
+    <div style="font-size:10px;text-align:right;color:var(--faint)">🔒</div>
+  </div>
+</div>
+
+<div style="position:fixed;bottom:12px;right:16px;font-size:10px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:rgba(0,0,0,0.22);pointer-events:none;">Option B · Portfolio Command</div>
+</body>
+</html>

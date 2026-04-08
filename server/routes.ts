@@ -6,14 +6,16 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import OpenAI from "openai";
-import { db, pool } from "./db";
+import { db, pool, queryWithRetry } from "./db";
 import { eq } from "drizzle-orm";
 import { cashFlows as cfTable, assets as assetsTable, clients as clientsTable, liabilities as liabilitiesTable, strategies as strategiesTable } from "@shared/schema";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+const openai = process.env.AI_INTEGRATIONS_OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    })
+  : null;
 
 export async function registerRoutes(
   httpServer: Server,
@@ -219,6 +221,7 @@ export async function registerRoutes(
 
   // ── AI Strategy Generation ────────────────────────────────────────────────
   app.post(api.clients.generateStrategy.path, async (req, res) => {
+    if (!openai) return res.status(503).json({ message: "AI features unavailable — no OpenAI API key configured." });
     try {
       const id = Number(req.params.id);
       const client = await storage.getClient(id);
@@ -341,29 +344,29 @@ Respond with a JSON object with a "strategies" array. Each element must have:
 // ── Migrations ─────────────────────────────────────────────────────────────────
 async function runMigrations() {
   // Add onboarding_complete column if it doesn't exist yet
-  await pool.query(`
+  await queryWithRetry(`
     ALTER TABLE clients
     ADD COLUMN IF NOT EXISTS onboarding_complete boolean NOT NULL DEFAULT false
   `);
 
   // Remove stale test profiles (keep Kessler and Mari Oishi only)
   const keepNames = ["Sarah & Michael Kessler", "Mari Oishi"];
-  const allClients = await pool.query(`SELECT id, name FROM clients`);
+  const allClients = await queryWithRetry(`SELECT id, name FROM clients`);
   for (const row of allClients.rows) {
     if (!keepNames.includes(row.name)) {
-      await pool.query(`DELETE FROM cash_flows WHERE client_id = $1`, [row.id]);
-      await pool.query(`DELETE FROM assets WHERE client_id = $1`, [row.id]);
-      await pool.query(`DELETE FROM liabilities WHERE client_id = $1`, [row.id]);
-      await pool.query(`DELETE FROM strategies WHERE client_id = $1`, [row.id]);
-      await pool.query(`DELETE FROM clients WHERE id = $1`, [row.id]);
+      await queryWithRetry(`DELETE FROM cash_flows WHERE client_id = $1`, [row.id]);
+      await queryWithRetry(`DELETE FROM assets WHERE client_id = $1`, [row.id]);
+      await queryWithRetry(`DELETE FROM liabilities WHERE client_id = $1`, [row.id]);
+      await queryWithRetry(`DELETE FROM strategies WHERE client_id = $1`, [row.id]);
+      await queryWithRetry(`DELETE FROM clients WHERE id = $1`, [row.id]);
       console.log(`[migrate] Removed stale test profile: ${row.name} (id=${row.id})`);
     }
   }
 
   // Ensure Mari Oishi profile exists (onboarding not complete)
-  const { rows } = await pool.query(`SELECT id FROM clients WHERE name = 'Mari Oishi'`);
+  const { rows } = await queryWithRetry(`SELECT id FROM clients WHERE name = 'Mari Oishi'`);
   if (rows.length === 0) {
-    await pool.query(
+    await queryWithRetry(
       `INSERT INTO clients (name, email, age, risk_tolerance, onboarding_complete) VALUES ($1,$2,$3,$4,$5)`,
       ["Mari Oishi", "", 0, "moderate", false]
     );
@@ -371,7 +374,7 @@ async function runMigrations() {
   }
 
   // Mark Kessler as onboarding complete (they have full data)
-  await pool.query(
+  await queryWithRetry(
     `UPDATE clients SET onboarding_complete = true WHERE name = 'Sarah & Michael Kessler'`
   );
 }
@@ -387,6 +390,7 @@ async function seedDatabase() {
 
   if (kessler) {
     const cfs = await storage.getCashFlows(kessler.id);
+    const liabs = await storage.getLiabilities(kessler.id);
     // Check if Kessler data is up to date — if yes, skip
     const needsMigration = cfs.length === 0 || cfs.some(cf =>
       cf.description?.includes("Monthly Net Salaries") ||
@@ -397,7 +401,9 @@ async function seedDatabase() {
       || !cfs.some(cf => cf.description?.includes("Sarasota — Golf Club"))
       || cfs.some(cf => cf.description?.includes("Annual Memberships") && new Date(cf.date).getUTCMonth() === 10)
       || cfs.some(cf => cf.description === "Golf Club Annual Dues")
-      || cfs.some(cf => cf.description?.includes("Year-End Investment") && Number(cf.amount) < 20000);
+      || cfs.some(cf => cf.description?.includes("Year-End Investment") && Number(cf.amount) < 20000)
+      // Reseed if student loans are still the old combined single entry
+      || liabs.some(l => l.description?.includes("Partner 1 + Partner 2"));
     if (!needsMigration) return; // Kessler data is good, nothing to do
 
     console.log("[seed] Reseeding Kessler data with updated cash flows...");
@@ -454,7 +460,8 @@ async function seedDatabase() {
     storage.createLiability({ clientId: c1.id, type: "mortgage",      value: "147000", interestRate: "2.55", description: "Sarasota Investment Property Mortgage (@ 2.55%)" }),
     // Consumer / Student Debt — $81,166
     storage.createLiability({ clientId: c1.id, type: "credit_card",   value: "11466",  interestRate: "22.99", description: "Chase Sapphire + Amex — paid monthly" }),
-    storage.createLiability({ clientId: c1.id, type: "student_loan",  value: "69700",  interestRate: "4.50",  description: "Student Loans (Partner 1 + Partner 2)" }),
+    storage.createLiability({ clientId: c1.id, type: "student_loan",  value: "42000",  interestRate: "5.50",  description: "Student Loan — Sarah Kessler (Federal / Dept. of Education)" }),
+    storage.createLiability({ clientId: c1.id, type: "student_loan",  value: "27700",  interestRate: "7.20",  description: "Student Loan — Michael Kessler (Private / Sallie Mae)" }),
     // Investment Debt — $175,000
     storage.createLiability({ clientId: c1.id, type: "personal_loan", value: "125000", interestRate: "6.50",  description: "Professional Loan — PE Fund II Capital Call" }),
     storage.createLiability({ clientId: c1.id, type: "personal_loan", value: "50000",  interestRate: "0.00",  description: "Remaining Capital Commitment — PE Fund II" }),

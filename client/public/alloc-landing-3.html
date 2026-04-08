@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GURU Allocation — Landing Mockup 3</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --page:    #f0ece5;
+      --card:    #f5f1ec;
+      --navy:    #1a2e4a;
+      --gold:    #8a6920;
+      --forest:  #1e4d30;
+      --rust:    #8b3a2a;
+      --border:  rgba(0,0,0,0.09);
+      --divider: rgba(0,0,0,0.06);
+      --text:    #1a1a1a;
+      --mid:     rgba(0,0,0,0.55);
+      --dim:     rgba(0,0,0,0.40);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--page);
+      color: var(--text);
+    }
+
+    @keyframes pulse       { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    @keyframes ipulse      { 0%,100%{opacity:1} 50%{opacity:0.30} }
+    @keyframes cfm-pulse   { 0%,100%{opacity:1} 50%{opacity:0.25} }
+    @keyframes borderRunBlue {
+      0%   { background-position: 0% 0,   100% 0,   100% 100%, 0% 100%; }
+      100% { background-position: 200% 0, 100% 200%, -100% 100%, 0% -100%; }
+    }
+
+    /* ── PAGE HEADER ── */
+    .ph {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; height: 44px;
+      background: #fff; border-bottom: 1px solid rgba(0,0,0,0.07);
+    }
+    .ph-left { font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+    .ph-sep { color: rgba(0,0,0,0.20); }
+    .ph-tab { color: var(--mid); }
+    .ph-right { font-size: 10px; color: var(--dim); }
+
+    /* ── UNIFIED DARK HERO BLOCK ── */
+    /* Everything above the fold is one cohesive dark section */
+    .dark-hero {
+      background: linear-gradient(160deg, #111d2e 0%, #0e1924 60%, #0a1520 100%);
+      position: relative; overflow: hidden;
+    }
+    .dark-hero::after {
+      content: ''; position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(-55deg, transparent, transparent 40px, rgba(255,255,255,0.008) 40px, rgba(255,255,255,0.008) 41px);
+      pointer-events: none;
+    }
+
+    /* — Client strip within dark hero — */
+    .dh-client-strip {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      position: relative; z-index: 2;
+    }
+    .dh-client-left { display: flex; align-items: center; gap: 16px; }
+    .dh-monogram {
+      width: 38px; height: 38px; border-radius: 3px;
+      background: rgba(138,105,32,0.22); border: 1px solid rgba(138,105,32,0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+      color: rgba(255,215,120,0.82);
+    }
+    .dh-name { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.88); }
+    .dh-since { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-top: 2px; }
+    .dh-client-right { display: flex; align-items: center; gap: 32px; }
+    .dh-stat { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+    .dh-stat-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+    .dh-stat-val { font-size: 18px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: rgba(255,255,255,0.88); line-height: 1; }
+    .dh-status {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 2px;
+      border: 1px solid rgba(58,138,90,0.3); background: rgba(58,138,90,0.08);
+    }
+    .dh-status-dot { width: 5px; height: 5px; border-radius: 50%; background: #3a8a5a; animation: pulse 2.5s infinite; }
+    .dh-status-txt { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(58,138,90,0.85); }
+
+    /* — Insight + Intelligence within dark hero — */
+    .dh-insight-row {
+      display: flex; gap: 16px; padding: 20px 32px;
+      position: relative; z-index: 2;
+    }
+
+    .dh-narrative {
+      flex: 1;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 20px 24px;
+      background: rgba(255,255,255,0.03);
+      position: relative;
+    }
+    .dh-narrative::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg,rgba(94,204,138,0.30),rgba(94,204,138,0.06) 40%,transparent);
+    }
+    .dhn-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .dhn-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ecc8a; box-shadow: 0 0 6px rgba(94,204,138,0.6); animation: ipulse 2.8s infinite; flex-shrink: 0; }
+    .dhn-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(94,204,138,0.80); }
+    .dhn-hl { font-size: 19px; font-weight: 300; color: rgba(255,255,255,0.90); letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 10px; }
+    .dhn-body { font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.50); }
+    .dhn-body em { color: rgba(255,255,255,0.76); font-style: italic; }
+
+    /* GURU Intelligence card (identical to original) */
+    .guru-model-card {
+      position: relative; overflow: hidden;
+      background: linear-gradient(160deg, #1a3a6b 0%, #163060 55%, #0f2248 100%);
+      border: 1px solid rgba(91,143,204,0.35);
+      border-radius: 8px;
+      display: flex; flex-direction: column;
+      width: 500px; flex-shrink: 0;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.28), 0 0 0 1px rgba(91,143,204,0.12);
+    }
+    .guru-model-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; pointer-events: none;
+      background: linear-gradient(90deg, rgba(91,143,204,0.65), rgba(91,143,204,0.1) 60%, transparent);
+    }
+    .guru-model-card::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+      background:
+        linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.75) 50%, transparent 100%) top / 200% 2px no-repeat,
+        linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.45) 50%, transparent 100%) right / 2px 200% no-repeat,
+        linear-gradient(90deg, transparent 0%, rgba(91,143,204,0.55) 50%, transparent 100%) bottom / 200% 2px no-repeat,
+        linear-gradient(180deg, transparent 0%, rgba(91,143,204,0.45) 50%, transparent 100%) left / 2px 200% no-repeat;
+      border-radius: 6px;
+      animation: borderRunBlue 6s linear infinite;
+    }
+    .gmc-top-strip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid rgba(91,143,204,0.15);
+      position: relative; z-index: 2; flex-shrink: 0;
+    }
+    .gmc-guru-badge { display: flex; align-items: center; gap: 7px; }
+    .gmc-guru-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ecc8a; box-shadow: 0 0 6px rgba(94,204,138,0.7); animation: cfm-pulse 2.2s infinite; }
+    .gmc-guru-lbl { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(94,204,138,0.85); }
+    .gmc-live-pill { margin-left: auto; display: flex; align-items: center; gap: 5px; padding: 3px 9px; border: 1px solid rgba(91,143,204,0.25); border-radius: 2px; background: rgba(91,143,204,0.06); }
+    .gmc-live-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(91,143,204,0.9); animation: cfm-pulse 1.8s infinite; }
+    .gmc-live-txt { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+    .gmc-kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; flex: 1; position: relative; z-index: 2; }
+    .gmc-kpi { display: flex; flex-direction: column; justify-content: center; gap: 5px; padding: 14px 16px; border-right: 1px solid rgba(255,255,255,0.07); }
+    .gmc-kpi:last-child { border-right: none; }
+    .gmc-kpi-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.48); }
+    .gmc-kpi-val { font-size: 17px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: rgba(255,255,255,0.90); }
+
+    /* — Bucket strip inside dark hero — */
+    .dh-bucket-strip {
+      display: grid; grid-template-columns: repeat(5,1fr);
+      border-top: 1px solid rgba(255,255,255,0.05);
+      position: relative; z-index: 2;
+    }
+    .dh-bucket {
+      padding: 14px 20px;
+      border-right: 1px solid rgba(255,255,255,0.04);
+      border-top: 2px solid transparent;
+    }
+    .dh-bucket:last-child { border-right: none; }
+    .dh-bucket.op   { border-top-color: rgba(91,143,204,0.65); }
+    .dh-bucket.res  { border-top-color: rgba(138,105,32,0.75); }
+    .dh-bucket.bld  { border-top-color: rgba(30,77,48,0.75); }
+    .dh-bucket.grow { border-top-color: rgba(255,255,255,0.20); }
+    .dh-bucket.oth  { border-top-color: rgba(255,255,255,0.12); }
+    .dhb-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+    .dhb-name { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.42); }
+    .dhb-yield { font-size: 9px; color: rgba(255,255,255,0.30); font-variant-numeric: tabular-nums; }
+    .dhb-bal { font-size: 17px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: rgba(255,255,255,0.82); line-height: 1; }
+
+    /* ── BEGIN SECTION (light, full-width centered) ── */
+    .begin-section {
+      padding: 44px 32px 56px;
+    }
+
+    /* Centered container */
+    .begin-inner {
+      max-width: 840px; margin: 0 auto; text-align: center;
+    }
+
+    .bi-overline {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--dim);
+      margin-bottom: 14px;
+    }
+    .bi-headline {
+      font-size: 28px; font-weight: 300; color: var(--text);
+      letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px;
+    }
+    .bi-subhead {
+      font-size: 13px; color: var(--mid); line-height: 1.65;
+      margin-bottom: 40px; max-width: 520px; margin-left: auto; margin-right: auto;
+    }
+
+    /* Vertical step list — narrow center column */
+    .step-list {
+      max-width: 520px; margin: 0 auto 40px;
+      display: flex; flex-direction: column;
+      gap: 0;
+      border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+      background: var(--card);
+    }
+    .sl-step {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      position: relative;
+    }
+    .sl-step:last-child { border-bottom: none; }
+    .sl-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--navy); color: rgba(255,255,255,0.92);
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .sl-content {}
+    .sl-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .sl-desc { font-size: 11px; color: var(--mid); line-height: 1.6; }
+    .sl-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .sl-tag {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.10em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 2px;
+    }
+    .tag-guru { background: rgba(26,46,74,0.08); color: var(--navy); border: 1px solid rgba(26,46,74,0.14); }
+    .tag-time { background: rgba(0,0,0,0.04); color: var(--mid); border: 1px solid rgba(0,0,0,0.10); }
+    .tag-auto { background: rgba(30,77,48,0.08); color: var(--forest); border: 1px solid rgba(30,77,48,0.14); }
+
+    /* CTA */
+    .begin-cta {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .btn-begin {
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      background: var(--navy); color: rgba(255,255,255,0.92);
+      border: none; cursor: pointer;
+      padding: 16px 56px;
+      border-radius: 2px;
+      transition: background 0.15s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .btn-begin:hover { background: #0f1d30; }
+    .btn-begin-arrow { font-size: 16px; }
+    .btn-begin-note { font-size: 10px; color: var(--dim); letter-spacing: 0.02em; }
+  </style>
+</head>
+<body>
+
+  <!-- Page header -->
+  <div class="ph">
+    <div class="ph-left">GURU <span class="ph-sep">·</span> <span class="ph-tab">Asset Allocation</span></div>
+    <div class="ph-right">Demo Mockup 3</div>
+  </div>
+
+  <!-- All of the hero lives inside one dark unified block -->
+  <div class="dark-hero">
+
+    <!-- Client strip -->
+    <div class="dh-client-strip">
+      <div class="dh-client-left">
+        <div class="dh-monogram">KF</div>
+        <div>
+          <div class="dh-name">Kessler Family</div>
+          <div class="dh-since">Client since 2018</div>
+        </div>
+      </div>
+      <div class="dh-client-right">
+        <div class="dh-stat">
+          <div class="dh-stat-lbl">Annual Income</div>
+          <div class="dh-stat-val">$365,606</div>
+        </div>
+        <div class="dh-stat">
+          <div class="dh-stat-lbl">Expenses</div>
+          <div class="dh-stat-val">$299,268</div>
+        </div>
+        <div class="dh-stat">
+          <div class="dh-stat-lbl">Net Cash Flow</div>
+          <div class="dh-stat-val" style="color:rgba(94,204,138,0.9)">+$66,338</div>
+        </div>
+        <div class="dh-stat">
+          <div class="dh-stat-lbl">Total AUM</div>
+          <div class="dh-stat-val">$6,148,236</div>
+        </div>
+        <div class="dh-status">
+          <div class="dh-status-dot"></div>
+          <span class="dh-status-txt">GURU Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Insight + GURU Intelligence -->
+    <div class="dh-insight-row">
+      <div class="dh-narrative">
+        <div class="dhn-eyebrow">
+          <div class="dhn-dot"></div>
+          <span class="dhn-lbl">GURU Insight · Kessler Family</span>
+        </div>
+        <div class="dhn-hl">Strong liquidity, ready to work harder.</div>
+        <div class="dhn-body">
+          The Kesslers are running well above liquidity policy — reserve sits at 23.6 months vs a 12-month target,
+          and operating cash covers 6.3 months when 2 is sufficient.
+          That's approximately <em>$300,000 above threshold</em>. Deploying that excess picks up
+          an estimated <em>$9,200 after tax per year</em> with no increase in risk profile.
+        </div>
+      </div>
+
+      <div class="guru-model-card">
+        <div class="gmc-top-strip">
+          <div class="gmc-guru-badge">
+            <div class="gmc-guru-dot"></div>
+            <span class="gmc-guru-lbl">GURU Intelligence</span>
+          </div>
+          <div class="gmc-live-pill">
+            <div class="gmc-live-dot"></div>
+            <span class="gmc-live-txt">Live · Now</span>
+          </div>
+        </div>
+        <div class="gmc-kpi-grid">
+          <div class="gmc-kpi">
+            <span class="gmc-kpi-lbl">Potential Excess Liquidity</span>
+            <span class="gmc-kpi-val" style="color:rgba(212,168,67,0.95)">$299,926</span>
+          </div>
+          <div class="gmc-kpi">
+            <span class="gmc-kpi-lbl">After-Tax Return Pickup</span>
+            <span class="gmc-kpi-val" style="color:rgba(94,204,138,0.92)">+$9,200 / yr</span>
+          </div>
+          <div class="gmc-kpi">
+            <span class="gmc-kpi-lbl">Annual Expenses</span>
+            <span class="gmc-kpi-val">$299,268</span>
+          </div>
+          <div class="gmc-kpi">
+            <span class="gmc-kpi-lbl">Annual Net Cash Flow</span>
+            <span class="gmc-kpi-val" style="color:rgba(91,143,204,0.95)">+$66,338</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bucket strip — bottom of the dark block -->
+    <div class="dh-bucket-strip">
+      <div class="dh-bucket op">
+        <div class="dhb-header"><span class="dhb-name">Operating Cash</span><span class="dhb-yield">0.01%</span></div>
+        <div class="dhb-bal">$132,050</div>
+      </div>
+      <div class="dh-bucket res">
+        <div class="dhb-header"><span class="dhb-name">Reserve Cash</span><span class="dhb-yield">4.60%</span></div>
+        <div class="dhb-bal">$426,586</div>
+      </div>
+      <div class="dh-bucket bld">
+        <div class="dhb-header"><span class="dhb-name">Capital Build</span><span class="dhb-yield">4.85%</span></div>
+        <div class="dhb-bal">$135,000</div>
+      </div>
+      <div class="dh-bucket grow">
+        <div class="dhb-header"><span class="dhb-name">Investments</span><span class="dhb-yield">3.95%</span></div>
+        <div class="dhb-bal">$2,509,500</div>
+      </div>
+      <div class="dh-bucket oth">
+        <div class="dhb-header"><span class="dhb-name">Other Assets</span><span class="dhb-yield" style="opacity:0">—</span></div>
+        <div class="dhb-bal">$2,945,100</div>
+      </div>
+    </div>
+
+  </div><!-- /dark-hero -->
+
+  <!-- BEGIN SECTION — centered, light -->
+  <div class="begin-section">
+    <div class="begin-inner">
+      <div class="bi-overline">Continuous monitoring detected changes · GURU is ready</div>
+      <div class="bi-headline">Two imbalances found.<br>Three steps to resolve them.</div>
+      <div class="bi-subhead">
+        GURU monitors the Kessler portfolio around the clock and flags when action is needed.
+        Walk through the playbook at your own pace — or let GURU execute automatically.
+      </div>
+
+      <div class="step-list">
+        <div class="sl-step">
+          <div class="sl-num">1</div>
+          <div class="sl-content">
+            <div class="sl-name">Asset Allocation Rebalancing</div>
+            <div class="sl-desc">GURU has already calculated the optimal coverage targets. Review the suggested transfer amounts for each liquidity bucket and adjust if needed.</div>
+            <div class="sl-tags">
+              <span class="sl-tag tag-guru">GURU pre-filled</span>
+              <span class="sl-tag tag-time">~3 min</span>
+            </div>
+          </div>
+        </div>
+        <div class="sl-step">
+          <div class="sl-num">2</div>
+          <div class="sl-content">
+            <div class="sl-name">Product Selection</div>
+            <div class="sl-desc">Choose the specific instruments to use — money market funds, T-bills, short-duration bonds. GURU ranks options by after-tax yield for this client's tax profile.</div>
+            <div class="sl-tags">
+              <span class="sl-tag tag-guru">Ranked by AT yield</span>
+              <span class="sl-tag tag-time">~2 min</span>
+            </div>
+          </div>
+        </div>
+        <div class="sl-step">
+          <div class="sl-num">3</div>
+          <div class="sl-content">
+            <div class="sl-name">Confirm &amp; Execute</div>
+            <div class="sl-desc">See the full before/after impact on balances, yields, and coverage ratios. Send for execution or activate GURU auto-execution for future rebalancing events.</div>
+            <div class="sl-tags">
+              <span class="sl-tag tag-auto">Auto-execute available</span>
+              <span class="sl-tag tag-time">~1 min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="begin-cta">
+        <button class="btn-begin">
+          <span>Start the Review</span>
+          <span class="btn-begin-arrow">→</span>
+        </button>
+        <span class="btn-begin-note">~6 minutes total · Changes can be reversed at any step</span>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

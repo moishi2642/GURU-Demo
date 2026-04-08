@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU Allocation Tool — v6</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f0ede8;
+  --panel:     #faf9f7;
+  --panel-dk:  hsl(222, 45%, 11%);
+  --border:    #ddd8d1;
+  --border-lt: #e8e4df;
+  --text:      #1c1917;
+  --muted:     #78716c;
+  --faint:     #a8a29e;
+  --gold:      #9a7b3c;
+  --gold-lt:   rgba(154,123,60,.08);
+  --gold-bdr:  rgba(154,123,60,.25);
+  --green:     #2e7a52;
+  --green-lt:  rgba(46,122,82,.07);
+  --green-bdr: rgba(46,122,82,.22);
+  --navy:      hsl(222, 45%, 12%);
+  --blue:      #2e5c8a;
+  --blue-lt:   rgba(46,92,138,.07);
+  --blue-bdr:  rgba(46,92,138,.2);
+  --grow:      #6b7fa0;
+}
+
+body {
+  background: var(--bg);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 28px 32px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* ── Signal / Pulse dots ── */
+@keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.35} }
+@keyframes pg     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.7)} }
+.sig { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--gold); animation:pg 2.4s ease-in-out infinite; flex-shrink:0; }
+.sig.live { background:#4ade80; animation:none; }
+.live-dot { width:5px; height:5px; border-radius:50%; background:#4ade80; animation:pulse 2.2s ease-in-out infinite; flex-shrink:0; }
+.live-badge { display:inline-flex; align-items:center; gap:5px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 9px; border-radius:20px; background:var(--green-lt); border:1px solid var(--green-bdr); color:var(--green); }
+
+/* ══ BUTTONS ══ */
+.btn { font-family:'Inter',sans-serif; font-size:11px; font-weight:500; border-radius:6px; padding:8px 16px; cursor:pointer; letter-spacing:.03em; transition:opacity .15s; }
+.btn:hover { opacity:.85; }
+.btn-dark  { background:var(--navy); color:rgba(255,255,255,.88); border:none; }
+.btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+
+/* ══ PAGE HEADER ══ */
+.page-hd {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:22px; gap:16px;
+}
+.page-hd-left h1 {
+  font-family:'Playfair Display',serif;
+  font-size:20px; font-weight:400; color:var(--text);
+  letter-spacing:.01em; line-height:1.2; margin-bottom:4px;
+}
+.page-hd-left p { font-size:11px; color:var(--muted); }
+.page-hd-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.badge-live { display:flex; align-items:center; gap:5px; background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:4px 10px; }
+.badge-live span { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+
+/* ══ OPPORTUNITY BANNER ══ */
+.opp-banner {
+  background: var(--panel-dk);
+  border-radius: 10px;
+  padding: 0;
+  margin-bottom: 18px;
+  display: flex; align-items: stretch;
+  position: relative; overflow: hidden;
+}
+.opp-banner::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, var(--gold), rgba(154,123,60,.06) 70%);
+}
+.opp-copy {
+  flex: 1;
+  padding: 28px 32px;
+  position: relative;
+}
+.opp-copy .eyebrow {
+  display:flex; align-items:center; gap:7px;
+  margin-bottom:14px;
+}
+.opp-copy .eyebrow span {
+  font-size:9px; color:rgba(154,123,60,.8);
+  font-weight:700; text-transform:uppercase; letter-spacing:.14em;
+}
+.opp-copy .prose-headline {
+  font-family:'Playfair Display',serif;
+  font-size:18px; font-weight:400;
+  color:rgba(255,255,255,.92);
+  line-height:1.25;
+  margin-bottom:12px;
+}
+.opp-copy .prose {
+  font-family:'Inter',sans-serif;
+  font-size:12px; font-weight:400;
+  color:rgba(255,255,255,.42);
+  line-height:1.75;
+  max-width:520px;
+}
+.opp-copy .prose em {
+  font-style:italic;
+  color:rgba(255,255,255,.58);
+}
+.opp-divider { width:1px; background:rgba(255,255,255,.07); flex-shrink:0; }
+.opp-metrics {
+  display:flex; flex-direction:column;
+  width:210px; flex-shrink:0;
+  justify-content:center;
+}
+.opp-metric {
+  flex:1; padding:0 24px;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.opp-metric:not(:last-child) { border-bottom:1px solid rgba(255,255,255,.06); }
+.opp-metric .lbl {
+  font-size:8px; color:rgba(255,255,255,.28);
+  font-weight:700; text-transform:uppercase; letter-spacing:.12em; margin-bottom:5px;
+}
+.opp-metric .val {
+  font-family:'Inter',sans-serif;
+  font-size:20px; font-weight:600; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+}
+.opp-metric .val.gold  { color:var(--gold); }
+.opp-metric .val.green { color:#4ade80; }
+.opp-metric .val.white { color:rgba(255,255,255,.75); }
+.opp-metric .sub { font-size:9px; color:rgba(255,255,255,.22); margin-top:4px; }
+
+/* ══ BEFORE / AFTER LEDGER ══ */
+.ledger-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:8px; overflow:hidden; margin-bottom:22px;
+}
+.ldg-hd {
+  display:grid; grid-template-columns:168px 1fr 1fr 80px 76px 116px;
+  padding:6px 20px; border-bottom:1px solid var(--border-lt);
+  background:rgba(240,237,232,.5);
+}
+.lhc { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; color:var(--faint); }
+.lhc.r { text-align:right; }
+.ldg-row {
+  display:grid; grid-template-columns:168px 1fr 1fr 80px 76px 116px;
+  padding:11px 20px; border-bottom:1px solid var(--border-lt);
+  align-items:center; transition:background .1s;
+}
+.ldg-row:last-child { border-bottom:none; }
+.ldg-row:hover { background:rgba(240,237,232,.35); }
+.lr-name  { display:flex; align-items:center; gap:8px; }
+.lr-dot   { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.lr-lbl   { font-size:12px; font-weight:500; color:var(--text); }
+.lr-sub   { font-size:9px; color:var(--faint); margin-top:1px; }
+.lr-bal   { display:flex; flex-direction:column; gap:2px; }
+.lr-bv    { font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--text); }
+.lr-bs    { font-size:9px; color:var(--faint); }
+.lr-bv.after     { color:var(--green); }
+.lr-bv.after.dim { color:var(--muted); }
+.lr-change { text-align:right; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; }
+.lr-change.out  { color:var(--muted); }
+.lr-change.in   { color:var(--green); }
+.lr-change.none { color:var(--faint); font-weight:400; }
+.lr-yield  { text-align:right; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.lr-yield.up { color:var(--green); font-weight:600; }
+.lr-income { text-align:right; font-size:12.5px; font-variant-numeric:tabular-nums; }
+.lr-income.pos  { font-weight:700; color:var(--green); }
+.lr-income.none { color:var(--faint); font-weight:400; font-size:11px; }
+.ldg-summary {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:11px 20px;
+  background:rgba(240,237,232,.35);
+  border-top:1px solid var(--border);
+}
+.ls-left { font-size:10.5px; color:var(--muted); }
+.ls-left strong { color:var(--text); }
+.ls-kpis { display:flex; gap:24px; align-items:flex-end; }
+.ls-kpi .k-lbl { font-size:8.5px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--faint); margin-bottom:2px; }
+.ls-kpi .k-val { font-family:'Instrument Serif',serif; font-size:17px; color:var(--green); font-variant-numeric:tabular-nums; }
+.ls-div { width:1px; height:28px; background:var(--border-lt); }
+
+/* ══ STEP HEADERS (v3 style) ══ */
+.step-hd {
+  display:flex; align-items:center; gap:14px;
+  margin-bottom:22px; margin-top:44px;
+}
+.step-hd:first-of-type { margin-top:0; }
+.step-hd .line  { flex:1; height:1px; background:var(--border-lt); }
+.step-hd .note  { font-size:12px; color:var(--faint); white-space:nowrap; }
+.step-num {
+  width:36px; height:36px; border-radius:50%;
+  background:var(--panel-dk); color:rgba(255,255,255,.75);
+  font-size:15px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.step-num.done { background:var(--green); color:white; }
+.step-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); white-space:nowrap; }
+
+/* Step done strip */
+.step-done-strip {
+  background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--green);
+  border-radius:8px; padding:11px 16px;
+  display:flex; align-items:center; gap:12px; margin-bottom:8px;
+}
+.sds-icon { width:18px; height:18px; border-radius:50%; background:var(--green-lt); border:1.5px solid var(--green-bdr); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--green); flex-shrink:0; }
+.sds-body { flex:1; }
+.sds-title  { font-size:11px; font-weight:500; color:var(--text); }
+.sds-detail { font-size:10px; color:var(--muted); margin-top:1px; }
+.sds-edit   { font-size:10px; font-weight:500; color:var(--muted); border:1px solid var(--border); border-radius:5px; padding:4px 10px; background:transparent; cursor:pointer; font-family:'Inter',sans-serif; transition:color .12s, border-color .12s; flex-shrink:0; }
+.sds-edit:hover { color:var(--text); border-color:var(--muted); }
+
+/* Step locked placeholder */
+.step-locked-bar {
+  background:var(--panel); border:1px dashed var(--border);
+  border-radius:8px; padding:14px 20px;
+  display:flex; align-items:center; gap:9px;
+  margin-bottom:4px; color:var(--faint); font-size:11px;
+}
+
+/* Analyzing bar */
+.analyzing-bar {
+  background:var(--panel-dk); border-radius:8px;
+  padding:16px 22px; display:flex; align-items:center; gap:12px; margin-bottom:8px;
+}
+.analyzing-bar span { font-size:11px; color:rgba(255,255,255,.6); }
+@keyframes ellipsis { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+.analyzing-bar .dots::after { content:'...'; animation:ellipsis 1.4s infinite; }
+
+/* Step action bar */
+.step-action-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:14px; padding-top:14px; border-top:1px solid var(--border-lt);
+}
+.step-action-bar .sab-meta { font-size:10px; color:var(--faint); }
+.step-action-bar .sab-meta strong { color:var(--gold); font-variant-numeric:tabular-nums; }
+.btn-step {
+  font-family:'Inter',sans-serif; font-size:11px; font-weight:600;
+  background:var(--panel-dk); color:rgba(255,255,255,.88); border:none;
+  border-radius:6px; padding:10px 20px; cursor:pointer;
+  letter-spacing:.04em; transition:opacity .15s;
+  display:flex; align-items:center; gap:7px;
+}
+.btn-step:hover { opacity:.85; }
+.btn-step.primary { background:linear-gradient(135deg, hsl(222,55%,18%), hsl(222,45%,10%)); box-shadow:0 2px 10px rgba(0,0,0,.18); }
+
+/* ══ STEP 1 — PARAM CARDS ══ */
+.param-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:4px; }
+.param-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:12px; padding:28px 30px; position:relative; overflow:hidden;
+}
+.param-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.param-card.blue::before  { background:var(--blue); }
+.param-card.gold-c::before { background:var(--gold); }
+.param-top { margin-bottom:20px; }
+.param-name { font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; }
+.param-desc { font-size:12px; color:var(--muted); margin-top:5px; font-weight:400; }
+.excess-badge { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--gold); background:var(--gold-lt); border:1px solid var(--gold-bdr); border-radius:4px; padding:3px 8px; white-space:nowrap; }
+
+.coverage-bar-wrap { margin-bottom:22px; }
+.coverage-bar-labels { display:flex; justify-content:space-between; font-size:12px; color:var(--faint); margin-bottom:8px; }
+.coverage-bar { height:8px; border-radius:4px; background:var(--border); position:relative; overflow:visible; }
+.coverage-fill { height:100%; border-radius:3px; position:absolute; top:0; left:0; transition:width .3s ease; }
+.coverage-target-line { position:absolute; top:-3px; width:2px; height:12px; background:rgba(0,0,0,.2); border-radius:1px; transition:left .3s ease; }
+.coverage-excess-fill { position:absolute; top:0; right:0; height:100%; background:rgba(154,123,60,.35); border-radius:0 3px 3px 0; transition:left .3s ease; }
+
+/* Stepper */
+.stepper { display:flex; align-items:center; gap:0; border:1px solid var(--border); border-radius:9px; overflow:hidden; width:fit-content; margin-bottom:22px; }
+.stepper-btn { width:44px; height:46px; background:var(--bg); border:none; font-size:20px; font-weight:300; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; }
+.stepper-btn:hover { background:var(--border-lt); color:var(--text); }
+.stepper-val { padding:0 20px; height:46px; display:flex; align-items:center; justify-content:center; background:var(--panel); border-left:1px solid var(--border); border-right:1px solid var(--border); min-width:115px; }
+.stepper-val .number { font-family:'Instrument Serif',serif; font-size:26px; color:var(--text); margin-right:5px; }
+.stepper-val input.number {
+  font-family:'Instrument Serif',serif; font-size:26px; color:var(--text);
+  margin-right:5px; background:transparent; border:none; outline:none;
+  width:50px; text-align:center; -moz-appearance:textfield;
+}
+.stepper-val input.number::-webkit-outer-spin-button,
+.stepper-val input.number::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.stepper-val .unit   { font-size:12px; color:var(--muted); }
+
+/* ══ PARAM BOXES (3-col: Current / Target / Excess) ══ */
+.param-boxes { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px; }
+.pbox { border-radius:9px; padding:16px 18px; }
+.pbox.neutral { background:var(--panel); border:1px solid var(--border-lt); }
+.pbox.gold-box { background:var(--gold-lt); border:1px solid var(--gold-bdr); }
+.pbox-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; color:var(--faint); margin-bottom:8px; }
+.pbox.gold-box .pbox-lbl { color:rgba(154,123,60,.7); }
+.pbox-val { font-family:'Instrument Serif',serif; font-size:26px; color:var(--text); font-variant-numeric:tabular-nums; line-height:1; }
+.pbox-val.gold { color:var(--gold); }
+.pbox-input {
+  font-family:'Instrument Serif',serif; font-size:26px; color:var(--text);
+  font-variant-numeric:tabular-nums; line-height:1;
+  background:transparent; border:none; border-bottom:1.5px solid var(--border);
+  outline:none; width:100%; padding:0 0 2px;
+}
+.pbox-input:focus { border-bottom-color:var(--blue); }
+
+/* Deploy dropdown */
+.deploy-row { display:flex; align-items:center; gap:14px; padding-top:18px; border-top:1px solid var(--border-lt); }
+.deploy-lbl { font-size:11px; color:var(--faint); font-weight:700; text-transform:uppercase; letter-spacing:.1em; flex-shrink:0; }
+.deploy-select {
+  font-family:'Inter',sans-serif; font-size:14px; font-weight:500;
+  color:var(--text); background:var(--bg);
+  border:1px solid var(--border); border-radius:8px;
+  padding:10px 38px 10px 16px; cursor:pointer; outline:none;
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%2378716c' stroke-width='1.5' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center;
+  transition:border-color .15s; min-width:130px;
+}
+.deploy-select:focus { border-color:var(--muted); }
+
+.param-outcomes { display:flex; gap:20px; flex-wrap:wrap; }
+.param-outcome .lbl { font-size:9px; color:var(--faint); font-weight:600; text-transform:uppercase; letter-spacing:.1em; margin-bottom:3px; }
+.param-outcome .val { font-size:13px; font-weight:500; color:var(--text); font-variant-numeric:tabular-nums; }
+.mono { font-family:'SF Mono','Roboto Mono','Courier New',monospace; font-variant-numeric:tabular-nums; }
+
+/* ══ STEP 2 — ROUTING ══ */
+.routing-module { background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.routing-hd { padding:13px 20px; border-bottom:1px solid var(--border-lt); display:flex; align-items:center; justify-content:space-between; }
+.routing-hd .rt { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:500; }
+.routing-hd .rt-meta { font-size:10px; color:var(--faint); }
+.routing-row { display:grid; grid-template-columns:1fr 36px 140px 110px; align-items:center; padding:15px 20px; border-bottom:1px solid var(--border-lt); gap:8px; }
+.routing-row:last-child { border-bottom:none; }
+.rr-source .src-name { font-size:12px; font-weight:500; color:var(--text); }
+.rr-source .src-sub  { font-size:9px; color:var(--faint); margin-top:2px; }
+.rr-arrow { text-align:center; color:var(--faint); font-size:13px; }
+.rr-dest .dst-name { font-size:11px; font-weight:500; color:var(--muted); font-style:italic; }
+.rr-dest .dst-sub  { font-size:9px; color:var(--faint); margin-top:2px; }
+.routing-footer { padding:14px 20px; background:rgba(0,0,0,.02); border-top:1px solid var(--border-lt); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.routing-totals { display:flex; gap:28px; align-items:flex-end; }
+.fsm .lbl { font-size:9px; color:var(--faint); font-weight:700; text-transform:uppercase; letter-spacing:.1em; margin-bottom:3px; }
+.fsm .val { font-family:'Instrument Serif',serif; font-size:19px; color:var(--text); line-height:1; }
+.fsm .val.green { color:var(--green); }
+.footer-btns { display:flex; gap:8px; }
+
+.amt-wrap { display:inline-flex; align-items:baseline; gap:2px; }
+.amt-wrap .sym { font-size:11px; color:var(--gold); font-weight:500; }
+.amt-wrap input {
+  background:transparent; border:none; border-bottom:1px solid var(--gold-bdr);
+  font-size:14px; font-weight:500; font-family:'SF Mono',monospace;
+  font-variant-numeric:tabular-nums; color:var(--gold); width:106px; text-align:right;
+  padding:1px 2px; outline:none;
+}
+.amt-wrap input:focus { border-bottom-color:var(--gold); }
+
+/* ══ STEP 3 — PRODUCT SELECTION ══ */
+.prod-section { margin-bottom:4px; }
+.prod-bucket  { margin-bottom:20px; }
+.prod-bucket-hd { display:flex; align-items:baseline; gap:8px; margin-bottom:10px; }
+.prod-bucket-hd .title  { font-size:11px; font-weight:600; color:var(--text); text-transform:uppercase; letter-spacing:.1em; }
+.prod-bucket-hd .amount { font-size:11px; font-weight:500; color:var(--gold); font-variant-numeric:tabular-nums; }
+.prod-bucket-hd .note   { font-size:10px; color:var(--faint); }
+.prod-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.prod-card {
+  background:var(--panel); border:1.5px solid var(--border);
+  border-radius:9px; padding:16px 18px; cursor:pointer;
+  transition:border-color .15s, background .15s; position:relative; overflow:hidden;
+}
+.prod-card:hover { border-color:rgba(154,123,60,.35); }
+.prod-card.sel   { border-color:var(--gold); background:var(--gold-lt); }
+.rec-badge-card { position:absolute; top:0; right:12px; font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; background:var(--gold); color:white; border-radius:0 0 5px 5px; padding:2px 7px; }
+.pc-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.pc-name { font-size:12px; font-weight:500; color:var(--text); line-height:1.3; }
+.prod-card.sel .pc-name { color:var(--gold); }
+.risk-tag { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; border-radius:3px; padding:2px 7px; white-space:nowrap; flex-shrink:0; }
+.risk-zero   { color:var(--green); background:var(--green-lt); border:1px solid var(--green-bdr); }
+.risk-low    { color:var(--gold);  background:var(--gold-lt);  border:1px solid var(--gold-bdr); }
+.risk-lowmod { color:var(--blue);  background:rgba(46,92,138,.07); border:1px solid rgba(46,92,138,.2); }
+.pc-yield-at { font-family:'Instrument Serif',serif; font-size:22px; color:var(--text); line-height:1; font-variant-numeric:tabular-nums; margin-bottom:2px; }
+.pc-yield-at span { font-family:'Inter',sans-serif; font-size:11px; color:var(--muted); }
+.pc-yield-gross { font-size:10px; color:var(--faint); }
+.pc-income { margin-top:12px; padding-top:10px; border-top:1px solid var(--border-lt); display:flex; justify-content:space-between; align-items:baseline; }
+.pc-income .lbl { font-size:9px; color:var(--faint); font-weight:700; text-transform:uppercase; letter-spacing:.1em; }
+.pc-income .val { font-size:13px; font-weight:600; color:var(--green); font-variant-numeric:tabular-nums; }
+.pc-liquidity { font-size:9px; color:var(--faint); margin-top:6px; }
+
+/* ══ INCOME CALCULATOR ══ */
+/* ══ INCOME CALCULATOR (light, compact) ══ */
+.calc-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-top: 20px;
+  padding: 24px 28px;
+  position: relative;
+}
+.calc-panel::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background: linear-gradient(90deg, var(--green), rgba(46,122,82,.05) 65%);
+  border-radius: 12px 12px 0 0;
+}
+.calc-hd { display:flex; align-items:baseline; gap:12px; margin-bottom:18px; }
+.calc-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); }
+.calc-sub { font-size:11px; color:var(--faint); }
+.calc-inputs-row { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin-bottom:20px; align-items:end; }
+.calc-field { display:flex; flex-direction:column; gap:6px; }
+.calc-field-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--faint); }
+.calc-input-row { display:flex; align-items:center; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--bg); }
+.calc-prefix, .calc-suffix { padding:10px 12px; font-size:12px; color:var(--muted); background:rgba(0,0,0,.03); font-weight:500; flex-shrink:0; }
+.calc-prefix { border-right:1px solid var(--border-lt); }
+.calc-suffix { border-left:1px solid var(--border-lt); }
+.calc-input { flex:1; padding:10px 12px; border:none; outline:none; background:transparent; font-family:'Inter',sans-serif; font-size:14px; color:var(--text); font-variant-numeric:tabular-nums; }
+.calc-input::placeholder { color:var(--faint); }
+.calc-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.calc-stat { border-radius:9px; padding:16px 18px; background:var(--bg); border:1px solid var(--border-lt); }
+.calc-stat.gold { background:var(--gold-lt); border-color:var(--gold-bdr); }
+.calc-stat-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.11em; color:var(--faint); margin-bottom:8px; }
+.calc-stat.gold .calc-stat-lbl { color:rgba(154,123,60,.7); }
+.calc-stat-val { font-family:'Instrument Serif',serif; font-size:26px; color:var(--text); font-variant-numeric:tabular-nums; line-height:1; margin-bottom:5px; }
+.calc-stat.gold .calc-stat-val { color:var(--gold); }
+.calc-stat-sub { font-size:10px; color:var(--faint); }
+</style>
+</head>
+<body>
+
+<!-- ══ PAGE HEADER ══ -->
+<div class="page-hd">
+  <div class="page-hd-left">
+    <h1>Allocation Tool</h1>
+    <p>Sarah &amp; Michael Kessler · Set coverage targets · GURU generates the recommended transfer schedule</p>
+  </div>
+  <div class="page-hd-right">
+    <div class="badge-live">
+      <span class="sig live"></span>
+      <span>Live · 4s ago</span>
+    </div>
+    <button class="btn btn-ghost">Present to Client</button>
+    <button class="btn btn-dark">Execute All →</button>
+  </div>
+</div>
+
+
+<!-- ══ OPPORTUNITY BANNER ══ -->
+<div class="opp-banner">
+  <div class="opp-copy">
+    <div class="eyebrow">
+      <span class="sig"></span>
+      <span>GURU Insight · Kessler Family</span>
+    </div>
+    <p class="prose-headline">Strong liquidity, ready to work harder.</p>
+    <p class="prose">
+      The Kesslers had a strong year and their balance sheet reflects it — $558,636 across checking, savings, and money market accounts. But their liquidity is running well above policy. Reserve coverage sits at 23.6 months against a 12-month target, and operating cash covers 6.3 months when 2 is sufficient. That's approximately $300,000 sitting above their combined threshold. <em>At current rates, deploying that excess into Cresset Short Duration picks up an estimated $9,200 after tax per year — without touching their long-term investment portfolio.</em>
+    </p>
+  </div>
+
+  <div class="opp-divider"></div>
+
+  <div class="opp-metrics">
+    <div class="opp-metric">
+      <div class="lbl">Total Assets</div>
+      <div class="val white">$5,912,862</div>
+      <div class="sub">Full balance sheet</div>
+    </div>
+    <div class="opp-metric">
+      <div class="lbl">Reserve Coverage</div>
+      <div class="val gold">23.6 mos</div>
+      <div class="sub">Target: 12 months</div>
+    </div>
+    <div class="opp-metric">
+      <div class="lbl">Excess Liquidity</div>
+      <div class="val gold">$299,926</div>
+      <div class="sub">Above coverage threshold</div>
+    </div>
+    <div class="opp-metric">
+      <div class="lbl">Return Pickup / Year</div>
+      <div class="val green">+$9,200</div>
+      <div class="sub">After-tax · if deployed today</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ BEFORE / AFTER LEDGER ══ -->
+<div class="ledger-card">
+  <div class="ldg-hd">
+    <div class="lhc">Bucket</div>
+    <div class="lhc">Current Balance</div>
+    <div class="lhc">Target Balance</div>
+    <div class="lhc r">Change</div>
+    <div class="lhc r">Yield</div>
+    <div class="lhc r">Annual Income</div>
+  </div>
+  <div class="ldg-row">
+    <div class="lr-name"><div class="lr-dot" style="background:var(--blue)"></div><div><div class="lr-lbl">Operating Cash</div><div class="lr-sub">Checking · 7.3 mos</div></div></div>
+    <div class="lr-bal"><div class="lr-bv">$132,050</div><div class="lr-bs">0.01% yield</div></div>
+    <div class="lr-bal"><div class="lr-bv after dim">$41,880</div><div class="lr-bs">2 mos target</div></div>
+    <div class="lr-change out">(−$90,170)</div>
+    <div class="lr-yield">0.01%</div>
+    <div class="lr-income none">—</div>
+  </div>
+  <div class="ldg-row">
+    <div class="lr-name"><div class="lr-dot" style="background:var(--gold)"></div><div><div class="lr-lbl">Reserve</div><div class="lr-sub">Savings + MM · 23.6 mos</div></div></div>
+    <div class="lr-bal"><div class="lr-bv">$426,586</div><div class="lr-bs">3.15% yield</div></div>
+    <div class="lr-bal"><div class="lr-bv after dim">$216,830</div><div class="lr-bs">12 mos target</div></div>
+    <div class="lr-change out">(−$209,756)</div>
+    <div class="lr-yield">3.15%</div>
+    <div class="lr-income none">—</div>
+  </div>
+  <div class="ldg-row">
+    <div class="lr-name"><div class="lr-dot" style="background:var(--green)"></div><div><div class="lr-lbl">Build</div><div class="lr-sub">CD + Treasuries · 7.5 mos</div></div></div>
+    <div class="lr-bal"><div class="lr-bv">$135,000</div><div class="lr-bs">3.95% yield</div></div>
+    <div class="lr-bal"><div class="lr-bv after dim">$135,000</div><div class="lr-bs">no change</div></div>
+    <div class="lr-change none">—</div>
+    <div class="lr-yield">3.95%</div>
+    <div class="lr-income none">—</div>
+  </div>
+  <div class="ldg-row">
+    <div class="lr-name"><div class="lr-dot" style="background:var(--grow)"></div><div><div class="lr-lbl">Grow</div><div class="lr-sub">Brokerage + Retirement</div></div></div>
+    <div class="lr-bal"><div class="lr-bv">$5,219,226</div><div class="lr-bs">existing portfolio</div></div>
+    <div class="lr-bal"><div class="lr-bv after">$5,540,152</div><div class="lr-bs">+$299,926 deployed</div></div>
+    <div class="lr-change in">+$299,926</div>
+    <div class="lr-yield up">5.40%</div>
+    <div class="lr-income pos">+$16,196</div>
+  </div>
+  <div class="ldg-summary">
+    <div class="ls-left">Total assets <strong>unchanged at $5,912,862</strong> · 2 transfers · executes same-day</div>
+    <div class="ls-kpis">
+      <div class="ls-kpi"><div class="k-lbl">Income Created</div><div class="k-val">+$16,196 / yr</div></div>
+      <div class="ls-div"></div>
+      <div class="ls-kpi"><div class="k-lbl">After-Tax Pickup</div><div class="k-val">+$9,200 / yr</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     STEP 1 — LIQUIDITY POLICY
+══════════════════════════════════════════════════ -->
+<div class="step-hd">
+  <div class="step-num" id="s1-num">1</div>
+  <span class="step-title">Liquidity Policy</span>
+  <span class="line"></span>
+  <span class="note">Set coverage months for each bucket · GURU calculates excess</span>
+</div>
+
+<div id="s1-done" class="step-done-strip" style="display:none;">
+  <div class="sds-icon">✓</div>
+  <div class="sds-body">
+    <div class="sds-title">Liquidity targets set</div>
+    <div class="sds-detail" id="s1-done-detail">Op Cash: 2 mos · Reserve: 12 mos · <strong style="color:var(--gold);">$311,000 excess capital identified</strong></div>
+  </div>
+  <button class="sds-edit" onclick="editStep1()">Edit</button>
+</div>
+
+<div id="s1-content">
+  <div class="param-grid">
+
+    <!-- Operating Cash -->
+    <div class="param-card blue">
+      <div class="param-top">
+        <div class="param-name" style="color:var(--blue);">Operating Cash</div>
+        <div class="param-desc">Cash for upcoming expenditures</div>
+      </div>
+      <div class="coverage-bar-wrap">
+        <div class="coverage-bar-labels">
+          <span>Current: <strong id="op-current-mo">6.3 mos</strong></span>
+          <span id="op-target-label">Target: <strong>2 mos</strong></span>
+        </div>
+        <div class="coverage-bar">
+          <div class="coverage-fill" style="background:var(--blue); opacity:.22;" id="op-bar-base"></div>
+          <div class="coverage-excess-fill" id="op-bar-excess"></div>
+          <div class="coverage-target-line" id="op-target-line"></div>
+        </div>
+      </div>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adjustMonths('op',-1)">−</button>
+        <div class="stepper-val">
+          <input type="number" class="number" id="op-months" value="2" min="1" max="24" oninput="setMonthsFromInput('op',this.value)">
+          <span class="unit">mo target</span>
+        </div>
+        <button class="stepper-btn" onclick="adjustMonths('op',+1)">+</button>
+      </div>
+      <div class="param-boxes">
+        <div class="pbox neutral">
+          <div class="pbox-lbl">Current Balance</div>
+          <div class="pbox-val" id="op-current-bal">$132,050</div>
+        </div>
+        <div class="pbox neutral">
+          <div class="pbox-lbl">Target Balance</div>
+          <input type="text" class="pbox-input" id="op-target-bal" value="$41,880" onchange="setTargetFromBalance('op',this.value)">
+        </div>
+        <div class="pbox gold-box">
+          <div class="pbox-lbl">Excess to Release</div>
+          <div class="pbox-val gold" id="op-delta">$90,170</div>
+        </div>
+      </div>
+      <div class="deploy-row">
+        <span class="deploy-lbl">Deploy to:</span>
+        <select class="deploy-select" id="op-dest-sel" onchange="setDest('op',this.value)">
+          <option value="Build">Build</option>
+          <option value="Grow">Grow</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Reserve -->
+    <div class="param-card gold-c">
+      <div class="param-top">
+        <div class="param-name" style="color:var(--gold);">Reserve</div>
+        <div class="param-desc">Active cash management for what's next</div>
+      </div>
+      <div class="coverage-bar-wrap">
+        <div class="coverage-bar-labels">
+          <span>Current: <strong id="res-current-mo">23.6 mos</strong></span>
+          <span id="res-target-label">Target: <strong>12 mos</strong></span>
+        </div>
+        <div class="coverage-bar">
+          <div class="coverage-fill" style="background:var(--gold); opacity:.22;" id="res-bar-base"></div>
+          <div class="coverage-excess-fill" id="res-bar-excess"></div>
+          <div class="coverage-target-line" id="res-target-line"></div>
+        </div>
+      </div>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adjustMonths('res',-1)">−</button>
+        <div class="stepper-val">
+          <input type="number" class="number" id="res-months" value="12" min="1" max="36" oninput="setMonthsFromInput('res',this.value)">
+          <span class="unit">mo target</span>
+        </div>
+        <button class="stepper-btn" onclick="adjustMonths('res',+1)">+</button>
+      </div>
+      <div class="param-boxes">
+        <div class="pbox neutral">
+          <div class="pbox-lbl">Current Balance</div>
+          <div class="pbox-val" id="res-current-bal">$426,586</div>
+        </div>
+        <div class="pbox neutral">
+          <div class="pbox-lbl">Target Balance</div>
+          <input type="text" class="pbox-input" id="res-target-bal" value="$216,792" onchange="setTargetFromBalance('res',this.value)">
+        </div>
+        <div class="pbox gold-box">
+          <div class="pbox-lbl">Excess to Release</div>
+          <div class="pbox-val gold" id="res-delta">$209,794</div>
+        </div>
+      </div>
+      <div class="deploy-row">
+        <span class="deploy-lbl">Deploy to:</span>
+        <select class="deploy-select" id="res-dest-sel" onchange="setDest('res',this.value)">
+          <option value="Build">Build</option>
+          <option value="Grow">Grow</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="step-action-bar">
+    <span class="sab-meta">Excess identified: <strong id="s1-total-excess">$299,926</strong> · ready for capital release</span>
+    <button class="btn-step primary" onclick="completeStep1()">
+      Set Liquidity Targets <span style="font-size:13px;">→</span>
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     STEP 2 — CAPITAL RELEASE
+══════════════════════════════════════════════════ -->
+<div class="step-hd" style="margin-top:20px;">
+  <div class="step-num" id="s2-num">2</div>
+  <span class="step-title">Capital Release</span>
+  <span class="line"></span>
+  <span class="note" id="s2-note">Complete Step 1 first</span>
+</div>
+
+<div id="s2-locked" class="step-locked-bar">
+  <span>🔒</span>
+  <span>Capital release plan generates after liquidity targets are set.</span>
+</div>
+
+<div id="s2-done" class="step-done-strip" style="display:none;">
+  <div class="sds-icon">✓</div>
+  <div class="sds-body">
+    <div class="sds-title">Capital release confirmed</div>
+    <div class="sds-detail"><strong style="color:var(--gold);" id="s2-done-amt">$299,926</strong> released from Operating Cash + Reserve · routed to investment pool</div>
+  </div>
+  <button class="sds-edit" onclick="editStep2()">Edit</button>
+</div>
+
+<div id="s2-content" style="display:none;">
+  <div class="routing-module">
+    <div class="routing-hd">
+      <div class="rt">
+        <span class="sig"></span>
+        <span>Capital Release Plan</span>
+        <span style="font-size:10px; color:var(--faint);">— excess above liquidity targets</span>
+      </div>
+      <div class="rt-meta" id="avail-label">$299,926 identified</div>
+    </div>
+
+    <div class="routing-row">
+      <div class="rr-source">
+        <div class="src-name">Operating Cash</div>
+        <div class="src-sub">Chase Checking ···2680 + Citizens Checking ···3858 · currently 6.3 months coverage</div>
+      </div>
+      <div class="rr-arrow">→</div>
+      <div class="rr-amt">
+        <div class="amt-wrap">
+          <span class="sym">$</span>
+          <input type="text" id="amt-op" value="90,170">
+        </div>
+      </div>
+      <div class="rr-dest">
+        <div class="dst-name" id="op-routing-dest">Build</div>
+        <div class="dst-sub">Above 2-month target</div>
+      </div>
+    </div>
+
+    <div class="routing-row">
+      <div class="rr-source">
+        <div class="src-name">Reserve</div>
+        <div class="src-sub">Citizens Money Market ···4421 + Goldman Savings ···7710 · currently 23.6 months coverage</div>
+      </div>
+      <div class="rr-arrow">→</div>
+      <div class="rr-amt">
+        <div class="amt-wrap">
+          <span class="sym">$</span>
+          <input type="text" id="amt-res" value="209,756">
+        </div>
+      </div>
+      <div class="rr-dest">
+        <div class="dst-name" id="res-routing-dest">Build</div>
+        <div class="dst-sub">Above 12-month target</div>
+      </div>
+    </div>
+
+    <div class="routing-footer">
+      <div class="routing-totals">
+        <div class="fsm">
+          <div class="lbl">Total Released</div>
+          <div class="val" id="total-transferred">$299,926</div>
+        </div>
+        <div style="width:1px;height:32px;background:var(--border-lt);align-self:flex-end;"></div>
+        <div class="fsm">
+          <div class="lbl">Liquidity Preserved</div>
+          <div class="val" style="font-size:17px;">$258,710</div>
+        </div>
+        <div style="width:1px;height:32px;background:var(--border-lt);align-self:flex-end;"></div>
+        <div class="fsm">
+          <div class="lbl">Product Allocation</div>
+          <div class="val" style="font-size:15px;color:var(--faint);font-style:italic;">Pending Step 3</div>
+        </div>
+      </div>
+      <div class="footer-btns">
+        <button class="btn btn-ghost">Save Draft</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-action-bar">
+    <span class="sab-meta">Amounts confirmed · GURU will find optimal products for <strong id="s2-action-amt">$299,926</strong></span>
+    <button class="btn-step primary" onclick="findBestAllocation()">
+      Find Best Allocation <span style="font-size:13px;">→</span>
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     STEP 3 — PRODUCT ALLOCATION
+══════════════════════════════════════════════════ -->
+<div class="step-hd" style="margin-top:20px;">
+  <div class="step-num" id="s3-num">3</div>
+  <span class="step-title">Product Allocation</span>
+  <span class="line"></span>
+  <span class="note" id="s3-note">Complete Step 2 first</span>
+</div>
+
+<div id="s3-locked" class="step-locked-bar">
+  <span>🔒</span>
+  <span>GURU will identify optimal products once the capital release plan is confirmed.</span>
+</div>
+
+<div id="s3-analyzing" class="analyzing-bar" style="display:none;">
+  <span class="sig"></span>
+  <span>GURU is analyzing current market conditions, yield curves, and tax efficiency<span class="dots"></span></span>
+</div>
+
+<div id="s3-content" style="display:none;">
+
+  <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px;">
+    <span style="font-size:11px; font-weight:600; color:var(--text);">GURU Recommendation</span>
+    <span style="font-size:10px; color:var(--muted);">Ranked by after-tax yield · 37% federal bracket · select one per bucket</span>
+  </div>
+
+  <div class="prod-section">
+
+    <!-- Excess Capital -->
+    <div class="prod-bucket">
+      <div class="prod-bucket-hd">
+        <span class="title">Excess Capital</span>
+        <span class="amount" id="excess-deploy-amt">$299,926</span>
+        <span class="note">· freed from Operating Cash + Reserve · deploy to Grow</span>
+      </div>
+      <div class="prod-cards">
+        <div class="prod-card" onclick="selectProduct('excess',this)">
+          <div class="pc-top">
+            <div class="pc-name">Cresset Money Market</div>
+            <span class="risk-tag risk-zero">Zero risk</span>
+          </div>
+          <div class="pc-yield-at">4.75% <span>AT yield</span></div>
+          <div class="pc-yield-gross">4.75% gross · daily liquidity · no lock-up</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$14,246/yr</span></div>
+          <div class="pc-liquidity">Same-day settlement</div>
+        </div>
+        <div class="prod-card sel" onclick="selectProduct('excess',this)">
+          <div class="rec-badge-card">Recommended</div>
+          <div class="pc-top">
+            <div class="pc-name">Cresset Short Duration</div>
+            <span class="risk-tag risk-low">Low risk</span>
+          </div>
+          <div class="pc-yield-at">5.40% <span>AT yield</span></div>
+          <div class="pc-yield-gross">6.10% gross · optimized for 37% bracket</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$16,196/yr</span></div>
+          <div class="pc-liquidity">Daily liquidity · small NAV movement</div>
+        </div>
+        <div class="prod-card" onclick="selectProduct('excess',this)">
+          <div class="pc-top">
+            <div class="pc-name">Cresset Conservative</div>
+            <span class="risk-tag risk-lowmod">Low–Moderate</span>
+          </div>
+          <div class="pc-yield-at">6.80% <span>AT yield</span></div>
+          <div class="pc-yield-gross">9.20% gross · dividend + income strategy</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$20,394/yr</span></div>
+          <div class="pc-liquidity">Quarterly rebalanced · some volatility</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operating Cash remaining -->
+    <div class="prod-bucket">
+      <div class="prod-bucket-hd">
+        <span class="title">Operating Cash</span>
+        <span class="amount">$41,880 remaining</span>
+        <span class="note">· right-sized · must stay fully liquid</span>
+      </div>
+      <div class="prod-cards">
+        <div class="prod-card sel" onclick="selectProduct('op',this)">
+          <div class="rec-badge-card">Recommended</div>
+          <div class="pc-top">
+            <div class="pc-name">Fidelity SPAXX</div>
+            <span class="risk-tag risk-zero">Zero risk</span>
+          </div>
+          <div class="pc-yield-at">4.92% <span>AT yield</span></div>
+          <div class="pc-yield-gross">4.92% gross · T-bill backed · state tax-exempt</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$2,061/yr</span></div>
+          <div class="pc-liquidity">Daily liquidity · same-day settlement</div>
+        </div>
+        <div class="prod-card" onclick="selectProduct('op',this)">
+          <div class="pc-top">
+            <div class="pc-name">JPM 100% Treasury MMF</div>
+            <span class="risk-tag risk-zero">Zero risk</span>
+          </div>
+          <div class="pc-yield-at">4.85% <span>AT yield</span></div>
+          <div class="pc-yield-gross">4.85% gross · T-bill backed</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$2,031/yr</span></div>
+          <div class="pc-liquidity">Daily liquidity · same-day settlement</div>
+        </div>
+        <div class="prod-card" onclick="selectProduct('op',this)">
+          <div class="pc-top">
+            <div class="pc-name">Schwab Value Advantage</div>
+            <span class="risk-tag risk-zero">Zero risk</span>
+          </div>
+          <div class="pc-yield-at">4.44% <span>AT yield</span></div>
+          <div class="pc-yield-gross">4.44% gross · rate declining since Oct</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$1,859/yr</span></div>
+          <div class="pc-liquidity">Daily liquidity · existing position</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reserve remaining -->
+    <div class="prod-bucket">
+      <div class="prod-bucket-hd">
+        <span class="title">Reserve</span>
+        <span class="amount">$216,830 remaining</span>
+        <span class="note">· right-sized · can tolerate slight lock-up</span>
+      </div>
+      <div class="prod-cards">
+        <div class="prod-card sel" onclick="selectProduct('res',this)">
+          <div class="rec-badge-card">Recommended</div>
+          <div class="pc-top">
+            <div class="pc-name">6-Month T-Bill</div>
+            <span class="risk-tag risk-zero">Zero risk</span>
+          </div>
+          <div class="pc-yield-at">5.08% <span>AT yield</span></div>
+          <div class="pc-yield-gross">5.08% gross · federal + state tax-exempt</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$11,015/yr</span></div>
+          <div class="pc-liquidity">6-month maturity · highest zero-risk yield</div>
+        </div>
+        <div class="prod-card" onclick="selectProduct('res',this)">
+          <div class="pc-top">
+            <div class="pc-name">Fidelity SPAXX</div>
+            <span class="risk-tag risk-zero">Zero risk</span>
+          </div>
+          <div class="pc-yield-at">4.92% <span>AT yield</span></div>
+          <div class="pc-yield-gross">4.92% gross · flexible if needed early</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$10,668/yr</span></div>
+          <div class="pc-liquidity">Daily liquidity · lower yield tradeoff</div>
+        </div>
+        <div class="prod-card" onclick="selectProduct('res',this)">
+          <div class="pc-top">
+            <div class="pc-name">Cresset Short Duration</div>
+            <span class="risk-tag risk-low">Low risk</span>
+          </div>
+          <div class="pc-yield-at">5.40% <span>AT yield</span></div>
+          <div class="pc-yield-gross">6.10% gross · best AT yield for this bucket</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$11,709/yr</span></div>
+          <div class="pc-liquidity">Daily · small NAV movement · highest income</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Build (unchanged) -->
+    <div class="prod-bucket">
+      <div class="prod-bucket-hd">
+        <span class="title">Build</span>
+        <span class="amount">$135,000</span>
+        <span class="note">· at target · no rebalancing needed</span>
+      </div>
+      <div class="prod-cards" style="grid-template-columns:repeat(2,1fr);">
+        <div class="prod-card" style="cursor:default; border-style:dashed;">
+          <div class="pc-top">
+            <div class="pc-name">Fidelity CD Ladder (3-mo) ···9031</div>
+            <span class="risk-tag risk-zero">Zero risk</span>
+          </div>
+          <div class="pc-yield-at">4.20% <span>AT yield</span></div>
+          <div class="pc-yield-gross">4.20% gross · rolling maturity</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$3,150/yr</span></div>
+          <div class="pc-liquidity">3-month rolling · existing position</div>
+        </div>
+        <div class="prod-card" style="cursor:default; border-style:dashed;">
+          <div class="pc-top">
+            <div class="pc-name">US Treasury 6-Month Bill ···1142</div>
+            <span class="risk-tag risk-zero">Zero risk</span>
+          </div>
+          <div class="pc-yield-at">3.62% <span>AT yield</span></div>
+          <div class="pc-yield-gross">3.62% gross · state tax-exempt</div>
+          <div class="pc-income"><span class="lbl">Annual Income</span><span class="val">+$2,172/yr</span></div>
+          <div class="pc-liquidity">6-month maturity · existing position</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="step-action-bar">
+    <div style="display:flex; gap:28px; align-items:flex-end;">
+      <div class="fsm">
+        <div class="lbl">Total Deployed</div>
+        <div class="val" id="total-deployed">$299,926</div>
+      </div>
+      <div style="width:1px;height:28px;background:var(--border-lt);align-self:flex-end;"></div>
+      <div class="fsm">
+        <div class="lbl">Return Pickup / Year</div>
+        <div class="val green">+$16,196 / yr</div>
+      </div>
+      <div style="width:1px;height:28px;background:var(--border-lt);align-self:flex-end;"></div>
+      <div class="fsm">
+        <div class="lbl">AUM to Cresset</div>
+        <div class="val" style="color:var(--gold);">+$299,926</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-ghost">Save Draft</button>
+      <button class="btn-step primary" onclick="confirmTransfers()">Confirm Allocation →</button>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══ INCOME CALCULATOR ══ -->
+<div class="calc-panel">
+  <div class="calc-hd">
+    <span class="calc-title">Income Impact Calculator</span>
+    <span class="calc-sub">Estimate return uplift from deploying excess capital</span>
+  </div>
+  <div class="calc-inputs-row">
+    <div class="calc-field">
+      <div class="calc-field-lbl">Amount to deploy</div>
+      <div class="calc-input-row">
+        <span class="calc-prefix">$</span>
+        <input class="calc-input" id="ii-amt" placeholder="299,926" oninput="calcIcf()">
+      </div>
+    </div>
+    <div class="calc-field">
+      <div class="calc-field-lbl">Gross yield</div>
+      <div class="calc-input-row">
+        <input class="calc-input" id="ii-gross" value="6.10" oninput="calcIcf()">
+        <span class="calc-suffix">%</span>
+      </div>
+    </div>
+    <div class="calc-field">
+      <div class="calc-field-lbl">Tax rate</div>
+      <div class="calc-input-row">
+        <input class="calc-input" id="ii-tax" value="37" oninput="calcIcf()">
+        <span class="calc-suffix">%</span>
+      </div>
+    </div>
+  </div>
+  <div class="calc-stats">
+    <div class="calc-stat">
+      <div class="calc-stat-lbl">AUM Increase</div>
+      <div class="calc-stat-val" id="ii-aum-val">—</div>
+      <div class="calc-stat-sub" id="ii-aum-sub">Capital deployed to advisor AUM</div>
+    </div>
+    <div class="calc-stat gold">
+      <div class="calc-stat-lbl">After-Tax Annual Income</div>
+      <div class="calc-stat-val" id="ii-atinc-val">—</div>
+      <div class="calc-stat-sub" id="ii-atinc-sub">Annual income at after-tax yield</div>
+    </div>
+    <div class="calc-stat gold">
+      <div class="calc-stat-lbl">After-Tax Yield</div>
+      <div class="calc-stat-val" id="ii-delta-val">—</div>
+      <div class="calc-stat-sub" id="ii-delta-sub">Net return after federal tax</div>
+    </div>
+  </div>
+</div>
+
+
+<div style="text-align:center; padding:24px 0 8px;">
+  <span style="font-size:9px; color:var(--faint); letter-spacing:.08em; text-transform:uppercase;">
+    GURU Optimizer · All figures after-tax · 37% federal bracket assumed · Not investment advice
+  </span>
+</div>
+
+
+<script>
+// ══ State ══════════════════════════════════════════
+const STATE = {
+  opMonths:       2,
+  resMonths:      12,
+  opMonthlyUnit:  20939,   // monthly burn for Operating Cash
+  opCurrent:      132050,  // Chase Checking + Citizens Checking
+  resCurrent:     426586,  // Citizens MM + Goldman Savings
+  resMonthlyRate: 18066,   // monthly rate for Reserve coverage
+  opDest:         'Build',
+  resDest:        'Build',
+  opTargetBal:    null,    // null = derive from months; number = manual override
+  resTargetBal:   null,
+};
+
+function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+
+// ══ Coverage calculations ═══════════════════════════
+function adjustMonths(bucket, delta) {
+  if (bucket === 'op') {
+    STATE.opTargetBal = null;
+    STATE.opMonths = Math.max(1, Math.min(24, STATE.opMonths + delta));
+  } else {
+    STATE.resTargetBal = null;
+    STATE.resMonths = Math.max(1, Math.min(36, STATE.resMonths + delta));
+  }
+  update();
+}
+
+function setMonthsFromInput(bucket, val) {
+  const n = parseInt(val);
+  if (isNaN(n) || n < 1) return;
+  if (bucket === 'op') { STATE.opTargetBal = null;  STATE.opMonths  = Math.max(1, Math.min(24, n)); }
+  else                 { STATE.resTargetBal = null; STATE.resMonths = Math.max(1, Math.min(36, n)); }
+  update();
+}
+
+function setTargetFromBalance(bucket, val) {
+  const n = parseFloat(val.replace(/[$,\s]/g, ''));
+  if (isNaN(n) || n < 0) return;
+  if (bucket === 'op') {
+    STATE.opTargetBal = n;
+    STATE.opMonths = Math.max(1, Math.min(24, Math.round(n / STATE.opMonthlyUnit)));
+  } else {
+    STATE.resTargetBal = n;
+    STATE.resMonths = Math.max(1, Math.min(36, Math.round(n / STATE.resMonthlyRate)));
+  }
+  update();
+}
+
+function setDest(bucket, dest) {
+  if (bucket === 'op') {
+    STATE.opDest = dest;
+    const d = document.getElementById('op-routing-dest');
+    if (d) d.textContent = dest;
+  } else {
+    STATE.resDest = dest;
+    const d = document.getElementById('res-routing-dest');
+    if (d) d.textContent = dest;
+  }
+}
+
+function update() {
+  // Operating Cash
+  const opTarget  = STATE.opTargetBal !== null ? STATE.opTargetBal : STATE.opMonths * STATE.opMonthlyUnit;
+  const opExcess  = Math.max(0, STATE.opCurrent - opTarget);
+  const opCurMos  = Math.round((STATE.opCurrent / STATE.opMonthlyUnit) * 10) / 10;
+  const opTgtPct  = Math.min(96, Math.round((opTarget / STATE.opCurrent) * 100));
+
+  document.getElementById('op-months').value = STATE.opMonths;
+  const opTBEl = document.getElementById('op-target-bal');
+  if (opTBEl && document.activeElement !== opTBEl) opTBEl.value = fmt(opTarget);
+  document.getElementById('op-delta').textContent       = fmt(opExcess);
+  document.getElementById('op-current-mo').textContent  = opCurMos + ' mos';
+  document.getElementById('op-target-label').innerHTML  = `Target: <strong>${STATE.opMonths} mos</strong>`;
+  document.getElementById('op-bar-base').style.width    = opTgtPct + '%';
+  document.getElementById('op-bar-excess').style.left   = opTgtPct + '%';
+  document.getElementById('op-target-line').style.left  = opTgtPct + '%';
+
+  // Reserve
+  const resTarget = STATE.resTargetBal !== null ? STATE.resTargetBal : STATE.resMonths * STATE.resMonthlyRate;
+  const resExcess = Math.max(0, STATE.resCurrent - resTarget);
+  const resCurMos = Math.round((STATE.resCurrent / STATE.resMonthlyRate) * 10) / 10;
+  const resTgtPct = Math.min(96, Math.round((resTarget / STATE.resCurrent) * 100));
+
+  document.getElementById('res-months').value = STATE.resMonths;
+  const resTBEl = document.getElementById('res-target-bal');
+  if (resTBEl && document.activeElement !== resTBEl) resTBEl.value = fmt(resTarget);
+  document.getElementById('res-delta').textContent       = fmt(resExcess);
+  document.getElementById('res-current-mo').textContent  = resCurMos + ' mos';
+  document.getElementById('res-target-label').innerHTML  = `Target: <strong>${STATE.resMonths} mos</strong>`;
+  document.getElementById('res-bar-base').style.width    = resTgtPct + '%';
+  document.getElementById('res-bar-excess').style.left   = resTgtPct + '%';
+  document.getElementById('res-target-line').style.left  = resTgtPct + '%';
+
+  // Totals
+  const total = opExcess + resExcess;
+  const s1tot = document.getElementById('s1-total-excess');
+  if (s1tot) s1tot.textContent = fmt(total);
+
+  // Sync routing table amounts if visible
+  const amtOp  = document.getElementById('amt-op');
+  const amtRes = document.getElementById('amt-res');
+  if (amtOp)  amtOp.value  = Math.round(opExcess).toLocaleString();
+  if (amtRes) amtRes.value = Math.round(resExcess).toLocaleString();
+
+  const tt = document.getElementById('total-transferred');
+  if (tt) tt.textContent = fmt(total);
+  const al = document.getElementById('avail-label');
+  if (al) al.textContent = fmt(total) + ' identified';
+  const s2a = document.getElementById('s2-action-amt');
+  if (s2a) s2a.textContent = fmt(total);
+  const ed = document.getElementById('excess-deploy-amt');
+  if (ed) ed.textContent = fmt(total);
+  const td = document.getElementById('total-deployed');
+  if (td) td.textContent = fmt(total);
+
+  STATE._opExcess  = opExcess;
+  STATE._resExcess = resExcess;
+  STATE._total     = total;
+  STATE._opMonths  = STATE.opMonths;
+  STATE._resMonths = STATE.resMonths;
+
+  // Sync calculator with live total excess
+  syncCalcAmount();
+}
+
+// ══ STEP 1 COMPLETE ════════════════════════════════
+function completeStep1() {
+  document.getElementById('s1-content').style.display = 'none';
+  document.getElementById('s1-done').style.display    = 'flex';
+  document.getElementById('s1-num').classList.add('done');
+  document.getElementById('s1-done-detail').innerHTML =
+    `Op Cash: ${STATE._opMonths} mos · Reserve: ${STATE._resMonths} mos · ` +
+    `<strong style="color:var(--gold);">${fmt(STATE._total)} excess capital identified</strong>`;
+  document.getElementById('s2-locked').style.display  = 'none';
+  document.getElementById('s2-content').style.display = 'block';
+  document.getElementById('s2-note').textContent = 'Review capital routing · adjust amounts if needed';
+}
+
+function editStep1() {
+  document.getElementById('s1-content').style.display = 'block';
+  document.getElementById('s1-done').style.display    = 'none';
+  document.getElementById('s1-num').classList.remove('done');
+  document.getElementById('s2-locked').style.display  = 'block';
+  document.getElementById('s2-content').style.display = 'none';
+  document.getElementById('s2-done').style.display    = 'none';
+  document.getElementById('s3-locked').style.display  = 'block';
+  document.getElementById('s3-content').style.display = 'none';
+  document.getElementById('s3-analyzing').style.display = 'none';
+  document.getElementById('s2-num').classList.remove('done');
+  document.getElementById('s3-num').classList.remove('done');
+  document.getElementById('s2-note').textContent = 'Complete Step 1 first';
+  document.getElementById('s3-note').textContent = 'Complete Step 2 first';
+}
+
+// ══ STEP 2 — FIND BEST ALLOCATION ══════════════════
+function findBestAllocation() {
+  const total = STATE._total || 299926;
+  document.getElementById('s2-content').style.display = 'none';
+  document.getElementById('s2-done').style.display    = 'flex';
+  document.getElementById('s2-num').classList.add('done');
+  document.getElementById('s2-done-amt').textContent  = fmt(total);
+  document.getElementById('s3-locked').style.display    = 'none';
+  document.getElementById('s3-analyzing').style.display = 'flex';
+  document.getElementById('s3-note').textContent = 'GURU is analyzing market conditions…';
+
+  setTimeout(() => {
+    document.getElementById('s3-analyzing').style.display = 'none';
+    document.getElementById('s3-content').style.display   = 'block';
+    document.getElementById('s3-note').textContent = 'Select one product per bucket · confirm allocation';
+    document.getElementById('s3-content').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 1600);
+}
+
+function editStep2() {
+  document.getElementById('s2-content').style.display = 'block';
+  document.getElementById('s2-done').style.display    = 'none';
+  document.getElementById('s2-num').classList.remove('done');
+  document.getElementById('s3-locked').style.display  = 'block';
+  document.getElementById('s3-content').style.display = 'none';
+  document.getElementById('s3-analyzing').style.display = 'none';
+  document.getElementById('s3-num').classList.remove('done');
+  document.getElementById('s3-note').textContent = 'Complete Step 2 first';
+}
+
+// ══ STEP 3 — CONFIRM ═══════════════════════════════
+function confirmTransfers() {
+  document.getElementById('s3-num').classList.add('done');
+  document.getElementById('income-panel-section') && document.getElementById('income-panel-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectProduct(bucket, el) {
+  el.closest('.prod-cards').querySelectorAll('.prod-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ══ Income calculator ══════════════════════════════
+function syncCalcAmount() {
+  // Auto-populate calculator amount from live total excess
+  const total = STATE._total || 0;
+  if (total > 0) {
+    const el = document.getElementById('ii-amt');
+    if (el) el.value = Math.round(total).toLocaleString();
+  }
+  calcIcf();
+}
+
+function calcIcf() {
+  const amt    = parseFloat((document.getElementById('ii-amt').value || '').replace(/,/g,'')) || 0;
+  const gross  = parseFloat(document.getElementById('ii-gross').value) || 0;
+  const taxRaw = document.getElementById('ii-tax').value;
+  const tax    = (taxRaw === '' ? 0.37 : (parseFloat(taxRaw) || 0) / 100);
+
+  const clear = () => {
+    document.getElementById('ii-aum-val').textContent   = '—';
+    document.getElementById('ii-atinc-val').textContent = '—';
+    document.getElementById('ii-delta-val').textContent = '—';
+    document.getElementById('ii-aum-sub').textContent   = 'Capital deployed to advisor AUM';
+    document.getElementById('ii-atinc-sub').textContent = 'Annual income at after-tax yield';
+    document.getElementById('ii-delta-sub').textContent = 'Net return after federal tax';
+  };
+  if (amt === 0 || gross === 0) { clear(); return; }
+
+  const atPct = gross * (1 - tax);         // after-tax yield %
+  const atAnn = amt * (atPct / 100);       // after-tax income $/yr
+
+  document.getElementById('ii-aum-val').textContent   = '+$' + Math.round(amt).toLocaleString();
+  document.getElementById('ii-atinc-val').textContent = '+$' + Math.round(atAnn).toLocaleString() + '/yr';
+  document.getElementById('ii-delta-val').textContent = '+' + atPct.toFixed(2) + '%';
+  document.getElementById('ii-aum-sub').textContent   = 'Capital deployed to advisor AUM';
+  document.getElementById('ii-atinc-sub').textContent = atPct.toFixed(2) + '% after-tax · ' + (tax*100).toFixed(0) + '% tax bracket';
+  document.getElementById('ii-delta-sub').textContent = gross.toFixed(2) + '% gross → ' + atPct.toFixed(2) + '% after tax';
+}
+
+function calcIcfCov() {
+  const monthly = parseFloat(document.getElementById('ic-monthly') ? document.getElementById('ic-monthly').value.replace(/,/g,'') : 0) || 0;
+  const target  = parseFloat(document.getElementById('ic-target') ? document.getElementById('ic-target').value : 0) || 0;
+  const balance = parseFloat(document.getElementById('ic-balance') ? document.getElementById('ic-balance').value.replace(/,/g,'') : 0) || 0;
+  if (monthly === 0) {
+    ['ic-required','ic-cur-mo','ic-delta'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('ic-bar').style.width = '0%';
+    return;
+  }
+  const required = monthly * target;
+  const curMo    = balance / monthly;
+  const delta    = balance - required;
+  const barPct   = required > 0 ? Math.min((balance / required) * 100, 100) : 0;
+  document.getElementById('ic-required').textContent = '$' + Math.round(required).toLocaleString();
+  document.getElementById('ic-cur-mo').textContent   = curMo.toFixed(1) + ' mos';
+  document.getElementById('ic-bar').style.width      = barPct + '%';
+  const el = document.getElementById('ic-delta');
+  if (delta > 500)       { el.textContent = '+$' + Math.round(delta).toLocaleString(); el.style.color = 'var(--gold)'; }
+  else if (delta < -500) { el.textContent = '($' + Math.round(Math.abs(delta)).toLocaleString() + ')'; el.style.color = '#b54545'; }
+  else                   { el.textContent = 'At target'; el.style.color = 'var(--green)'; }
+}
+
+// ══ Init ═══════════════════════════════════════════
+update();
+</script>
+</body>
+</html>

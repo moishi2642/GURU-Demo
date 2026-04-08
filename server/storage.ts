@@ -11,6 +11,8 @@ export interface IStorage {
   getClients(): Promise<Client[]>;
   getClient(id: number): Promise<Client | undefined>;
   createClient(client: InsertClient): Promise<Client>;
+  deleteClient(id: number): Promise<void>;
+  setOnboardingComplete(id: number, complete: boolean): Promise<Client | undefined>;
   
   getAssets(clientId: number): Promise<Asset[]>;
   createAsset(asset: InsertAsset): Promise<Asset>;
@@ -38,6 +40,18 @@ export class DatabaseStorage implements IStorage {
   async createClient(client: InsertClient): Promise<Client> {
     const [created] = await db.insert(clients).values(client).returning();
     return created;
+  }
+
+  async deleteClient(id: number): Promise<void> {
+    await db.delete(clients).where(eq(clients.id, id));
+  }
+
+  async setOnboardingComplete(id: number, complete: boolean): Promise<Client | undefined> {
+    const [updated] = await db.update(clients)
+      .set({ onboardingComplete: complete })
+      .where(eq(clients.id, id))
+      .returning();
+    return updated;
   }
 
   async getAssets(clientId: number): Promise<Asset[]> {

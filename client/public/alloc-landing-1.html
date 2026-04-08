@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GURU Allocation — Landing Mockup 1: Dark Hero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --navy: #1a2e4a;
+      --forest: #1e4d30;
+      --text: #0f1a26;
+      --mid: rgba(15,26,38,0.50);
+      --dim: rgba(15,26,38,0.32);
+      --border: rgba(0,0,0,0.08);
+      --bg: #f5f4f0;
+      --card: #ffffff;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-hdr {
+      padding: 20px 36px 14px;
+      display: flex; align-items: baseline; gap: 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .page-hdr h1 {
+      font-size: 22px; font-weight: 300; color: var(--navy);
+      letter-spacing: -0.01em;
+    }
+    .page-hdr span {
+      font-size: 11px; color: rgba(0,0,0,0.38); letter-spacing: 0.04em;
+    }
+
+    /* ── HERO BLOCK — full-width unified dark card ── */
+    .hero {
+      margin: 20px 36px 0;
+      background: #111d2e;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(91,143,204,0.20);
+      box-shadow: 0 6px 32px rgba(0,0,0,0.22);
+    }
+
+    /* Top: insight (left) + KPIs (right) */
+    .hero-top {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+    }
+
+    .hero-narrative {
+      padding: 28px 32px 26px;
+      position: relative;
+    }
+    .hero-narrative::after {
+      content: '';
+      position: absolute; top: 16px; bottom: 16px; right: 0;
+      width: 1px;
+      background: rgba(255,255,255,0.05);
+    }
+    .hero-eyebrow {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+    }
+    .hero-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #5ecc8a;
+      box-shadow: 0 0 8px rgba(94,204,138,0.6);
+      animation: glow 2.8s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes glow { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .hero-eyebrow-lbl {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(94,204,138,0.85);
+    }
+    .hero-hl {
+      font-size: 22px; font-weight: 300; color: rgba(255,255,255,0.92);
+      letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 12px;
+    }
+    .hero-body {
+      font-size: 13px; line-height: 1.75; color: rgba(255,255,255,0.50);
+    }
+    .hero-body em { color: rgba(255,255,255,0.80); font-style: italic; }
+
+    .hero-kpis {
+      padding: 22px 28px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .hero-kpi {
+      padding: 14px 16px;
+      border-right: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .hero-kpi:nth-child(2n) { border-right: none; }
+    .hero-kpi:nth-child(3), .hero-kpi:nth-child(4) { border-bottom: none; }
+    .hk-lbl {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.30);
+    }
+    .hk-val {
+      font-size: 20px; font-weight: 300; font-variant-numeric: tabular-nums;
+      color: rgba(255,255,255,0.88); letter-spacing: -0.02em; line-height: 1;
+    }
+
+    /* Bottom: bucket strip inside dark card */
+    .hero-buckets {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.25);
+    }
+    .hb {
+      padding: 13px 20px 14px;
+      border-right: 1px solid rgba(255,255,255,0.05);
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .hb:last-child { border-right: none; }
+    .hb-name {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.11em;
+      text-transform: uppercase; color: rgba(255,255,255,0.36);
+    }
+    .hb-row {
+      display: flex; align-items: baseline;
+      justify-content: space-between;
+    }
+    .hb-bal {
+      font-size: 17px; font-weight: 300; font-variant-numeric: tabular-nums;
+      color: rgba(255,255,255,0.84); letter-spacing: -0.01em;
+    }
+    .hb-yield { font-size: 10px; color: rgba(255,255,255,0.34); }
+    .hb-bar { height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; }
+    .hb-fill { height: 100%; border-radius: 2px; opacity: 0.55; }
+
+    /* ── WORKFLOW PREVIEW — attached below hero ── */
+    .workflow-preview {
+      margin: 0 36px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      padding: 26px 36px 30px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .wf-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--dim);
+      white-space: nowrap; margin-right: 32px; flex-shrink: 0;
+    }
+
+    .wf-steps {
+      display: flex; align-items: flex-start; flex: 1; gap: 0;
+    }
+    .wf-step {
+      display: flex; align-items: flex-start; gap: 14px; flex: 1;
+    }
+    .wf-num {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600;
+      border: 1.5px solid rgba(0,0,0,0.15);
+      color: rgba(0,0,0,0.38);
+      background: transparent;
+      margin-top: 1px;
+    }
+    .wf-text {}
+    .wf-step-name {
+      font-size: 12px; font-weight: 600; color: var(--text);
+      margin-bottom: 3px; line-height: 1.3;
+    }
+    .wf-step-desc {
+      font-size: 10px; color: var(--mid); line-height: 1.5;
+    }
+    .wf-arrow {
+      flex-shrink: 0; font-size: 13px; color: rgba(0,0,0,0.14);
+      margin: 6px 14px 0;
+    }
+
+    .wf-cta {
+      margin-left: 36px; flex-shrink: 0;
+    }
+    .btn-begin {
+      font-family: inherit; font-size: 12px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: var(--navy); color: rgba(255,255,255,0.92);
+      border: none; cursor: pointer; border-radius: 4px;
+      padding: 13px 30px;
+      transition: background 0.15s;
+    }
+    .btn-begin:hover { background: #0f1d30; }
+
+    /* ── OPTION LABEL ── */
+    .option-label {
+      margin: 24px 36px 0;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--dim);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Page header -->
+  <div class="page-hdr">
+    <h1>Asset Allocation</h1>
+    <span>Kessler Family · Annual Rebalancing Review</span>
+  </div>
+
+  <div class="option-label">Mockup 1 — Dark Unified Hero</div>
+
+  <!-- Unified dark hero -->
+  <div class="hero">
+
+    <!-- Top row: insight narrative + KPIs -->
+    <div class="hero-top">
+      <div class="hero-narrative">
+        <div class="hero-eyebrow">
+          <div class="hero-dot"></div>
+          <span class="hero-eyebrow-lbl">GURU Insight · Kessler Family</span>
+        </div>
+        <div class="hero-hl">Strong liquidity, ready to work harder.</div>
+        <div class="hero-body">
+          The Kesslers are running well above liquidity policy — reserve sits at 23.6 months vs a 12-month target,
+          and operating cash covers 6.3 months when 2 is sufficient.
+          That's approximately <em>$300,000 above threshold</em>. Deploying that excess into short-duration
+          strategies picks up an estimated <em>$9,200 after tax per year</em> with no increase in risk profile.
+        </div>
+      </div>
+      <div class="hero-kpis">
+        <div class="hero-kpi">
+          <span class="hk-lbl">Excess Liquidity</span>
+          <span class="hk-val" style="color:rgba(212,168,67,0.95)">$299,926</span>
+        </div>
+        <div class="hero-kpi">
+          <span class="hk-lbl">AT Return Pickup</span>
+          <span class="hk-val" style="color:rgba(94,204,138,0.92)">+$9,200/yr</span>
+        </div>
+        <div class="hero-kpi">
+          <span class="hk-lbl">Annual Expenses</span>
+          <span class="hk-val">$299,268</span>
+        </div>
+        <div class="hero-kpi">
+          <span class="hk-lbl">Net Cash Flow</span>
+          <span class="hk-val" style="color:rgba(91,143,204,0.95)">+$66,338</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bucket strip -->
+    <div class="hero-buckets">
+      <div class="hb">
+        <div class="hb-name">Operating Cash</div>
+        <div class="hb-row">
+          <span class="hb-bal">$132,050</span>
+          <span class="hb-yield">0.01%</span>
+        </div>
+        <div class="hb-bar"><div class="hb-fill" style="width:19%;background:#5b8fcc"></div></div>
+      </div>
+      <div class="hb">
+        <div class="hb-name">Reserve Cash</div>
+        <div class="hb-row">
+          <span class="hb-bal">$426,586</span>
+          <span class="hb-yield">4.60%</span>
+        </div>
+        <div class="hb-bar"><div class="hb-fill" style="width:62%;background:#c49a28"></div></div>
+      </div>
+      <div class="hb">
+        <div class="hb-name">Capital Build</div>
+        <div class="hb-row">
+          <span class="hb-bal">$135,000</span>
+          <span class="hb-yield">4.85%</span>
+        </div>
+        <div class="hb-bar"><div class="hb-fill" style="width:19.5%;background:#3a8a5a"></div></div>
+      </div>
+      <div class="hb">
+        <div class="hb-name">Investments</div>
+        <div class="hb-row">
+          <span class="hb-bal">$2,509,500</span>
+          <span class="hb-yield">3.95%</span>
+        </div>
+        <div class="hb-bar"><div class="hb-fill" style="width:78%;background:#7baee0"></div></div>
+      </div>
+      <div class="hb">
+        <div class="hb-name">Other Assets</div>
+        <div class="hb-row">
+          <span class="hb-bal">$2,945,100</span>
+          <span class="hb-yield" style="color:rgba(255,255,255,0.20)">—</span>
+        </div>
+        <div class="hb-bar"><div class="hb-fill" style="width:92%;background:#6b7f8f"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Workflow preview — seamlessly connected below hero -->
+  <div class="workflow-preview">
+    <div class="wf-label">3-step review</div>
+    <div class="wf-steps">
+      <div class="wf-step">
+        <div class="wf-num">1</div>
+        <div class="wf-text">
+          <div class="wf-step-name">Asset Allocation Rebalancing</div>
+          <div class="wf-step-desc">Set coverage targets and transfer amounts across your liquidity buckets</div>
+        </div>
+      </div>
+      <div class="wf-arrow">→</div>
+      <div class="wf-step">
+        <div class="wf-num">2</div>
+        <div class="wf-text">
+          <div class="wf-step-name">Product Selection</div>
+          <div class="wf-step-desc">Choose specific instruments — money markets, T-bills, mutual funds</div>
+        </div>
+      </div>
+      <div class="wf-arrow">→</div>
+      <div class="wf-step">
+        <div class="wf-num">3</div>
+        <div class="wf-text">
+          <div class="wf-step-name">Confirm &amp; Execute</div>
+          <div class="wf-step-desc">Review the full before/after and send for execution</div>
+        </div>
+      </div>
+    </div>
+    <div class="wf-cta">
+      <button class="btn-begin">Let's Begin →</button>
+    </div>
+  </div>
+
+</body>
+</html>

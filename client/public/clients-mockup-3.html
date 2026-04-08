@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GURU – Clients Roster</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f0ede8;
+      color: #1c1917;
+      line-height: 1.5;
+      overflow-y: scroll;
+    }
+
+    /* Top Navigation Bar */
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 44px;
+      background-color: hsl(222, 45%, 12%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 1000;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topbar-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    .topbar-separator {
+      width: 4px;
+      height: 4px;
+      background-color: white;
+      border-radius: 50%;
+    }
+
+    .topbar-nav {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 400;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .add-client-btn {
+      font-size: 12px;
+      padding: 6px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: transparent;
+      color: white;
+      border-radius: 3px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .add-client-btn:hover {
+      border-color: white;
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .topbar-advisor {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 400;
+    }
+
+    /* Main Content */
+    main {
+      margin-top: 44px;
+      max-width: 880px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 36px 24px;
+      min-height: calc(100vh - 44px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Firm Summary */
+    .firm-summary {
+      font-size: 11.5px;
+      color: #78716c;
+      margin-bottom: 28px;
+      letter-spacing: 0.3px;
+    }
+
+    /* Alert Strip */
+    .alert-strip {
+      border-left: 3px solid #9a7b3c;
+      background-color: #fefcf5;
+      padding: 12px 16px;
+      margin-bottom: 32px;
+      font-size: 11.5px;
+      color: #1c1917;
+      border-radius: 2px;
+    }
+
+    /* Section Header */
+    .section-header {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #78716c;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd8d1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Client Rows Container */
+    .clients-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 48px;
+    }
+
+    .client-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      min-height: 68px;
+      border-bottom: 1px solid #ddd8d1;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      gap: 20px;
+    }
+
+    .client-row:hover {
+      background-color: #ede9e3;
+    }
+
+    .client-row.coming-soon {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .client-row.coming-soon:hover {
+      background-color: transparent;
+    }
+
+    /* Client Avatar & Info */
+    .client-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 0 0 auto;
+      min-width: 240px;
+    }
+
+    .client-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .avatar-1 { background-color: #6b8cce; }
+    .avatar-2 { background-color: #a97d5d; }
+    .avatar-3 { background-color: #9a7b3c; }
+    .avatar-4 { background-color: #6b8cce; }
+    .avatar-5 { background-color: #a97d5d; }
+    .avatar-6 { background-color: #2e7a52; }
+
+    .client-info h3 {
+      font-size: 15px;
+      font-weight: 500;
+      color: #1c1917;
+      margin-bottom: 4px;
+    }
+
+    .client-info p {
+      font-size: 11px;
+      color: #78716c;
+    }
+
+    /* Client Data Atoms (Right Side) */
+    .client-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .data-atom {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .data-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #a8a29e;
+      font-weight: 500;
+    }
+
+    .data-value {
+      font-family: 'Instrument Serif', serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: #1c1917;
+      line-height: 1;
+    }
+
+    .data-value.secondary {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      color: #78716c;
+    }
+
+    /* Risk Profile Dot */
+    .risk-profile {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .risk-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .risk-conservative { background-color: #6b8cce; }
+    .risk-balanced { background-color: #9a7b3c; }
+    .risk-aggressive { background-color: #a97d5d; }
+
+    .risk-label {
+      font-size: 11px;
+      color: #78716c;
+    }
+
+    /* Alerts */
+    .alerts {
+      font-size: 11px;
+      color: #9a7b3c;
+      font-weight: 500;
+    }
+
+    /* Onboarding Pill */
+    .onboarding-pill {
+      font-size: 9px;
+      background-color: #fefcf5;
+      color: #9a7b3c;
+      padding: 4px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      font-weight: 500;
+      border: 1px solid #e8ddd0;
+    }
+
+    /* Chevron */
+    .chevron {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #a8a29e;
+      flex-shrink: 0;
+    }
+
+    /* Coming Soon Section */
+    .coming-soon-header {
+      font-size: 9.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #78716c;
+      margin-top: 48px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd8d1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .padlock {
+      font-size: 10px;
+      color: #a8a29e;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: auto;
+      text-align: center;
+      padding: 32px 0;
+      font-size: 10px;
+      color: #a8a29e;
+      letter-spacing: 0.3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .client-row {
+        flex-direction: column;
+        align-items: flex-start;
+        min-height: auto;
+        padding: 14px 0;
+      }
+
+      .client-right {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .data-atom {
+        flex: 1;
+        min-width: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">GURU.</span>
+      <div class="topbar-separator"></div>
+      <span class="topbar-nav">Clients</span>
+    </div>
+    <div class="topbar-right">
+      <button class="add-client-btn">Add Client</button>
+      <span class="topbar-advisor">Wealth Advisor</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- Firm Summary -->
+    <div class="firm-summary">
+      6 households · $30.9M AUM · $48.5M assets · 3 action items
+    </div>
+
+    <!-- Alert Strip -->
+    <div class="alert-strip">
+      3 items need attention — excess liquidity, rebalancing opportunity, and a rate lock window for the Kessler household
+    </div>
+
+    <!-- Active Clients Section -->
+    <div class="section-header">Active Clients</div>
+
+    <div class="clients-container">
+
+      <!-- Client 1: Kessler -->
+      <div class="client-row">
+        <div class="client-left">
+          <div class="client-avatar avatar-1">RK</div>
+          <div class="client-info">
+            <h3>Kessler Household</h3>
+            <p>Age 44 · Joint household</p>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="data-atom">
+            <div class="data-label">Assets</div>
+            <div class="data-value">$18.2M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">AUM</div>
+            <div class="data-value">$12.1M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">% Managed</div>
+            <div class="data-value secondary">66%</div>
+          </div>
+          <div class="data-atom">
+            <div class="risk-profile">
+              <div class="risk-dot risk-balanced"></div>
+              <div class="risk-label">Balanced</div>
+            </div>
+          </div>
+          <div class="data-atom alerts">3 items</div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+
+      <!-- Client 2: Martinez -->
+      <div class="client-row">
+        <div class="client-left">
+          <div class="client-avatar avatar-2">SM</div>
+          <div class="client-info">
+            <h3>Sergio Martinez</h3>
+            <p>Age 51 · Single</p>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="data-atom">
+            <div class="data-label">Assets</div>
+            <div class="data-value">$7.4M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">AUM</div>
+            <div class="data-value">$5.8M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">% Managed</div>
+            <div class="data-value secondary">78%</div>
+          </div>
+          <div class="data-atom">
+            <div class="risk-profile">
+              <div class="risk-dot risk-aggressive"></div>
+              <div class="risk-label">Growth</div>
+            </div>
+          </div>
+          <div class="data-atom" style="color: #2e7a52; font-size: 11px; font-weight: 500;">No alerts</div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+
+      <!-- Client 3: Chen -->
+      <div class="client-row">
+        <div class="client-left">
+          <div class="client-avatar avatar-3">JC</div>
+          <div class="client-info">
+            <h3>Jennifer Chen</h3>
+            <p>Age 38 · Single parent</p>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="data-atom">
+            <div class="data-label">Assets</div>
+            <div class="data-value">$2.8M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">AUM</div>
+            <div class="data-value">$1.9M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">% Managed</div>
+            <div class="data-value secondary">68%</div>
+          </div>
+          <div class="data-atom">
+            <div class="risk-profile">
+              <div class="risk-dot risk-conservative"></div>
+              <div class="risk-label">Conservative</div>
+            </div>
+          </div>
+          <div class="onboarding-pill">New onboarding</div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+
+      <!-- Client 4: Thompson -->
+      <div class="client-row">
+        <div class="client-left">
+          <div class="client-avatar avatar-4">PT</div>
+          <div class="client-info">
+            <h3>Patricia Thompson</h3>
+            <p>Age 62 · Retired</p>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="data-atom">
+            <div class="data-label">Assets</div>
+            <div class="data-value">$4.5M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">AUM</div>
+            <div class="data-value">$3.6M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">% Managed</div>
+            <div class="data-value secondary">80%</div>
+          </div>
+          <div class="data-atom">
+            <div class="risk-profile">
+              <div class="risk-dot risk-conservative"></div>
+              <div class="risk-label">Conservative</div>
+            </div>
+          </div>
+          <div class="data-atom alerts">1 item</div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+
+      <!-- Client 5: Okonkwo -->
+      <div class="client-row">
+        <div class="client-left">
+          <div class="client-avatar avatar-5">DO</div>
+          <div class="client-info">
+            <h3>Daryl Okonkwo</h3>
+            <p>Age 35 · Joint household</p>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="data-atom">
+            <div class="data-label">Assets</div>
+            <div class="data-value">$3.5M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">AUM</div>
+            <div class="data-value">$2.1M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">% Managed</div>
+            <div class="data-value secondary">60%</div>
+          </div>
+          <div class="data-atom">
+            <div class="risk-profile">
+              <div class="risk-dot risk-aggressive"></div>
+              <div class="risk-label">Growth</div>
+            </div>
+          </div>
+          <div class="data-atom" style="color: #2e7a52; font-size: 11px; font-weight: 500;">No alerts</div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+
+      <!-- Client 6: Nguyen -->
+      <div class="client-row">
+        <div class="client-left">
+          <div class="client-avatar avatar-6">TN</div>
+          <div class="client-info">
+            <h3>Trang Nguyen</h3>
+            <p>Age 56 · Single</p>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="data-atom">
+            <div class="data-label">Assets</div>
+            <div class="data-value">$5.6M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">AUM</div>
+            <div class="data-value">$5.2M</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label">% Managed</div>
+            <div class="data-value secondary">93%</div>
+          </div>
+          <div class="data-atom">
+            <div class="risk-profile">
+              <div class="risk-dot risk-balanced"></div>
+              <div class="risk-label">Balanced</div>
+            </div>
+          </div>
+          <div class="data-atom" style="color: #2e7a52; font-size: 11px; font-weight: 500;">No alerts</div>
+          <div class="chevron">›</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Coming Soon Section -->
+    <div class="coming-soon-header">
+      <span class="padlock">🔒</span>
+      Coming Soon
+    </div>
+
+    <div class="clients-container">
+
+      <!-- Coming Soon 1 -->
+      <div class="client-row coming-soon">
+        <div class="client-left">
+          <div class="client-avatar avatar-1" style="color: #ddd8d1;">??</div>
+          <div class="client-info">
+            <h3 style="color: #a8a29e;">New Prospect</h3>
+            <p style="color: #c4bfb9;">Referred by Kim Rodriguez</p>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="data-atom">
+            <div class="data-label" style="color: #c4bfb9;">Assets</div>
+            <div class="data-value" style="color: #c4bfb9;">—</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label" style="color: #c4bfb9;">AUM</div>
+            <div class="data-value" style="color: #c4bfb9;">—</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label" style="color: #c4bfb9;">% Managed</div>
+            <div class="data-value secondary" style="color: #c4bfb9;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coming Soon 2 -->
+      <div class="client-row coming-soon">
+        <div class="client-left">
+          <div class="client-avatar avatar-2" style="color: #ddd8d1;">??</div>
+          <div class="client-info">
+            <h3 style="color: #a8a29e;">Estate Planning Matter</h3>
+            <p style="color: #c4bfb9;">Legal review in progress</p>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="data-atom">
+            <div class="data-label" style="color: #c4bfb9;">Assets</div>
+            <div class="data-value" style="color: #c4bfb9;">—</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label" style="color: #c4bfb9;">AUM</div>
+            <div class="data-value" style="color: #c4bfb9;">—</div>
+          </div>
+          <div class="data-atom">
+            <div class="data-label" style="color: #c4bfb9;">% Managed</div>
+            <div class="data-value secondary" style="color: #c4bfb9;">—</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      GURU Intelligence Layer · Kessler Family · March 2026
+    </footer>
+
+  </main>
+
+</body>
+</html>

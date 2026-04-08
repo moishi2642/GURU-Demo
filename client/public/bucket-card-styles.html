@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bucket Card Styles — GURU Private Wealth</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:   #1a2e4a;
+  --gold:   #8a6920;
+  --forest: #1e4d30;
+  --op:     #5b8fcc;
+  --res:    #c49a28;
+  --bld:    #3a8a5a;
+  --grow:   rgba(91,143,204,0.65);
+  --text:   #1a1a1a;
+  --dim:    rgba(0,0,0,0.45);
+  --page:   #f0ece5;
+  --card:   #f5f1ec;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #d8d4cd;
+  padding: 32px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* ── LAYOUT ── */
+.section { margin-bottom: 40px; }
+.section-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.24em; text-transform: uppercase;
+  color: rgba(255,255,255,0.55); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-label span {
+  background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.9);
+  border-radius: 3px; padding: 3px 10px; font-size: 9px; letter-spacing: 0.14em;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.18); }
+
+.card-row {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 16px;
+  background: var(--page);
+  border-radius: 10px;
+}
+
+/* ══════════════════════════════════════════════
+   STYLE A — Current (linen card, 3px top line)
+══════════════════════════════════════════════ */
+.a-card {
+  border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative; padding: 18px 16px 14px;
+  background: var(--card);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.a-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 8px 8px 0 0;
+}
+.a-total::before { background: var(--navy); }
+.a-op::before    { background: var(--op); }
+.a-res::before   { background: var(--res); }
+.a-bld::before   { background: var(--bld); }
+.a-grow::before  { background: rgba(91,143,204,0.55); }
+
+.a-hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.a-name { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+.a-total .a-name { color: var(--navy); }
+.a-op    .a-name { color: #3d6fa8; }
+.a-res   .a-name { color: var(--gold); }
+.a-bld   .a-name { color: var(--forest); }
+.a-grow  .a-name { color: rgba(61,111,168,0.75); }
+.a-yield { font-size: 10px; font-weight: 500; color: rgba(0,0,0,0.38); font-variant-numeric: tabular-nums; }
+.a-bal {
+  font-size: 18px; font-weight: 300; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px;
+}
+.a-bar-track { height: 3px; background: rgba(0,0,0,0.07); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.a-bar-fill { height: 100%; border-radius: 2px; }
+.a-op   .a-bar-fill { background: var(--op); }
+.a-res  .a-bar-fill { background: var(--res); }
+.a-bld  .a-bar-fill { background: var(--bld); }
+.a-grow .a-bar-fill { background: rgba(91,143,204,0.5); }
+.a-desc { font-size: 10px; color: rgba(0,0,0,0.42); line-height: 1.4; margin-top: auto; }
+.a-tier-bar { display: flex; height: 3px; border-radius: 2px; overflow: hidden; gap: 1px; margin-bottom: 8px; }
+.a-tier-op  { background: rgba(91,143,204,0.75); width: 19%; }
+.a-tier-res { background: rgba(196,154,40,0.75); width: 61.5%; }
+.a-tier-bld { background: rgba(58,138,90,0.75); width: 19.5%; }
+
+/* ══════════════════════════════════════════════
+   STYLE B — Left color slab, clean white card
+══════════════════════════════════════════════ */
+.b-card {
+  border-radius: 6px; overflow: hidden;
+  display: flex; flex-direction: row;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+.b-slab { width: 4px; flex-shrink: 0; }
+.b-total .b-slab { background: var(--navy); }
+.b-op    .b-slab { background: var(--op); }
+.b-res   .b-slab { background: var(--res); }
+.b-bld   .b-slab { background: var(--bld); }
+.b-grow  .b-slab { background: rgba(91,143,204,0.55); }
+.b-body { padding: 14px 14px 12px; flex: 1; display: flex; flex-direction: column; }
+.b-name { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 5px; }
+.b-total .b-name { color: var(--navy); }
+.b-op    .b-name { color: #3d6fa8; }
+.b-res   .b-name { color: var(--gold); }
+.b-bld   .b-name { color: var(--forest); }
+.b-grow  .b-name { color: rgba(61,111,168,0.70); }
+.b-bal {
+  font-size: 17px; font-weight: 300; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; margin-bottom: 7px;
+}
+.b-yield { font-size: 10px; font-weight: 500; color: rgba(0,0,0,0.35); font-variant-numeric: tabular-nums; margin-bottom: 7px; }
+.b-bar-track { height: 2px; background: rgba(0,0,0,0.07); border-radius: 1px; overflow: hidden; margin-bottom: 7px; }
+.b-bar-fill { height: 100%; border-radius: 1px; }
+.b-op   .b-bar-fill { background: var(--op); }
+.b-res  .b-bar-fill { background: var(--res); }
+.b-bld  .b-bar-fill { background: var(--bld); }
+.b-grow .b-bar-fill { background: rgba(91,143,204,0.5); }
+.b-desc { font-size: 10px; color: rgba(0,0,0,0.40); line-height: 1.4; margin-top: auto; }
+.b-tier-bar { display: flex; height: 2px; border-radius: 1px; overflow: hidden; gap: 1px; margin-bottom: 7px; }
+.b-tier-op  { background: rgba(91,143,204,0.7); width: 19%; }
+.b-tier-res { background: rgba(196,154,40,0.7); width: 61.5%; }
+.b-tier-bld { background: rgba(58,138,90,0.7); width: 19.5%; }
+
+/* ══════════════════════════════════════════════
+   STYLE C — Bold name + italic tagline, minimal border
+══════════════════════════════════════════════ */
+.c-card {
+  border-radius: 6px; overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative; padding: 16px 16px 14px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.09);
+  box-shadow: none;
+}
+.c-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 6px 6px 0 0;
+}
+.c-total::before { background: var(--navy); }
+.c-op::before    { background: var(--op); }
+.c-res::before   { background: var(--res); }
+.c-bld::before   { background: var(--bld); }
+.c-grow::before  { background: rgba(91,143,204,0.5); }
+
+.c-name { font-size: 13px; font-weight: 600; margin-bottom: 1px; }
+.c-total .c-name { color: var(--navy); }
+.c-op    .c-name { color: #3d6fa8; }
+.c-res   .c-name { color: var(--gold); }
+.c-bld   .c-name { color: var(--forest); }
+.c-grow  .c-name { color: rgba(61,111,168,0.75); }
+.c-tagline { font-size: 10px; color: rgba(0,0,0,0.42); font-style: italic; font-family: 'Playfair Display', serif; margin-bottom: 11px; line-height: 1.4; }
+.c-rule { width: 100%; height: 1px; background: rgba(0,0,0,0.07); margin-bottom: 10px; }
+.c-hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.c-bal {
+  font-size: 18px; font-weight: 300; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
+}
+.c-yield { font-size: 10px; font-weight: 500; color: rgba(0,0,0,0.35); font-variant-numeric: tabular-nums; }
+.c-bar-track { height: 2px; background: rgba(0,0,0,0.07); border-radius: 1px; overflow: hidden; }
+.c-bar-fill { height: 100%; border-radius: 1px; }
+.c-op   .c-bar-fill { background: var(--op); }
+.c-res  .c-bar-fill { background: var(--res); }
+.c-bld  .c-bar-fill { background: var(--bld); }
+.c-grow .c-bar-fill { background: rgba(91,143,204,0.5); }
+.c-tier-bar { display: flex; height: 2px; border-radius: 1px; overflow: hidden; gap: 1px; }
+.c-tier-op  { background: rgba(91,143,204,0.7); width: 19%; }
+.c-tier-res { background: rgba(196,154,40,0.7); width: 61.5%; }
+.c-tier-bld { background: rgba(58,138,90,0.7); width: 19.5%; }
+.c-pct { font-size: 10px; font-weight: 600; color: rgba(0,0,0,0.28); font-variant-numeric: tabular-nums; margin-top: 5px; text-align: right; }
+
+/* ══════════════════════════════════════════════
+   STYLE D — Stacked stats: balance + yield pill
+══════════════════════════════════════════════ */
+.d-card {
+  border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative; padding: 16px 16px 14px;
+  background: var(--card);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.d-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 8px 8px 0 0;
+}
+.d-total::before { background: var(--navy); }
+.d-op::before    { background: var(--op); }
+.d-res::before   { background: var(--res); }
+.d-bld::before   { background: var(--bld); }
+.d-grow::before  { background: rgba(91,143,204,0.55); }
+
+.d-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 9px; }
+.d-name-block { display: flex; flex-direction: column; gap: 2px; }
+.d-name { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+.d-total .d-name { color: var(--navy); }
+.d-op    .d-name { color: #3d6fa8; }
+.d-res   .d-name { color: var(--gold); }
+.d-bld   .d-name { color: var(--forest); }
+.d-grow  .d-name { color: rgba(61,111,168,0.75); }
+.d-desc { font-size: 10px; color: rgba(0,0,0,0.42); }
+
+.d-yield-pill {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+  background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.45);
+  font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+.d-op  .d-yield-pill { background: rgba(91,143,204,0.10); color: #3d6fa8; }
+.d-res .d-yield-pill { background: rgba(196,154,40,0.10); color: var(--gold); }
+.d-bld .d-yield-pill { background: rgba(30,77,48,0.10); color: var(--forest); }
+.d-grow .d-yield-pill { background: rgba(91,143,204,0.08); color: rgba(61,111,168,0.70); }
+
+.d-bal {
+  font-size: 17px; font-weight: 300; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px;
+}
+.d-bar-track { height: 3px; background: rgba(0,0,0,0.07); border-radius: 2px; overflow: hidden; }
+.d-bar-fill { height: 100%; border-radius: 2px; }
+.d-op   .d-bar-fill { background: var(--op); }
+.d-res  .d-bar-fill { background: var(--res); }
+.d-bld  .d-bar-fill { background: var(--bld); }
+.d-grow .d-bar-fill { background: rgba(91,143,204,0.5); }
+.d-tier-bar { display: flex; height: 3px; border-radius: 2px; overflow: hidden; gap: 1px; }
+.d-tier-op  { background: rgba(91,143,204,0.75); width: 19%; }
+.d-tier-res { background: rgba(196,154,40,0.75); width: 61.5%; }
+.d-tier-bld { background: rgba(58,138,90,0.75); width: 19.5%; }
+
+/* ══════════════════════════════════════════════
+   STYLE E — Minimal, balance-first, no bar
+══════════════════════════════════════════════ */
+.e-card {
+  border-radius: 6px; overflow: hidden;
+  display: flex; flex-direction: column;
+  padding: 16px 16px 14px;
+  background: #fff;
+  border-bottom: 2px solid transparent;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.e-total { border-bottom-color: var(--navy); }
+.e-op    { border-bottom-color: var(--op); }
+.e-res   { border-bottom-color: var(--res); }
+.e-bld   { border-bottom-color: var(--bld); }
+.e-grow  { border-bottom-color: rgba(91,143,204,0.45); }
+
+.e-bal {
+  font-size: 20px; font-weight: 300; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; margin-bottom: 7px;
+}
+.e-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.e-name { font-size: 11px; font-weight: 600; }
+.e-total .e-name { color: var(--navy); }
+.e-op    .e-name { color: #3d6fa8; }
+.e-res   .e-name { color: var(--gold); }
+.e-bld   .e-name { color: var(--forest); }
+.e-grow  .e-name { color: rgba(61,111,168,0.70); }
+.e-yield { font-size: 10px; color: rgba(0,0,0,0.38); font-variant-numeric: tabular-nums; }
+.e-divider { width: 100%; height: 1px; background: rgba(0,0,0,0.07); margin-bottom: 8px; }
+.e-desc { font-size: 10px; color: rgba(0,0,0,0.40); line-height: 1.4; }
+.e-alloc { font-size: 10px; font-weight: 500; color: rgba(0,0,0,0.30); font-variant-numeric: tabular-nums; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ══ STYLE A: Current ══ -->
+<div class="section">
+  <div class="section-label"><span>A</span> Current — linen, 3px top line, small caps, light balance</div>
+  <div class="card-row">
+    <div class="a-card a-total">
+      <div class="a-hdr"><span class="a-name">Total Assets</span></div>
+      <div class="a-bal">$3,202,736</div>
+      <div class="a-tier-bar"><div class="a-tier-op"></div><div class="a-tier-res"></div><div class="a-tier-bld"></div></div>
+      <div class="a-desc">Liquid + Long-Term · excl. residence</div>
+    </div>
+    <div class="a-card a-op">
+      <div class="a-hdr"><span class="a-name">Operating</span><span class="a-yield">0.01%</span></div>
+      <div class="a-bal">$132,050</div>
+      <div class="a-bar-track"><div class="a-bar-fill" style="width:19%"></div></div>
+      <div class="a-desc">Cash for upcoming expenditures</div>
+    </div>
+    <div class="a-card a-res">
+      <div class="a-hdr"><span class="a-name">Reserve</span><span class="a-yield">4.60%</span></div>
+      <div class="a-bal">$426,586</div>
+      <div class="a-bar-track"><div class="a-bar-fill" style="width:62%"></div></div>
+      <div class="a-desc">Active cash management for what's next</div>
+    </div>
+    <div class="a-card a-bld">
+      <div class="a-hdr"><span class="a-name">Build</span><span class="a-yield">4.85%</span></div>
+      <div class="a-bal">$135,000</div>
+      <div class="a-bar-track"><div class="a-bar-fill" style="width:19.5%"></div></div>
+      <div class="a-desc">Disciplined saving for goals on the horizon</div>
+    </div>
+    <div class="a-card a-grow">
+      <div class="a-hdr"><span class="a-name">Grow</span><span class="a-yield">3.95%</span></div>
+      <div class="a-bal">$2,509,500</div>
+      <div class="a-bar-track"><div class="a-bar-fill" style="width:78%"></div></div>
+      <div class="a-desc">Long-term compounded investing</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STYLE B: Left slab ══ -->
+<div class="section">
+  <div class="section-label"><span>B</span> Left slab — white card, 4px left accent, minimal</div>
+  <div class="card-row">
+    <div class="b-card b-total">
+      <div class="b-slab"></div>
+      <div class="b-body">
+        <div class="b-name">Total Assets</div>
+        <div class="b-bal">$3,202,736</div>
+        <div class="b-tier-bar"><div class="b-tier-op"></div><div class="b-tier-res"></div><div class="b-tier-bld"></div></div>
+        <div class="b-desc">Liquid + Long-Term · excl. residence</div>
+      </div>
+    </div>
+    <div class="b-card b-op">
+      <div class="b-slab"></div>
+      <div class="b-body">
+        <div class="b-name">Operating</div>
+        <div class="b-bal">$132,050</div>
+        <div class="b-yield">0.01%</div>
+        <div class="b-bar-track"><div class="b-bar-fill" style="width:19%"></div></div>
+        <div class="b-desc">Cash for upcoming expenditures</div>
+      </div>
+    </div>
+    <div class="b-card b-res">
+      <div class="b-slab"></div>
+      <div class="b-body">
+        <div class="b-name">Reserve</div>
+        <div class="b-bal">$426,586</div>
+        <div class="b-yield">4.60%</div>
+        <div class="b-bar-track"><div class="b-bar-fill" style="width:62%"></div></div>
+        <div class="b-desc">Active cash management for what's next</div>
+      </div>
+    </div>
+    <div class="b-card b-bld">
+      <div class="b-slab"></div>
+      <div class="b-body">
+        <div class="b-name">Build</div>
+        <div class="b-bal">$135,000</div>
+        <div class="b-yield">4.85%</div>
+        <div class="b-bar-track"><div class="b-bar-fill" style="width:19.5%"></div></div>
+        <div class="b-desc">Disciplined saving for goals on the horizon</div>
+      </div>
+    </div>
+    <div class="b-card b-grow">
+      <div class="b-slab"></div>
+      <div class="b-body">
+        <div class="b-name">Grow</div>
+        <div class="b-bal">$2,509,500</div>
+        <div class="b-yield">3.95%</div>
+        <div class="b-bar-track"><div class="b-bar-fill" style="width:78%"></div></div>
+        <div class="b-desc">Long-term compounded investing</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STYLE C: Italic tagline ══ -->
+<div class="section">
+  <div class="section-label"><span>C</span> Italic tagline — mixed-weight, serif tagline, rule divider</div>
+  <div class="card-row">
+    <div class="c-card c-total">
+      <div class="c-name">Total Assets</div>
+      <div class="c-tagline">Liquid &amp; long-term wealth</div>
+      <div class="c-rule"></div>
+      <div class="c-hdr">
+        <div class="c-bal">$3,202,736</div>
+      </div>
+      <div class="c-tier-bar"><div class="c-tier-op"></div><div class="c-tier-res"></div><div class="c-tier-bld"></div></div>
+    </div>
+    <div class="c-card c-op">
+      <div class="c-name">Operating</div>
+      <div class="c-tagline">Cash for upcoming expenditures</div>
+      <div class="c-rule"></div>
+      <div class="c-hdr">
+        <div class="c-bal">$132,050</div>
+        <div class="c-yield">0.01%</div>
+      </div>
+      <div class="c-bar-track"><div class="c-bar-fill" style="width:19%"></div></div>
+      <div class="c-pct">19% of liquid</div>
+    </div>
+    <div class="c-card c-res">
+      <div class="c-name">Reserve</div>
+      <div class="c-tagline">Active cash management for what's next</div>
+      <div class="c-rule"></div>
+      <div class="c-hdr">
+        <div class="c-bal">$426,586</div>
+        <div class="c-yield">4.60%</div>
+      </div>
+      <div class="c-bar-track"><div class="c-bar-fill" style="width:62%"></div></div>
+      <div class="c-pct">62% of liquid</div>
+    </div>
+    <div class="c-card c-bld">
+      <div class="c-name">Build</div>
+      <div class="c-tagline">Disciplined saving for goals on the horizon</div>
+      <div class="c-rule"></div>
+      <div class="c-hdr">
+        <div class="c-bal">$135,000</div>
+        <div class="c-yield">4.85%</div>
+      </div>
+      <div class="c-bar-track"><div class="c-bar-fill" style="width:19.5%"></div></div>
+      <div class="c-pct">19.5% of liquid</div>
+    </div>
+    <div class="c-card c-grow">
+      <div class="c-name">Grow</div>
+      <div class="c-tagline">Long-term compounded investing</div>
+      <div class="c-rule"></div>
+      <div class="c-hdr">
+        <div class="c-bal">$2,509,500</div>
+        <div class="c-yield">3.95%</div>
+      </div>
+      <div class="c-bar-track"><div class="c-bar-fill" style="width:78%"></div></div>
+      <div class="c-pct">78% of AUM</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STYLE D: Yield pill ══ -->
+<div class="section">
+  <div class="section-label"><span>D</span> Yield pill — name + desc stacked top, colored yield badge</div>
+  <div class="card-row">
+    <div class="d-card d-total">
+      <div class="d-top">
+        <div class="d-name-block">
+          <div class="d-name">Total Assets</div>
+          <div class="d-desc">Liquid + Long-Term</div>
+        </div>
+      </div>
+      <div class="d-bal">$3,202,736</div>
+      <div class="d-tier-bar"><div class="d-tier-op"></div><div class="d-tier-res"></div><div class="d-tier-bld"></div></div>
+    </div>
+    <div class="d-card d-op">
+      <div class="d-top">
+        <div class="d-name-block">
+          <div class="d-name">Operating</div>
+          <div class="d-desc">Cash for upcoming expenditures</div>
+        </div>
+        <span class="d-yield-pill">0.01%</span>
+      </div>
+      <div class="d-bal">$132,050</div>
+      <div class="d-bar-track"><div class="d-bar-fill" style="width:19%"></div></div>
+    </div>
+    <div class="d-card d-res">
+      <div class="d-top">
+        <div class="d-name-block">
+          <div class="d-name">Reserve</div>
+          <div class="d-desc">Active cash for what's next</div>
+        </div>
+        <span class="d-yield-pill">4.60%</span>
+      </div>
+      <div class="d-bal">$426,586</div>
+      <div class="d-bar-track"><div class="d-bar-fill" style="width:62%"></div></div>
+    </div>
+    <div class="d-card d-bld">
+      <div class="d-top">
+        <div class="d-name-block">
+          <div class="d-name">Build</div>
+          <div class="d-desc">Saving for goals on the horizon</div>
+        </div>
+        <span class="d-yield-pill">4.85%</span>
+      </div>
+      <div class="d-bal">$135,000</div>
+      <div class="d-bar-track"><div class="d-bar-fill" style="width:19.5%"></div></div>
+    </div>
+    <div class="d-card d-grow">
+      <div class="d-top">
+        <div class="d-name-block">
+          <div class="d-name">Grow</div>
+          <div class="d-desc">Long-term compounded investing</div>
+        </div>
+        <span class="d-yield-pill">3.95%</span>
+      </div>
+      <div class="d-bal">$2,509,500</div>
+      <div class="d-bar-track"><div class="d-bar-fill" style="width:78%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STYLE E: Balance-first, bottom border accent ══ -->
+<div class="section">
+  <div class="section-label"><span>E</span> Balance-first — large number leads, bottom color accent, clean rule</div>
+  <div class="card-row">
+    <div class="e-card e-total">
+      <div class="e-bal">$3,202,736</div>
+      <div class="e-row"><span class="e-name">Total Assets</span></div>
+      <div class="e-divider"></div>
+      <div class="e-desc">Liquid + Long-Term excl. residence</div>
+    </div>
+    <div class="e-card e-op">
+      <div class="e-bal">$132,050</div>
+      <div class="e-row"><span class="e-name">Operating</span><span class="e-yield">0.01%</span></div>
+      <div class="e-divider"></div>
+      <div class="e-desc">Cash for upcoming expenditures</div>
+      <div class="e-alloc">19% of liquid assets</div>
+    </div>
+    <div class="e-card e-res">
+      <div class="e-bal">$426,586</div>
+      <div class="e-row"><span class="e-name">Reserve</span><span class="e-yield">4.60%</span></div>
+      <div class="e-divider"></div>
+      <div class="e-desc">Active cash management for what's next</div>
+      <div class="e-alloc">62% of liquid assets</div>
+    </div>
+    <div class="e-card e-bld">
+      <div class="e-bal">$135,000</div>
+      <div class="e-row"><span class="e-name">Build</span><span class="e-yield">4.85%</span></div>
+      <div class="e-divider"></div>
+      <div class="e-desc">Disciplined saving for goals on the horizon</div>
+      <div class="e-alloc">19.5% of liquid assets</div>
+    </div>
+    <div class="e-card e-grow">
+      <div class="e-bal">$2,509,500</div>
+      <div class="e-row"><span class="e-name">Grow</span><span class="e-yield">3.95%</span></div>
+      <div class="e-divider"></div>
+      <div class="e-desc">Long-term compounded investing</div>
+      <div class="e-alloc">78% of AUM</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

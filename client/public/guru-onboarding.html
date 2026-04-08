@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU · New Client Onboarding</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --paper: #f5f4f0; --white: #fff; --ink: #181816; --ink2: #3a3a35;
+  --ink3: #68685f; --ink4: #9c9c93; --ink5: #d0d0c8; --rule: #e6e5e0;
+  --green: #0d6b50; --green-l: #e5f3ee; --green-m: #b4d9ce;
+  --amber: #a55b00; --amber-l: #fcf1e6; --amber-m: #f0ce97;
+  --blue: #1b3f8a; --blue-l: #edf1fb; --blue-m: #b4c5f5;
+  --red: #be2a2c; --red-l: #fdecea;
+  --mono: 'Courier New', monospace;
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans: 'DM Sans', -apple-system, sans-serif;
+}
+body { font-family: var(--sans); background: var(--paper); color: var(--ink); -webkit-font-smoothing: antialiased; min-height: 100vh; }
+/* TOPBAR */
+.topbar { height: 52px; background: var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-name { font-size: 13px; font-weight: 600; color: #4ecdc4; letter-spacing: 0.06em; }
+.topbar-sep { color: rgba(255,255,255,0.15); margin: 0 4px; }
+.topbar-page { font-size: 12px; color: rgba(255,255,255,0.4); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.topbar-client-name { font-size: 12px; color: rgba(255,255,255,0.35); font-style: italic; }
+/* LAYOUT */
+.app { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 52px); }
+/* SIDEBAR NAV */
+.sidebar { background: var(--white); border-right: 1px solid var(--rule); padding: 28px 0; position: sticky; top: 52px; height: calc(100vh - 52px); overflow-y: auto; }
+.sidebar-section { padding: 0 20px; margin-bottom: 24px; }
+.sidebar-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink4); margin-bottom: 8px; padding: 0 4px; }
+.nav-step { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s; margin-bottom: 2px; }
+.nav-step:hover { background: var(--paper); }
+.nav-step.active { background: var(--green-l); }
+.nav-step.completed .step-num { background: var(--green); color: white; border-color: var(--green); }
+.nav-step.active .step-num { border-color: var(--green); color: var(--green); }
+.step-num { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--ink5); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--ink4); flex-shrink: 0; transition: all 0.2s; }
+.step-label { font-size: 12px; font-weight: 500; color: var(--ink3); }
+.nav-step.active .step-label { color: var(--green); }
+.nav-step.completed .step-label { color: var(--ink2); }
+.gap-summary { margin: 0 20px; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; }
+.gap-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink4); margin-bottom: 10px; }
+.gap-item { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 7px; font-size: 11px; font-weight: 300; color: var(--ink3); line-height: 1.4; }
+.gap-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+/* MAIN */
+.main { padding: 40px 48px 80px; max-width: 780px; }
+/* STEP HEADER */
+.step-header { margin-bottom: 32px; }
+.step-eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink4); margin-bottom: 6px; }
+.step-title { font-family: var(--serif); font-size: 28px; font-weight: 400; color: var(--ink); line-height: 1.2; margin-bottom: 8px; }
+.step-sub { font-size: 14px; font-weight: 300; color: var(--ink3); line-height: 1.65; max-width: 520px; }
+/* SECTIONS */
+.section { margin-bottom: 32px; }
+.section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink3); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+/* FIELDS */
+.field-row { display: grid; gap: 14px; margin-bottom: 14px; }
+.field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink4); }
+.field-input { font-family: var(--sans); font-size: 13px; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--white); color: var(--ink); outline: none; transition: border-color 0.15s; }
+.field-input:focus { border-color: var(--green); }
+.field-input::placeholder { color: var(--ink4); }
+select.field-input { cursor: pointer; }
+textarea.field-input { resize: vertical; }
+/* TOGGLE CHIPS */
+.chip-group { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip { padding: 7px 14px; border: 1px solid var(--rule); border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--ink3); cursor: pointer; background: var(--white); transition: all 0.15s; user-select: none; }
+.chip:hover { border-color: var(--ink3); }
+.chip.selected { border-color: var(--green); background: var(--green-l); color: var(--green); }
+.chip.selected-amber { border-color: var(--amber); background: var(--amber-l); color: var(--amber); }
+/* PROPERTY / REPEATING CARDS */
+.repeating-card { background: var(--white); border: 1px solid var(--rule); border-radius: 12px; padding: 20px 22px; margin-bottom: 12px; position: relative; }
+.repeating-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.repeating-card-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+.card-remove { background: none; border: none; color: var(--ink4); cursor: pointer; font-size: 18px; padding: 0; line-height: 1; }
+.card-remove:hover { color: var(--red); }
+.add-btn { display: flex; align-items: center; gap: 7px; font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--green); background: var(--green-l); border: 1px dashed var(--green-m); border-radius: 8px; padding: 10px 16px; cursor: pointer; width: 100%; justify-content: center; transition: background 0.15s; }
+.add-btn:hover { background: #d4ede6; }
+/* PLACEHOLDER ITEMS */
+.placeholder-grid { display: flex; flex-direction: column; gap: 8px; }
+.placeholder-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 9px; border: 1px solid; }
+.placeholder-item.missing { border-color: var(--amber-m); background: var(--amber-l); }
+.placeholder-item.provided { border-color: var(--green-m); background: var(--green-l); }
+.placeholder-item.estimated { border-color: var(--rule); background: var(--paper); }
+.ph-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ph-body { flex: 1; }
+.ph-name { font-size: 12px; font-weight: 500; color: var(--ink2); margin-bottom: 1px; }
+.ph-sub { font-size: 11px; font-weight: 300; color: var(--ink3); }
+.ph-amount { font-family: var(--mono); font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.ph-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; }
+/* PROGRESS BAR */
+.progress-bar { height: 3px; background: var(--rule); border-radius: 2px; margin-bottom: 32px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.4s ease; }
+/* NAV BUTTONS */
+.step-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--rule); }
+.btn-back { font-family: var(--sans); font-size: 13px; font-weight: 400; padding: 10px 20px; border-radius: 8px; border: 1px solid var(--rule); background: var(--white); color: var(--ink3); cursor: pointer; }
+.btn-next { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 10px 24px; border-radius: 8px; border: none; background: var(--green); color: white; cursor: pointer; transition: filter 0.15s; }
+.btn-next:hover { filter: brightness(0.88); }
+.btn-next:disabled { background: var(--ink5); cursor: not-allowed; }
+.step-counter { font-size: 12px; font-weight: 300; color: var(--ink4); }
+/* FLASH */
+.flash { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 10px 20px; border-radius: 10px; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.18s; white-space: nowrap; }
+.flash.show { opacity: 1; }
+/* REQUIRED FIELDS */
+.field-label.required::after { content: ' *'; color: var(--red); }
+.field-input.error { border-color: var(--red) !important; background: var(--red-l); }
+.field-error-msg { font-size: 11px; color: var(--red); font-weight: 500; margin-top: 4px; display: none; }
+.field-error-msg.show { display: block; }
+.field-label span.optional { font-size: 10px; font-weight: 300; color: var(--ink4); text-transform: none; letter-spacing: 0; margin-left: 4px; }
+/* UPLOAD ZONE INLINE */
+.inline-upload {
+  border: 1.5px dashed var(--ink5);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; background: var(--paper);
+  transition: border-color 0.15s, background 0.15s;
+  position: relative; margin-top: 8px;
+}
+.inline-upload:hover, .inline-upload.dragover { border-color: var(--green); background: var(--green-l); }
+.inline-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.inline-upload-icon { width: 28px; height: 28px; background: var(--white); border: 1px solid var(--rule); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.inline-upload-text { font-size: 12px; font-weight: 400; color: var(--ink3); }
+.inline-upload-text strong { font-weight: 600; color: var(--ink2); }
+.inline-upload.has-file { border-color: var(--green); background: var(--green-l); }
+.inline-upload.has-file .inline-upload-text { color: var(--green); }
+.upload-or { font-size: 11px; font-weight: 300; color: var(--ink4); text-align: center; margin: 8px 0; }
+/* SPINNER */
+@keyframes spin { to { transform: rotate(360deg); } }
+/* MULTI-STATEMENT SCREEN */
+.stmt-screen { min-height: calc(100vh - 52px); background: var(--paper); padding: 48px 20px 80px; }
+.stmt-drop-zone {
+  border: 2px dashed var(--green-m);
+  border-radius: 14px;
+  padding: 32px 24px;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  background: var(--white);
+  transition: border-color 0.15s, background 0.15s;
+}
+.stmt-drop-zone:hover, .stmt-drop-zone.dragover { border-color: var(--green); background: var(--green-l); }
+.stmt-drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.stmt-file-row { background: var(--white); border: 1px solid var(--rule); border-radius: 10px; padding: 13px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: border-color 0.15s; }
+.stmt-file-row.status-parsing { border-color: var(--amber-m); background: var(--amber-l); }
+.stmt-file-row.status-done { border-color: var(--green-m); background: var(--green-l); }
+.stmt-file-row.status-error { border-color: #f0b4b4; background: var(--red-l); }
+.stmt-cat-select { font-family: var(--sans); font-size: 12px; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 7px; background: var(--paper); color: var(--ink2); outline: none; cursor: pointer; flex-shrink: 0; }
+.stmt-parse-btn { font-family: var(--sans); font-size: 14px; font-weight: 600; padding: 12px 28px; border-radius: 9px; border: none; background: var(--green); color: white; cursor: pointer; transition: filter 0.15s; }
+.stmt-parse-btn:hover { filter: brightness(0.88); }
+.stmt-parse-btn:disabled { background: var(--ink5); cursor: not-allowed; filter: none; }
+/* COMPLETE SCREEN */
+.complete-screen { display: none; padding: 60px 48px; max-width: 780px; }
+.complete-screen.show { display: block; }
+.complete-icon { width: 56px; height: 56px; background: var(--green-l); border: 1px solid var(--green-m); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+.complete-title { font-family: var(--serif); font-size: 30px; font-weight: 400; color: var(--ink); margin-bottom: 8px; }
+.complete-sub { font-size: 14px; font-weight: 300; color: var(--ink3); line-height: 1.65; max-width: 500px; margin-bottom: 32px; }
+/* MODEL OUTPUT */
+.model-section { background: var(--white); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.model-header { padding: 14px 20px; background: var(--paper); border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
+.model-header-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink3); }
+.model-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.model-row:last-child { border-bottom: none; }
+.model-row-name { color: var(--ink2); font-weight: 300; }
+.model-row-val { font-family: var(--mono); font-weight: 600; }
+.model-row-sub { font-size: 10px; color: var(--ink4); margin-top: 1px; }
+.model-row-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 10px; }
+/* JSON OUTPUT */
+.json-out { background: var(--ink); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.json-out-header { padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
+.json-out-title { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; }
+.json-copy-btn { font-family: var(--sans); font-size: 11px; padding: 5px 12px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: rgba(255,255,255,0.5); cursor: pointer; }
+.json-body { padding: 20px; font-family: var(--mono); font-size: 11px; color: #a8d8a8; line-height: 1.7; white-space: pre-wrap; max-height: 360px; overflow-y: auto; }
+</style>
+</head>
+<body>
+<div class="flash" id="flash"></div>
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#4ecdc4" stroke-width="1.8" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#4ecdc4" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    <span class="topbar-name">GURU</span>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-page">New Client</span>
+  </div>
+  <span class="topbar-client-name" id="topbarClientName">Unnamed household</span>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <input id="apiKeyMain" type="password" placeholder="API key for document parsing" style="font-family:var(--sans);font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.7);width:260px;outline:none;" oninput="saveToStorage()">
+    <button onclick="clearProgress()" style="font-family:var(--sans);font-size:11px;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.35);cursor:pointer;" title="Clear saved progress and start over">Clear &amp; restart</button>
+  </div>
+</div>
+<!-- ── LANDING SCREEN ── -->
+<div id="landingScreen" style="min-height:calc(100vh - 52px);display:flex;align-items:center;justify-content:center;padding:40px 20px;background:var(--paper);"
+  ondragover="event.preventDefault()"
+  ondrop="handleGlobalDrop(event)">
+  <div style="max-width:760px;width:100%;">
+    
+    <div style="text-align:center;margin-bottom:48px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink4);margin-bottom:12px;">GURU · New Client</div>
+      <div style="font-family:var(--serif);font-size:38px;font-weight:400;color:var(--ink);line-height:1.2;margin-bottom:14px;">How would you like to<br>build this household model?</div>
+      <div style="font-size:15px;font-weight:300;color:var(--ink3);line-height:1.7;max-width:480px;margin:0 auto;">Every client starts with a profile. You can build it by uploading bank statements — or by filling in the survey manually. Both paths end in the same place.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px;">
+      <!-- OPTION A: Drop statement -->
+      <div id="optionA" style="background:var(--white);border:1.5px solid var(--rule);border-radius:16px;padding:32px 28px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;" 
+           onmouseenter="this.style.borderColor='var(--green)';this.style.boxShadow='0 4px 24px rgba(13,107,80,0.1)'"
+           onmouseleave="this.style.borderColor='var(--rule)';this.style.boxShadow='none'"
+           onclick="startWithStatement()">
+        <div style="width:44px;height:44px;background:var(--green-l);border:1px solid var(--green-m);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div style="font-family:var(--serif);font-size:20px;font-weight:400;color:var(--ink);margin-bottom:8px;">Drop a bank statement</div>
+        <div style="font-size:13px;font-weight:300;color:var(--ink3);line-height:1.65;margin-bottom:20px;">Upload a recent bank statement and GURU will extract income sources, recurring expenses, properties, staff, memberships, and more — automatically.</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);font-weight:300;">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>Fastest path to a complete model
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);font-weight:300;">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>Survey pre-fills from the statement
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);font-weight:300;">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0;"></div>Review and confirm before saving
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:10px 16px;background:var(--green);border-radius:8px;text-align:center;font-size:13px;font-weight:600;color:white;">Start with statement →</div>
+      </div>
+      <!-- OPTION B: Manual survey -->
+      <div id="optionB" style="background:var(--white);border:1.5px solid var(--rule);border-radius:16px;padding:32px 28px;cursor:pointer;transition:all 0.2s;"
+           onmouseenter="this.style.borderColor='var(--blue)';this.style.boxShadow='0 4px 24px rgba(27,63,138,0.08)'"
+           onmouseleave="this.style.borderColor='var(--rule)';this.style.boxShadow='none'"
+           onclick="startManually()">
+        <div style="width:44px;height:44px;background:var(--blue-l);border:1px solid var(--blue-m);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div style="font-family:var(--serif);font-size:20px;font-weight:400;color:var(--ink);margin-bottom:8px;">Fill in manually</div>
+        <div style="font-size:13px;font-weight:300;color:var(--ink3);line-height:1.65;margin-bottom:20px;">Work through the intake survey step by step. Answer questions about income, properties, children, memberships, and liabilities. Upload documents as you go to auto-fill fields.</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);font-weight:300;">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0;"></div>Full control over every field
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);font-weight:300;">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0;"></div>Upload docs on any step to auto-fill
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);font-weight:300;">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0;"></div>Progress saves automatically
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:10px 16px;background:var(--blue);border-radius:8px;text-align:center;font-size:13px;font-weight:600;color:white;">Start survey →</div>
+      </div>
+    </div>
+    <div id="resumeBar" style="display:none;background:var(--blue-l);border:1px solid var(--blue-m);border-radius:10px;padding:12px 20px;margin-bottom:20px;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="font-size:13px;font-weight:300;color:var(--blue);">You have a saved onboarding session in progress.</div>
+      <button onclick="resumeSaved()" style="font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 18px;border-radius:7px;border:none;background:var(--blue);color:white;cursor:pointer;white-space:nowrap;">Resume →</button>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+      <div style="font-size:11px;font-weight:300;color:var(--ink4);">Documents are processed locally and sent directly to the Anthropic API. Nothing is stored on any server.</div>
+    </div>
+  </div>
+</div>
+<!-- ── STATEMENTS UPLOAD SCREEN ── -->
+<div id="statementsScreen" style="display:none;">
+  <div class="stmt-screen">
+    <div style="max-width:780px;margin:0 auto;">
+      <!-- Back -->
+      <button onclick="backToLanding()" style="font-family:var(--sans);font-size:12px;font-weight:500;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:6px;margin-bottom:32px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </button>
+      <!-- Title -->
+      <div style="margin-bottom:36px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink4);margin-bottom:10px;">GURU · Document Upload</div>
+        <div style="font-family:var(--serif);font-size:32px;font-weight:400;color:var(--ink);line-height:1.2;margin-bottom:10px;">Upload your financial statements</div>
+        <div style="font-size:14px;font-weight:300;color:var(--ink3);line-height:1.65;max-width:520px;">Drop as many statements as you like — checking, savings, credit cards, investments, mortgages, or tax returns. GURU parses them all and merges the results before pre-filling your survey.</div>
+      </div>
+      <!-- Drop zone (persistent — always visible) -->
+      <div class="stmt-drop-zone" id="stmtDropZone"
+           ondragover="stmtDragOver(event)" ondragleave="stmtDragLeave(event)" ondrop="stmtDrop(event)">
+        <input type="file" id="stmtFileInput" multiple accept=".pdf,.png,.jpg,.jpeg,.html" onchange="stmtFileInputChange(this)">
+        <div style="width:44px;height:44px;background:var(--green-l);border:1px solid var(--green-m);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;pointer-events:none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div style="font-family:var(--serif);font-size:19px;color:var(--ink);margin-bottom:6px;pointer-events:none;">Drop statements here, or click to browse</div>
+        <div style="font-size:13px;font-weight:300;color:var(--ink3);pointer-events:none;">PDF, PNG, JPG, or HTML · Multiple files at once welcome</div>
+      </div>
+      <!-- File queue list -->
+      <div id="stmtFileList" style="display:none;margin-top:20px;"></div>
+      <!-- API key row -->
+      <div style="margin-top:24px;background:var(--white);border:1px solid var(--rule);border-radius:12px;padding:18px 20px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink4);margin-bottom:8px;">Anthropic API key</div>
+        <input id="stmtApiKey" type="password" placeholder="sk-ant-api03-..."
+          style="font-family:var(--sans);font-size:13px;padding:10px 14px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);outline:none;width:100%;transition:border-color 0.15s;"
+          onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor=''">
+        <div style="font-size:11px;font-weight:300;color:var(--ink4);margin-top:6px;">Used only to call the Anthropic API directly from your browser. Nothing is stored on any server.</div>
+      </div>
+      <!-- Parse button row -->
+      <div style="margin-top:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <button class="stmt-parse-btn" id="stmtParseBtn" onclick="parseAllStatements()" disabled>
+          Parse all &amp; pre-fill survey →
+        </button>
+        <button onclick="startManually()" style="font-family:var(--sans);font-size:13px;font-weight:400;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0;">
+          Skip — fill in manually
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="app" id="mainApp" style="display:none;">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Onboarding steps</div>
+      <div class="nav-step active" id="nav-0" onclick="goTo(0)">
+        <div class="step-num" id="snum-0">1</div>
+        <div class="step-label">Household profile</div>
+      </div>
+      <div class="nav-step" id="nav-1" onclick="goTo(1)">
+        <div class="step-num" id="snum-1">2</div>
+        <div class="step-label">Income sources</div>
+      </div>
+      <div class="nav-step" id="nav-2" onclick="goTo(2)">
+        <div class="step-num" id="snum-2">3</div>
+        <div class="step-label">Properties</div>
+      </div>
+      <div class="nav-step" id="nav-3" onclick="goTo(3)">
+        <div class="step-num" id="snum-3">4</div>
+        <div class="step-label">Children &amp; education</div>
+      </div>
+      <div class="nav-step" id="nav-4" onclick="goTo(4)">
+        <div class="step-num" id="snum-4">5</div>
+        <div class="step-label">Investments &amp; accounts</div>
+      </div>
+      <div class="nav-step" id="nav-5" onclick="goTo(5)">
+        <div class="step-num" id="snum-5">6</div>
+        <div class="step-label">Memberships &amp; lifestyle</div>
+      </div>
+      <div class="nav-step" id="nav-6" onclick="goTo(6)">
+        <div class="step-num" id="snum-6">7</div>
+        <div class="step-label">Liabilities</div>
+      </div>
+      <div class="nav-step" id="nav-7" onclick="goTo(7)">
+        <div class="step-num" id="snum-7">8</div>
+        <div class="step-label">GURU gap analysis</div>
+      </div>
+    </div>
+    <div class="gap-summary" id="gapSummary" style="display:none;">
+      <div class="gap-title">Model completeness</div>
+      <div id="gapItems"></div>
+    </div>
+  </div>
+  <!-- MAIN STEPS -->
+  <div id="stepsContainer">
+  <!-- ── STEP 0: HOUSEHOLD PROFILE ── -->
+  <div class="main" id="step-0">
+    <div class="progress-bar"><div class="progress-fill" style="width:12%"></div></div>
+    <div class="step-header">
+      <div class="step-eyebrow">Step 1 of 8</div>
+      <div class="step-title">Tell us about the household</div>
+      <div class="step-sub">This builds the foundation of the financial model. Every answer unlocks the data GURU knows to look for.</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Primary contact</div>
+      <div class="field-row cols-2">
+        <div class="field"><div class="field-label required">First name</div><input class="field-input" id="p1_first" data-required="true" placeholder="James" oninput="updateHeader()"></div>
+        <div class="field"><div class="field-label required">Last name</div><input class="field-input" id="p1_last" data-required="true" placeholder="Mercer" oninput="updateHeader()"></div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><div class="field-label">Email <span class="optional">(optional)</span></div><input class="field-input" id="p1_email" placeholder="james@email.com" type="email"></div>
+        <div class="field"><div class="field-label">Phone <span class="optional">(optional)</span></div><input class="field-input" id="p1_phone" placeholder="+1 (212) 555-0100" type="tel"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Household structure</div>
+      <div class="field-row" style="margin-bottom:16px;">
+        <div class="field">
+          <div class="field-label" style="margin-bottom:8px;">Marital status</div>
+          <div class="chip-group">
+            <div class="chip selected" onclick="toggleChip(this,'marital')" data-val="married">Married</div>
+            <div class="chip" onclick="toggleChip(this,'marital')" data-val="domestic_partner">Domestic partner</div>
+            <div class="chip" onclick="toggleChip(this,'marital')" data-val="single">Single</div>
+            <div class="chip" onclick="toggleChip(this,'marital')" data-val="divorced">Divorced</div>
+          </div>
+        </div>
+      </div>
+      <div id="spouseSection">
+        <div class="field-row cols-2">
+          <div class="field"><div class="field-label">Spouse / partner first name</div><input class="field-input" id="p2_first" placeholder="Sarah" oninput="updateHeader()"></div>
+          <div class="field"><div class="field-label">Spouse / partner last name</div><input class="field-input" id="p2_last" placeholder="Mercer"></div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Life stage</div>
+      <div class="field-row cols-2">
+        <div class="field">
+          <div class="field-label">Age <span class="optional">(optional)</span></div>
+          <input class="field-input" id="p1_age" placeholder="42" type="number">
+        </div>
+        <div class="field">
+          <div class="field-label required">Approximate household income</div>
+          <select class="field-input" id="hh_income" data-required="true">
+            <option value="">Select range</option>
+            <option value="250_500">$250K – $500K</option>
+            <option value="500_1m">$500K – $1M</option>
+            <option value="1m_2m">$1M – $2M</option>
+            <option value="2m_5m">$2M – $5M</option>
+            <option value="5m_plus">$5M+</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label" style="margin-bottom:8px;">Do you have children?</div>
+          <div class="chip-group">
+            <div class="chip selected" onclick="toggleChip(this,'children')" data-val="yes">Yes</div>
+            <div class="chip" onclick="toggleChip(this,'children')" data-val="no">No</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Advisor notes</div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label">Anything GURU should know upfront <span class="optional">(optional)</span></div>
+          <textarea class="field-input" id="advisor_notes" placeholder="e.g. Recently sold a business, planning to relocate, going through divorce, expecting large bonus..." rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <div class="step-counter">Step 1 of 8</div>
+      <button class="btn-next" onclick="next(0)">Continue →</button>
+    </div>
+  </div>
+  <!-- ── STEP 1: INCOME ── -->
+  <div class="main" id="step-1" style="display:none;">
+    <div class="progress-bar"><div class="progress-fill" style="width:25%"></div></div>
+    <div class="step-header">
+      <div class="step-eyebrow">Step 2 of 8</div>
+      <div class="step-title">Income sources</div>
+      <div class="step-sub">We need the full picture of what comes in — salary, bonus, equity, carry, rental, business distributions. This anchors the entire cash flow forecast.</div>
+    </div>
+    <div class="section">
+      <div class="section-title" id="income1Label">Primary earner income</div>
+      <div class="field-row cols-2">
+        <div class="field"><div class="field-label">Employer <span class="optional">(optional)</span></div><input class="field-input" id="p1_employer" placeholder="Goldman Sachs"></div>
+        <div class="field"><div class="field-label">Title <span class="optional">(optional)</span></div><input class="field-input" id="p1_title" placeholder="Managing Director"></div>
+      </div>
+      <div class="field-row cols-3">
+        <div class="field"><div class="field-label required">Base salary</div><input class="field-input" id="p1_salary" data-required="true" placeholder="$350,000"></div>
+        <div class="field"><div class="field-label">Expected bonus <span class="optional">(optional)</span></div><input class="field-input" id="p1_bonus" placeholder="$150,000"></div>
+        <div class="field"><div class="field-label">Pay frequency</div>
+          <select class="field-input" id="p1_payfreq">
+            <option value="bi-weekly">Bi-weekly</option>
+            <option value="semi-monthly">Semi-monthly (1st &amp; 15th)</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label" style="margin-bottom:8px;">Additional income types <span class="optional">(optional)</span></div>
+          <div class="chip-group">
+            <div class="chip" onclick="toggleChip(this,'p1_extra')" data-val="rsu">RSUs / equity comp</div>
+            <div class="chip" onclick="toggleChip(this,'p1_extra')" data-val="carried">Carried interest</div>
+            <div class="chip" onclick="toggleChip(this,'p1_extra')" data-val="business">Business distributions</div>
+            <div class="chip" onclick="toggleChip(this,'p1_extra')" data-val="consulting">Consulting / freelance</div>
+            <div class="chip" onclick="toggleChip(this,'p1_extra')" data-val="rental">Rental income</div>
+            <div class="chip" onclick="toggleChip(this,'p1_extra')" data-val="partnership">Partnership / K-1</div>
+            <div class="chip" onclick="toggleChip(this,'p1_extra')" data-val="trust">Trust distributions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Carry section -->
+    <div id="carrySection" style="display:none;">
+      <div class="section">
+        <div class="section-title">Carried interest &amp; alternatives</div>
+        <div style="font-size:13px;font-weight:300;color:var(--ink3);margin-bottom:14px;line-height:1.6;">Carry distributions are lumpy and hard to forecast — GURU models them as probabilistic inflows. Add each fund or vehicle separately.</div>
+        <div id="carryList"></div>
+        <button class="add-btn" onclick="addCarry()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add carry / fund position
+        </button>
+      </div>
+    </div>
+    <!-- RSU section -->
+    <div id="rsuSection" style="display:none;">
+      <div class="section">
+        <div class="section-title">Equity compensation</div>
+        <div style="font-size:13px;font-weight:300;color:var(--ink3);margin-bottom:14px;line-height:1.6;">RSUs and options vest on a schedule — GURU maps each grant to a future inflow. Upload a grant statement or enter manually.</div>
+        <div id="rsuList"></div>
+        <button class="add-btn" onclick="addRSU()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add equity grant
+        </button>
+      </div>
+    </div>
+    <!-- Partnership / K-1 section -->
+    <div id="partnershipSection" style="display:none;">
+      <div class="section">
+        <div class="section-title">Partnership / K-1 income</div>
+        <div id="k1List"></div>
+        <button class="add-btn" onclick="addK1()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add K-1 / partnership
+        </button>
+      </div>
+    </div>
+    <!-- Spouse income -->
+    <div id="spouseIncomeSection">
+      <div class="section">
+        <div class="section-title" id="income2Label">Spouse / partner income</div>
+        <div class="field-row cols-2">
+          <div class="field"><div class="field-label">Employer <span class="optional">(optional)</span></div><input class="field-input" id="p2_employer" placeholder="McKinsey"></div>
+          <div class="field"><div class="field-label">Title <span class="optional">(optional)</span></div><input class="field-input" id="p2_title" placeholder="Partner"></div>
+        </div>
+        <div class="field-row cols-3">
+          <div class="field"><div class="field-label required">Base salary</div><input class="field-input" id="p2_salary" data-required="true" placeholder="$280,000"></div>
+          <div class="field"><div class="field-label">Expected bonus <span class="optional">(optional)</span></div><input class="field-input" id="p2_bonus" placeholder="$100,000"></div>
+          <div class="field"><div class="field-label">Pay frequency</div>
+            <select class="field-input" id="p2_payfreq">
+              <option value="bi-weekly">Bi-weekly</option>
+              <option value="semi-monthly">Semi-monthly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="back(1)">← Back</button>
+      <div class="step-counter">Step 2 of 8</div>
+      <button class="btn-next" onclick="next(1)">Continue →</button>
+    </div>
+  </div>
+  <!-- ── STEP 2: PROPERTIES ── -->
+  <div class="main" id="step-2" style="display:none;">
+    <div class="progress-bar"><div class="progress-fill" style="width:37%"></div></div>
+    <div class="step-header">
+      <div class="step-eyebrow">Step 3 of 8</div>
+      <div class="step-title">Properties</div>
+      <div class="step-sub">Each property generates a set of recurring obligations — GURU will know to look for tax bills, HOA, mortgage, utilities, and insurance for each one.</div>
+    </div>
+    <div id="propertiesList"></div>
+    <button class="add-btn" onclick="addProperty()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add property
+    </button>
+    <div class="step-nav">
+      <button class="btn-back" onclick="back(2)">← Back</button>
+      <div class="step-counter">Step 3 of 8</div>
+      <button class="btn-next" onclick="next(2)">Continue →</button>
+    </div>
+  </div>
+  <!-- ── STEP 3: CHILDREN ── -->
+  <div class="main" id="step-3" style="display:none;">
+    <div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div>
+    <div class="step-header">
+      <div class="step-eyebrow">Step 4 of 8</div>
+      <div class="step-title">Children &amp; education</div>
+      <div class="step-sub">Education, childcare, and activities are often the largest discretionary expense category for this household profile. GURU will track every line item.</div>
+    </div>
+    <div id="childrenList"></div>
+    <button class="add-btn" onclick="addChild()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add child
+    </button>
+    <div class="section" style="margin-top:24px;">
+      <div class="section-title">Household staff</div>
+      <div style="font-size:13px;font-weight:300;color:var(--ink3);margin-bottom:14px;line-height:1.6;">Add each staff member separately. GURU will track payroll, taxes, and payment schedules per person.</div>
+      <div id="staffList"></div>
+      <button class="add-btn" onclick="addStaff()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add staff member
+      </button>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="back(3)">← Back</button>
+      <div class="step-counter">Step 4 of 8</div>
+      <button class="btn-next" onclick="next(3)">Continue →</button>
+    </div>
+  </div>
+  <!-- ── STEP 4: INVESTMENTS ── -->
+  <div class="main" id="step-4" style="display:none;">
+    <div class="progress-bar"><div class="progress-fill" style="width:62%"></div></div>
+    <div class="step-header">
+      <div class="step-eyebrow">Step 5 of 8</div>
+      <div class="step-title">Investment accounts</div>
+      <div class="step-sub">Every account gets mapped to a GURU bucket. This is where dormant capital gets identified.</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Bank &amp; brokerage accounts</div>
+      <div id="accountsList"></div>
+      <button class="add-btn" onclick="addAccount()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add account
+    </button>
+    <div class="section" style="margin-top:24px;">
+      <div class="section-title">529 / education savings</div>
+      <div class="field-row">
+        <div class="field">
+          <div class="field-label" style="margin-bottom:8px;">Do you have 529 plans?</div>
+          <div class="chip-group">
+            <div class="chip" onclick="toggleChip(this,'529')" data-val="yes">Yes</div>
+            <div class="chip selected" onclick="toggleChip(this,'529')" data-val="no">No</div>
+          </div>
+        </div>
+      </div>
+      <div id="section529" style="display:none; margin-top:14px;">
+        <div id="plans529List"></div>
+        <button class="add-btn" onclick="add529()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add 529 plan
+        </button>
+      </div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="back(4)">← Back</button>
+      <div class="step-counter">Step 5 of 8</div>
+      <button class="btn-next" onclick="next(4)">Continue →</button>
+    </div>
+  </div>
+  <!-- ── STEP 5: MEMBERSHIPS ── -->
+  <div class="main" id="step-5" style="display:none;">
+    <div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div>
+    <div class="step-header">
+      <div class="step-eyebrow">Step 6 of 8</div>
+      <div class="step-title">Club memberships</div>
+      <div class="step-sub">Country clubs, tennis clubs, social clubs, fitness clubs. Dues are often annual or quarterly and easy to miss in cash flow planning.</div>
+    </div>
+    <div class="section">
+      <div style="font-size:13px;font-weight:300;color:var(--ink3);margin-bottom:14px;line-height:1.6;">Add each membership separately. You can upload a dues statement instead of entering manually.</div>
+      <div id="clubsList"></div>
+      <button class="add-btn" onclick="addClub()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add club / membership
+      </button>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="back(5)">← Back</button>
+      <div class="step-counter">Step 6 of 8</div>
+      <button class="btn-next" onclick="next(5)">Continue →</button>
+    </div>
+  </div>
+  <!-- ── STEP 6: LIABILITIES ── -->
+  <div class="main" id="step-6" style="display:none;">
+    <div class="progress-bar"><div class="progress-fill" style="width:87%"></div></div>
+    <div class="step-header">
+      <div class="step-eyebrow">Step 7 of 8</div>
+      <div class="step-title">Liabilities</div>
+      <div class="step-sub">Mortgages, loans, credit cards, and lines of credit. Upload a statement to auto-fill any liability — or enter manually.</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Mortgages &amp; real estate loans</div>
+      <div style="font-size:13px;font-weight:300;color:var(--ink3);margin-bottom:14px;line-height:1.6;">Add each mortgage separately. Drop a mortgage statement to auto-populate the fields.</div>
+      <div id="mortgagesList"></div>
+      <button class="add-btn" onclick="addMortgage()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add mortgage
+      </button>
+    </div>
+    <div class="section">
+      <div class="section-title">Credit cards</div>
+      <div style="font-size:13px;font-weight:300;color:var(--ink3);margin-bottom:14px;line-height:1.6;">Credit card spend is captured through bank statements. Tell GURU how many cards the household uses — statements can be uploaded on the next screen.</div>
+      <div id="creditCardsList"></div>
+      <button class="add-btn" onclick="addCreditCard()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add credit card
+      </button>
+    </div>
+    <div class="section">
+      <div class="section-title">Other loans</div>
+      <div id="otherLoansList"></div>
+      <button class="add-btn" onclick="addOtherLoan()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add loan (student, auto, HELOC, margin, other)
+      </button>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="back(6)">← Back</button>
+      <div class="step-counter">Step 7 of 8</div>
+      <button class="btn-next" onclick="next(6)">Continue →</button>
+    </div>
+  </div>
+  <!-- ── STEP 7: GAP ANALYSIS ── -->
+  <div class="main" id="step-7" style="display:none;">
+    <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    <div class="step-header">
+      <div class="step-eyebrow">Step 8 of 8</div>
+      <div class="step-title">GURU gap analysis</div>
+      <div class="step-sub">Based on the household profile, GURU has identified all the data it expects to exist. Items in amber need documents uploaded. Items in green are confirmed. Estimated placeholders are shown in gray.</div>
+    </div>
+    <div id="gapAnalysisOutput"></div>
+    <div class="section" style="margin-top:8px;">
+      <div class="section-title">Your Anthropic API key</div>
+      <div class="field-row">
+        <div class="field">
+          <input class="field-input" id="apiKeyMain" placeholder="sk-ant-... (optional — for AI-enhanced gap analysis)" type="password">
+          <div style="font-size:11px;font-weight:300;color:var(--ink4);margin-top:5px;">Used only in this session to run the AI gap analysis. Never stored.</div>
+        </div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="back(7)">← Back</button>
+      <div class="step-counter">Step 8 of 8</div>
+      <button class="btn-next" id="buildModelBtn" onclick="buildModel()">Build model →</button>
+    </div>
+  </div>
+  </div><!-- /stepsContainer -->
+  <!-- COMPLETE SCREEN -->
+  <div class="complete-screen" id="completeScreen">
+    <div class="complete-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0d6b50" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="complete-title" id="completeTitle">Household model built.</div>
+    <div class="complete-sub" id="completeSub"></div>
+    <div id="modelOutput"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn-next" onclick="exportModel()">Export JSON</button>
+      <button style="font-family:var(--sans);font-size:13px;font-weight:500;padding:10px 20px;border-radius:8px;border:1px solid var(--rule);background:var(--white);color:var(--ink2);cursor:pointer;" onclick="location.reload()">Start new client</button>
+    </div>
+  </div>
+</div><!-- /mainApp -->
+<script>
+// ── STATE ──
+const S = {
+  step: 0,
+  profile: {},
+  income: {},
+  properties: [],
+  children: [],
+  accounts: [],
+  clubs: [],
+  mortgages: [],
+  plans529: [],
+  staffMembers: [],
+  rsuGrants: [],
+  k1Income: [],
+  altInvestments: [],
+  creditCards: [],
+  otherLoans: [],
+  chips: {},
+  _pendingUploads: {},
+  model: null
+};
+let propCount = 0, childCount = 0, acctCount = 0, clubCount = 0, mortCount = 0, plan529Count = 0;
+// ── LANDING NAVIGATION ──
+function startWithStatement() {
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('statementsScreen').style.display = 'block';
+  // Sync API key from topbar if set
+  const mainKey = document.getElementById('apiKeyMain')?.value;
+  if (mainKey) document.getElementById('stmtApiKey').value = mainKey;
+  window.scrollTo(0, 0);
+}
+function backToLanding() {
+  document.getElementById('statementsScreen').style.display = 'none';
+  document.getElementById('landingScreen').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+function startManually() {
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('statementsScreen').style.display = 'none';
+  // Use 'grid' not 'block' — .app CSS requires display:grid for the two-column layout
+  document.getElementById('mainApp').style.display = 'grid';
+  goTo(0);
+}
+function clearProgress() {
+  localStorage.removeItem('guru_onboarding_v1');
+  location.reload();
+}
+function handleGlobalDrop(e) {
+  const files = Array.from(e.dataTransfer?.files || []);
+  if (!files.length) return;
+  // Open statements screen and queue the dropped files
+  startWithStatement();
+  addFilesToQueue(files);
+}
+// ── MULTI-STATEMENT UPLOAD ──
+let stmtQueue = []; // { id, file, category, status: 'queued'|'parsing'|'done'|'error', result }
+let stmtIdCounter = 0;
+const STMT_CATEGORIES = ['Checking', 'Savings', 'Credit Card', 'Investment', 'Mortgage', 'Tax Return', 'Other'];
+function stmtDragOver(e) {
+  e.preventDefault();
+  document.getElementById('stmtDropZone').classList.add('dragover');
+}
+function stmtDragLeave(e) {
+  document.getElementById('stmtDropZone').classList.remove('dragover');
+}
+function stmtDrop(e) {
+  e.preventDefault();
+  document.getElementById('stmtDropZone').classList.remove('dragover');
+  addFilesToQueue(Array.from(e.dataTransfer.files));
+}
+function stmtFileInputChange(input) {
+  addFilesToQueue(Array.from(input.files));
+  input.value = ''; // reset so same file can be re-added
+}
+function guessCategoryFromFilename(name) {
+  const n = name.toLowerCase();
+  if (n.includes('check') || n.includes('bank')) return 'Checking';
+  if (n.includes('saving')) return 'Savings';
+  if (n.includes('credit') || n.includes('visa') || n.includes('mastercard') || n.includes('amex')) return 'Credit Card';
+  if (n.includes('invest') || n.includes('brokerage') || n.includes('fidelity') || n.includes('schwab') || n.includes('vanguard') || n.includes('merrill')) return 'Investment';
+  if (n.includes('mortgage') || n.includes('loan') || n.includes('heloc')) return 'Mortgage';
+  if (n.includes('tax') || n.includes('1040') || n.includes('w2') || n.includes('w-2') || n.includes('schedule')) return 'Tax Return';
+  return 'Other';
+}
+function addFilesToQueue(files) {
+  files.forEach(file => {
+    stmtQueue.push({ id: stmtIdCounter++, file, category: guessCategoryFromFilename(file.name), status: 'queued', result: null, errorMsg: null });
+  });
+  renderQueueList();
+}
+function removeFromQueue(id) {
+  stmtQueue = stmtQueue.filter(item => item.id !== id);
+  renderQueueList();
+}
+function setCategoryForItem(id, cat) {
+  const item = stmtQueue.find(i => i.id === id);
+  if (item) item.category = cat;
+}
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+function renderQueueList() {
+  const container = document.getElementById('stmtFileList');
+  const parseBtn = document.getElementById('stmtParseBtn');
+  if (!container) return;
+  if (stmtQueue.length === 0) {
+    container.style.display = 'none';
+    if (parseBtn) parseBtn.disabled = true;
+    return;
+  }
+  container.style.display = 'block';
+  const allDoneOrError = stmtQueue.every(i => i.status === 'done' || i.status === 'error');
+  const anyParsing = stmtQueue.some(i => i.status === 'parsing');
+  if (parseBtn) parseBtn.disabled = anyParsing;
+  const statusColors = { queued: 'var(--ink4)', parsing: 'var(--amber)', done: 'var(--green)', error: 'var(--red)' };
+  const statusLabels = { queued: 'Queued', parsing: 'Parsing…', done: 'Done ✓', error: 'Error' };
+  const rowClasses = { queued: '', parsing: 'status-parsing', done: 'status-done', error: 'status-error' };
+  container.innerHTML = `
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink4);margin-bottom:10px;">${stmtQueue.length} statement${stmtQueue.length !== 1 ? 's' : ''} queued</div>
+    ${stmtQueue.map(item => `
+      <div class="stmt-file-row ${rowClasses[item.status]}">
+        <div style="width:32px;height:32px;background:var(--paper);border:1px solid var(--rule);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          ${item.status === 'parsing'
+            ? '<div style="width:14px;height:14px;border:2px solid var(--amber-m);border-top-color:var(--amber);border-radius:50%;animation:spin 0.8s linear infinite;"></div>'
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+          }
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.file.name}</div>
+          <div style="font-size:11px;font-weight:300;color:${item.status === 'error' ? 'var(--red)' : 'var(--ink4)'};margin-top:2px;">${item.status === 'error' && item.errorMsg ? item.errorMsg : formatFileSize(item.file.size)}</div>
+        </div>
+        <select class="stmt-cat-select" onchange="setCategoryForItem(${item.id}, this.value)" ${item.status !== 'queued' ? 'disabled' : ''}>
+          ${STMT_CATEGORIES.map(c => `<option value="${c}" ${c === item.category ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:3px 10px;border-radius:10px;background:${statusColors[item.status]}18;color:${statusColors[item.status]};flex-shrink:0;min-width:66px;text-align:center;">${statusLabels[item.status]}</div>
+        ${item.status === 'queued'
+          ? `<button onclick="removeFromQueue(${item.id})" style="background:none;border:none;color:var(--ink4);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0;" title="Remove">×</button>`
+          : '<div style="width:18px;flex-shrink:0;"></div>'
+        }
+      </div>
+    `).join('')}
+    <div class="stmt-drop-zone" id="stmtDropZoneAdd" style="margin-top:12px;padding:14px 20px;display:flex;align-items:center;justify-content:center;gap:10px;"
+         ondragover="stmtDragOver(event);document.getElementById('stmtDropZoneAdd').classList.add('dragover')"
+         ondragleave="document.getElementById('stmtDropZoneAdd').classList.remove('dragover')"
+         ondrop="stmtDrop(event);document.getElementById('stmtDropZoneAdd').classList.remove('dragover')">
+      <input type="file" id="stmtFileInputAdd" multiple accept=".pdf,.png,.jpg,.jpeg,.html" onchange="stmtFileInputChange(this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" style="pointer-events:none;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span style="font-size:13px;font-weight:500;color:var(--green);pointer-events:none;">Add more statements</span>
+    </div>
+  `;
+}
+async function parseAllStatements() {
+  if (stmtQueue.length === 0) return;
+  const apiKey = (document.getElementById('stmtApiKey')?.value || document.getElementById('apiKeyMain')?.value || '').trim();
+  if (!apiKey) {
+    showFlash('Enter your Anthropic API key first', 'error');
+    document.getElementById('stmtApiKey')?.focus();
+    return;
+  }
+  // Sync key to topbar
+  const mainKey = document.getElementById('apiKeyMain');
+  if (mainKey) mainKey.value = apiKey;
+  const btn = document.getElementById('stmtParseBtn');
+  if (btn) btn.disabled = true;
+  const results = [];
+  for (const item of stmtQueue) {
+    if (item.status === 'done' && item.result) { results.push(item.result); continue; }
+    item.status = 'parsing';
+    renderQueueList();
+    try {
+      item.result = await parseSingleStatement(item.file, apiKey);
+      item.status = 'done';
+      results.push(item.result);
+    } catch (err) {
+      item.status = 'error';
+      item.errorMsg = err.message || 'Unknown error';
+      console.error('Parse error for', item.file.name, err);
+    }
+    renderQueueList();
+  }
+  if (results.length === 0) {
+    showFlash('All statements failed to parse. Check API key and try again.', 'error');
+    if (btn) btn.disabled = false;
+    return;
+  }
+  const merged = mergeStatementResults(results);
+  prefillFromStatement(merged);
+  document.getElementById('statementsScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'grid';
+  goTo(0);
+  const parsed = results.length, failed = stmtQueue.length - results.length;
+  showFlash(failed > 0
+    ? `${parsed} of ${stmtQueue.length} statements parsed — survey pre-filled. Review and continue.`
+    : `${parsed} statement${parsed !== 1 ? 's' : ''} parsed — survey pre-filled. Review and continue.`);
+}
+async function parseSingleStatement(file, apiKey) {
+  const b64 = await fileToB64(file);
+  const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+  const isHtml = file.name.endsWith('.html') || file.type === 'text/html';
+  const msgContent = [];
+  if (isHtml) {
+    const txt = await fileToText(file);
+    msgContent.push({ type: 'text', text: 'Financial statement HTML:\n\n' + txt.substring(0, 50000) });
+  } else if (isPdf) {
+    msgContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } });
+  } else {
+    msgContent.push({ type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: b64 } });
+  }
+  msgContent.push({ type: 'text', text: `Extract household data from this financial document. Return ONLY valid JSON, no markdown:
+{
+  "p1_first":"","p1_last":"","p2_first":"","p2_last":"",
+  "hh_address":"","hh_city":"","hh_state":"",
+  "p1_employer":"","p1_title":"","p1_salary":0,
+  "p2_employer":"","p2_title":"","p2_salary":0,
+  "has_rental_income": false, "rental_income": 0,
+  "properties": [{"address":"","type":"primary","value":0,"mortgage":0}],
+  "children": [{"name":"","age":"","school":"","grade":""}],
+  "accounts": [{"institution":"","type":"checking","balance":0,"last4":""}],
+  "clubs": [{"name":"","dues":0}],
+  "mortgages": [{"lender":"","balance":0,"payment":0,"rate":0}]
+}` });
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 2000, messages: [{ role: 'user', content: msgContent }] })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  const raw = data.content[0].text.replace(/```json|```/g, '').trim();
+  return JSON.parse(raw);
+}
+function mergeStatementResults(results) {
+  if (!results.length) return {};
+  if (results.length === 1) return results[0];
+  const merged = { ...results[0] };
+  for (let i = 1; i < results.length; i++) {
+    const r = results[i];
+    // Scalars: use first non-empty value
+    ['p1_first','p1_last','p2_first','p2_last','hh_address','hh_city','hh_state',
+     'p1_employer','p1_title','p1_salary','p2_employer','p2_title','p2_salary',
+     'has_rental_income','rental_income'].forEach(f => { if (!merged[f] && r[f]) merged[f] = r[f]; });
+    // Arrays: append non-duplicate items
+    ['properties','children','accounts','clubs','mortgages'].forEach(f => {
+      if (!Array.isArray(r[f]) || !r[f].length) return;
+      if (!Array.isArray(merged[f])) merged[f] = [];
+      r[f].forEach(item => {
+        const key = (item.address || item.institution || item.name || item.lender || '').toLowerCase();
+        const dup = merged[f].some(m => {
+          const mk = (m.address || m.institution || m.name || m.lender || '').toLowerCase();
+          return mk && key && mk === key;
+        });
+        if (!dup && key) merged[f].push(item);
+      });
+    });
+  }
+  return merged;
+}
+// ── VALIDATION ──
+// Hard required — always block
+const ALWAYS_REQUIRED = ['p1_first', 'p1_last', 'hh_income', 'p1_salary', 'p2_salary'];
+// Learned required — fields the user filled in on a previous visit
+// stored per step: { stepN: ['field_id', ...] }
+let learnedRequired = {};
+function getStepFields(n) {
+  const stepEl = document.getElementById('step-' + n);
+  if (!stepEl) return [];
+  return Array.from(stepEl.querySelectorAll('.field-input[id]'));
+}
+function learnFromStep(n) {
+  // Any field with a value gets added to learned required for this step
+  const fields = getStepFields(n);
+  const filled = fields.filter(el => el.value && el.value.trim() !== '' && el.value !== '0').map(el => el.id);
+  if (filled.length > 0) {
+    learnedRequired[n] = [...new Set([...(learnedRequired[n] || []), ...filled])];
+    // Save to storage
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      data.learnedRequired = learnedRequired;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch(e) {}
+  }
+}
+function markFieldRequired(el) {
+  // Add asterisk to label if not already there
+  const label = el.closest('.field')?.querySelector('.field-label');
+  if (label && !label.classList.contains('required')) {
+    label.classList.add('required');
+  }
+}
+function validateStep(n) {
+  // Learn from what was filled in before validating
+  learnFromStep(n);
+  const allRequired = [...new Set([
+    ...ALWAYS_REQUIRED,
+    ...(learnedRequired[n] || [])
+  ])];
+  // Only validate fields that exist on this step
+  const stepEl = document.getElementById('step-' + n);
+  const stepFieldIds = new Set(Array.from(stepEl.querySelectorAll('.field-input[id]')).map(el => el.id));
+  const toCheck = allRequired.filter(id => stepFieldIds.has(id));
+  let valid = true;
+  toCheck.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || !el.offsetParent) return; // skip hidden fields
+    const val = el.value.trim();
+    if (!val) {
+      el.classList.add('error');
+      markFieldRequired(el);
+      let msg = el.parentElement.querySelector('.field-error-msg');
+      if (!msg) {
+        msg = document.createElement('div');
+        msg.className = 'field-error-msg';
+        msg.textContent = 'This field is required';
+        el.parentElement.appendChild(msg);
+      }
+      msg.classList.add('show');
+      valid = false;
+    } else {
+      el.classList.remove('error');
+      markFieldRequired(el);
+      const msg = el.parentElement.querySelector('.field-error-msg');
+      if (msg) msg.classList.remove('show');
+    }
+  });
+  // Also mark filled fields with required styling going forward
+  getStepFields(n).forEach(el => {
+    if (el.value && el.value.trim()) markFieldRequired(el);
+  });
+  if (!valid) {
+    const firstError = document.querySelector('.field-input.error');
+    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showFlash('Please fill in all previously completed fields');
+  }
+  return valid;
+}
+// Clear error on input
+document.addEventListener('input', e => {
+  if (e.target.classList.contains('error')) {
+    e.target.classList.remove('error');
+    const msg = e.target.parentElement.querySelector('.field-error-msg');
+    if (msg) msg.classList.remove('show');
+  }
+  saveToStorage();
+});
+document.addEventListener('change', () => saveToStorage());
+// ── LOCAL STORAGE ──
+const STORAGE_KEY = 'guru_onboarding_v1';
+function saveToStorage() {
+  try {
+    const data = {
+      step: S.step,
+      chips: S.chips,
+      fields: {},
+      completedSteps: []
+    };
+    // Save all input/select/textarea values
+    document.querySelectorAll('.field-input').forEach(el => {
+      if (el.id) data.fields[el.id] = el.value;
+    });
+    // Save API key separately
+    const ak = document.getElementById('apiKeyMain');
+    if (ak && ak.value) data.apiKey = ak.value;
+    // Save completed steps
+    document.querySelectorAll('.nav-step.completed').forEach((_, i) => {
+      data.completedSteps.push(i);
+    });
+    data.learnedRequired = learnedRequired;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) { /* storage unavailable */ }
+}
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    // Restore chips
+    if (data.chips) {
+      Object.entries(data.chips).forEach(([group, vals]) => {
+        if (!Array.isArray(vals)) return;
+        vals.forEach(val => {
+          const chip = document.querySelector(`.chip[data-val="${val}"][onclick*="'${group}'"]`);
+          if (chip) {
+            chip.classList.add('selected');
+            // Trigger reactive UI
+            if (group === 'marital') {
+              const showSpouse = ['married','domestic_partner'].includes(val);
+              document.getElementById('spouseSection').style.display = showSpouse ? 'block' : 'none';
+              document.getElementById('spouseIncomeSection').style.display = showSpouse ? 'block' : 'none';
+            }
+            if (group === 'staff') {
+              const hasStaff = vals.some(v => v !== 'none');
+              const ss = document.getElementById('staffSection');
+              if (ss) ss.style.display = hasStaff ? 'block' : 'none';
+            }
+            if (group === '529') {
+              const s529 = document.getElementById('section529');
+              if (s529) s529.style.display = vals.includes('yes') ? 'block' : 'none';
+            }
+          }
+        });
+        S.chips[group] = vals;
+      });
+    }
+    // Restore API key
+    if (data.apiKey) {
+      const ak = document.getElementById('apiKeyMain');
+      if (ak) ak.value = data.apiKey;
+    }
+    // Restore field values
+    if (data.fields) {
+      Object.entries(data.fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined) el.value = val;
+      });
+      updateHeader();
+    }
+    // Restore completed steps
+    if (data.completedSteps) {
+      data.completedSteps.forEach(i => {
+        const nav = document.getElementById('nav-' + i);
+        if (nav) {
+          nav.classList.add('completed');
+          const snum = document.getElementById('snum-' + i);
+          if (snum) snum.textContent = '✓';
+        }
+      });
+    }
+    // Restore step position
+    if (typeof data.step === 'number' && data.step !== S.step) {
+      goTo(data.step);
+    }
+    // Restore learned required fields
+    if (data.learnedRequired) {
+      learnedRequired = data.learnedRequired;
+      // Re-apply required labels to all learned fields
+      Object.values(learnedRequired).flat().forEach(id => {
+        const el = document.getElementById(id);
+        if (el) markFieldRequired(el);
+      });
+    }
+    if (data.step > 0) showFlash('Progress restored — welcome back');
+  } catch(e) { /* ignore */ }
+}
+// ── NAVIGATION ──
+function goTo(n) {
+  document.getElementById('step-' + S.step).style.display = 'none';
+  document.getElementById('nav-' + S.step).classList.remove('active');
+  S.step = n;
+  document.getElementById('step-' + n).style.display = 'block';
+  document.getElementById('nav-' + n).classList.add('active');
+  window.scrollTo(0,0);
+  if (n === 7) buildGapAnalysis();
+  saveToStorage();
+}
+function next(n) {
+  if (!validateStep(n)) return;
+  markCompleted(n);
+  goTo(n + 1);
+}
+function back(n) { goTo(n - 1); }
+function markCompleted(n) {
+  const el = document.getElementById('nav-' + n);
+  el.classList.add('completed');
+  document.getElementById('snum-' + n).textContent = '✓';
+  saveToStorage();
+}
+// ── CHIPS ──
+function toggleChip(el, group) {
+  const isMulti = ['p1_extra','staff','p1_extra'].includes(group);
+  if (!isMulti) {
+    document.querySelectorAll(`.chip[onclick*="'${group}'"]`).forEach(c => c.classList.remove('selected'));
+  }
+  el.classList.toggle('selected');
+  if (!S.chips[group]) S.chips[group] = [];
+  const val = el.dataset.val;
+  if (el.classList.contains('selected')) {
+    if (!isMulti) S.chips[group] = [val];
+    else if (!S.chips[group].includes(val)) S.chips[group].push(val);
+  } else {
+    S.chips[group] = S.chips[group].filter(v => v !== val);
+  }
+  // Reactive UI
+  if (group === 'marital') {
+    const showSpouse = ['married','domestic_partner'].includes(val) && el.classList.contains('selected');
+    document.getElementById('spouseSection').style.display = showSpouse ? 'block' : 'none';
+    document.getElementById('spouseIncomeSection').style.display = showSpouse ? 'block' : 'none';
+  }
+  if (group === 'children') {
+    // handled in step nav
+  }
+  if (group === 'staff') {
+    const hasStaff = S.chips['staff'] && S.chips['staff'].some(v => v !== 'none');
+    document.getElementById('staffSection').style.display = hasStaff ? 'block' : 'none';
+  }
+  if (group === '529') {
+    document.getElementById('section529').style.display = val === 'yes' && el.classList.contains('selected') ? 'block' : 'none';
+  }
+  if (group === 'p1_extra') {
+    const extras = S.chips['p1_extra'] || [];
+    const rsuEl = document.getElementById('rsuSection');
+    const partEl = document.getElementById('partnershipSection');
+    if (rsuEl) rsuEl.style.display = extras.includes('rsu') ? 'block' : 'none';
+    if (partEl) partEl.style.display = (extras.includes('partnership') || extras.includes('trust')) ? 'block' : 'none';
+  }
+}
+// ── HEADER ──
+function updateHeader() {
+  const first = document.getElementById('p1_first').value;
+  const last = document.getElementById('p1_last').value;
+  const s2first = document.getElementById('p2_first').value;
+  let name = [first, last].filter(Boolean).join(' ');
+  if (s2first) name += ' & ' + s2first;
+  if (name) name += ' Family';
+  document.getElementById('topbarClientName').textContent = name || 'Unnamed household';
+}
+// ── ADD PROPERTY ──
+function addProperty() {
+  const id = 'prop_' + propCount++;
+  S.properties.push({ id });
+  const el = document.createElement('div');
+  el.className = 'repeating-card';
+  el.id = id;
+  el.innerHTML = `
+    <div class="repeating-card-header">
+      <div class="repeating-card-title">Property ${S.properties.length}</div>
+      <button class="card-remove" onclick="removeCard('${id}','properties')">×</button>
+    </div>
+    <div class="field-row cols-2">
+      <div class="field"><div class="field-label">Address</div><input class="field-input" placeholder="123 Main St, New York NY" data-field="address" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Property type</div>
+        <select class="field-input" data-field="type" data-id="${id}">
+          <option value="primary">Primary residence</option>
+          <option value="vacation">Vacation home</option>
+          <option value="investment">Investment / rental</option>
+          <option value="commercial">Commercial</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row cols-3">
+      <div class="field"><div class="field-label">Estimated value</div><input class="field-input" placeholder="$2,500,000" data-field="value" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Has mortgage?</div>
+        <select class="field-input" data-field="mortgage" data-id="${id}">
+          <option value="yes">Yes</option>
+          <option value="no">No — owned free &amp; clear</option>
+        </select>
+      </div>
+      <div class="field"><div class="field-label">HOA / condo fees?</div>
+        <select class="field-input" data-field="hoa" data-id="${id}">
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row cols-2">
+      <div class="field"><div class="field-label">Property nickname</div><input class="field-input" placeholder="e.g. Greenwich House, Hamptons" data-field="nickname" data-id="${id}"></div>
+      <div class="field"><div class="field-label">State (for tax purposes)</div><input class="field-input" placeholder="NY" data-field="state" data-id="${id}"></div>
+    </div>`;
+  document.getElementById('propertiesList').appendChild(el);
+}
+// ── ADD CHILD ──
+function addChild() {
+  const id = 'child_' + childCount++;
+  S.children.push({ id });
+  const el = document.createElement('div');
+  el.className = 'repeating-card';
+  el.id = id;
+  el.innerHTML = `
+    <div class="repeating-card-header">
+      <div class="repeating-card-title">Child ${S.children.length}</div>
+      <button class="card-remove" onclick="removeCard('${id}','children')">×</button>
+    </div>
+    <div class="field-row cols-3">
+      <div class="field"><div class="field-label">First name</div><input class="field-input" placeholder="Emma" data-field="name" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Age</div><input class="field-input" placeholder="8" type="number" data-field="age" data-id="${id}"></div>
+      <div class="field"><div class="field-label">School type</div>
+        <select class="field-input" data-field="school_type" data-id="${id}">
+          <option value="private_k12">Private K-12</option>
+          <option value="public">Public school</option>
+          <option value="parochial">Parochial / religious</option>
+          <option value="boarding">Boarding school</option>
+          <option value="preschool">Preschool / pre-K</option>
+          <option value="college">College / university</option>
+          <option value="none">Not in school yet</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row cols-2">
+      <div class="field"><div class="field-label">School name</div><input class="field-input" placeholder="Dalton School" data-field="school_name" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Annual tuition</div><input class="field-input" placeholder="$55,000/yr" data-field="tuition" data-id="${id}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-label" style="margin-bottom:8px;">Activities / programs</div>
+        <div class="chip-group">
+          <div class="chip" onclick="this.classList.toggle('selected')">After-school programs</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Summer camp</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Sports</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Music / arts</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Tutoring</div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('childrenList').appendChild(el);
+}
+// ── ADD ACCOUNT ──
+function addAccount() {
+  const id = 'acct_' + acctCount++;
+  S.accounts.push({ id });
+  const el = document.createElement('div');
+  el.className = 'repeating-card';
+  el.id = id;
+  el.innerHTML = `
+    <div class="repeating-card-header">
+      <div class="repeating-card-title">Account ${S.accounts.length}</div>
+      <button class="card-remove" onclick="removeCard('${id}','accounts')">×</button>
+    </div>
+    <div class="field-row cols-2">
+      <div class="field"><div class="field-label">Institution</div><input class="field-input" placeholder="Fidelity, Schwab, JPMorgan..." data-field="institution" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Account type</div>
+        <select class="field-input" data-field="acct_type" data-id="${id}">
+          <option value="checking">Checking</option>
+          <option value="savings">Savings / money market</option>
+          <option value="brokerage">Brokerage (taxable)</option>
+          <option value="ira">IRA / Roth IRA</option>
+          <option value="401k">401(k) / 403(b)</option>
+          <option value="alternatives">Alternatives / PE / hedge fund</option>
+          <option value="private_equity">Private equity (direct)</option>
+          <option value="venture">Venture capital</option>
+          <option value="real_estate_fund">Real estate fund</option>
+          <option value="carry_account">Carried interest account</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row cols-2">
+      <div class="field"><div class="field-label">Approximate balance</div><input class="field-input" placeholder="$450,000" data-field="balance" data-id="${id}"></div>
+      <div class="field"><div class="field-label">GURU bucket</div>
+        <select class="field-input" data-field="bucket" data-id="${id}">
+          <option value="operating">Operating cash</option>
+          <option value="reserve">Reserve</option>
+          <option value="build">Build</option>
+          <option value="grow">Grow</option>
+          <option value="alternatives">Alternatives</option>
+        </select>
+      </div>
+    </div>`;
+  document.getElementById('accountsList').appendChild(el);
+}
+// ── ADD CLUB ──
+function addClub() {
+  const id = 'club_' + clubCount++;
+  S.clubs.push({ id });
+  const el = document.createElement('div');
+  el.className = 'repeating-card';
+  el.id = id;
+  el.innerHTML = `
+    <div class="repeating-card-header">
+      <div class="repeating-card-title">Membership ${S.clubs.length}</div>
+      <button class="card-remove" onclick="removeCard('${id}','clubs')">×</button>
+    </div>
+    <div class="field-row cols-3">
+      <div class="field"><div class="field-label">Club / membership name</div><input class="field-input" placeholder="Greenwich Country Club" data-field="name" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Annual dues</div><input class="field-input" placeholder="$18,000/yr" data-field="dues" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Due frequency</div>
+        <select class="field-input" data-field="frequency" data-id="${id}">
+          <option value="annual">Annual</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+    </div>`;
+  document.getElementById('clubsList').appendChild(el);
+}
+// ── ADD MORTGAGE ──
+function addMortgage() {
+  const id = 'mort_' + mortCount++;
+  S.mortgages.push({ id });
+  const el = document.createElement('div');
+  el.className = 'repeating-card';
+  el.id = id;
+  el.innerHTML = `
+    <div class="repeating-card-header">
+      <div class="repeating-card-title">Mortgage ${S.mortgages.length}</div>
+      <button class="card-remove" onclick="removeCard('${id}','mortgages')">×</button>
+    </div>
+    <div class="field-row cols-2">
+      <div class="field"><div class="field-label">Property / lender</div><input class="field-input" placeholder="Chase — Primary Residence" data-field="name" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Monthly payment</div><input class="field-input" placeholder="$8,400/mo" data-field="payment" data-id="${id}"></div>
+    </div>
+    <div class="field-row cols-3">
+      <div class="field"><div class="field-label">Outstanding balance</div><input class="field-input" placeholder="$1,200,000" data-field="balance" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Interest rate</div><input class="field-input" placeholder="6.75%" data-field="rate" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Maturity date</div><input class="field-input" placeholder="2048" data-field="maturity" data-id="${id}"></div>
+    </div>`;
+  document.getElementById('mortgagesList').appendChild(el);
+}
+// ── ADD 529 ──
+function add529() {
+  const id = 'plan529_' + plan529Count++;
+  S.plans529.push({ id });
+  const el = document.createElement('div');
+  el.className = 'repeating-card';
+  el.id = id;
+  el.innerHTML = `
+    <div class="repeating-card-header">
+      <div class="repeating-card-title">529 Plan ${S.plans529.length}</div>
+      <button class="card-remove" onclick="removeCard('${id}','plans529')">×</button>
+    </div>
+    <div class="field-row cols-3">
+      <div class="field"><div class="field-label">Beneficiary</div><input class="field-input" placeholder="Emma" data-field="beneficiary" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Current balance</div><input class="field-input" placeholder="$85,000" data-field="balance" data-id="${id}"></div>
+      <div class="field"><div class="field-label">Monthly contribution</div><input class="field-input" placeholder="$1,500/mo" data-field="contribution" data-id="${id}"></div>
+    </div>`;
+  document.getElementById('plans529List').appendChild(el);
+}
+function removeCard(id, arr) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+  S[arr] = S[arr].filter(x => x.id !== id);
+}
+// ── GAP ANALYSIS ──
+function buildGapAnalysis() {
+  const married = S.chips['marital'] && S.chips['marital'].includes('married');
+  const hasKids = S.chips['children'] && S.chips['children'].includes('yes');
+  const hasStaff = S.chips['staff'] && S.chips['staff'].some(v => v !== 'none');
+  const has529 = S.chips['529'] && S.chips['529'].includes('yes');
+  const firstName = document.getElementById('p1_first').value || 'Client';
+  const lastName = document.getElementById('p1_last').value || '';
+  const gaps = [];
+  // Income
+  const p1sal = document.getElementById('p1_salary').value;
+  gaps.push({ category: 'Income', name: `${firstName} ${lastName} salary`, status: p1sal ? 'provided' : 'missing', note: p1sal ? p1sal : 'Upload pay stub or W-2 to confirm', doc: 'Pay stub / W-2' });
+  if (married) {
+    const p2sal = document.getElementById('p2_salary').value;
+    const p2name = document.getElementById('p2_first').value || 'Spouse';
+    gaps.push({ category: 'Income', name: `${p2name} salary`, status: p2sal ? 'provided' : 'missing', note: p2sal ? p2sal : 'Upload pay stub or W-2 to confirm', doc: 'Pay stub / W-2' });
+  }
+  if (S.chips['p1_extra'] && S.chips['p1_extra'].includes('rsu')) {
+    gaps.push({ category: 'Income', name: 'RSU vesting schedule', status: 'missing', note: 'Upload equity grant statement to build vesting forecast', doc: 'Equity grant statement' });
+  }
+  // Properties
+  if (S.properties.length === 0) {
+    gaps.push({ category: 'Properties', name: 'No properties added', status: 'estimated', note: 'Add at least one property to generate property-level forecasts', doc: null });
+  }
+  S.properties.forEach((_, i) => {
+    const addr = document.querySelector(`[data-field="address"][data-id="prop_${i}"]`)?.value || `Property ${i+1}`;
+    gaps.push({ category: 'Properties', name: `${addr} — property tax bill`, status: 'missing', note: 'Upload annual tax bill to confirm amount and due date', doc: 'Property tax bill' });
+    gaps.push({ category: 'Properties', name: `${addr} — HOA / condo fees`, status: 'missing', note: 'Upload HOA statement to confirm monthly amount', doc: 'HOA statement' });
+    gaps.push({ category: 'Properties', name: `${addr} — homeowner's insurance`, status: 'estimated', note: 'Estimated $3,000–$8,000/yr based on property value', doc: 'Insurance declaration' });
+    gaps.push({ category: 'Properties', name: `${addr} — utilities`, status: 'estimated', note: 'Estimated based on property type and location', doc: 'Utility bills' });
+  });
+  // Mortgages
+  if (S.mortgages.length === 0 && S.properties.length > 0) {
+    gaps.push({ category: 'Liabilities', name: 'Mortgage statements', status: 'missing', note: 'Upload mortgage statement for each property with a loan', doc: 'Mortgage statement' });
+  }
+  // Children
+  if (hasKids) {
+    const childCards = document.querySelectorAll('[id^="child_"]');
+    childCards.forEach((card, i) => {
+      const name = card.querySelector('[data-field="name"]')?.value || `Child ${i+1}`;
+      const schoolType = card.querySelector('[data-field="school_type"]')?.value;
+      const tuition = card.querySelector('[data-field="tuition"]')?.value;
+      if (schoolType && schoolType !== 'public') {
+        gaps.push({ category: 'Education', name: `${name} — tuition invoice`, status: tuition ? 'provided' : 'missing', note: tuition ? tuition : 'Upload tuition invoice to confirm amount and payment schedule', doc: 'Tuition invoice' });
+      }
+      gaps.push({ category: 'Education', name: `${name} — activities & programs`, status: 'missing', note: 'Upload invoices for after-school, camp, sports, tutoring', doc: 'Activity invoices' });
+    });
+    if (hasStaff) {
+      gaps.push({ category: 'Education', name: 'Nanny / household staff payroll', status: 'missing', note: 'Upload payroll records to confirm weekly/monthly cost', doc: 'Payroll records' });
+    }
+  }
+  // 529
+  if (has529) {
+    gaps.push({ category: 'Investments', name: '529 plan statements', status: 'missing', note: 'Upload 529 account statements to confirm balance and contribution schedule', doc: '529 statement' });
+  }
+  // Accounts
+  if (S.accounts.length === 0) {
+    gaps.push({ category: 'Investments', name: 'Brokerage / bank statements', status: 'missing', note: 'Upload account statements to build balance sheet', doc: 'Brokerage / bank statement' });
+  }
+  // Clubs
+  if (S.clubs.length > 0) {
+    document.querySelectorAll('[id^="club_"]').forEach((card, i) => {
+      const name = card.querySelector('[data-field="name"]')?.value || `Membership ${i+1}`;
+      const dues = card.querySelector('[data-field="dues"]')?.value;
+      gaps.push({ category: 'Memberships', name: `${name} — dues statement`, status: dues ? 'provided' : 'missing', note: dues ? dues : 'Upload dues statement to confirm amount and billing schedule', doc: 'Club statement' });
+    });
+  }
+  // Tax
+  gaps.push({ category: 'Tax', name: 'Most recent tax return (Form 1040)', status: 'missing', note: 'Used to calibrate income, deductions, and quarterly estimate schedule', doc: 'Form 1040' });
+  gaps.push({ category: 'Tax', name: 'Quarterly estimated tax payments', status: 'estimated', note: 'Estimated based on income profile. Upload 1040-ES to confirm', doc: '1040-ES' });
+  // Render
+  const categories = [...new Set(gaps.map(g => g.category))];
+  let html = '';
+  const missing = gaps.filter(g => g.status === 'missing').length;
+  const provided = gaps.filter(g => g.status === 'provided').length;
+  const estimated = gaps.filter(g => g.status === 'estimated').length;
+  const total = gaps.length;
+  const pct = Math.round((provided / total) * 100);
+  html += `<div class="section">
+    <div class="section-title">Model completeness — ${pct}%</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div style="background:var(--green-l);border:1px solid var(--green-m);border-radius:9px;padding:12px 14px;text-align:center;">
+        <div style="font-family:var(--mono);font-size:20px;color:var(--green);font-weight:700;">${provided}</div>
+        <div style="font-size:11px;font-weight:300;color:var(--green);margin-top:2px;">Confirmed</div>
+      </div>
+      <div style="background:var(--amber-l);border:1px solid var(--amber-m);border-radius:9px;padding:12px 14px;text-align:center;">
+        <div style="font-family:var(--mono);font-size:20px;color:var(--amber);font-weight:700;">${missing}</div>
+        <div style="font-size:11px;font-weight:300;color:var(--amber);margin-top:2px;">Need documents</div>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--rule);border-radius:9px;padding:12px 14px;text-align:center;">
+        <div style="font-family:var(--mono);font-size:20px;color:var(--ink3);font-weight:700;">${estimated}</div>
+        <div style="font-size:11px;font-weight:300;color:var(--ink3);margin-top:2px;">Estimated</div>
+      </div>
+    </div>`;
+  categories.forEach(cat => {
+    const catGaps = gaps.filter(g => g.category === cat);
+    html += `<div style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink4);margin-bottom:8px;">${cat}</div>
+      <div class="placeholder-grid">`;
+    catGaps.forEach(g => {
+      const colors = { missing: 'var(--amber)', provided: 'var(--green)', estimated: 'var(--ink4)' };
+      const bgs = { missing: 'var(--amber-l)', provided: 'var(--green-l)', estimated: 'var(--paper)' };
+      const borders = { missing: 'var(--amber-m)', provided: 'var(--green-m)', estimated: 'var(--rule)' };
+      const icons = { missing: '!', provided: '✓', estimated: '~' };
+      const labels = { missing: 'Upload needed', provided: 'Confirmed', estimated: 'Estimated' };
+      html += `<div class="placeholder-item ${g.status}" style="border-color:${borders[g.status]};background:${bgs[g.status]};">
+        <div class="ph-icon" style="background:${colors[g.status]}20;color:${colors[g.status]};font-size:12px;font-weight:700;">${icons[g.status]}</div>
+        <div class="ph-body">
+          <div class="ph-name">${g.name}</div>
+          <div class="ph-sub">${g.note}</div>
+        </div>
+        ${g.doc ? `<div class="ph-badge" style="background:${colors[g.status]}18;color:${colors[g.status]};">${g.doc}</div>` : ''}
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += '</div>';
+  document.getElementById('gapAnalysisOutput').innerHTML = html;
+  S._gaps = gaps;
+}
+// ── FLASH ──
+function showFlash(msg, type) {
+  const el = document.getElementById('flash');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.background = type === 'error' ? 'var(--red)' : 'var(--ink)';
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+function prefillFromStatement(d) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+  set('p1_first', d.p1_first);
+  set('p1_last',  d.p1_last);
+  set('p2_first', d.p2_first);
+  set('p2_last',  d.p2_last);
+  set('hh_address', d.hh_address);
+  set('hh_city',    d.hh_city);
+  set('hh_state',   d.hh_state);
+  set('p1_employer', d.p1_employer);
+  set('p1_title',    d.p1_title);
+  set('p1_salary',   d.p1_salary ? String(d.p1_salary) : '');
+  set('p2_employer', d.p2_employer);
+  set('p2_title',    d.p2_title);
+  set('p2_salary',   d.p2_salary ? String(d.p2_salary) : '');
+  saveToStorage();
+}
+// ── FILE READERS ──
+function fileToB64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+function fileToText(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsText(file);
+  });
+}
+// ── MODEL EXPORT ──
+function buildModel() {
+  const get = id => document.getElementById(id)?.value?.trim() || '';
+  const chips = (group) => (S.chips[group] || []).join(', ');
+  return {
+    household: {
+      name: [get('p1_first'), get('p1_last')].filter(Boolean).join(' ') || 'Household',
+      address: [get('hh_address'), get('hh_city'), get('hh_state')].filter(Boolean).join(', '),
+    },
+    people: [
+      { role: 'primary',  first: get('p1_first'), last: get('p1_last'), employer: get('p1_employer'), title: get('p1_title'), salary: get('p1_salary') },
+      get('p2_first') ? { role: 'spouse', first: get('p2_first'), last: get('p2_last'), employer: get('p2_employer'), title: get('p2_title'), salary: get('p2_salary') } : null
+    ].filter(Boolean),
+    income: {
+      p1_salary:      get('p1_salary'),
+      p2_salary:      get('p2_salary'),
+      bonus:          get('hh_bonus'),
+      rental:         get('rental_income'),
+      other:          get('other_income'),
+      extra_sources:  chips('p1_extra')
+    },
+    properties: S.properties,
+    children:   S.children,
+    accounts:   S.accounts,
+    clubs:      S.clubs,
+    mortgages:  S.mortgages,
+    staff:      S.staffMembers,
+    gaps:       S._gaps || [],
+    exported_at: new Date().toISOString()
+  };
+}
+function downloadModel() {
+  const model = buildModel();
+  const json = JSON.stringify(model, null, 2);
+  const name = (model.household.name || 'household').toLowerCase().replace(/\s+/g, '-');
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `guru-${name}-model.json`; a.click();
+  URL.revokeObjectURL(url);
+  showFlash('Model JSON downloaded');
+}
+function copyModel() {
+  const json = JSON.stringify(buildModel(), null, 2);
+  navigator.clipboard.writeText(json).then(() => showFlash('Model JSON copied'));
+}
+// ── INIT ──
+loadFromStorage();
+</script>
+</body>
+</html>

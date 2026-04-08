@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU · Allocation Tab — Landing Redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: Inter, system-ui, sans-serif;
+  background: hsl(222,45%,12%);
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none} }
+@keyframes slideUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none} }
+@keyframes glow { 0%,100%{box-shadow:0 0 0 rgba(94,204,138,0)}50%{box-shadow:0 0 20px rgba(94,204,138,0.12)} }
+
+/* ── Two-pane split ── */
+.split {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* ── LEFT: dark insight pane ── */
+.left {
+  width: 520px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: hsl(222,45%,12%);
+  border-right: 1px solid rgba(255,255,255,0.07);
+  overflow-y: auto;
+}
+.left-inner {
+  padding: 36px 36px 24px;
+  flex: 1;
+}
+
+/* Eyebrow */
+.eyebrow { display: flex; align-items: center; gap: 7px; margin-bottom: 28px; animation: fadeIn 0.5s ease; }
+.eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: #5ecc8a; animation: pulse 2.2s infinite; }
+.eyebrow-label { font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: rgba(94,204,138,0.85); }
+.eyebrow-sep { font-size: 10px; color: rgba(255,255,255,0.18); }
+.eyebrow-meta { font-size: 10px; color: rgba(255,255,255,0.28); }
+
+/* Headline */
+.headline { font-family: 'Playfair Display', Georgia, serif; font-size: 40px; font-weight: 400; color: rgba(255,255,255,0.93); line-height: 1.12; letter-spacing: -0.02em; margin-bottom: 12px; animation: fadeIn 0.6s ease 0.1s both; }
+.headline em { color: #5ecc8a; font-style: normal; }
+
+.body-copy { font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.42); margin-bottom: 28px; animation: fadeIn 0.6s ease 0.2s both; }
+.body-copy strong { color: rgba(94,204,138,0.85); font-weight: 500; }
+
+/* ── 2×2 stat grid ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  animation: fadeIn 0.5s ease 0.25s both;
+}
+.stat-cell {
+  padding: 12px 14px;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.stat-cell:nth-child(2n) { border-right: none; }
+.stat-cell:nth-child(3), .stat-cell:nth-child(4) { border-bottom: none; }
+.stat-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.28); margin-bottom: 5px; }
+.stat-val { font-size: 21px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.3px; margin-bottom: 3px; }
+.stat-val.green { color: #5ecc8a; }
+.stat-val.white { color: rgba(255,255,255,0.85); }
+.stat-sub { font-size: 10px; color: rgba(255,255,255,0.24); }
+
+/* ── Bloomberg table ── */
+.table-header-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  animation: slideUp 0.4s ease 0.35s both;
+}
+.table-dot { width: 5px; height: 5px; border-radius: 50%; background: #5ecc8a; flex-shrink: 0; animation: pulse 2s infinite; }
+.table-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.13em; color: rgba(94,204,138,0.60); }
+.table-line { flex: 1; height: 1px; background: rgba(94,204,138,0.12); }
+
+.bloomberg {
+  border: 1.5px solid rgba(94,204,138,0.40);
+  border-radius: 3px;
+  background: rgba(4,16,31,0.55);
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  animation: slideUp 0.4s ease 0.40s both;
+}
+.bb-head {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 80px;
+  padding: 6px 12px;
+  background: rgba(94,204,138,0.07);
+  border-bottom: 1px solid rgba(94,204,138,0.18);
+}
+.bb-hcell { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.11em; color: rgba(94,204,138,0.55); text-align: right; }
+.bb-hcell:first-child { text-align: left; }
+
+.bb-section { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.13em; padding: 5px 12px 3px; color: rgba(255,100,80,0.70); background: rgba(255,80,60,0.05); border-bottom: 1px solid rgba(255,255,255,0.04); }
+.bb-section.in { color: rgba(94,204,138,0.70); background: rgba(94,204,138,0.05); }
+.bb-section.arrow { margin-right: 4px; }
+
+.bb-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 80px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.1s;
+}
+.bb-row:last-child { border-bottom: none; }
+.bb-row:hover { background: rgba(255,255,255,0.03); }
+.bb-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.82); }
+.bb-sub { font-size: 10px; color: rgba(255,255,255,0.26); margin-top: 1px; }
+.bb-cell { font-size: 12px; font-weight: 400; color: rgba(255,255,255,0.60); text-align: right; }
+.bb-delta { font-size: 12px; font-weight: 600; text-align: right; }
+.bb-delta.red { color: #f87171; }
+.bb-delta.grn { color: #5ecc8a; }
+
+/* ── Left footer: GURU pill ── */
+.left-footer {
+  padding: 18px 36px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+.guru-pill {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(94,204,138,0.08);
+  border: 1px solid rgba(94,204,138,0.22);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+.guru-pill-icon { font-size: 18px; }
+.guru-pill-body { flex: 1; }
+.guru-pill-title { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75); margin-bottom: 2px; }
+.guru-pill-sub { font-size: 10px; color: rgba(255,255,255,0.32); }
+.guru-pill-check { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: #5ecc8a; }
+
+/* ── RIGHT: Linen action pane ── */
+.right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f0ece5;
+  min-height: 0;
+  overflow: hidden;
+}
+.right-header {
+  padding: 28px 44px 22px;
+  border-bottom: 1px solid rgba(0,0,0,0.09);
+  flex-shrink: 0;
+  background: #f0ece5;
+}
+.right-eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.13em; color: #9a7b3c; margin-bottom: 10px; }
+.right-headline { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 400; color: hsl(222,45%,12%); line-height: 1.2; margin-bottom: 8px; }
+.right-sub { font-size: 12px; color: rgba(0,0,0,0.44); line-height: 1.65; max-width: 420px; }
+
+/* ── Steps ── */
+.steps-scroll { flex: 1; overflow-y: auto; padding: 22px 44px 0; min-height: 0; }
+.steps-meta { font-size: 11px; color: rgba(0,0,0,0.36); margin-bottom: 18px; letter-spacing: 0.02em; }
+.steps-meta strong { color: rgba(0,0,0,0.55); font-weight: 600; }
+
+.steps-col { display: flex; flex-direction: column; gap: 10px; }
+.step-wrap { display: flex; gap: 0; align-items: stretch; }
+
+.step-num-col { display: flex; flex-direction: column; align-items: center; margin-right: 14px; flex-shrink: 0; }
+.step-circle {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: rgba(0,0,0,0.55);
+  background: #fff; flex-shrink: 0; position: relative; z-index: 1;
+}
+.step-circle.s1 { border-color: hsl(222,45%,42%); color: hsl(222,45%,28%); }
+.step-circle.s2 { border-color: rgba(154,123,60,0.55); color: #7a5c1e; }
+.step-circle.s3 { border-color: rgba(46,122,82,0.55); color: #2e7a52; }
+.step-connector { flex: 1; width: 1.5px; background: rgba(0,0,0,0.10); margin: 3px 0; }
+
+.step-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 14px 18px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.step-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.step-card.s1::before { background: hsl(222,45%,28%); }
+.step-card.s2::before { background: #9a7b3c; }
+.step-card.s3::before { background: #2e7a52; }
+
+.step-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.step-card-title { font-size: 13px; font-weight: 600; color: hsl(222,45%,12%); }
+.step-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 3px 8px; border-radius: 10px; flex-shrink: 0; margin-left: 10px; margin-top: 1px;
+}
+.step-badge.s1 { background: rgba(27,61,110,0.08); color: rgba(27,61,110,0.75); border: 1px solid rgba(27,61,110,0.18); }
+.step-badge.s2 { background: rgba(154,123,60,0.10); color: rgba(154,123,60,0.85); border: 1px solid rgba(154,123,60,0.22); }
+.step-badge.s3 { background: rgba(46,122,82,0.10); color: rgba(46,122,82,0.85); border: 1px solid rgba(46,122,82,0.22); }
+
+.step-card-body { font-size: 12px; color: rgba(0,0,0,0.48); line-height: 1.6; margin-bottom: 10px; }
+
+/* Step detail bullets */
+.step-details { display: flex; flex-direction: column; gap: 4px; }
+.step-detail { display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(0,0,0,0.50); }
+.step-detail-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(0,0,0,0.25); flex-shrink: 0; }
+.step-detail strong { font-weight: 600; color: rgba(0,0,0,0.70); }
+
+/* time badge on card */
+.step-time { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: rgba(0,0,0,0.28); margin-top: 10px; display: flex; align-items: center; gap: 5px; }
+.step-time::before { content: ''; width: 10px; height: 1px; background: rgba(0,0,0,0.15); }
+
+.scroll-pad { height: 16px; }
+
+/* ── CTA bar ── */
+.right-cta {
+  border-top: 1px solid rgba(0,0,0,0.09);
+  background: rgba(240,236,229,0.97);
+  padding: 16px 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.cta-btn {
+  background: hsl(222,45%,12%);
+  color: #fff;
+  border: none;
+  padding: 13px 28px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: Inter, system-ui, sans-serif;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.cta-btn:hover { background: hsl(222,45%,18%); }
+.cta-note { font-size: 12px; color: rgba(0,0,0,0.36); line-height: 1.55; }
+.cta-note strong { font-weight: 600; color: rgba(0,0,0,0.55); }
+</style>
+</head>
+<body>
+
+<div class="split">
+  <!-- ── LEFT PANE ── -->
+  <div class="left">
+    <div class="left-inner">
+      <!-- Eyebrow -->
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <div class="eyebrow-label">GURU Intelligence</div>
+        <div class="eyebrow-sep">·</div>
+        <div class="eyebrow-meta">1 signal detected · 4h ago</div>
+      </div>
+
+      <!-- Headline -->
+      <div class="headline">Idle capital,<br><em>ready to work.</em></div>
+      <div class="body-copy">
+        A year-end bonus pushed the Kessler reserve to 18 months of coverage.
+        <strong>$299,966 is deployable</strong> with no liquidity risk — earning 0.30% today
+        versus 5.40% available in an FDIC-equivalent instrument.
+      </div>
+
+      <!-- 2×2 Stat Grid -->
+      <div class="stat-grid">
+        <div class="stat-cell">
+          <div class="stat-lbl">Excess Liquidity</div>
+          <div class="stat-val green">$299,966</div>
+          <div class="stat-sub">idle · 0.30%</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-lbl">Annual Pickup</div>
+          <div class="stat-val green">+$12,959</div>
+          <div class="stat-sub">after-tax / yr</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-lbl">Days Idle</div>
+          <div class="stat-val white">47 days</div>
+          <div class="stat-sub">since bonus</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-lbl">Cash Runway</div>
+          <div class="stat-val white">18 months</div>
+          <div class="stat-sub">vs. 12-mo target</div>
+        </div>
+      </div>
+
+      <!-- Bloomberg table -->
+      <div class="table-header-row">
+        <div class="table-dot"></div>
+        <div class="table-label">Recommended Transfers</div>
+        <div class="table-line"></div>
+      </div>
+      <div class="bloomberg">
+        <div class="bb-head">
+          <div class="bb-hcell">Account</div>
+          <div class="bb-hcell">Current</div>
+          <div class="bb-hcell">Target</div>
+          <div class="bb-hcell">Delta</div>
+        </div>
+        <div class="bb-section">↓ Transfers Out</div>
+        <div class="bb-row">
+          <div>
+            <div class="bb-name">Reserve Cash</div>
+            <div class="bb-sub">12-mo floor · overnight liquidity</div>
+          </div>
+          <div class="bb-cell">$426,586</div>
+          <div class="bb-cell">$216,792</div>
+          <div class="bb-delta red">−$209,794</div>
+        </div>
+        <div class="bb-row">
+          <div>
+            <div class="bb-name">Operating Cash</div>
+            <div class="bb-sub">2-mo floor · daily operating</div>
+          </div>
+          <div class="bb-cell">$132,050</div>
+          <div class="bb-cell">$41,878</div>
+          <div class="bb-delta red">−$90,172</div>
+        </div>
+        <div class="bb-section in">↑ Transfers In</div>
+        <div class="bb-row">
+          <div>
+            <div class="bb-name">Cresset Short Duration</div>
+            <div class="bb-sub">5.40% after-tax · daily liquidity · FDIC-equivalent</div>
+          </div>
+          <div class="bb-cell">—</div>
+          <div class="bb-cell">$299,966</div>
+          <div class="bb-delta grn">+$299,966</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Left footer: GURU pre-filled pill -->
+    <div class="left-footer">
+      <div class="guru-pill">
+        <div class="guru-pill-icon">✦</div>
+        <div class="guru-pill-body">
+          <div class="guru-pill-title">GURU has pre-filled all 3 steps</div>
+          <div class="guru-pill-sub">Review, adjust, or approve as-is on the right</div>
+        </div>
+        <div class="guru-pill-check">✓ Ready</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANE ── -->
+  <div class="right">
+    <div class="right-header">
+      <div class="right-eyebrow">Your Review · Kessler Family</div>
+      <div class="right-headline">Three steps.<br>Nothing moves until Step 3.</div>
+      <div class="right-sub">GURU has pre-filled each step based on the household model and your investment policy statement. Review, adjust, and approve at your own pace.</div>
+    </div>
+
+    <div class="steps-scroll">
+      <div class="steps-meta"><strong>~6 minutes</strong> · 3 steps · fully reversible until confirmation</div>
+      <div class="steps-col">
+
+        <!-- Step 1 -->
+        <div class="step-wrap">
+          <div class="step-num-col">
+            <div class="step-circle s1">1</div>
+            <div class="step-connector"></div>
+          </div>
+          <div class="step-card s1">
+            <div class="step-card-top">
+              <div class="step-card-title">Asset Allocation Rebalancing</div>
+              <div class="step-badge s1">GURU Pre-Filled</div>
+            </div>
+            <div class="step-card-body">Review the proposed bucket allocation across Reserve, Operating, Build, Grow, and Alternatives. GURU has already calibrated targets to your IPS.</div>
+            <div class="step-details">
+              <div class="step-detail"><div class="step-detail-dot"></div>Reserve cash reduced from <strong>$426,586 → $216,792</strong></div>
+              <div class="step-detail"><div class="step-detail-dot"></div>Operating reduced from <strong>$132,050 → $41,878</strong></div>
+              <div class="step-detail"><div class="step-detail-dot"></div>All targets match 12-month liquidity floor</div>
+            </div>
+            <div class="step-time">~2 min</div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-wrap">
+          <div class="step-num-col">
+            <div class="step-circle s2">2</div>
+            <div class="step-connector"></div>
+          </div>
+          <div class="step-card s2">
+            <div class="step-card-top">
+              <div class="step-card-title">Product Selection</div>
+              <div class="step-badge s2">Ranked for You</div>
+            </div>
+            <div class="step-card-body">GURU has ranked eligible instruments by after-tax yield, liquidity, and risk. Confirm the selected product or choose an alternative from the shortlist.</div>
+            <div class="step-details">
+              <div class="step-detail"><div class="step-detail-dot"></div><strong>#1 Cresset Short Duration</strong> — 5.40% · daily liquidity · FDIC</div>
+              <div class="step-detail"><div class="step-detail-dot"></div>2 alternatives available if preferred</div>
+              <div class="step-detail"><div class="step-detail-dot"></div>Tax impact: neutral (taxable account)</div>
+            </div>
+            <div class="step-time">~2 min</div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-wrap">
+          <div class="step-num-col">
+            <div class="step-circle s3">3</div>
+          </div>
+          <div class="step-card s3">
+            <div class="step-card-top">
+              <div class="step-card-title">Confirm & Execute</div>
+              <div class="step-badge s3">Auto-Execute Available</div>
+            </div>
+            <div class="step-card-body">Final review of all transfers. Nothing moves until you tap Confirm. GURU can execute automatically or generate trade tickets for manual processing.</div>
+            <div class="step-details">
+              <div class="step-detail"><div class="step-detail-dot"></div>Total transfers: <strong>$299,966</strong> across 3 accounts</div>
+              <div class="step-detail"><div class="step-detail-dot"></div>Settlement: T+1 for all positions</div>
+              <div class="step-detail"><div class="step-detail-dot"></div>Fully reversible until this step</div>
+            </div>
+            <div class="step-time">~2 min</div>
+          </div>
+        </div>
+
+        <div class="scroll-pad"></div>
+      </div>
+    </div>
+
+    <!-- CTA bar -->
+    <div class="right-cta">
+      <button class="cta-btn">Begin Step 1 →</button>
+      <div class="cta-note">
+        <strong>Nothing moves until Step 3.</strong><br>
+        Every step is fully reversible. Review at your own pace.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="position:fixed;bottom:12px;right:16px;font-size:10px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.18);pointer-events:none;">Allocation Landing · Redesign</div>
+</body>
+</html>

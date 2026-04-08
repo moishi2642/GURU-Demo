@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Themes — GURU Private Wealth</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:   #1a2e4a;
+  --gold:   #8a6920;
+  --forest: #1e4d30;
+  --text:   #1a1a1a;
+  --dim:    rgba(0,0,0,0.50);
+}
+body { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: var(--text); background: #d8d4cd; padding: 32px; }
+
+/* ── THEME COLUMN ── */
+.themes-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.theme-col { display: flex; flex-direction: column; gap: 0; }
+.theme-label {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(255,255,255,0.65); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.theme-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.20); }
+.theme-label span {
+  background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.85);
+  border-radius: 3px; padding: 2px 8px; font-size: 9px; letter-spacing: 0.14em;
+}
+
+/* ── SHARED CARD ANATOMY ── */
+.section-wrap { border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+
+/* Bucket cards row */
+.card-row {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.hbc {
+  border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative; padding: 18px 16px 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+.hbc::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 8px 8px 0 0;
+}
+.hbc-total::before { background: var(--navy); }
+.hbc-op::before    { background: #5b8fcc; }
+.hbc-res::before   { background: #c49a28; }
+.hbc-bld::before   { background: #3a8a5a; }
+.hbc-grow::before  { background: rgba(91,143,204,0.65); }
+
+.hbc-hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.hbc-name { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+.hbc-total .hbc-name { color: var(--navy); }
+.hbc-op    .hbc-name { color: #3d6fa8; }
+.hbc-res   .hbc-name { color: var(--gold); }
+.hbc-bld   .hbc-name { color: var(--forest); }
+.hbc-grow  .hbc-name { color: rgba(61,111,168,0.75); }
+
+.hbc-yield { font-size: 11px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hbc-total .hbc-yield { color: rgba(26,46,74,0.40); }
+.hbc-op    .hbc-yield { color: rgba(61,111,168,0.55); }
+.hbc-res   .hbc-yield { color: rgba(138,105,32,0.55); }
+.hbc-bld   .hbc-yield { color: rgba(30,77,48,0.55); }
+.hbc-grow  .hbc-yield { color: rgba(61,111,168,0.50); }
+
+.hbc-bal {
+  font-size: 20px; font-weight: 300; color: var(--text);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px;
+}
+.hbc-bar-track { height: 3px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.hbc-bar-fill  { height: 100%; border-radius: 2px; }
+.hbc-total .hbc-bar-fill { background: var(--navy); }
+.hbc-op    .hbc-bar-fill { background: #5b8fcc; }
+.hbc-res   .hbc-bar-fill { background: #c49a28; }
+.hbc-bld   .hbc-bar-fill { background: #3a8a5a; }
+.hbc-grow  .hbc-bar-fill { background: rgba(91,143,204,0.65); }
+.hbc-tier-bar { display: flex; height: 3px; border-radius: 2px; overflow: hidden; gap: 1px; margin-bottom: 8px; }
+.hbc-tier-op  { background: rgba(91,143,204,0.75); width: 19%; }
+.hbc-tier-res { background: rgba(196,154,40,0.75); width: 61.5%; }
+.hbc-tier-bld { background: rgba(58,138,90,0.75);  width: 19.5%; }
+.hbc-desc { font-size: 10px; color: rgba(0,0,0,0.42); line-height: 1.4; margin-top: auto; }
+
+/* Accordion card */
+.acc-card {
+  border-radius: 8px; overflow: hidden; position: relative;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.acc-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 8px 8px 0 0;
+  background: var(--navy);
+}
+.acc-hdr {
+  display: flex; align-items: center;
+  padding: 16px 18px 12px;
+}
+.acc-hdr-left { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.acc-hdr-name {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #3d6fa8;
+}
+.acc-hdr-bal {
+  font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; color: var(--text);
+}
+.acc-hdr-right { display: flex; align-items: center; gap: 8px; }
+.acc-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 2px;
+  background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.35); border: 1px solid rgba(0,0,0,0.09);
+}
+.acc-chev { font-size: 10px; color: rgba(0,0,0,0.25); }
+
+.acc-body { border-top: 1px solid rgba(0,0,0,0.07); padding: 16px 18px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 20px; }
+.acc-body-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(0,0,0,0.40); margin-bottom: 10px; }
+.stepper-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+.stepper {
+  display: inline-flex; align-items: stretch;
+  border: 1px solid rgba(0,0,0,0.14); border-radius: 3px; background: #fff; flex-shrink: 0;
+}
+.step-btn {
+  width: 30px; height: 52px; border: none; background: transparent; cursor: pointer;
+  font-size: 15px; color: rgba(0,0,0,0.35);
+  display: flex; align-items: center; justify-content: center;
+}
+.step-display {
+  min-width: 60px; padding: 6px 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-left: 1px solid rgba(0,0,0,0.1); border-right: 1px solid rgba(0,0,0,0.1);
+}
+.step-num { font-size: 24px; font-weight: 300; color: var(--navy); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.step-unit { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(0,0,0,0.38); margin-top: 2px; }
+.tgt-field { flex: 1; }
+.tgt-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(26,46,74,0.60); margin-bottom: 5px; display: block; }
+.tgt-input {
+  width: 100%; font-size: 14px; font-weight: 500; color: var(--navy);
+  padding: 8px 10px; border-radius: 2px;
+  font-variant-numeric: tabular-nums; font-family: 'Inter', system-ui, sans-serif;
+  border: 1.5px solid rgba(26,46,74,0.28); background: rgba(26,46,74,0.04);
+}
+.acc-metric { font-size: 10px; color: rgba(0,0,0,0.45); }
+.acc-metric em { font-style: normal; font-weight: 600; color: rgba(0,0,0,0.60); }
+
+.acc-right-col { display: flex; flex-direction: column; gap: 10px; }
+.form-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(26,46,74,0.60); margin-bottom: 5px; display: block; }
+.form-input, .form-select {
+  width: 100%; font-size: 13px; font-weight: 500; color: var(--text);
+  padding: 8px 10px; border-radius: 2px;
+  font-family: 'Inter', system-ui, sans-serif;
+  border: 1px solid rgba(0,0,0,0.14); background: #fff;
+}
+.acc-actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.btn-set {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 8px 16px; border-radius: 2px;
+  background: var(--navy); color: rgba(255,255,255,0.92); border: none; cursor: pointer;
+}
+.btn-skip { font-size: 11px; color: rgba(0,0,0,0.45); background: none; border: none; cursor: pointer; }
+
+/* ── THEME-SPECIFIC BACKGROUNDS ── */
+/* Theme A: Warm White page + Linen cards — clean contrast, light feel */
+.theme-a .section-wrap  { background: #faf7f3; }
+.theme-a .hbc, .theme-a .acc-card { background: #f5f1ec; }
+.theme-a .form-input, .theme-a .form-select, .theme-a .stepper { background: #fff; }
+
+/* Theme B: Linen page + Off-White cards — inverted, softer cards pop off deeper bg */
+.theme-b .section-wrap  { background: #f0ece5; }
+.theme-b .hbc, .theme-b .acc-card { background: #faf8f5; }
+.theme-b .form-input, .theme-b .form-select, .theme-b .stepper { background: #fff; }
+
+/* Theme C: Cool Blue-Gray page + Linen cards — subtle contrast against neutral cool */
+.theme-c .section-wrap  { background: #e6eaf0; }
+.theme-c .hbc, .theme-c .acc-card { background: #f5f1ec; }
+.theme-c .form-input, .theme-c .form-select, .theme-c .stepper { background: #fff; }
+
+/* Theme D: Pure White page + Linen cards — maximum contrast, crispest version */
+.theme-d .section-wrap  { background: #ffffff; }
+.theme-d .hbc, .theme-d .acc-card { background: #f5f1ec; }
+.theme-d .form-input, .theme-d .form-select, .theme-d .stepper { background: #fff; }
+
+</style>
+</head>
+<body>
+
+<div class="themes-row">
+
+
+<!-- ══ THEME A: WARM LINEN ══ -->
+<div class="theme-col theme-a">
+  <div class="theme-label"><span>A</span> Warm White page / Linen cards</div>
+
+  <div class="section-wrap">
+    <div class="card-row">
+      <div class="hbc hbc-total">
+        <div class="hbc-hdr"><span class="hbc-name">Total Assets</span></div>
+        <div class="hbc-bal">$3,202,736</div>
+        <div class="hbc-tier-bar"><div class="hbc-tier-op"></div><div class="hbc-tier-res"></div><div class="hbc-tier-bld"></div></div>
+        <div class="hbc-desc">Liquid + Long-Term</div>
+      </div>
+      <div class="hbc hbc-op">
+        <div class="hbc-hdr"><span class="hbc-name">Operating</span><span class="hbc-yield">0.01%</span></div>
+        <div class="hbc-bal">$132,050</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19%"></div></div>
+        <div class="hbc-desc">Cash for upcoming expenditures</div>
+      </div>
+      <div class="hbc hbc-res">
+        <div class="hbc-hdr"><span class="hbc-name">Reserve</span><span class="hbc-yield">4.60%</span></div>
+        <div class="hbc-bal">$426,586</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:62%"></div></div>
+        <div class="hbc-desc">Short-term liquidity</div>
+      </div>
+      <div class="hbc hbc-bld">
+        <div class="hbc-hdr"><span class="hbc-name">Build</span><span class="hbc-yield">4.85%</span></div>
+        <div class="hbc-bal">$135,000</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19.5%"></div></div>
+        <div class="hbc-desc">CD ladder</div>
+      </div>
+      <div class="hbc hbc-grow">
+        <div class="hbc-hdr"><span class="hbc-name">Grow</span><span class="hbc-yield">3.95%</span></div>
+        <div class="hbc-bal">$2,509,500</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:78%"></div></div>
+        <div class="hbc-desc">Long-term investments</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <div class="acc-card">
+      <div class="acc-hdr">
+        <div class="acc-hdr-left">
+          <span class="acc-hdr-name">Operating Capital</span>
+          <span class="acc-hdr-bal">$132,050</span>
+        </div>
+        <div class="acc-hdr-right">
+          <span class="acc-badge">Pending</span>
+          <span class="acc-chev">▼</span>
+        </div>
+      </div>
+      <div class="acc-body">
+        <div>
+          <div class="acc-body-lbl">Set Coverage Target</div>
+          <div class="stepper-row">
+            <div class="stepper">
+              <button class="step-btn">−</button>
+              <div class="step-display"><div class="step-num">2</div><div class="step-unit">months</div></div>
+              <button class="step-btn">+</button>
+            </div>
+            <div class="tgt-field">
+              <label class="tgt-lbl">Target Balance</label>
+              <input type="text" class="tgt-input" value="$49,878" readonly />
+            </div>
+          </div>
+          <div class="acc-metric">Monthly expense · <em>$24,939</em></div>
+        </div>
+        <div class="acc-right-col">
+          <div class="acc-body-lbl">Transfer Details</div>
+          <div>
+            <label class="form-lbl">Amount to Transfer</label>
+            <input type="text" class="form-input" value="$82,172" readonly />
+          </div>
+          <div>
+            <label class="form-lbl">Transfer To</label>
+            <select class="form-select"><option>Reserve</option></select>
+          </div>
+          <div class="acc-actions">
+            <button class="btn-set">Set Transfer</button>
+            <button class="btn-skip">Skip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ THEME B: COOL BLUE-GRAY ══ -->
+<div class="theme-col theme-b">
+  <div class="theme-label"><span>B</span> Linen page / Off-White cards</div>
+
+  <div class="section-wrap">
+    <div class="card-row">
+      <div class="hbc hbc-total">
+        <div class="hbc-hdr"><span class="hbc-name">Total Assets</span></div>
+        <div class="hbc-bal">$3,202,736</div>
+        <div class="hbc-tier-bar"><div class="hbc-tier-op"></div><div class="hbc-tier-res"></div><div class="hbc-tier-bld"></div></div>
+        <div class="hbc-desc">Liquid + Long-Term</div>
+      </div>
+      <div class="hbc hbc-op">
+        <div class="hbc-hdr"><span class="hbc-name">Operating</span><span class="hbc-yield">0.01%</span></div>
+        <div class="hbc-bal">$132,050</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19%"></div></div>
+        <div class="hbc-desc">Cash for upcoming expenditures</div>
+      </div>
+      <div class="hbc hbc-res">
+        <div class="hbc-hdr"><span class="hbc-name">Reserve</span><span class="hbc-yield">4.60%</span></div>
+        <div class="hbc-bal">$426,586</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:62%"></div></div>
+        <div class="hbc-desc">Short-term liquidity</div>
+      </div>
+      <div class="hbc hbc-bld">
+        <div class="hbc-hdr"><span class="hbc-name">Build</span><span class="hbc-yield">4.85%</span></div>
+        <div class="hbc-bal">$135,000</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19.5%"></div></div>
+        <div class="hbc-desc">CD ladder</div>
+      </div>
+      <div class="hbc hbc-grow">
+        <div class="hbc-hdr"><span class="hbc-name">Grow</span><span class="hbc-yield">3.95%</span></div>
+        <div class="hbc-bal">$2,509,500</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:78%"></div></div>
+        <div class="hbc-desc">Long-term investments</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <div class="acc-card">
+      <div class="acc-hdr">
+        <div class="acc-hdr-left">
+          <span class="acc-hdr-name">Operating Capital</span>
+          <span class="acc-hdr-bal">$132,050</span>
+        </div>
+        <div class="acc-hdr-right">
+          <span class="acc-badge">Pending</span>
+          <span class="acc-chev">▼</span>
+        </div>
+      </div>
+      <div class="acc-body">
+        <div>
+          <div class="acc-body-lbl">Set Coverage Target</div>
+          <div class="stepper-row">
+            <div class="stepper">
+              <button class="step-btn">−</button>
+              <div class="step-display"><div class="step-num">2</div><div class="step-unit">months</div></div>
+              <button class="step-btn">+</button>
+            </div>
+            <div class="tgt-field">
+              <label class="tgt-lbl">Target Balance</label>
+              <input type="text" class="tgt-input" value="$49,878" readonly />
+            </div>
+          </div>
+          <div class="acc-metric">Monthly expense · <em>$24,939</em></div>
+        </div>
+        <div class="acc-right-col">
+          <div class="acc-body-lbl">Transfer Details</div>
+          <div>
+            <label class="form-lbl">Amount to Transfer</label>
+            <input type="text" class="form-input" value="$82,172" readonly />
+          </div>
+          <div>
+            <label class="form-lbl">Transfer To</label>
+            <select class="form-select"><option>Reserve</option></select>
+          </div>
+          <div class="acc-actions">
+            <button class="btn-set">Set Transfer</button>
+            <button class="btn-skip">Skip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ THEME C: SOFT SAGE ══ -->
+<div class="theme-col theme-c">
+  <div class="theme-label"><span>C</span> Cool Blue-Gray page / Linen cards</div>
+
+  <div class="section-wrap">
+    <div class="card-row">
+      <div class="hbc hbc-total">
+        <div class="hbc-hdr"><span class="hbc-name">Total Assets</span></div>
+        <div class="hbc-bal">$3,202,736</div>
+        <div class="hbc-tier-bar"><div class="hbc-tier-op"></div><div class="hbc-tier-res"></div><div class="hbc-tier-bld"></div></div>
+        <div class="hbc-desc">Liquid + Long-Term</div>
+      </div>
+      <div class="hbc hbc-op">
+        <div class="hbc-hdr"><span class="hbc-name">Operating</span><span class="hbc-yield">0.01%</span></div>
+        <div class="hbc-bal">$132,050</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19%"></div></div>
+        <div class="hbc-desc">Cash for upcoming expenditures</div>
+      </div>
+      <div class="hbc hbc-res">
+        <div class="hbc-hdr"><span class="hbc-name">Reserve</span><span class="hbc-yield">4.60%</span></div>
+        <div class="hbc-bal">$426,586</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:62%"></div></div>
+        <div class="hbc-desc">Short-term liquidity</div>
+      </div>
+      <div class="hbc hbc-bld">
+        <div class="hbc-hdr"><span class="hbc-name">Build</span><span class="hbc-yield">4.85%</span></div>
+        <div class="hbc-bal">$135,000</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19.5%"></div></div>
+        <div class="hbc-desc">CD ladder</div>
+      </div>
+      <div class="hbc hbc-grow">
+        <div class="hbc-hdr"><span class="hbc-name">Grow</span><span class="hbc-yield">3.95%</span></div>
+        <div class="hbc-bal">$2,509,500</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:78%"></div></div>
+        <div class="hbc-desc">Long-term investments</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <div class="acc-card">
+      <div class="acc-hdr">
+        <div class="acc-hdr-left">
+          <span class="acc-hdr-name">Operating Capital</span>
+          <span class="acc-hdr-bal">$132,050</span>
+        </div>
+        <div class="acc-hdr-right">
+          <span class="acc-badge">Pending</span>
+          <span class="acc-chev">▼</span>
+        </div>
+      </div>
+      <div class="acc-body">
+        <div>
+          <div class="acc-body-lbl">Set Coverage Target</div>
+          <div class="stepper-row">
+            <div class="stepper">
+              <button class="step-btn">−</button>
+              <div class="step-display"><div class="step-num">2</div><div class="step-unit">months</div></div>
+              <button class="step-btn">+</button>
+            </div>
+            <div class="tgt-field">
+              <label class="tgt-lbl">Target Balance</label>
+              <input type="text" class="tgt-input" value="$49,878" readonly />
+            </div>
+          </div>
+          <div class="acc-metric">Monthly expense · <em>$24,939</em></div>
+        </div>
+        <div class="acc-right-col">
+          <div class="acc-body-lbl">Transfer Details</div>
+          <div>
+            <label class="form-lbl">Amount to Transfer</label>
+            <input type="text" class="form-input" value="$82,172" readonly />
+          </div>
+          <div>
+            <label class="form-lbl">Transfer To</label>
+            <select class="form-select"><option>Reserve</option></select>
+          </div>
+          <div class="acc-actions">
+            <button class="btn-set">Set Transfer</button>
+            <button class="btn-skip">Skip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ THEME D: VERY SLIGHTLY OFF-WHITE ══ -->
+<div class="theme-col theme-d">
+  <div class="theme-label"><span>D</span> Pure White page / Linen cards</div>
+
+  <div class="section-wrap">
+    <div class="card-row">
+      <div class="hbc hbc-total">
+        <div class="hbc-hdr"><span class="hbc-name">Total Assets</span></div>
+        <div class="hbc-bal">$3,202,736</div>
+        <div class="hbc-tier-bar"><div class="hbc-tier-op"></div><div class="hbc-tier-res"></div><div class="hbc-tier-bld"></div></div>
+        <div class="hbc-desc">Liquid + Long-Term</div>
+      </div>
+      <div class="hbc hbc-op">
+        <div class="hbc-hdr"><span class="hbc-name">Operating</span><span class="hbc-yield">0.01%</span></div>
+        <div class="hbc-bal">$132,050</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19%"></div></div>
+        <div class="hbc-desc">Cash for upcoming expenditures</div>
+      </div>
+      <div class="hbc hbc-res">
+        <div class="hbc-hdr"><span class="hbc-name">Reserve</span><span class="hbc-yield">4.60%</span></div>
+        <div class="hbc-bal">$426,586</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:62%"></div></div>
+        <div class="hbc-desc">Active cash for what's next</div>
+      </div>
+      <div class="hbc hbc-bld">
+        <div class="hbc-hdr"><span class="hbc-name">Build</span><span class="hbc-yield">4.85%</span></div>
+        <div class="hbc-bal">$135,000</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:19.5%"></div></div>
+        <div class="hbc-desc">Saving for goals on the horizon</div>
+      </div>
+      <div class="hbc hbc-grow">
+        <div class="hbc-hdr"><span class="hbc-name">Grow</span><span class="hbc-yield">3.95%</span></div>
+        <div class="hbc-bal">$2,509,500</div>
+        <div class="hbc-bar-track"><div class="hbc-bar-fill" style="width:78%"></div></div>
+        <div class="hbc-desc">Long-term compounded investing</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <div class="acc-card">
+      <div class="acc-hdr">
+        <div class="acc-hdr-left">
+          <span class="acc-hdr-name">Operating Capital</span>
+          <span class="acc-hdr-bal">$132,050</span>
+        </div>
+        <div class="acc-hdr-right">
+          <span class="acc-badge">Pending</span>
+          <span class="acc-chev">▼</span>
+        </div>
+      </div>
+      <div class="acc-body">
+        <div>
+          <div class="acc-body-lbl">Set Coverage Target</div>
+          <div class="stepper-row">
+            <div class="stepper">
+              <button class="step-btn">−</button>
+              <div class="step-display"><div class="step-num">2</div><div class="step-unit">months</div></div>
+              <button class="step-btn">+</button>
+            </div>
+            <div class="tgt-field">
+              <label class="tgt-lbl">Target Balance</label>
+              <input type="text" class="tgt-input" value="$49,878" readonly />
+            </div>
+          </div>
+          <div class="acc-metric">Monthly expense · <em>$24,939</em></div>
+        </div>
+        <div class="acc-right-col">
+          <div class="acc-body-lbl">Transfer Details</div>
+          <div>
+            <label class="form-lbl">Amount to Transfer</label>
+            <input type="text" class="form-input" value="$82,172" readonly />
+          </div>
+          <div>
+            <label class="form-lbl">Transfer To</label>
+            <select class="form-select"><option>Reserve</option></select>
+          </div>
+          <div class="acc-actions">
+            <button class="btn-set">Set Transfer</button>
+            <button class="btn-skip">Skip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div><!-- end themes-row -->
+</body>
+</html>
