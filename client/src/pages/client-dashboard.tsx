@@ -8096,7 +8096,7 @@ function GuruLandingView({
     // ── Bucket defs (shared between landing split-pane and standalone bucket briefing) ──
     const LANDING_BUCKET_DEFS = [
       { key:"op",   name:"Operating Cash",  color:"#1d4ed8", border:"rgba(29,78,216,0.18)",   bal:reserve,      target:`${(reserve/monthlyExpenses).toFixed(1)} mo covered`,  philosophy:"Covers 2–3 months of core expenses. Instantly accessible. No rate optimization — pure safety net." },
-      { key:"res",  name:"Reserve Cash",    color:"#8a6920", border:"rgba(138,105,32,0.18)",  bal:yieldBucket,  target:"12-month reserve target",                              philosophy:"Targets 12 months of anticipated outflows. Deployed in high-yield instruments that can be liquidated same-day." },
+      { key:"res",  name:"Reserve Cash",    color:"#8a6920", border:"rgba(138,105,32,0.18)",  bal:yieldBucket,  target:"12-month reserve target",                              philosophy:"Targets 12 months of anticipated outflows. Deployed in high-yield products that can be liquidated same-day." },
       { key:"bld",  name:"Capital Build",   color:"#1e4d30", border:"rgba(30,77,48,0.18)",    bal:tactical,     target:"Goal-directed · 1–3 yr horizon",                       philosophy:"Holds capital earmarked for goals 1–3 years out. Deployed in short-duration ladders to protect principal while earning yield." },
       { key:"grow", name:"Investments",     color:"#3d1a6e", border:"rgba(61,26,110,0.18)",   bal:growth,       target:"5+ year horizon",                                      philosophy:"Capital with a 5+ year horizon managed through CIO-led strategies. Not touched for liquidity needs." },
       { key:"oth",  name:"Other Assets",    color:"#4a4a4a", border:"rgba(74,74,74,0.18)",    bal:alts,         target:"Tracked · not actively managed",                       philosophy:"Illiquid or hard-to-rebalance holdings. Tracked for net worth context but excluded from liquidity planning." },
@@ -8382,7 +8382,7 @@ function GuruLandingView({
                         badge:"Ranked for You",
                         badgeBg:"rgba(154,123,60,0.10)", badgeBorder:"rgba(154,123,60,0.25)", badgeText:"rgba(154,123,60,0.85)",
                         leftBorder:"#9a7b3c",
-                        desc:"Choose from GURU's ranked shortlist of instruments — filtered for your tax profile, liquidity needs, and risk tolerance.",
+                        desc:"Choose from GURU's ranked shortlist of products — filtered for your tax profile, liquidity needs, and risk tolerance.",
                         time:"~2 minutes to review and choose",
                       },
                       {
@@ -8459,7 +8459,7 @@ function GuruLandingView({
         key: "res",
         name: "Reserve Cash",
         tagline: "Active cash management with full liquidity",
-        philosophy: "Targets 12 months of anticipated outflows. Deployed in high-yield instruments — money market, T-bills — that can be liquidated same-day.",
+        philosophy: "Targets 12 months of anticipated outflows. Deployed in high-yield products — money market, T-bills — that can be liquidated same-day.",
         color: "#8a6920",
         lightBg: "rgba(138,105,32,0.06)",
         border: "rgba(138,105,32,0.18)",
@@ -9155,8 +9155,8 @@ function AssetOvBucketCard({
     return (
       <div key={key} style={{ ...COL3, paddingTop: 6, paddingBottom: 6, borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{assetShortName(desc)}</span>
-          {subtext && <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtext}</span>}
+          <span title={assetShortName(desc)} style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{assetShortName(desc)}</span>
+          {subtext && <span title={subtext} style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtext}</span>}
         </div>
         <div style={{ fontSize: 11, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.70)", textAlign: "right" }}>{fmt(Number(a.value))}</div>
         <div style={{ textAlign: "right" }}>{yieldEl}</div>
@@ -9176,8 +9176,8 @@ function AssetOvBucketCard({
     return (
       <div key={key} style={{ ...COL3, paddingTop: 6, paddingBottom: 6, borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{assetShortName(l.description ?? "")}</span>
-          {subtext && <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtext}</span>}
+          <span title={assetShortName(l.description ?? "")} style={{ fontSize: 11, fontWeight: 500, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{assetShortName(l.description ?? "")}</span>
+          {subtext && <span title={subtext} style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{subtext}</span>}
         </div>
         <div style={{ fontSize: 11, fontWeight: 400, fontVariantNumeric: "tabular-nums", color: "#9b2020", textAlign: "right" }}>−{fmt(Number(l.value))}</div>
         <div style={{ textAlign: "right" }}>{rateEl}</div>
@@ -9345,7 +9345,7 @@ function AssetOverviewView({ assets, liabilities }: { assets: Asset[]; liabiliti
         </div>
       </div>
 
-      <div style={{ padding: "36px 48px 80px" }}>
+      <div style={{ padding: "36px clamp(16px, 3.5vw, 48px) 80px" }}>
         {/* Headline */}
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "rgba(154,123,60,0.75)", marginBottom: 10 }}>Kessler Family · Financial Picture</div>
         <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 30, fontWeight: 400, color: "hsl(222,45%,12%)", lineHeight: 1.20, letterSpacing: "-0.02em", marginBottom: 8 }}>Where the money lives — and how it is working.</div>
@@ -9466,7 +9466,7 @@ function AssetOverviewView({ assets, liabilities }: { assets: Asset[]; liabiliti
 
 // ── Balance Sheet bucket card ─────────────────────────────────────────────────
 // 4–5 key stats always visible in a compact table; additional context in ▼ MORE.
-function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBalance, nextMonth, stats, secondaryStats }: {
+function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBalance, nextMonth, stats, secondaryStats, flag }: {
   color: string; border: string; name: string; tagline: string;
   bullets?: string[];
   balance: number;
@@ -9474,22 +9474,40 @@ function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBala
   nextMonth?: string;
   stats: { label: string; value: string; note?: string }[];
   secondaryStats?: { label: string; value: string; note?: string }[];
+  flag?: { label: string; type: "ok" | "warn" | "alert" };
 }) {
-  const [expanded, setExpanded] = React.useState(false);
-  // label | value (auto, left-aligned) | note (flex, right-aligned — more room, no truncation)
-  const cols = "1fr auto minmax(0, 1fr)";
+  const [expanded, setExpanded] = React.useState(true);
+  // label | value (fixed 95px, right-aligned) | note (flex, right-aligned)
+  const cols = "1fr 95px minmax(0, 1fr)";
   const rowSt: React.CSSProperties = {
-    display: "grid", gridTemplateColumns: cols, gap: "0 8px",
-    padding: "5px 16px", borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "center", minHeight: 28,
+    display: "grid", gridTemplateColumns: cols, gap: "0 6px",
+    padding: "5px 14px", borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "center", minHeight: 28,
+  };
+  const flagColors: Record<string, string> = {
+    ok:    "#1A6640",
+    warn:  "#7A5C2A",
+    alert: "#9b2020",
   };
   return (
-    <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column" as const, gap: 5 }}>
+      {/* Flag label — floats above the card */}
+      {flag ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 5, paddingLeft: 2, minHeight: 14 }}>
+          <div style={{ width: 5, height: 5, background: flagColors[flag.type], opacity: 0.85, flexShrink: 0 }} />
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: flagColors[flag.type] }}>{flag.label}</span>
+        </div>
+      ) : (
+        <div style={{ minHeight: 14 }} />
+      )}
+      <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" as const, flex: 1 }}>
       <div style={{ height: 3, background: color, opacity: 0.9 }} />
       {/* Header — vertical stack: name → balance → tagline → forecast
           minHeight locks the separator to the same horizontal line across all cards */}
       <div style={{ padding: "16px 16px 14px", minHeight: 120 }}>
         {/* Bucket name */}
-        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color, opacity: 0.85, marginBottom: 8 }}>{name}</div>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color, opacity: 0.85 }}>{name}</div>
+        </div>
         {/* Balance row — current balance left, forecast right on same line */}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
           <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "#1a1a1a", lineHeight: 1 }}>{fmt(balance)}</div>
@@ -9508,37 +9526,46 @@ function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBala
       <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)", flex: 1 }}>
         {/* Separator bar — color tint, no text labels */}
         <div style={{ height: 3, background: color, opacity: 0.12 }} />
-        {stats.map((s, i) => (
-          <div key={i} style={rowSt}>
-            <span style={{ fontSize: 11, fontWeight: 500, color: "#2a2820", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.label}</span>
-            <span style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.70)", whiteSpace: "nowrap" }}>{s.value}</span>
-            <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", textAlign: "right", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note ?? ""}</span>
-          </div>
-        ))}
-      </div>
-      {/* Element 2+3 — More detail toggle + bullets */}
-      {bullets && bullets.length > 0 && (
-        <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.012)" }}>
-          {/* Element 3 — toggle link */}
-          <button
-            onClick={() => setExpanded(e => !e)}
-            style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 16px", background: "none", border: "none", cursor: "pointer", fontSize: 10.5, color: "rgba(0,0,0,0.38)", letterSpacing: "0.01em" }}
-          >
-            {expanded ? "Less detail ▲" : "More detail ▼"}
-          </button>
-          {/* Element 2 — expanded bullets */}
-          {expanded && (
-            <div style={{ padding: "0 16px 12px", borderTop: "1px solid rgba(0,0,0,0.05)" }}>
-              {bullets.map((b, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, padding: "5px 0", borderBottom: i < bullets.length - 1 ? "1px solid rgba(0,0,0,0.04)" : "none" }}>
-                  <span style={{ fontSize: 9, color: "rgba(0,0,0,0.22)", flexShrink: 0, marginTop: 2 }}>—</span>
-                  <span style={{ fontSize: 10.5, color: "rgba(0,0,0,0.54)", lineHeight: 1.55 }}>{b}</span>
-                </div>
-              ))}
+        {stats.map((s, i) => {
+          const isExcess = s.label === "Excess";
+          return (
+            <div key={i} style={{
+              ...rowSt,
+              ...(isExcess ? {
+                background: "rgba(154,123,60,0.06)",
+                border: "1px solid rgba(154,123,60,0.22)",
+                borderRadius: 4,
+                margin: "3px 8px",
+                padding: "5px 8px",
+              } : {}),
+            }}>
+              <span style={{ fontSize: 11, fontWeight: isExcess ? 600 : 500, color: isExcess ? "rgba(154,123,60,0.90)" : "#2a2820", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.label}</span>
+              <span style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: isExcess ? "rgba(154,123,60,0.90)" : "rgba(0,0,0,0.70)", whiteSpace: "nowrap", textAlign: "right" }}>{s.value}</span>
+              <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", textAlign: "right", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note ?? ""}</span>
             </div>
-          )}
+          );
+        })}
+      </div>
+      {/* GURU Insights section — always open */}
+      {bullets && bullets.length > 0 && (
+        <div style={{ borderTop: "2px solid rgba(71,113,174,0.20)", background: "rgba(58,111,171,0.055)" }}>
+          {/* Section label */}
+          <div style={{ padding: "8px 14px 4px", display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(71,113,174,0.70)", flexShrink: 0 }} />
+            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(71,113,174,0.80)" }}>GURU Insights</span>
+          </div>
+          {/* Bullets */}
+          <div style={{ padding: "2px 14px 10px" }}>
+            {bullets.map((b, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, padding: "5px 0", borderBottom: i < bullets.length - 1 ? "1px solid rgba(71,113,174,0.10)" : "none" }}>
+                <span style={{ fontSize: 9, color: "rgba(71,113,174,0.55)", flexShrink: 0, marginTop: 2 }}>—</span>
+                <span style={{ fontSize: 10.5, color: "rgba(0,0,0,0.62)", lineHeight: 1.55 }}>{b}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
+      </div>{/* end card */}
     </div>
   );
 }
@@ -9829,7 +9856,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
 
   return (
     <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#ECEAE4" }}>
-      <div style={{ padding: "36px 48px 80px" }}>
+      <div style={{ padding: "36px clamp(16px, 3.5vw, 48px) 80px" }}>
 
         {/* ── HERO BAR — Option C: 50% left title · 2×2 right grid ── */}
         {/* ALIGNMENT RULE: numbers in the same row share the same top baseline.
@@ -9861,7 +9888,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
               {/* spacer matches GURU eyebrow height — keeps numbers on same horizontal line */}
               <div style={{ height: 13, marginBottom: 6 }} />
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.40)", marginBottom: 2 }}>Net Worth</div>
-              <div style={{ fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.030em", lineHeight: 1, color: "hsl(222,45%,12%)", marginBottom: 3 }}>{fmt(netWorth)}</div>
+              <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.030em", lineHeight: 1, color: "hsl(222,45%,12%)", marginBottom: 3 }}>{fmt(netWorth)}</div>
               <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)" }}>incl. real estate at Zillow estimates</div>
             </div>
 
@@ -9921,161 +9948,128 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             return { label, net, opNext: opTotal + net, resNext: resTotal, capNext: capTotal };
           })();
           return (
-            <div style={{ marginBottom: 32 }}>
+            <div style={{ marginBottom: 32, overflowX: "auto", paddingBottom: 4 }}>
 
-              {/* ── Bucket Cards — 5 buckets, individual rounded cards ── */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
+              {/* ── Bucket Cards — 5 buckets, fixed 300px each, horizontal scroll if needed ── */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 300px)", gap: 12, gridTemplateRows: "auto auto", minWidth: "max-content" }}>
                 <BSBucketCard
                   color={GURU_BUCKETS.reserve.color} border={`${GURU_BUCKETS.reserve.color}40`}
                   name="Operating Cash"
-                  tagline="2–3 months of core expenses. Instant access. No rate optimization."
+                  flag={{ label: "Excess Liquidity", type: "warn" }}
+                  tagline="Instant and unlimited access for daily expenses and debt payments. At least 2–3 months coverage of expenses."
                   bullets={[
-                    "Covers day-to-day expenses and scheduled debt payments. Kept instantly accessible.",
-                    "The priority is availability, not yield. Earning a return on this capital is not the goal.",
-                    "Sized to the household's actual need. Capital above the floor is better deployed elsewhere.",
+                    "Excess liquidity — currently covering over 6 months of cash expenses.",
+                    "Yield could be improved given current balance (see product selection).",
+                    "Consider whether the floor target should be raised to reflect current spending.",
                   ]}
                   balance={opTotal}
                   nextBalance={nmForecast?.opNext} nextMonth={nmForecast?.label}
                   stats={[
-                    { label: "Coverage",     value: `${opCoverage} mo`,  note: "monthly expenses" },
-                    { label: "Yield",        value: "< 0.1%",             note: "checking" },
-                    { label: "Floor Target", value: fmt(opFloor),         note: "2 months exp." },
-                    { label: "Deployable",   value: fmt(opExcess),        note: "above floor" },
+                    { label: "Coverage",        value: `${opCoverage} mo`,    note: "monthly exp." },
+                    { label: "Product",         value: "Checking",             note: "" },
+                    { label: "Wtd. Avg. Yield", value: calcWtdYield(opCash),   note: "" },
+                    { label: "Floor Target",    value: fmt(opFloor),           note: "2 months exp." },
+                    { label: "Excess",          value: fmt(opExcess),          note: "" },
                   ]} />
                 <BSBucketCard
                   color={GURU_BUCKETS.yield.color} border={`${GURU_BUCKETS.yield.color}40`}
                   name="Liquidity Reserve"
-                  tagline="12–18 months of anticipated outflows plus a buffer."
+                  flag={{ label: "Excess Liquidity", type: "warn" }}
+                  tagline="Cash on hand for upcoming periods of outflow. Usually 12–18 months of net cash deficit plus a buffer for unanticipated expenditures."
                   bullets={[
-                    "Covers the next 12–18 months of anticipated outflows, with room for timing variation.",
-                    "The priority is value preservation and accessibility. Growth is not the objective here.",
-                    "Sized intentionally larger than known needs. The buffer itself is what provides the security.",
+                    "Excess liquidity — currently covering over 20 months of net cash outflow.",
+                    "Within 12 months a large inflow is expected from an annual bonus.",
+                    "Last year unanticipated expenses totaled approximately $120K — worth factoring into the floor.",
                   ]}
                   balance={resTotal}
                   nextBalance={nmForecast?.resNext} nextMonth={nmForecast?.label}
                   stats={[
-                    { label: "Coverage",     value: `${resCoverage} mo`, note: "monthly expenses" },
-                    { label: "Excess",       value: fmt(resExcess),       note: "above floor" },
-                    { label: "Floor Target", value: fmt(resFloor),        note: "trough target" },
+                    { label: "Coverage",        value: `${resCoverage} mo`,    note: "monthly exp." },
+                    { label: "Product",         value: "Savings / T-Bills",    note: "" },
+                    { label: "Wtd. Avg. Yield", value: calcWtdYield(resCash),  note: "" },
+                    { label: "Floor Target",    value: fmt(resFloor),           note: "trough target" },
+                    { label: "Excess",          value: fmt(resExcess),          note: "" },
                   ]} />
                 <BSBucketCard
                   color={GURU_BUCKETS.tactical.color} border={`${GURU_BUCKETS.tactical.color}40`}
                   name="Capital Build"
-                  tagline="Saving for a specific goal with a known target and deadline."
+                  flag={{ label: "On Track", type: "ok" }}
+                  tagline="Near-term goal (< 5 years) earmarked for a specific large expenditure. Kesslers are targeting a larger home (+$1M) in 2–3 years."
                   bullets={[
-                    "Set aside for a specific large expenditure with a defined target and timeline.",
-                    "The priority is protecting principal while allowing measured growth. The deadline shapes every decision.",
-                    "Dedicated to a single purpose. Using this bucket for other needs undermines its function.",
+                    "On track to have approximately $430K available for a home downpayment by January 2028.",
+                    "Strategy is to protect principal while allowing measured growth within the timeline.",
                   ]}
                   balance={capTotal}
                   nextBalance={nmForecast?.capNext} nextMonth={nmForecast?.label}
                   stats={[
-                    { label: "Instrument",  value: "US Treasuries",      note: "current deployment" },
-                    { label: "Maturity",    value: "Mar 2026",            note: "at par" },
-                    { label: "Coverage",    value: `${capCoverage} mo`,  note: "of expenses" },
+                    { label: "Goal",            value: "Primary Home",         note: "2–3 year horizon" },
+                    { label: "Target",          value: "$430,000",             note: "downpayment" },
+                    { label: "Product",         value: "US Treasuries",        note: "" },
+                    { label: "Wtd. Avg. Yield", value: calcWtdYield(capBuild), note: "" },
+                    { label: "Maturity",        value: "Mar 2026",             note: "" },
+                    { label: "Risk Tolerance",  value: "High",                 note: "" },
                   ]} />
                 <BSBucketCard
                   color={GURU_BUCKETS.growth.color} border={`${GURU_BUCKETS.growth.color}40`}
                   name="Investments"
-                  tagline="Long-term growth across brokerage and retirement accounts."
+                  flag={{ label: "Concentration Risk", type: "alert" }}
+                  tagline="Given the Kesslers' age this is a 10–30 year horizon. Includes taxable brokerage accounts and retirement accounts."
                   bullets={[
-                    "Oriented toward long-term wealth growth across brokerage and retirement accounts.",
-                    "The priority is after-tax compounding over a multi-decade horizon. Short-term fluctuation is expected and part of the strategy.",
+                    "Significant concentration in Meta Platforms — single-stock exposure is a meaningful source of risk.",
+                    "Cresset managed portfolio provides broad diversification but has not kept pace with recent equity benchmarks.",
+                    "Retirement accounts are tax-advantaged but illiquid before age 59½ — factor into near-term planning.",
                   ]}
-                  balance={growthEqAmt}
+                  balance={growthEqAmt + growthRetAmt}
                   stats={[
-                    { label: "Managed",       value: fmt(growthEquity.find(a => (a.description ?? "").toLowerCase().includes("cresset")) ? Number(growthEquity.find(a => (a.description ?? "").toLowerCase().includes("cresset"))!.value) : 0), note: "Cresset · CIO" },
-                    { label: "Single Stocks", value: fmt(growthEquity.filter(a => { const d = (a.description ?? "").toLowerCase(); return d.includes("meta") || d.includes("bank of america"); }).reduce((s,a)=>s+Number(a.value),0)), note: "Concentration risk" },
-                    { label: "Exp. Return",   value: "6–8% gross",       note: "long-term" },
-                    { label: "Retirement",    value: fmt(growthRetAmt),   note: "401k + Roth · excl." },
+                    { label: "Equities",        value: fmt(growthEqAmt),  note: "" },
+                    { label: "Fixed Income",    value: "—",               note: "" },
+                    { label: "Retirement",      value: fmt(growthRetAmt), note: "401k + Roth" },
+                    { label: "Risk Tolerance",  value: "Very High",       note: "" },
                   ]} />
                 <BSBucketCard
                   color={GURU_BUCKETS.alternatives.color} border={`${GURU_BUCKETS.alternatives.color}40`}
                   name="Other Assets"
-                  tagline="Real estate, private equity, and stock compensation. Not liquid."
+                  tagline="Includes real estate, alternative assets, and stock compensation."
                   bullets={[
-                    "Includes real estate, private equity, and compensation-linked assets that cannot be quickly accessed.",
                     "The priority is accurate valuation and visibility — ensuring the financial picture is complete.",
                     "Managed separately from liquidity planning. Values are estimates based on available market data.",
                   ]}
                   balance={reTotalZillow + otherAltsTotal}
                   stats={[
-                    { label: "Real Estate",              value: fmt(reTotalZillow),              note: "Zillow est." },
-                    { label: "Real estate net equity",   value: fmt(reNetEquity),                note: "after mortgages" },
-                    { label: "Private equity and carry", value: fmt(pureAltsTotal + carryTotal), note: "est. fair market value" },
-                    { label: "RSUs",                     value: fmt(rsuTotal),                   note: "unvested" },
+                    { label: "Real Estate",    value: fmt(reTotalZillow), note: "Zillow est." },
+                    { label: "Private Equity", value: fmt(pureAltsTotal), note: "" },
+                    { label: "Carry",          value: fmt(carryTotal),    note: "illiquid" },
+                    { label: "RSUs",           value: fmt(rsuTotal),      note: "unvested" },
                   ]} />
+                {/* Additional Sources of Liquidity notation — spans the 3 liquidity bucket columns */}
+                <div style={{ gridColumn: "1 / 4", display: "flex", alignItems: "center", gap: 0, border: "1px solid rgba(58,111,171,0.18)", borderRadius: 6, overflow: "hidden", background: "rgba(58,111,171,0.025)" }}>
+                  <div style={{ padding: "7px 14px", borderRight: "1px solid rgba(58,111,171,0.12)", flexShrink: 0 }}>
+                    <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(58,111,171,0.65)" }}>Additional Sources of Liquidity</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 0, flex: 1 }}>
+                    <div style={{ padding: "7px 16px", borderRight: "1px solid rgba(58,111,171,0.10)", flex: 1 }}>
+                      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.30)", marginBottom: 2 }}>Securities-Based Lending</div>
+                      <div style={{ fontSize: 13, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: "hsl(222,45%,18%)", letterSpacing: "-0.01em" }}>{fmt(sblCapacity)} <span style={{ fontSize: 9, color: "rgba(0,0,0,0.35)", fontWeight: 400 }}>avail. · 50% advance</span></div>
+                    </div>
+                    <div style={{ padding: "7px 16px", borderRight: "1px solid rgba(58,111,171,0.10)", flex: 1 }}>
+                      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.30)", marginBottom: 2 }}>HELOC — Tribeca</div>
+                      <div style={{ fontSize: 13, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: "hsl(222,45%,18%)", letterSpacing: "-0.01em" }}>{fmt(helocCapacity)} <span style={{ fontSize: 9, color: "rgba(0,0,0,0.35)", fontWeight: 400 }}>avail. · {primaryLTV2}% LTV</span></div>
+                    </div>
+                    <div style={{ padding: "7px 16px", flex: "0 0 auto" }}>
+                      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.30)", marginBottom: 2 }}>Combined Capacity</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, fontVariantNumeric: "tabular-nums" as const, color: "hsl(222,45%,18%)", letterSpacing: "-0.01em" }}>{fmt(totalBorrowCap)}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           );
         })()}
 
-        {/* ── BORROWING CAPACITY ── */}
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(0,0,0,0.32)", marginBottom: 10 }}>Borrowing Capacity</div>
-          <div style={{ display: "flex", gap: 10 }}>
-
-            {/* Securities-Based Lending */}
-            <div style={{ flex: "1 1 0", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ height: 3, background: "#3A6FAB" }} />
-              <div style={{ padding: "14px 18px 16px" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#3A6FAB", marginBottom: 10 }}>Securities-Based Lending</div>
-                <div style={{ display: "flex", gap: 24, marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Available</div>
-                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1 }}>{fmt(sblCapacity)}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Eligible Portfolio</div>
-                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "rgba(0,0,0,0.55)", lineHeight: 1 }}>{fmt(growthEqAmt)}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 11, color: "rgba(0,0,0,0.50)", lineHeight: 1.4 }}>
-                  <span>· Pledged against taxable brokerage holdings (Cresset, Schwab, E*Trade)</span>
-                  <span>· Typically 50% advance rate on diversified equity</span>
-                  <span>· No credit check · same-day availability · rate ~SOFR + 1.5%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* HELOC */}
-            <div style={{ flex: "1 1 0", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ height: 3, background: "#1A5C32" }} />
-              <div style={{ padding: "14px 18px 16px" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#1A5C32", marginBottom: 10 }}>HELOC — Tribeca Condo</div>
-                <div style={{ display: "flex", gap: 24, marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Available at 80% LTV</div>
-                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1 }}>{fmt(helocCapacity)}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Current LTV</div>
-                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "rgba(0,0,0,0.55)", lineHeight: 1 }}>{primaryLTV2}%</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 11, color: "rgba(0,0,0,0.50)", lineHeight: 1.4 }}>
-                  <span>· Home value {fmt(primaryVal2)} · Mortgage {fmt(primaryMtgBal2)}</span>
-                  <span>· Variable rate · typically Prime + 0.50%</span>
-                  <span>· Revolving draw — interest only during draw period</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Combined capacity summary */}
-            <div style={{ flex: "0 0 180px", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, background: "rgba(0,0,0,0.025)", padding: "14px 18px 16px", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 10 }}>Total Capacity</div>
-              <div style={{ fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.03em", color: "hsl(222,45%,12%)", lineHeight: 1, marginBottom: 6 }}>{fmt(totalBorrowCap)}</div>
-              <div style={{ fontSize: 10, color: "rgba(0,0,0,0.38)", lineHeight: 1.5 }}>SBL + HELOC combined<br/>No approval required</div>
-            </div>
-
-          </div>
-        </div>
-
         {/* ── Separator between bucket cards and detail tables ── */}
-        <div style={{ margin: "20px 0 16px", display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
-          <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(0,0,0,0.28)" }}>Account Detail</span>
-          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+        <div style={{ margin: "20px 0 16px" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.04em", color: "rgba(0,0,0,0.55)" }}>Account Detail</span>
+          <div style={{ marginTop: 6, height: 1, background: "rgba(0,0,0,0.08)" }} />
         </div>
 
         {/* ── COMBINED LEDGER: ASSETS + LIABILITIES ── */}
@@ -10091,7 +10085,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             liabP: { c: "#50287a", bg: "rgba(80,40,122,0.055)",  subtotalBg: "rgba(80,40,122,0.09)"  },
           };
           // 5-col asset grid: name | institution | balance | yield/return | comments
-          const AG2 = "minmax(0,1fr) 100px 110px 90px minmax(0,160px)";
+          const AG2 = "minmax(0,1fr) 80px 110px 90px minmax(0,140px)";
           // 4-col liability grid: name | balance | rate | collateral
           const LG2 = "minmax(0,1fr) 105px 50px minmax(0,150px)";
           const th2 = (right?: boolean): React.CSSProperties => ({
@@ -10104,11 +10098,11 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             const meta = acctMeta(a.description ?? "");
             return (
               <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "4px 0 4px 16px", background: tc.bg, borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "baseline" }}>
-                <div style={{ fontSize: 11, color: "#1A1915", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div title={meta.name} style={{ fontSize: 11, color: "#1A1915", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {meta.name}
                   {meta.last4 && <span style={{ fontSize: 9, color: "#B0AEA8", marginLeft: 5, fontVariantNumeric: "tabular-nums" }}>{meta.last4}</span>}
                 </div>
-                <div style={{ fontSize: 10.5, color: "#6B6860", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta.inst}</div>
+                <div title={meta.inst} style={{ fontSize: 10.5, color: "#6B6860", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta.inst}</div>
                 <div style={{ fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(Number(a.value))}</div>
                 <div style={{ fontSize: 10.5, textAlign: "right", color: meta.yield_ && meta.yield_ !== "—" ? "#2a6e3f" : "#9B9890", fontVariantNumeric: "tabular-nums" }}>{meta.yield_}</div>
                 <div style={{ fontSize: 10, color: "#9B9890", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingLeft: 8 }}>{meta.comment}</div>
@@ -10126,7 +10120,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             return (
               <div style={{ display: "grid", gridTemplateColumns: AG2, padding: "4px 0 4px 16px", background: TC.alts.bg, borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "baseline" }}>
                 <div style={{ fontSize: 11, color: "#1A1915", display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{propName}</span>
+                  <span title={propName} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{propName}</span>
                   <span style={{ fontSize: 8.5, fontWeight: 700, color: isRental ? "#7A5000" : "#1A3F72", letterSpacing: "0.05em", textTransform: "uppercase" as const, flexShrink: 0 }}>{isRental ? "Rental" : "Primary"}</span>
                 </div>
                 <div style={{ fontSize: 10.5, color: "#6B6860", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={addr}>{addr}</div>
@@ -10280,8 +10274,8 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
 
           // ── Compact 3-panel row components ──
           // Grid: Account (flex) | Balance (82px) | Next Mo. (76px) | Yield (58px) | Notes (100px flex)
-          const C3  = "minmax(0,1fr) 82px 76px 58px minmax(0,110px)"; // 5-col — Panel 1 (has next month)
-          const C3B = "minmax(0,1fr) 82px 58px minmax(0,110px)";       // 4-col — Panels 2 & 3
+          const C3  = "minmax(200px,1fr) 82px 76px 72px minmax(0,100px)"; // 5-col — Panel 1 (has next month)
+          const C3B = "minmax(200px,1fr) 82px 72px minmax(0,100px)";    // 4-col — Panels 2 & 3
           const c3th = (right?: boolean): React.CSSProperties => ({
             fontSize: 9, fontWeight: 700, letterSpacing: "0.09em",
             textTransform: "uppercase" as const, color: "rgba(0,0,0,0.30)",
@@ -10513,7 +10507,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
                       <div style={{ textAlign: "right" }}>
                         {!isCommit && <span style={{ fontSize: 10, color: "#9B9890", fontVariantNumeric: "tabular-nums" }}>{rate.toFixed(2)}%</span>}
                       </div>
-                      <div style={{ fontSize: 9, color: "#9B9890", paddingLeft: 6, paddingRight: 8, textAlign: "right" }}>{(share * 100).toFixed(0)}% alloc.</div>
+                      <div />
                     </div>
                   );
                 })}
@@ -10552,9 +10546,9 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
           })();
 
           return (
-            <div style={{ marginBottom: 32 }}>
+            <div style={{ marginBottom: 32, overflowX: "auto", paddingBottom: 4 }}>
               {/* ══ THREE-PANEL LEDGER ══ */}
-              <div style={{ display: "grid", gridTemplateColumns: "1.25fr 1fr 1fr", gap: 14, alignItems: "start" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(530px,1.25fr) minmax(454px,1fr) minmax(454px,1fr)", gap: 14, alignItems: "start", minWidth: 1452 }}>
 
                 {/* ── PANEL 1: LIQUID ASSETS ── */}
                 <div style={{ border: "1px solid #D8D6D0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
@@ -10623,6 +10617,70 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
           );
         })()}
 
+
+        {/* ── SOURCES OF LIQUIDITY — full detail ── */}
+        <div style={{ marginTop: 32, marginBottom: 32 }}>
+          <div style={{ margin: "0 0 14px" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.04em", color: "rgba(0,0,0,0.55)" }}>Additional Sources of Liquidity</span>
+            <div style={{ marginTop: 6, height: 1, background: "rgba(0,0,0,0.08)" }} />
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+
+            {/* Securities-Based Lending */}
+            <div style={{ flex: "1 1 0", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ height: 3, background: "#3A6FAB" }} />
+              <div style={{ padding: "14px 18px 16px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#3A6FAB", marginBottom: 10 }}>Securities-Based Lending</div>
+                <div style={{ display: "flex", gap: 24, marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Available</div>
+                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1 }}>{fmt(sblCapacity)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Eligible Portfolio</div>
+                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "rgba(0,0,0,0.55)", lineHeight: 1 }}>{fmt(growthEqAmt)}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 11, color: "rgba(0,0,0,0.50)", lineHeight: 1.4 }}>
+                  <span>· Pledged against taxable brokerage holdings (Cresset, Schwab, E*Trade)</span>
+                  <span>· Typically 50% advance rate on diversified equity</span>
+                  <span>· No credit check · same-day availability · rate ~SOFR + 1.5%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* HELOC */}
+            <div style={{ flex: "1 1 0", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ height: 3, background: "#1A5C32" }} />
+              <div style={{ padding: "14px 18px 16px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#1A5C32", marginBottom: 10 }}>HELOC — Tribeca Condo</div>
+                <div style={{ display: "flex", gap: 24, marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Available at 80% LTV</div>
+                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1 }}>{fmt(helocCapacity)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 3 }}>Current LTV</div>
+                    <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "rgba(0,0,0,0.55)", lineHeight: 1 }}>{primaryLTV2}%</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 11, color: "rgba(0,0,0,0.50)", lineHeight: 1.4 }}>
+                  <span>· Home value {fmt(primaryVal2)} · Mortgage {fmt(primaryMtgBal2)}</span>
+                  <span>· Variable rate · typically Prime + 0.50%</span>
+                  <span>· Revolving draw — interest only during draw period</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Combined capacity summary */}
+            <div style={{ flex: "0 0 180px", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, background: "rgba(0,0,0,0.025)", padding: "14px 18px 16px", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.32)", marginBottom: 10 }}>Total Capacity</div>
+              <div style={{ fontSize: 26, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.03em", color: "hsl(222,45%,12%)", lineHeight: 1, marginBottom: 6 }}>{fmt(totalBorrowCap)}</div>
+              <div style={{ fontSize: 10, color: "rgba(0,0,0,0.38)", lineHeight: 1.5 }}>SBL + HELOC combined<br/>No approval required</div>
+            </div>
+
+          </div>
+        </div>
 
         {/* ── PAGE FOOTER ── */}
         <div style={{ fontSize: 10, color: "#B0AEA8", marginTop: 36, paddingTop: 12, borderTop: "1px solid #DAD8D2", display: "flex", justifyContent: "space-between", letterSpacing: "0.04em" }}>
