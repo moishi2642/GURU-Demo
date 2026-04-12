@@ -22,7 +22,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   // Run migrations before any Drizzle queries touch the DB
-  await runMigrations();
+  await runMigrations().catch((e) => console.error("[db] Migration skipped (offline):", e.message));
   seedDatabase().catch(console.error);
 
   // ── Clients ──────────────────────────────────────────────────────────────

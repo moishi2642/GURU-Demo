@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advisor Layer — Balance Sheet · Kessler Family</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --page-bg:    hsl(220,5%,93%);
+  --op:         #1E4F9C;
+  --res:        #835800;
+  --build:      #195830;
+  --invest:     #4A3FA0;
+  --border:     rgba(0,0,0,0.08);
+  --border-mid: rgba(0,0,0,0.06);
+  --text:       #1a1917;
+  --muted:      #6a6860;
+  --subtle:     #9A9890;
+  --font:       'DM Sans', sans-serif;
+  --serif:      'Playfair Display', serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--page-bg);
+  color: var(--text);
+  font-size: 12px;
+  min-height: 100vh;
+  padding: 28px 36px 60px;
+}
+
+/* ── Page chrome ── */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.page-header h1 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.page-header .eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--subtle);
+  margin-bottom: 6px;
+}
+.page-meta {
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--subtle);
+  line-height: 1.6;
+}
+.page-meta strong { color: var(--muted); font-weight: 600; }
+
+/* Sub-nav tabs */
+.subnav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  margin-bottom: 18px;
+}
+.subnav-tab {
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 8px 18px;
+  color: var(--subtle);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  letter-spacing: 0.01em;
+}
+.subnav-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Summary strip ── */
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.ss-cell {
+  padding: 11px 16px;
+  border-left: 1px solid var(--border);
+}
+.ss-cell:first-child { border-left: none; }
+.ss-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--subtle);
+  margin-bottom: 4px;
+}
+.ss-val {
+  font-size: 17px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ss-note {
+  font-size: 9.5px;
+  color: var(--subtle);
+  margin-top: 3px;
+}
+
+/* ── Card (bc) ── */
+.bc {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.bc-stripe { height: 4px; flex-shrink: 0; }
+
+/* Card header */
+.bc-head {
+  padding: 13px 18px 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.bc-head-left {}
+.bc-bucket {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.bc-head-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.bc-head-sub {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.bc-head-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.bc-balance-big {
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.bc-target-line {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* ── Status badge ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.badge-over  { background: rgba(155,32,32,0.08);  color: #9B2020; }
+.badge-ok    { background: rgba(25,88,48,0.10);   color: #195830; }
+.badge-under { background: rgba(154,107,16,0.10); color: #835800; }
+.badge-info  { background: rgba(30,79,156,0.08);  color: #1E4F9C; }
+.badge-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+}
+
+/* ── Account table ── */
+.bc-table {
+  flex: 1;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.bc-table thead tr th {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--subtle);
+  padding: 6px 18px;
+  text-align: right;
+  background: rgba(0,0,0,0.015);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.bc-table thead tr th.left { text-align: left; }
+.bc-table tbody tr { border-bottom: 1px solid var(--border-mid); }
+.bc-table tbody tr:last-child { border-bottom: none; }
+.bc-table tbody tr:hover { background: rgba(0,0,0,0.015); }
+.bc-table tbody td {
+  padding: 8px 18px;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bc-table tbody td.left { text-align: left; }
+.bc-table tbody td.name {
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+}
+.bc-table tbody td.inst {
+  font-size: 10px;
+  color: var(--subtle);
+  text-align: left;
+  padding-top: 0;
+  padding-bottom: 5px;
+}
+.bc-table tbody td.bal {
+  font-weight: 500;
+  color: var(--text);
+}
+.bc-table tbody td.at-yield { color: var(--muted); }
+.bc-table tbody td.at-income { font-weight: 500; color: var(--text); }
+.bc-table tbody td.pickup { color: #195830; font-weight: 600; }
+.bc-table tbody td.flat  { color: var(--subtle); }
+.bc-table tbody td.action-cell { text-align: right; }
+
+/* Row accent bar */
+.bc-table tbody tr td.name-cell {
+  position: relative;
+  padding-left: 24px;
+}
+.bc-table tbody tr td.name-cell::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--row-accent, rgba(0,0,0,0.08));
+}
+
+/* Two-line cell */
+.cell-main { font-size: 11px; color: var(--text); font-weight: 400; }
+.cell-sub  { font-size: 9.5px; color: var(--subtle); margin-top: 1px; }
+
+/* NEW badge */
+.new-mark {
+  display: inline-block;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: rgba(25,88,48,0.12);
+  color: #195830;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* ── Result footer ── */
+.bc-result {
+  background: rgba(0,0,0,0.02);
+  border-top: 1px solid rgba(0,0,0,0.07);
+  padding: 10px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.bc-result-item { display: flex; flex-direction: column; gap: 2px; }
+.bc-result-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--subtle);
+}
+.bc-result-val {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.bc-result-note { font-size: 9.5px; color: var(--subtle); }
+
+/* ── Advisor annotation ── */
+.bc-annotation {
+  border-top: 1px solid var(--border);
+  padding: 9px 18px;
+  background: rgba(255,255,255,0);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.annotation-icon {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.annotation-text {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.annotation-text strong { color: var(--text); font-weight: 600; }
+
+/* ── Grid ── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Divider section label ── */
+.section-divider {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--subtle);
+  margin: 4px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0,0,0,0.1);
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ PAGE HEADER ══════════════════ -->
+<div class="page-header">
+  <div>
+    <div class="eyebrow">GURU Intelligence · Advisor Layer</div>
+    <h1>Balance Sheet — Sarah &amp; Michael Kessler</h1>
+  </div>
+  <div class="page-meta">
+    <strong>Dec 29, 2025 · 9:42 AM</strong><br>
+    6 accounts synced · data current
+  </div>
+</div>
+
+<!-- sub-nav -->
+<div class="subnav">
+  <div class="subnav-tab active">Balance Sheet</div>
+  <div class="subnav-tab">Cash Flow</div>
+  <div class="subnav-tab">Net Worth</div>
+  <div class="subnav-tab">Income Optimization</div>
+</div>
+
+<!-- ══════════════════ SUMMARY STRIP ══════════════════ -->
+<div class="summary-strip">
+  <div class="ss-cell">
+    <div class="ss-label">Total Assets</div>
+    <div class="ss-val" style="color:var(--text)">$4,816,362</div>
+    <div class="ss-note">all accounts</div>
+  </div>
+  <div class="ss-cell">
+    <div class="ss-label">Liquid Assets</div>
+    <div class="ss-val" style="color:#1E4F9C">$693,636</div>
+    <div class="ss-note">op + reserve + capital</div>
+  </div>
+  <div class="ss-cell">
+    <div class="ss-label">Excess to Deploy</div>
+    <div class="ss-val" style="color:#9B2020">$325,824</div>
+    <div class="ss-note">above liquidity requirement</div>
+  </div>
+  <div class="ss-cell">
+    <div class="ss-label">AT Income / yr</div>
+    <div class="ss-val" style="color:#195830">$108,978</div>
+    <div class="ss-note">current · all buckets</div>
+  </div>
+  <div class="ss-cell">
+    <div class="ss-label">Optimized AT Income</div>
+    <div class="ss-val" style="color:#195830">$137,653</div>
+    <div class="ss-note">+$28,675 pickup available</div>
+  </div>
+</div>
+
+<!-- ══════════════════ LIQUID BUCKETS ══════════════════ -->
+<div class="section-divider">Liquid Buckets</div>
+<div class="grid-2">
+
+  <!-- ── OPERATING CASH ── -->
+  <div class="bc">
+    <div class="bc-stripe" style="background:#1E4F9C"></div>
+    <div class="bc-head">
+      <div class="bc-head-left">
+        <div class="bc-bucket" style="color:#1E4F9C">Operating Cash</div>
+        <div class="bc-head-title">Chase + Citizens Checking</div>
+        <div class="bc-head-sub">2-month expense coverage target · $63,574</div>
+      </div>
+      <div class="bc-head-right">
+        <div class="bc-balance-big" style="color:#1E4F9C">$132,050</div>
+        <div class="bc-target-line">Target $63,574</div>
+        <span class="badge badge-over"><span class="badge-dot" style="background:#9B2020"></span>+$68,476 over</span>
+      </div>
+    </div>
+
+    <table class="bc-table">
+      <thead>
+        <tr>
+          <th class="left" style="width:45%">Account</th>
+          <th style="width:18%">Balance</th>
+          <th style="width:12%">Yield</th>
+          <th style="width:10%">Tax</th>
+          <th style="width:10%">AT Yield</th>
+          <th style="width:5%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#1E4F9C">
+            <div class="cell-main">Chase Total Checking</div>
+            <div class="cell-sub">Chase Bank · primary operating</div>
+          </td>
+          <td class="bal">$25,050</td>
+          <td>0.01%</td>
+          <td class="flat">47%</td>
+          <td class="flat">0.005%</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#1E4F9C">
+            <div class="cell-main">Citizens Private Banking Checking</div>
+            <div class="cell-sub">Citizens Bank · excess above target</div>
+          </td>
+          <td class="bal">$107,000</td>
+          <td>0.01%</td>
+          <td class="flat">47%</td>
+          <td class="flat">0.005%</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bc-result">
+      <div class="bc-result-item">
+        <div class="bc-result-label">Total balance</div>
+        <div class="bc-result-val">$132,050</div>
+      </div>
+      <div class="bc-result-item" style="text-align:center">
+        <div class="bc-result-label">AT income / yr</div>
+        <div class="bc-result-val" style="color:var(--subtle)">$6/yr</div>
+        <div class="bc-result-note">near zero yield</div>
+      </div>
+      <div class="bc-result-item" style="text-align:right">
+        <div class="bc-result-label">Excess</div>
+        <div class="bc-result-val" style="color:#9B2020">$68,476</div>
+        <div class="bc-result-note">→ redeploy to reserve</div>
+      </div>
+    </div>
+
+    <div class="bc-annotation">
+      <span class="annotation-icon" style="background:rgba(155,32,32,0.08);color:#9B2020">Action</span>
+      <span class="annotation-text"><strong>$68,476 above the 2-month operating target.</strong> Excess should be swept to JPMorgan Treasuries MMF in reserve — currently earning 0.01% vs. 4.30% available.</span>
+    </div>
+  </div>
+
+  <!-- ── LIQUIDITY RESERVE ── -->
+  <div class="bc">
+    <div class="bc-stripe" style="background:#835800"></div>
+    <div class="bc-head">
+      <div class="bc-head-left">
+        <div class="bc-bucket" style="color:#835800">Liquidity Reserve</div>
+        <div class="bc-head-title">Citizens MM · CapOne · Fidelity Sweep</div>
+        <div class="bc-head-sub">Cash flow trough coverage target · $169,238</div>
+      </div>
+      <div class="bc-head-right">
+        <div class="bc-balance-big" style="color:#835800">$426,586</div>
+        <div class="bc-target-line">Target $169,238</div>
+        <span class="badge badge-over"><span class="badge-dot" style="background:#9B2020"></span>+$257,348 over</span>
+      </div>
+    </div>
+
+    <table class="bc-table">
+      <thead>
+        <tr>
+          <th class="left" style="width:40%">Account</th>
+          <th style="width:18%">Balance</th>
+          <th style="width:12%">Yield</th>
+          <th style="width:10%">Tax</th>
+          <th style="width:10%">AT Yield</th>
+          <th style="width:10%">AT Income</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#835800">
+            <div class="cell-main">Citizens Private Bank Money Market</div>
+            <div class="cell-sub">Citizens Bank · floating rate</div>
+          </td>
+          <td class="bal">$225,000</td>
+          <td>3.65%</td>
+          <td class="flat">47%</td>
+          <td>1.93%</td>
+          <td class="at-income">$4,351</td>
+        </tr>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#835800">
+            <div class="cell-main">CapitalOne 360 Performance Savings</div>
+            <div class="cell-sub">CapitalOne · floating rate</div>
+          </td>
+          <td class="bal">$15,000</td>
+          <td>3.78%</td>
+          <td class="flat">47%</td>
+          <td>2.00%</td>
+          <td class="at-income">$301</td>
+        </tr>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#835800">
+            <div class="cell-main">Fidelity Cash Sweep / SPAXX</div>
+            <div class="cell-sub">Fidelity · brokerage money market</div>
+          </td>
+          <td class="bal">$186,586</td>
+          <td>2.50%</td>
+          <td class="flat">47%</td>
+          <td>1.33%</td>
+          <td class="at-income">$2,474</td>
+        </tr>
+        <tr style="background:rgba(25,88,48,0.03)">
+          <td class="name-cell left" style="--row-accent:#195830">
+            <div class="cell-main"><span class="new-mark">Target</span>JPMorgan 100% Treasuries MMF</div>
+            <div class="cell-sub">J.P. Morgan · state/city exempt · GURU pick</div>
+          </td>
+          <td class="bal flat">$0 current</td>
+          <td>4.30%</td>
+          <td class="flat">35%*</td>
+          <td class="pickup">2.80%</td>
+          <td class="pickup">$4,739 pf</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bc-result">
+      <div class="bc-result-item">
+        <div class="bc-result-label">Total balance</div>
+        <div class="bc-result-val">$426,586</div>
+      </div>
+      <div class="bc-result-item" style="text-align:center">
+        <div class="bc-result-label">AT income / yr (current)</div>
+        <div class="bc-result-val" style="color:var(--muted)">$7,126</div>
+        <div class="bc-result-note">optimized: $4,739 at target</div>
+      </div>
+      <div class="bc-result-item" style="text-align:right">
+        <div class="bc-result-label">Excess to deploy</div>
+        <div class="bc-result-val" style="color:#9B2020">$257,348</div>
+        <div class="bc-result-note">→ new investments</div>
+      </div>
+    </div>
+
+    <div class="bc-annotation">
+      <span class="annotation-icon" style="background:rgba(154,107,16,0.10);color:#835800">Risk</span>
+      <span class="annotation-text"><strong>$426,586 in floating-rate accounts reprices immediately at the May 7 Fed decision.</strong> Right-sizing to $169,238 in JPMorgan Treasuries MMF (35% tax, state/city exempt) frees $257,348 for investment.</span>
+    </div>
+  </div>
+
+</div><!-- end liquid grid -->
+
+<!-- ══════════════════ CAPITAL BUILD ══════════════════ -->
+<div class="section-divider">Capital Build</div>
+<div class="grid-2">
+
+  <!-- ── CAPITAL BUILD ── -->
+  <div class="bc">
+    <div class="bc-stripe" style="background:#195830"></div>
+    <div class="bc-head">
+      <div class="bc-head-left">
+        <div class="bc-bucket" style="color:#195830">Capital Build</div>
+        <div class="bc-head-title">Treasuries · Muni Bonds · S&amp;P Low Vol</div>
+        <div class="bc-head-sub">Medium-term savings · earmarked for home purchase</div>
+      </div>
+      <div class="bc-head-right">
+        <div class="bc-balance-big" style="color:#195830">$361,545</div>
+        <div class="bc-target-line">Target $135,000</div>
+        <span class="badge badge-ok"><span class="badge-dot" style="background:#195830"></span>On track</span>
+      </div>
+    </div>
+
+    <table class="bc-table">
+      <thead>
+        <tr>
+          <th class="left" style="width:40%">Account / Position</th>
+          <th style="width:18%">Balance</th>
+          <th style="width:12%">Yield</th>
+          <th style="width:10%">Tax</th>
+          <th style="width:10%">AT Yield</th>
+          <th style="width:10%">AT Income</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#195830">
+            <div class="cell-main">US Treasuries (6-mo ladder)</div>
+            <div class="cell-sub">Fidelity · state/city exempt</div>
+          </td>
+          <td class="bal">$135,000</td>
+          <td>3.95%</td>
+          <td class="flat">35%</td>
+          <td>2.57%</td>
+          <td class="at-income">$3,467</td>
+        </tr>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#195830">
+            <div class="cell-main">S&amp;P Low Volatility Index (SPLV)</div>
+            <div class="cell-sub">Fidelity Brokerage · LTCG treatment</div>
+          </td>
+          <td class="bal">$194,384</td>
+          <td>6.50%</td>
+          <td class="flat">20%</td>
+          <td>5.20%</td>
+          <td class="at-income">$10,108</td>
+        </tr>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#195830">
+            <div class="cell-main">2028 Municipal Bonds</div>
+            <div class="cell-sub">Fidelity · tax-exempt income</div>
+          </td>
+          <td class="bal">$32,161</td>
+          <td>4.50%</td>
+          <td class="flat">0%</td>
+          <td>4.50%</td>
+          <td class="at-income">$1,447</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bc-result">
+      <div class="bc-result-item">
+        <div class="bc-result-label">Total balance</div>
+        <div class="bc-result-val">$361,545</div>
+      </div>
+      <div class="bc-result-item" style="text-align:center">
+        <div class="bc-result-label">Blended AT yield</div>
+        <div class="bc-result-val" style="color:#195830">4.15%</div>
+      </div>
+      <div class="bc-result-item" style="text-align:right">
+        <div class="bc-result-label">AT income / yr</div>
+        <div class="bc-result-val" style="color:#195830">$15,022</div>
+      </div>
+    </div>
+
+    <div class="bc-annotation">
+      <span class="annotation-icon" style="background:rgba(25,88,48,0.10);color:#195830">Note</span>
+      <span class="annotation-text">Capital Build is above the $135,000 earmark — the additional $226,545 earns passively at 4.15% blended AT yield. No action needed until home purchase timeline firms up.</span>
+    </div>
+  </div>
+
+  <!-- ── NEW INVESTMENTS (proforma) ── -->
+  <div class="bc">
+    <div class="bc-stripe" style="background:#195830;opacity:0.5"></div>
+    <div class="bc-head">
+      <div class="bc-head-left">
+        <div class="bc-bucket" style="color:#195830">New Investments <span style="font-size:8.5px;font-weight:400;color:var(--subtle);text-transform:none;letter-spacing:0">· pro-forma</span></div>
+        <div class="bc-head-title" style="color:#195830">$325,824 redeployed from excess cash</div>
+        <div class="bc-head-sub">Three new sleeves — funded entirely by right-sizing liquid buckets</div>
+      </div>
+      <div class="bc-head-right">
+        <div class="bc-balance-big" style="color:#195830">$325,824</div>
+        <div class="bc-target-line">pending approval</div>
+        <span class="badge badge-info"><span class="badge-dot" style="background:#1E4F9C"></span>Awaiting</span>
+      </div>
+    </div>
+
+    <table class="bc-table">
+      <thead>
+        <tr>
+          <th class="left" style="width:40%">Fund / Position</th>
+          <th style="width:18%">Amount</th>
+          <th style="width:12%">5yr Ret</th>
+          <th style="width:10%">Tax</th>
+          <th style="width:10%">AT Yield</th>
+          <th style="width:10%">AT Income</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:rgba(25,88,48,0.025)">
+          <td class="name-cell left" style="--row-accent:#195830">
+            <div class="cell-main"><span class="new-mark">New</span>DFA US Small Cap Value</div>
+            <div class="cell-sub">Rules-based · 800+ holdings · value-tilted</div>
+          </td>
+          <td class="bal">$95,000</td>
+          <td>8.4%</td>
+          <td class="flat">20%</td>
+          <td class="pickup">6.72%</td>
+          <td class="pickup">$6,384</td>
+        </tr>
+        <tr style="background:rgba(25,88,48,0.025)">
+          <td class="name-cell left" style="--row-accent:#195830">
+            <div class="cell-main"><span class="new-mark">New</span>Cresset Tactical Allocation</div>
+            <div class="cell-sub">Active macro rotation · multi-rate track record</div>
+          </td>
+          <td class="bal">$145,000</td>
+          <td>6.2%</td>
+          <td class="flat">20%</td>
+          <td class="pickup">4.96%</td>
+          <td class="pickup">$7,192</td>
+        </tr>
+        <tr style="background:rgba(25,88,48,0.025)">
+          <td class="name-cell left" style="--row-accent:#195830">
+            <div class="cell-main"><span class="new-mark">New</span>PIMCO Commodity Real Return</div>
+            <div class="cell-sub">Inflation-linked · commodity futures · real returns</div>
+          </td>
+          <td class="bal">$85,824</td>
+          <td>5.0%</td>
+          <td class="flat">20%</td>
+          <td class="pickup">4.00%</td>
+          <td class="pickup">$3,433</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bc-result">
+      <div class="bc-result-item">
+        <div class="bc-result-label">Total deployed</div>
+        <div class="bc-result-val">$325,824</div>
+      </div>
+      <div class="bc-result-item" style="text-align:center">
+        <div class="bc-result-label">Diversification added</div>
+        <div class="bc-result-val" style="color:#1E4F9C">~11%</div>
+      </div>
+      <div class="bc-result-item" style="text-align:right">
+        <div class="bc-result-label">Est. AT income added</div>
+        <div class="bc-result-val" style="color:#195830">+$17,009/yr</div>
+      </div>
+    </div>
+
+    <div class="bc-annotation">
+      <span class="annotation-icon" style="background:rgba(30,79,156,0.08);color:#1E4F9C">Ready</span>
+      <span class="annotation-text">All three positions are modeled and ready to fund. Source: $68,476 operating excess + $257,348 reserve excess = <strong>$325,824</strong>. No liquidations required from existing portfolio.</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ INVESTMENT PORTFOLIO ══════════════════ -->
+<div class="section-divider">Investment Portfolio</div>
+<div class="grid-1">
+
+  <div class="bc">
+    <div class="bc-stripe" style="background:#4A3FA0"></div>
+    <div class="bc-head">
+      <div class="bc-head-left">
+        <div class="bc-bucket" style="color:#4A3FA0">Equity / Investment Portfolio</div>
+        <div class="bc-head-title">Cresset · Schwab · E*Trade positions</div>
+        <div class="bc-head-sub">Taxable brokerage · long-term growth · 10% gross / 8% AT assumed</div>
+      </div>
+      <div class="bc-head-right">
+        <div class="bc-balance-big" style="color:#4A3FA0">$1,229,726</div>
+        <div class="bc-target-line">No target — growth bucket</div>
+        <span class="badge badge-under"><span class="badge-dot" style="background:#835800"></span>Rebalance needed</span>
+      </div>
+    </div>
+
+    <table class="bc-table">
+      <thead>
+        <tr>
+          <th class="left" style="width:35%">Position</th>
+          <th style="width:14%">Balance</th>
+          <th style="width:8%">Alloc</th>
+          <th style="width:10%">Gross Ret</th>
+          <th style="width:8%">Tax</th>
+          <th style="width:10%">AT Yield</th>
+          <th style="width:10%">AT Income</th>
+          <th style="width:5%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#4A3FA0">
+            <div class="cell-main">Cresset Capital</div>
+            <div class="cell-sub">Advisor-managed · US ETFs &amp; Mutual Funds</div>
+          </td>
+          <td class="bal">$814,877</td>
+          <td class="flat">66%</td>
+          <td>10.0%</td>
+          <td class="flat">20%</td>
+          <td>8.00%</td>
+          <td class="at-income">$65,190</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#4A3FA0">
+            <div class="cell-main">Schwab International Index ETF</div>
+            <div class="cell-sub">Schwab · international diversification</div>
+          </td>
+          <td class="bal">$116,538</td>
+          <td class="flat">9%</td>
+          <td>10.0%</td>
+          <td class="flat">20%</td>
+          <td>8.00%</td>
+          <td class="at-income">$9,323</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#9B2020">
+            <div class="cell-main">E*Trade — Meta Platforms <span style="font-size:9px;color:#9B2020;font-weight:500">· concentrated</span></div>
+            <div class="cell-sub">E*Trade · single-stock position</div>
+          </td>
+          <td class="bal">$238,311</td>
+          <td class="flat" style="color:#9B2020;font-weight:500">19%</td>
+          <td>10.0%</td>
+          <td class="flat">20%</td>
+          <td>8.00%</td>
+          <td class="at-income">$19,065</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="name-cell left" style="--row-accent:#9B2020">
+            <div class="cell-main">E*Trade — Bank of America <span style="font-size:9px;color:#9B2020;font-weight:500">· concentrated</span></div>
+            <div class="cell-sub">E*Trade · single-stock position</div>
+          </td>
+          <td class="bal">$60,000</td>
+          <td class="flat">5%</td>
+          <td>10.0%</td>
+          <td class="flat">20%</td>
+          <td>8.00%</td>
+          <td class="at-income">$4,800</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bc-result">
+      <div class="bc-result-item">
+        <div class="bc-result-label">Total balance</div>
+        <div class="bc-result-val">$1,229,726</div>
+      </div>
+      <div class="bc-result-item">
+        <div class="bc-result-label">Single-name concentration</div>
+        <div class="bc-result-val" style="color:#9B2020">24% Meta + BofA</div>
+        <div class="bc-result-note">diluted to ~18% with new sleeves</div>
+      </div>
+      <div class="bc-result-item" style="text-align:center">
+        <div class="bc-result-label">Blended AT yield</div>
+        <div class="bc-result-val">8.00%</div>
+      </div>
+      <div class="bc-result-item" style="text-align:right">
+        <div class="bc-result-label">AT income / yr</div>
+        <div class="bc-result-val" style="color:#4A3FA0">$98,378</div>
+      </div>
+    </div>
+
+    <div class="bc-annotation">
+      <span class="annotation-icon" style="background:rgba(155,32,32,0.08);color:#9B2020">Risk</span>
+      <span class="annotation-text"><strong>24% concentrated in two single names (Meta + BofA).</strong> No fixed income. Adding the three new sleeves ($325,824) brings single-name exposure down to ~18% and adds small-cap, tactical, and commodity diversification — no tax event required.</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

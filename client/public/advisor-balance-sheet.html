@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advisor Brief — Balance Sheet · Kessler Family</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: hsl(220,5%,93%);
+  color: #1a1917;
+  font-size: 12px;
+  min-height: 100vh;
+  padding: 32px 40px 60px;
+}
+
+/* ── Page header ── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.page-header-left .eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #9A9890;
+  margin-bottom: 7px;
+}
+.page-header-left h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #1a1917;
+  line-height: 1.2;
+}
+.page-header-left .sub {
+  font-size: 11px;
+  color: #9A9890;
+  margin-top: 6px;
+}
+.page-header-right {
+  text-align: right;
+  font-size: 11px;
+  color: #9A9890;
+}
+.page-header-right strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4a4740;
+  margin-top: 3px;
+  letter-spacing: -0.01em;
+}
+
+/* ── Rule ── */
+.rule { height: 2px; background: #1A1915; margin-bottom: 0; }
+
+/* ── Situation Overview ── */
+.situation {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.09);
+  margin-bottom: 20px;
+}
+.situation-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.situation-kpi {
+  padding: 14px 20px;
+  border-left: 1px solid rgba(0,0,0,0.08);
+}
+.situation-kpi:first-child { border-left: none; }
+.kpi-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9A9890;
+  margin-bottom: 6px;
+}
+.kpi-value {
+  font-size: 24px;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.kpi-note {
+  font-size: 10px;
+  color: #9A9890;
+  margin-top: 5px;
+}
+.situation-prose {
+  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: flex-start;
+}
+.situation-prose .label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #9A9890;
+  padding-top: 2px;
+  white-space: nowrap;
+}
+.situation-prose p {
+  font-size: 12.5px;
+  color: #3a3a35;
+  line-height: 1.65;
+}
+
+/* ── Card (bc) ── */
+.bc {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.bc-stripe {
+  height: 4px;
+  flex-shrink: 0;
+}
+.bc-head {
+  padding: 12px 18px 0;
+}
+.bc-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.bc-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #1a1917;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.bc-sub {
+  font-size: 10.5px;
+  color: #6a6860;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* ── Stat row (big numbers) ── */
+.bc-stats {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 12px 18px 12px;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  margin-top: 12px;
+}
+.bc-stat {
+  flex: 1;
+  padding-right: 18px;
+}
+.bc-stat + .bc-stat {
+  padding-right: 0;
+  padding-left: 18px;
+  border-left: 1px solid rgba(0,0,0,0.07);
+}
+.stat-val {
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.stat-unit {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #9A9890;
+  margin-top: 4px;
+}
+
+/* ── Body rows ── */
+.bc-body {
+  padding: 0 18px;
+  flex: 1;
+}
+.bc-section-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9A9890;
+  margin: 12px 0 6px;
+}
+.bc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.bc-row:last-child { border-bottom: none; }
+.bc-row-left { flex: 1; min-width: 0; margin-right: 10px; }
+.bc-row-name {
+  font-size: 12px;
+  font-weight: 400;
+  color: #1a1917;
+  line-height: 1.3;
+}
+.bc-row-sub {
+  font-size: 10px;
+  color: #9A9890;
+  margin-top: 2px;
+}
+.bc-row-right { text-align: right; flex-shrink: 0; }
+.bc-row-amt {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a1917;
+  font-variant-numeric: tabular-nums;
+}
+.bc-row-yield {
+  font-size: 10px;
+  color: #9A9890;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Total row ── */
+.bc-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 10px;
+  border-top: 2px solid rgba(0,0,0,0.09);
+  margin-top: 4px;
+}
+.bc-total-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #56544C;
+}
+.bc-total-amt {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Result footer ── */
+.bc-result {
+  background: rgba(0,0,0,0.02);
+  border-top: 1px solid rgba(0,0,0,0.07);
+  padding: 10px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.bc-result-item { display: flex; flex-direction: column; gap: 2px; }
+.bc-result-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #9A9890;
+}
+.bc-result-val {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.bc-result-note { font-size: 10px; color: #9A9890; }
+
+/* ── Tag / status pill ── */
+.bc-tag {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.tag-red    { background: rgba(155,32,32,0.08); color: #9B2020; }
+.tag-amber  { background: rgba(154,107,16,0.10); color: #9A6B10; }
+.tag-green  { background: rgba(25,88,48,0.10); color: #195830; }
+.tag-blue   { background: rgba(30,79,156,0.10); color: #1E4F9C; }
+.tag-purple { background: rgba(74,63,160,0.10); color: #4A3FA0; }
+
+/* ── Action button ── */
+.bc-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-top: 1px solid rgba(0,0,0,0.07);
+  gap: 8px;
+  flex-shrink: 0;
+}
+.bc-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.bc-cta {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 18px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+.bc-cta-defer {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  letter-spacing: 0;
+  background: rgba(255,255,255,0.7);
+  margin-right: 6px;
+}
+
+/* ── Talking points ── */
+.bc-talking {
+  border-top: 1px solid rgba(0,0,0,0.07);
+  background: #F7F5F0;
+  flex-shrink: 0;
+}
+.talking-head {
+  display: flex;
+  align-items: center;
+  padding: 10px 18px 0;
+  gap: 10px;
+}
+.talking-head span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9A9890;
+  white-space: nowrap;
+}
+.talking-rule { flex: 1; height: 1px; background: #E2DFD9; }
+.talking-summary {
+  padding: 8px 18px 2px;
+  font-size: 11.5px;
+  color: #56544C;
+  line-height: 1.65;
+}
+.talking-toggle {
+  display: block;
+  margin: 6px 18px 10px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #9A9890;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── Grid layouts ── */
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.grid-1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Inline over/under indicator ── */
+.delta { font-size: 10px; font-variant-numeric: tabular-nums; }
+.delta-over  { color: #9B2020; }
+.delta-under { color: #9A6B10; }
+.delta-ok    { color: #195830; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     PAGE HEADER
+══════════════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="eyebrow">Good morning</div>
+    <h1>Four items to take care of with the Kesslers.</h1>
+    <div class="sub">GURU can execute · Prepared April 9, 2026</div>
+  </div>
+  <div class="page-header-right">
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9A9890;">Today</div>
+    <strong>Wednesday, April 9, 2026</strong>
+  </div>
+</div>
+
+<div class="rule"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     SITUATION OVERVIEW
+══════════════════════════════════════════════════════ -->
+<div class="situation" style="margin-top:16px;">
+  <div class="situation-kpis">
+    <div class="situation-kpi">
+      <div class="kpi-label">Idle capital</div>
+      <div class="kpi-value" style="color:#9B2020">$325,824</div>
+      <div class="kpi-note">47 days · sitting at 0.8%</div>
+    </div>
+    <div class="situation-kpi">
+      <div class="kpi-label">Opp. cost / mo</div>
+      <div class="kpi-value" style="color:#9B2020">$1,718</div>
+      <div class="kpi-note">foregone vs. optimized</div>
+    </div>
+    <div class="situation-kpi">
+      <div class="kpi-label">Annual income pickup</div>
+      <div class="kpi-value" style="color:#1E4F30">+$27,154</div>
+      <div class="kpi-note">after-tax · same capital</div>
+    </div>
+    <div class="situation-kpi">
+      <div class="kpi-label">Rate lock deadline</div>
+      <div class="kpi-value" style="color:#835800">May 5</div>
+      <div class="kpi-note">15 days · window closes</div>
+    </div>
+  </div>
+  <div class="situation-prose">
+    <div class="label">Situation overview</div>
+    <p>
+      The Kesslers' liquidity profile has increased significantly since year-end — and the window to get in front of it is closing.
+      <strong style="color:#1a1917;font-weight:600">$325,824</strong> in bonus cash has been sitting at 0.8% for
+      <strong style="color:#1a1917;font-weight:600">47 days</strong>, the portfolio remains poorly diversified and that cash could be deployed to build the right exposures, and
+      <strong style="color:#1a1917;font-weight:600">$711,586</strong> in floating-rate cash reprices the moment the Fed acts on
+      <strong style="color:#1a1917;font-weight:600">May 7</strong>. We've modeled the three moves that close these gaps — together they add an estimated
+      <strong style="color:#195830;font-weight:600">+$27,154/yr</strong> in additional after-tax income. Capital that's already here, just not working. Rate lock deadline:
+      <strong style="color:#835800;font-weight:600">May 5</strong>.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     3-CARD ROW: Liquidity · Investments · Rates
+══════════════════════════════════════════════════════ -->
+<div class="grid-3">
+
+  <!-- ─── CARD 1: Excess Liquidity ─── -->
+  <div class="bc">
+    <div class="bc-stripe" style="background:#195830"></div>
+    <div class="bc-head">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div class="bc-eyebrow" style="color:#195830;margin-bottom:0">Liquidity</div>
+        <span class="bc-tag tag-red">High priority</span>
+      </div>
+      <div class="bc-title">$325,824 in excess bonus cash should be invested — needs to be addressed ASAP</div>
+      <div class="bc-sub">The Kesslers went from 6 months of cash expense coverage to <span style="color:#1E4F9C;text-decoration:underline;cursor:pointer">13.9 months</span> following the bonus. This cash is yielding <span style="color:#1E4F9C;text-decoration:underline;cursor:pointer">0.8%</span> and could be deployed into investments to generate wealth.</div>
+    </div>
+
+    <!-- Stat row -->
+    <div class="bc-stats">
+      <div class="bc-stat">
+        <div class="stat-val" style="color:#195830">$325,824</div>
+        <div class="stat-label">excess liquidity</div>
+      </div>
+      <div class="bc-stat">
+        <div class="stat-val" style="color:#195830">47<span class="stat-unit"> days idle</span></div>
+      </div>
+    </div>
+
+    <div class="bc-body">
+      <div class="bc-section-label">Where the Excess Cash is Sitting</div>
+      <div class="bc-row">
+        <div class="bc-row-left">
+          <div class="bc-row-name">Operating — excess above 2-month target</div>
+          <div class="bc-row-sub">Chase $25,050 · Citizens $107,000 · Target $63,574</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$68,476</div>
+          <div class="bc-row-yield">0.8% yield</div>
+        </div>
+      </div>
+      <div class="bc-row">
+        <div class="bc-row-left">
+          <div class="bc-row-name">Reserve — excess above 6-month target</div>
+          <div class="bc-row-sub">Citizens MM $225k · CapOne $15k · Fidelity $187k · Target $169k</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$257,348</div>
+          <div class="bc-row-yield">3.2% avg yield</div>
+        </div>
+      </div>
+      <div class="bc-total">
+        <div class="bc-total-label">Total available to invest</div>
+        <div class="bc-total-amt" style="color:#195830">$325,824</div>
+      </div>
+    </div>
+
+    <div class="bc-result">
+      <div class="bc-result-item">
+        <div class="bc-result-label">Current AT income</div>
+        <div class="bc-result-val" style="color:#9A9890">$9,848/yr</div>
+      </div>
+      <div class="bc-result-item" style="text-align:center">
+        <div class="bc-result-label">Optimized AT income</div>
+        <div class="bc-result-val" style="color:#195830">$37,002/yr</div>
+      </div>
+      <div class="bc-result-item" style="text-align:right">
+        <div class="bc-result-label">Pickup</div>
+        <div class="bc-result-val" style="color:#195830">+$27,154/yr</div>
+      </div>
+    </div>
+
+    <div class="bc-talking">
+      <div class="talking-head">
+        <span>Talking points</span>
+        <div class="talking-rule"></div>
+      </div>
+      <div class="talking-summary">The Kesslers now have 13.9 months of cash expense coverage — more than double what they need. The liquid portfolio currently generates $9,848/yr after tax. Optimized across all accounts, it generates $37,002/yr — a pickup of +$27,154/yr.</div>
+      <button class="talking-toggle">Full talking points ▼</button>
+    </div>
+
+    <div class="bc-action">
+      <label class="bc-checkbox" style="color:#195830">
+        <input type="checkbox"> Include in email
+      </label>
+      <div>
+        <button class="bc-cta-defer" style="border:1px solid rgba(25,88,48,0.2);color:#195830">Defer</button>
+        <button class="bc-cta" style="background:#195830">Deploy →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── CARD 2: Portfolio / Investments ─── -->
+  <div class="bc">
+    <div class="bc-stripe" style="background:#1E4F9C"></div>
+    <div class="bc-head">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div class="bc-eyebrow" style="color:#1E4F9C;margin-bottom:0">Investments</div>
+        <span class="bc-tag tag-blue">Portfolio action</span>
+      </div>
+      <div class="bc-title">Three portfolio gaps identified — rebalance with excess liquidity</div>
+      <div class="bc-sub">The portfolio has no fixed income, is overweight in two single names, and lacks diversified growth exposure. The $325,824 of excess liquidity funds all three positions.</div>
+    </div>
+
+    <!-- Stat row -->
+    <div class="bc-stats">
+      <div class="bc-stat">
+        <div class="stat-val" style="color:#1E4F9C">~11%</div>
+        <div class="stat-label" style="max-width:160px;line-height:1.4">diversification added by deploying $325,824 of excess cash</div>
+      </div>
+      <div class="bc-stat">
+        <div style="display:flex;align-items:baseline;gap:7px;">
+          <div class="stat-val" style="color:#1E4F9C">$325,824</div>
+          <div style="font-size:11px;color:#9A9890;font-weight:500;white-space:nowrap">redeployed from excess cash</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bc-body">
+      <div class="bc-section-label">Sleeves added — funded by redeployed cash</div>
+
+      <div class="bc-row" style="padding:9px 0">
+        <div class="bc-row-left">
+          <div class="bc-row-name" style="font-weight:500">DFA US Small Cap Value</div>
+          <div class="bc-row-sub" style="margin-top:2px">5-yr historical <strong style="color:#195830">8.4%</strong> · Added exposure <strong style="color:#195830">~4.3%</strong></div>
+          <div style="font-size:10.5px;color:#6a6860;margin-top:3px;line-height:1.5">Rules-based small-cap strategy — 800+ holdings, value-tilted, low turnover.</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$95,000</div>
+          <div><input type="checkbox" checked style="width:12px;height:12px;accent-color:#1E4F9C;margin-top:4px"></div>
+        </div>
+      </div>
+
+      <div class="bc-row" style="padding:9px 0">
+        <div class="bc-row-left">
+          <div class="bc-row-name" style="font-weight:500">Cresset Tactical Allocation</div>
+          <div class="bc-row-sub" style="margin-top:2px">5-yr historical <strong style="color:#195830">6.2%</strong> · Added exposure <strong style="color:#195830">~4.4%</strong></div>
+          <div style="font-size:10.5px;color:#6a6860;margin-top:3px;line-height:1.5">Actively managed, rotating across sectors based on macro signals and earnings trends.</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$145,000</div>
+          <div><input type="checkbox" checked style="width:12px;height:12px;accent-color:#1E4F9C;margin-top:4px"></div>
+        </div>
+      </div>
+
+      <div class="bc-row" style="padding:9px 0;border-bottom:none">
+        <div class="bc-row-left">
+          <div class="bc-row-name" style="font-weight:500">PIMCO Commodity Real Return</div>
+          <div class="bc-row-sub" style="margin-top:2px">5-yr historical <strong style="color:#195830">5.0%</strong> · Added exposure <strong style="color:#195830">~2.3%</strong></div>
+          <div style="font-size:10.5px;color:#6a6860;margin-top:3px;line-height:1.5">Commodity futures and inflation-linked instruments — positive real returns above rising prices.</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$85,824</div>
+          <div><input type="checkbox" checked style="width:12px;height:12px;accent-color:#1E4F9C;margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="bc-total">
+        <div class="bc-total-label">Total invested from redeployed cash</div>
+        <div class="bc-total-amt" style="color:#1E4F9C">$325,824</div>
+      </div>
+    </div>
+
+    <div class="bc-result">
+      <div class="bc-result-item">
+        <div class="bc-result-label">Est. annual return added</div>
+        <div class="bc-result-val" style="color:#195830">+$20,625/yr</div>
+      </div>
+      <div class="bc-result-item" style="text-align:center">
+        <div class="bc-result-label">Current (sitting in cash)</div>
+        <div class="bc-result-val" style="color:#9A9890">$9,848/yr</div>
+      </div>
+      <div class="bc-result-item" style="text-align:right">
+        <div class="bc-result-label">Positions added</div>
+        <div class="bc-result-val" style="color:#1E4F9C">3 sleeves</div>
+      </div>
+    </div>
+
+    <div class="bc-talking">
+      <div class="talking-head">
+        <span>Talking points</span>
+        <div class="talking-rule"></div>
+      </div>
+      <div class="talking-summary">The portfolio has three structural gaps that the excess cash closes cleanly: no fixed income, concentrated single-name risk, and no diversified growth exposure.</div>
+      <button class="talking-toggle">Full talking points ▼</button>
+    </div>
+
+    <div class="bc-action">
+      <label class="bc-checkbox" style="color:#1E4F9C">
+        <input type="checkbox"> Include in email
+      </label>
+      <div>
+        <button class="bc-cta-defer" style="border:1px solid rgba(30,79,156,0.2);color:#1E4F9C">Defer</button>
+        <button class="bc-cta" style="background:#1E4F9C">Approve allocation →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── CARD 3: Rate Lock ─── -->
+  <div class="bc">
+    <div class="bc-stripe" style="background:#835800"></div>
+    <div class="bc-head">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div class="bc-eyebrow" style="color:#835800;margin-bottom:0">Interest Rates</div>
+        <span class="bc-tag tag-amber">Act before May 5</span>
+      </div>
+      <div class="bc-title">Move to T-bills to lock in rate before Fed cuts — 15 days before Fed meeting</div>
+      <div class="bc-sub">The Fed is expected to cut on May 7. Money market funds and bank accounts will reprice immediately. Moving into short-term government bonds locks the current yield for six months.</div>
+    </div>
+
+    <!-- Stat row -->
+    <div class="bc-stats">
+      <div class="bc-stat">
+        <div class="stat-val" style="color:#835800">$711,586</div>
+        <div class="stat-label">rate-vulnerable cash</div>
+      </div>
+      <div class="bc-stat">
+        <div class="stat-val" style="color:#835800">15<span class="stat-unit"> days until Fed</span></div>
+      </div>
+    </div>
+
+    <div class="bc-body">
+      <div class="bc-section-label">Positions exposed to repricing</div>
+      <div class="bc-row">
+        <div class="bc-row-left">
+          <div class="bc-row-name">Citizens Private Bank Money Market</div>
+          <div class="bc-row-sub">Account · floating rate · reprices at Fed decision</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$225,000</div>
+          <div class="bc-row-yield">3.65%</div>
+        </div>
+      </div>
+      <div class="bc-row">
+        <div class="bc-row-left">
+          <div class="bc-row-name">CapitalOne 360 Performance Savings</div>
+          <div class="bc-row-sub">Account · floating rate · reprices at Fed decision</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$15,000</div>
+          <div class="bc-row-yield">3.78%</div>
+        </div>
+      </div>
+      <div class="bc-row">
+        <div class="bc-row-left">
+          <div class="bc-row-name">Fidelity Cash Sweep / SPAXX</div>
+          <div class="bc-row-sub">Brokerage MM · floating rate · daily repricing</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$186,586</div>
+          <div class="bc-row-yield">2.50%</div>
+        </div>
+      </div>
+      <div class="bc-row">
+        <div class="bc-row-left">
+          <div class="bc-row-name">Fidelity 401(k) / IRA — MMF sleeve</div>
+          <div class="bc-row-sub">Retirement account · floating-rate allocation</div>
+        </div>
+        <div class="bc-row-right">
+          <div class="bc-row-amt">$285,000</div>
+          <div class="bc-row-yield">4.10%</div>
+        </div>
+      </div>
+      <div class="bc-total">
+        <div class="bc-total-label">Total rate-vulnerable</div>
+        <div class="bc-total-amt" style="color:#835800">$711,586</div>
+      </div>
+    </div>
+
+    <div class="bc-result">
+      <div class="bc-result-item">
+        <div class="bc-result-label">T-bill rate available</div>
+        <div class="bc-result-val" style="color:#195830">5.200%</div>
+        <div class="bc-result-note">6-mo · locked through Oct</div>
+      </div>
+      <div class="bc-result-item" style="text-align:center">
+        <div class="bc-result-label">AT income at risk</div>
+        <div class="bc-result-val" style="color:#9B2020">$3,558/yr</div>
+        <div class="bc-result-note">if 50bps cut · no action</div>
+      </div>
+      <div class="bc-result-item" style="text-align:right">
+        <div class="bc-result-label">Expected rate cut</div>
+        <div class="bc-result-val" style="color:#835800">50 bps</div>
+        <div class="bc-result-note">next 12 months</div>
+      </div>
+    </div>
+
+    <div class="bc-talking">
+      <div class="talking-head">
+        <span>Talking points</span>
+        <div class="talking-rule"></div>
+      </div>
+      <div class="talking-summary">The Fed is widely expected to cut 50bps in the next year. $711,586 in floating-rate accounts will reprice the day the decision is announced. A 6-month T-bill at 5.200% locks today's yield through October.</div>
+      <button class="talking-toggle">Full talking points ▼</button>
+    </div>
+
+    <div class="bc-action">
+      <label class="bc-checkbox" style="color:#835800">
+        <input type="checkbox"> Include in email
+      </label>
+      <div>
+        <button class="bc-cta-defer" style="border:1px solid rgba(131,88,0,0.2);color:#835800">Defer</button>
+        <button class="bc-cta" style="background:#835800">Lock rate →</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end grid-3 -->
+
+<!-- ══════════════════════════════════════════════════════
+     CARD 4: Cash Movement (full-width, constrained)
+══════════════════════════════════════════════════════ -->
+<div style="max-width:660px;">
+<div class="bc">
+  <div class="bc-stripe" style="background:#4A3FA0"></div>
+  <div class="bc-head">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div class="bc-eyebrow" style="color:#4A3FA0;margin-bottom:0">Money Movement</div>
+      <span class="bc-tag tag-purple">Monthly update</span>
+    </div>
+    <div class="bc-title">Upcoming January Money Movement</div>
+    <div class="bc-sub">In January we will move $46,739 from Reserve into the CIT operating account to rebuild 2-month expense coverage. A 1-month T-Bill maturing in January rolls $7,478 into JPMorgan Treasuries MMF — that maturity replenishes what autodraw to operating depletes.</div>
+  </div>
+
+  <!-- Stat row -->
+  <div class="bc-stats">
+    <div class="bc-stat">
+      <div class="stat-val" style="color:#4A3FA0">$46,739</div>
+      <div class="stat-label">JPMorgan → CIT · autodraw to rebuild operating</div>
+    </div>
+  </div>
+
+  <div class="bc-body" style="padding-bottom:12px">
+    <div class="bc-section-label">January flows — pre-authorized, no action needed</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;margin-top:8px;">
+      <div style="border:1px solid rgba(74,63,160,0.18);border-radius:6px;overflow:hidden;">
+        <div style="background:#1e3a5f;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.65)">Operating</span>
+          <span style="font-size:16px;font-weight:300;color:#fff;font-variant-numeric:tabular-nums">$90,879</span>
+        </div>
+        <div style="padding:8px 14px;font-size:10px;color:#6a6860;line-height:1.4">CIT Money Market Bank Account<br><span style="color:#9A9890">Primary operating · Jan ending</span></div>
+      </div>
+      <div style="border:1px solid rgba(124,74,10,0.2);border-radius:6px;overflow:hidden;">
+        <div style="background:#7c4a0a;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.65)">Reserve</span>
+          <span style="font-size:16px;font-weight:300;color:#fff;font-variant-numeric:tabular-nums">$129,385</span>
+        </div>
+        <div style="padding:8px 14px;font-size:10px;color:#6a6860;line-height:1.4">JPMorgan Treasuries MMF + T-Bill Ladder<br><span style="color:#9A6B10;font-weight:500">↑ $46,739 autodraw to operating</span></div>
+      </div>
+      <div style="border:1px solid rgba(21,82,52,0.18);border-radius:6px;overflow:hidden;">
+        <div style="background:#155234;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.65)">Build</span>
+          <span style="font-size:16px;font-weight:300;color:#fff;font-variant-numeric:tabular-nums">$226,545</span>
+        </div>
+        <div style="padding:8px 14px;font-size:10px;color:#6a6860;line-height:1.4">2028 Municipal Bonds · S&amp;P Low Vol Index<br><span style="color:#9A9890">Passive income · no action needed</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bc-result">
+    <div class="bc-result-item">
+      <div class="bc-result-label">Status</div>
+      <div class="bc-result-val" style="color:#195830">On track</div>
+    </div>
+    <div class="bc-result-item" style="text-align:center">
+      <div class="bc-result-label">Transfers this month</div>
+      <div class="bc-result-val" style="color:#4A3FA0">2 movements</div>
+    </div>
+    <div class="bc-result-item" style="text-align:right">
+      <div class="bc-result-label">Action required</div>
+      <div class="bc-result-val" style="color:#9A9890">None</div>
+    </div>
+  </div>
+
+  <div class="bc-action">
+    <label class="bc-checkbox" style="color:#4A3FA0">
+      <input type="checkbox"> Include in email
+    </label>
+    <div>
+      <button class="bc-cta-defer" style="border:1px solid rgba(74,63,160,0.2);color:#4A3FA0">Defer</button>
+      <button class="bc-cta" style="background:#4A3FA0">View detail →</button>
+    </div>
+  </div>
+</div>
+</div>
+
+</body>
+</html>

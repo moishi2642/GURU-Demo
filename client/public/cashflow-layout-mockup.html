@@ -46,10 +46,10 @@
   .scan-bar-alert { font-size:9px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; padding:1px 7px; border-radius:2px; }
   .scan-bar-right { font-size:9px; color:rgba(255,255,255,0.22); letter-spacing:0.05em; text-transform:uppercase; position:relative; }
 
-  /* ── TOP ROW: detection (480px) + liquidity (1fr) */
+  /* ── TOP ROW: detection (520px) + liquidity (1fr) */
   .top-row {
     display: grid;
-    grid-template-columns: 480px 1fr;
+    grid-template-columns: 520px 1fr;
     gap: 12px;
     align-items: stretch;
   }
@@ -328,7 +328,7 @@
   }
 
   /* ── FORECAST BODY: [left: hero+KPIs] [right: charts+walk] ── */
-  .forecast-body { display:grid; grid-template-columns:480px 1fr; gap:12px; align-items:stretch; }
+  .forecast-body { display:grid; grid-template-columns:520px 1fr; gap:12px; align-items:stretch; }
   .forecast-left { display:flex; flex-direction:column; gap:10px; height:100%; min-height:0; }
   .forecast-right { display:grid; grid-template-columns:1fr; gap:10px; align-items:start; }
 
@@ -612,39 +612,6 @@
 </head>
 <body>
 
-<!-- PAGE HEADER (compact — GURU app shell provides main nav context) -->
-<div class="ph" style="padding:7px 20px">
-  <div style="display:flex;align-items:center">
-    <span style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.65)">Sarah &amp; Michael Kessler</span>
-    <span style="width:1px;height:10px;background:rgba(42,74,110,0.6);display:inline-block;margin:0 12px"></span>
-    <span style="font-size:10px;color:rgba(255,255,255,0.38);letter-spacing:0.04em">Annual Cash Flow &middot; Jan – Dec 2026</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:5px">
-    <span style="width:5px;height:5px;border-radius:50%;background:hsl(152,40%,48%);display:inline-block;animation:pulse 2s infinite"></span>
-    <span style="font-size:10px;font-weight:600;color:rgba(90,154,126,0.7);letter-spacing:0.08em;text-transform:uppercase">Live</span>
-  </div>
-</div>
-
-<!-- FULL-WIDTH SCAN BAR -->
-<div class="scan-bar">
-  <div class="scan-bar-line"></div>
-  <div class="scan-bar-left">
-    <span class="scan-bar-txt">▶ GURU AI · Scan active</span>
-    <span class="scan-bar-sep"></span>
-    <span class="scan-bar-alert" style="background:rgba(94,204,138,0.1);border:1px solid rgba(94,204,138,0.25);color:var(--green)">● LIVE</span>
-    <span class="scan-bar-txt" style="color:rgba(255,255,255,0.3)">6 accounts synced · Mar 18, 2026 · 9:42 AM</span>
-    <span class="scan-bar-sep"></span>
-    <span class="scan-bar-alert" style="background:rgba(255,200,60,0.08);border:1px solid rgba(255,200,60,0.22);color:rgba(255,200,60,0.8)">2 actions pending</span>
-    <span class="scan-bar-alert" style="background:rgba(91,143,204,0.08);border:1px solid rgba(91,143,204,0.22);color:rgba(180,210,255,0.7)">1 opportunity</span>
-  </div>
-  <span class="scan-bar-right">GURU AI · Detection System</span>
-</div>
-
-<!-- ══ SECTION TITLE ══ -->
-<div style="padding:18px 32px 0;display:flex;align-items:baseline;gap:12px">
-  <h1 style="font-size:22px;font-weight:300;color:rgba(255,255,255,0.88);letter-spacing:-0.01em;margin:0;font-family:'Inter',system-ui,sans-serif">Cash Flow</h1>
-  <span style="font-size:11px;color:rgba(255,255,255,0.32);letter-spacing:0.04em;font-family:'Inter',system-ui,sans-serif">Kessler Family · Jan – Dec 2026</span>
-</div>
 
 <div class="body">
 
@@ -692,13 +659,13 @@
           <div class="det-card-hero-nums">
             <div class="det-card-hero-num-block">
               <div class="det-card-hero-num-label">Excess Liquidity</div>
-              <div class="det-card-hero-num">$311K</div>
-              <div class="det-card-hero-sub">Above 3-mo reserve floor &nbsp;·&nbsp; <em>deployable now</em></div>
+              <div class="det-card-hero-num">$325,824</div>
+              <div class="det-card-hero-sub">Above total liquidity requirement &nbsp;·&nbsp; <em>deployable now</em></div>
             </div>
             <div class="det-card-hero-num-block">
               <div class="det-card-hero-num-label">Potential Income Pickup</div>
-              <div class="det-card-hero-num">+$21.7K<span class="det-card-hero-num-yr">/yr</span></div>
-              <div class="det-card-hero-sub">If deployed at current rates &nbsp;·&nbsp; <em>~7% after-tax</em></div>
+              <div class="det-card-hero-num">+$28,675<span class="det-card-hero-num-yr">/yr</span></div>
+              <div class="det-card-hero-sub">Pro-forma vs. current &nbsp;·&nbsp; <em>full bucket optimization</em></div>
             </div>
           </div>
           <!-- Footer -->

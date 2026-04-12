@@ -22,12 +22,17 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  overflow-x: auto;
+}
+
 body {
   font-family: 'DM Sans', sans-serif;
   background: #F0EDE8;
   color: #1A1915;
   min-height: 100vh;
-  padding-bottom: 88px;
+  min-width: 2060px;
+  padding-bottom: 80px;
 }
 
 /* ─── PAGE HEADER ─── */
@@ -53,7 +58,7 @@ body {
 }
 .header-date { text-align: right; margin-top: 2px; }
 .date-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -78,7 +83,7 @@ body {
   align-items: center;
 }
 .sit-category {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -99,7 +104,7 @@ body {
 }
 .stat-block:first-child { border-left: none; padding-left: 0; }
 .stat-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -148,7 +153,7 @@ body {
 /* ─── CARD GRID ─── */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(420px, 1fr)) minmax(560px, 1fr);
   gap: 12px;
   margin: 20px 48px 0;
 }
@@ -159,6 +164,8 @@ body {
   border: 1px solid #E2DFD9;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* CAP */
@@ -186,7 +193,7 @@ body {
 }
 .cap-right { display: flex; align-items: center; }
 .in-email-badge {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -198,7 +205,7 @@ body {
 }
 .card.checked .in-email-badge { display: inline-block; }
 .cap-priority {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -231,6 +238,8 @@ body {
 .card-head {
   padding: 16px 22px 0;
   border-bottom: 1px solid #E2DFD9;
+  display: flex;
+  flex-direction: column;
 }
 .card-title {
   font-family: 'Playfair Display', serif;
@@ -239,7 +248,8 @@ body {
   letter-spacing: -0.01em;
   line-height: 1.35;
   color: #1A1915;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  min-height: 49px; /* 2 lines × 18px × 1.35 — locks context to same start line */
 }
 .card-context {
   font-size: 12px;
@@ -247,14 +257,30 @@ body {
   color: #9A9890;
   line-height: 1.65;
 }
-/* HEADLINE STAT inside head */
+/* HEADLINE STAT — auto margin absorbs only the small grid-height difference */
 .card-stat {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 12px;
-  padding: 14px 0 16px;
-  border-top: 1px solid #E2DFD9;
-  margin-top: 14px;
+  padding: 11px 0 12px;
+  margin-top: auto;
+}
+.stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+.stat-block + .stat-block {
+  flex: 0 0 auto;
+  padding-left: 36px;
+}
+.stat-divider {
+  width: 1px;
+  height: 28px;
+  background: #E2DFD9;
+  flex-shrink: 0;
+  align-self: center;
 }
 .stat-num {
   font-family: 'DM Sans', sans-serif;
@@ -309,7 +335,7 @@ body {
   flex-shrink: 0;
 }
 .decision-lbl {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -337,7 +363,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 11px;
-  padding: 14px 0;
+  padding: 9px 0;
   border-bottom: 1px solid #ECEAE5;
 }
 .position-item:last-child { border-bottom: none; }
@@ -363,17 +389,17 @@ body {
 }
 .position-content { flex: 1; min-width: 0; }
 .position-name {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 400;
   color: #1A1915;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   line-height: 1.3;
 }
 .position-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 0 14px;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   font-size: 11px;
   color: #9A9890;
   line-height: 1.4;
@@ -385,21 +411,21 @@ body {
 .meta-val.risk-med { color: #9A6B10; font-style: italic; }
 .meta-val.risk-hi  { color: #8B2020; font-style: italic; }
 .position-desc {
-  font-size: 11.5px;
-  color: #56544C;
-  line-height: 1.7;
+  font-size: 11px;
+  color: #9A9890;
+  line-height: 1.4;
 }
 
 /* BODY */
 .card-body { padding: 18px 22px; flex: 1; }
 
 .section-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
   color: #9A9890;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .section-label + .section-label { margin-top: 14px; }
 
@@ -422,6 +448,7 @@ body {
   font-size: 11px;
   font-weight: 400;
   color: #9A9890;
+  line-height: 1.4;
   margin-top: 2px;
 }
 .row-amount {
@@ -461,11 +488,9 @@ body {
 }
 .plain-note strong { color: #56544C; font-weight: 500; }
 
-/* TALKING POINTS */
+/* TALKING POINTS — sits below card footer */
 .talking-points {
-  margin: 14px -22px 0;
   border-top: 1px solid #E2DFD9;
-  border-bottom: 1px solid #E2DFD9;
   background: #F7F5F0;
   padding: 12px 22px;
 }
@@ -475,7 +500,7 @@ body {
   margin-bottom: 10px;
 }
 .tp-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -622,54 +647,75 @@ body {
 .card.cashflow .footer-defer { color: #1d4ed8; border-color: rgba(29,78,216,0.30); }
 .card.cashflow .footer-action { background: #1d4ed8; box-shadow: 0 2px 8px rgba(29,78,216,0.40); }
 
-/* ─── COMPOSE BAR ─── */
-.compose-bar {
+/* ─── FLOATING COMPOSE BUTTON ─── */
+.fab-wrap {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
-  background: #17160F;
-  padding: 16px 32px;
+  bottom: 32px;
+  right: 40px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.fab {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  z-index: 100;
-}
-.compose-label {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #5A7A96;
-  margin-bottom: 4px;
-}
-.compose-status {
-  font-size: 13px;
-  font-weight: 400;
-  color: #3A4A56;
-}
-.compose-status.active { color: #ffffff; }
-.compose-btns { display: flex; align-items: center; gap: 12px; }
-.btn-preview {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  color: #8AA8C0;
-  border: 1px solid #2A3A4A;
-  background: transparent;
-  padding: 8px 18px;
+  gap: 10px;
+  background: #1A1915;
+  border: none;
+  border-radius: 100px;
+  padding: 13px 22px 13px 18px;
   cursor: pointer;
-}
-.btn-preview:disabled { opacity: 0.35; pointer-events: none; }
-.btn-compose {
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #17160F;
-  background: #ffffff;
-  border: none;
-  padding: 8px 20px;
-  cursor: pointer;
+  color: #ffffff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.28);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  white-space: nowrap;
 }
-.btn-compose:disabled { opacity: 0.35; pointer-events: none; }
+.fab:hover { background: #2a2920; box-shadow: 0 6px 24px rgba(0,0,0,0.36); transform: translateY(-1px); }
+.fab:active { transform: translateY(0); }
+.fab-icon {
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.7;
+}
+.fab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1A1915;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+.fab.has-items { background: #183B6E; box-shadow: 0 4px 20px rgba(24,59,110,0.45); }
+.fab.has-items:hover { background: #1e4a8a; box-shadow: 0 6px 24px rgba(24,59,110,0.55); }
+.fab.has-items .fab-badge { background: #ffffff; color: #183B6E; }
+/* Tooltip hint when nothing selected */
+.fab-hint {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: #9A9890;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid #E2DFD9;
+  border-radius: 6px;
+  padding: 5px 10px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.fab-wrap:hover .fab-hint { opacity: 1; transform: translateY(0); }
 
 /* ─── MODAL ─── */
 .modal-overlay {
@@ -684,7 +730,7 @@ body {
 .modal-overlay.open { display: flex; }
 .modal {
   background: #fff;
-  width: 700px;
+  width: 760px;
   max-width: calc(100vw - 64px);
   max-height: calc(100vh - 80px);
   display: flex;
@@ -696,7 +742,7 @@ body {
   border-bottom: 1px solid #E2DFD9;
 }
 .modal-subject-lbl {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -705,9 +751,35 @@ body {
 }
 .modal-subject { font-size: 14px; font-weight: 500; color: #1A1915; }
 .modal-body { flex: 1; overflow-y: auto; padding: 24px 28px; }
-.email-text { font-size: 13px; font-weight: 400; color: #1A1915; line-height: 1.8; }
-.email-text p { margin-bottom: 16px; }
+.email-text { font-size: 13px; font-weight: 400; color: #1A1915; line-height: 1.75; }
+.email-text p { margin-bottom: 14px; }
 .email-text p:last-child { margin-bottom: 0; }
+/* Email sections */
+.email-section { margin: 20px 0 0; border-radius: 6px; overflow: hidden; border: 1px solid #E2DFD9; }
+.email-section:first-of-type { margin-top: 20px; }
+.email-section-hd {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+.email-section-bar { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+.email-section-cat {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.email-section-title {
+  font-size: 12.5px; font-weight: 500; color: #1A1915; margin-left: 2px;
+}
+.email-section-body { padding: 12px 16px 14px; }
+.email-ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.email-ul li {
+  display: flex; align-items: flex-start; gap: 9px;
+  font-size: 12.5px; color: #3A3830; line-height: 1.55;
+}
+.email-ul li::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 6px;
+}
 .modal-ft {
   padding: 14px 28px;
   border-top: 1px solid #E2DFD9;
@@ -758,7 +830,7 @@ body {
   <div>
     <div class="sit-category">Situation overview</div>
     <div class="sit-text">
-      The model confirms <strong>$302,103</strong> is surplus — every bill for the next 12 months is covered by income, and this cash isn't part of that picture. It has sat at 0.8% for <strong>47 days</strong> earning <strong>$2,400/yr</strong>; properly invested it generates <strong>$24,168/yr</strong>. Separately, <strong>$1,100,000</strong> in money markets will reprice the day the Fed cuts on <strong>May 7</strong> — and the window to lock today's rate closes May 5.
+      The Kesslers' liquidity profile has increased significantly since year-end — and the window to get in front of it is closing. <strong>$302,103</strong> in bonus cash has been sitting at 0.8% for <strong>47 days</strong>, the portfolio remains poorly diversified and that cash could be deployed to build the right exposures, and <strong>$1.1M</strong> in floating-rate cash reprices the moment the Fed acts on <strong>May 7</strong>. We've modeled the three moves that close these gaps — together they add an estimated <strong>$21,768/yr</strong> to the portfolio. Capital that's already here, just not working. Rate lock deadline: <strong>May 5</strong>.
     </div>
   </div>
   <div class="sit-stats">
@@ -803,30 +875,36 @@ body {
       </div>
     </div>
     <div class="card-head">
-      <div class="card-title">Excess liquidity for 47 days due to year-end bonus</div>
+      <div class="card-title">$302,103 in excess bonus cash should be invested — needs to be addressed ASAP</div>
       <div class="card-context">The Kesslers went from 6 months of cash expense coverage to <a href="#" style="color:#183B6E;text-decoration:underline;">13.4 months</a> following the bonus. This cash is yielding <a href="#" style="color:#183B6E;text-decoration:underline;">0.8%</a> and could be deployed into investments to generate wealth.</div>
       <div class="card-stat">
-        <div class="stat-num">$302,103</div>
-        <div class="stat-desc">excess liquidity · 47 days idle</div>
+        <div class="stat-block">
+          <div class="stat-num">$302,103</div>
+          <div class="stat-desc">excess liquidity</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num">47<span style="font-size:16px;letter-spacing:0;font-weight:400"> days</span></div>
+          <div class="stat-desc">idle</div>
+        </div>
       </div>
     </div>
     <div class="card-body">
       <!-- 3-COLUMN STAT ROW -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #E2DFD9;margin:-18px -22px 14px -22px;">
-        <div style="padding:12px 14px;border-right:1px solid #E2DFD9;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:5px;">Total Liquidity</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #E2DFD9;margin:-18px -22px 12px -22px;">
+        <div style="padding:8px 12px 8px 22px;border-right:1px solid #E2DFD9;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:4px;">Total Liquidity</div>
           <div style="font-family:'DM Sans',sans-serif;font-weight:300;letter-spacing:-0.03em;font-size:16px;color:#1A1915;line-height:1;">$693,636</div>
-          <div style="font-size:10px;color:#9A9890;margin-top:3px;">total liquid assets</div>
+          <div style="font-size:10px;color:#9A9890;margin-top:2px;">total liquid assets</div>
         </div>
-        <div style="padding:12px 14px;border-right:1px solid #E2DFD9;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:5px;">Coverage</div>
+        <div style="padding:8px 12px;border-right:1px solid #E2DFD9;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:4px;">Coverage</div>
           <div style="font-family:'DM Sans',sans-serif;font-weight:300;letter-spacing:-0.03em;font-size:16px;color:#1A1915;line-height:1;">13.6 <span style="font-size:12px;letter-spacing:0;font-weight:400;">months</span></div>
-          <div style="font-size:10px;color:#9A9890;margin-top:3px;">of monthly expenses</div>
+          <div style="font-size:10px;color:#9A9890;margin-top:2px;">of monthly expenses</div>
         </div>
-        <div style="padding:12px 14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:5px;">If Optimized</div>
+        <div style="padding:8px 22px 8px 12px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:4px;">If Optimized</div>
           <div style="font-family:'DM Sans',sans-serif;font-weight:300;letter-spacing:-0.03em;font-size:16px;color:#155234;line-height:1;">$24,168<span style="font-size:12px;letter-spacing:0;font-weight:400;">/yr</span></div>
-          <div style="font-size:10px;color:#9A9890;margin-top:3px;">after-tax if invested at 10% return</div>
+          <div style="font-size:10px;color:#9A9890;margin-top:2px;">after-tax if invested at 10% return</div>
         </div>
       </div>
       <div class="section-label">Where the Excess Cash is Sitting</div>
@@ -850,18 +928,6 @@ body {
         <span class="total-label">Total available to invest</span>
         <span class="total-amount">$302,103</span>
       </div>
-
-      <div class="talking-points">
-        <div class="tp-header"><span class="tp-label">Talking points</span><div class="tp-rule"></div></div>
-        <div class="tp-summary" id="s-liq">Year-end bonus pushed cash from $234,000 to $558,636 — the model confirms they're covered well past next year's bonus. $302,103 is earning $1,500/yr after tax. Invested at a 10% return that's $24,168/yr after tax. The conversation is about risk tolerance and putting the money to work.</div>
-        <ul class="tp-bullets" id="b-liq">
-          <li><span class="tp-dot"></span><span>"Congrats on a great end of year. You're now sitting on <strong>$558,636 in cash</strong> versus <strong>$234,000 in December</strong>. I've looked at your full cash flow picture and you're more than covered — even through next year's bonus."</span></li>
-          <li><span class="tp-dot"></span><span>"Maximizing wealth is about making every dollar work harder. At your age, we have the ability to let this compound for <strong>30+ years</strong> — that time is one of your biggest advantages."</span></li>
-          <li><span class="tp-dot"></span><span>"Today this cash is earning about <strong>$1,500 a year after tax</strong>. Assuming a 10% market return, that same money could be generating closer to <strong>$30,000 a year</strong>."</span></li>
-          <li><span class="tp-dot"></span><span>"It's all about your risk tolerance — let me pull up a few scenarios so we can figure out exactly how much of this is truly excess and where it makes the most sense to put it to work."</span></li>
-        </ul>
-        <button class="tp-toggle" onclick="toggleTP(this,'s-liq','b-liq')">Full talking points ▼</button>
-      </div>
     </div>
     <div class="card-footer">
       <div class="footer-left">
@@ -873,6 +939,17 @@ body {
         <button class="footer-defer">Defer</button>
         <button class="footer-action">Approve</button>
       </div>
+    </div>
+    <div class="talking-points">
+      <div class="tp-header"><span class="tp-label">Talking points</span><div class="tp-rule"></div></div>
+      <div class="tp-summary" id="s-liq">Year-end bonus pushed cash from $234,000 to $558,636 — the model confirms they're covered well past next year's bonus. $302,103 is earning $1,500/yr after tax. Invested at a 10% return that's $24,168/yr after tax. The conversation is about risk tolerance and putting the money to work.</div>
+      <ul class="tp-bullets" id="b-liq">
+        <li><span class="tp-dot"></span><span>"Congrats on a great end of year. You're now sitting on <strong>$558,636 in cash</strong> versus <strong>$234,000 in December</strong>. I've looked at your full cash flow picture and you're more than covered — even through next year's bonus."</span></li>
+        <li><span class="tp-dot"></span><span>"Maximizing wealth is about making every dollar work harder. At your age, we have the ability to let this compound for <strong>30+ years</strong> — that time is one of your biggest advantages."</span></li>
+        <li><span class="tp-dot"></span><span>"Today this cash is earning about <strong>$1,500 a year after tax</strong>. Assuming a 10% market return, that same money could be generating closer to <strong>$30,000 a year</strong>."</span></li>
+        <li><span class="tp-dot"></span><span>"It's all about your risk tolerance — let me pull up a few scenarios so we can figure out exactly how much of this is truly excess and where it makes the most sense to put it to work."</span></li>
+      </ul>
+      <button class="tp-toggle" onclick="toggleTP(this,'s-liq','b-liq')">Full talking points ▼</button>
     </div>
   </div>
 
@@ -886,81 +963,67 @@ body {
       </div>
     </div>
     <div class="card-head">
-      <div class="card-title">Two portfolio gaps identified — allocation ready to execute on redeployed cash</div>
-      <div class="card-context">The portfolio has no fixed income at all. The two largest equity positions are META and BAC with nothing balancing them. The $302,103 fixes both — no new money needed.</div>
+      <div class="card-title">Three portfolio gaps identified — rebalance with excess liquidity</div>
+      <div class="card-context">The portfolio has no fixed income, is overweight in two single names, and lacks diversified growth exposure. The $302,103 of excess liquidity funds all three positions.</div>
       <div class="card-stat">
-        <div class="stat-num">$19,939<span style="font-size:16px;letter-spacing:0">/yr</span></div>
-        <div class="stat-desc">target yield on the redeployed $302,103<em>vs. $2,400/yr it earns sitting in cash today</em></div>
+        <div class="stat-block">
+          <div class="stat-num">$302,103</div>
+          <div class="stat-desc">redeployed from excess cash</div>
+        </div>
       </div>
     </div>
     <div class="card-body">
-      <!-- BEFORE / AFTER GURU -->
-      <div class="card-decision">
-        <div class="decision-before">
-          <div class="decision-lbl">Portfolio today</div>
-          <div class="decision-val">No fixed income<br>Concentrated · underbalanced</div>
+      <!-- 2-COLUMN STAT ROW -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #E2DFD9;margin:-18px -22px 12px -22px;">
+        <div style="padding:8px 12px 8px 22px;border-right:1px solid #E2DFD9;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:4px;">Increased Exposure</div>
+          <div style="font-size:11px;color:#1A1915;line-height:1.5;">Small cap<br>Tactical growth<br>Commodities</div>
         </div>
-        <div class="decision-arrow">→</div>
-        <div class="decision-after">
-          <div class="decision-lbl">After GURU</div>
-          <div class="decision-val">3 positions · $19,797/yr</div>
-          <div class="decision-delta">Funded from idle cash</div>
+        <div style="padding:8px 22px 8px 12px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:4px;">Est. Annual Return</div>
+          <div style="font-family:'DM Sans',sans-serif;font-weight:300;letter-spacing:-0.03em;font-size:16px;color:#155234;line-height:1;">$20,625<span style="font-size:12px;letter-spacing:0;font-weight:400;">/yr</span></div>
+          <div style="font-size:10px;color:#9A9890;margin-top:2px;">$2,400/yr sitting in cash</div>
         </div>
       </div>
-      <div class="section-label" style="margin-top:14px;">Allocation — funded by redeployed cash</div>
+      <div class="section-label">Sleeves added — funded by redeployed cash</div>
       <div class="data-rows">
         <div class="position-item">
           <input type="checkbox" class="position-check">
           <div class="position-content">
-            <div class="position-name">Cresset Short Duration Bond Fund — $179,980</div>
+            <div class="position-name">DFA US Small Cap Fund — $120,000</div>
             <div class="position-meta">
-              <span>Target yield <span class="meta-val yield">5.4%</span></span>
-              <span>Duration <span class="meta-val dur">1–3 years</span></span>
-              <span>Risk profile <span class="meta-val risk-lo">Low</span></span>
+              <span>5-yr historical <span class="meta-val yield">8.4%</span></span>
+              <span>Added exposure <span class="meta-val dur">~4.4%</span></span>
             </div>
-            <div class="position-desc">The portfolio has no fixed income at all. This fills that gap at 5.4% — short duration means it won't get hurt if rates move. That yield compresses after the May 7 Fed cut, so timing matters.</div>
+            <div class="position-desc">Rules-based small-cap strategy — 800+ holdings, value-tilted, low turnover. Captures the small-cap premium across full market cycles.</div>
           </div>
         </div>
         <div class="position-item">
           <input type="checkbox" class="position-check">
           <div class="position-content">
-            <div class="position-name">Small Cap Mutual Fund — $119,986</div>
+            <div class="position-name">Cresset Tactical Growth Strategy — $120,000</div>
             <div class="position-meta">
-              <span>Target yield <span class="meta-val yield">8.4%</span></span>
-              <span>Duration <span class="meta-val dur">5 years or more</span></span>
-              <span>Risk profile <span class="meta-val risk-med">Medium-high</span></span>
+              <span>5-yr historical <span class="meta-val yield">6.2%</span></span>
+              <span>Added exposure <span class="meta-val dur">~4.4%</span></span>
             </div>
-            <div class="position-desc">META and BAC are the two biggest equity positions and there's nothing in the portfolio offsetting them. This adds diversified small-cap exposure — growth that isn't tied to those two names.</div>
+            <div class="position-desc">Actively managed, rotating across sectors based on macro signals and earnings trends. Track record across multiple rate environments.</div>
           </div>
         </div>
         <div class="position-item">
           <input type="checkbox" class="position-check">
           <div class="position-content">
-            <div class="position-name">CIO Sector Rotation Fund — <em style="font-weight:400;color:#56544C;">optional third sleeve</em></div>
+            <div class="position-name">PIMCO Commodity Real Return Strategy — $62,103</div>
             <div class="position-meta">
-              <span>Target yield <span class="meta-val yield">6.2%</span></span>
-              <span>Duration <span class="meta-val dur">3–5 years</span></span>
-              <span>Risk profile <span class="meta-val risk-med">Medium</span></span>
+              <span>5-yr historical <span class="meta-val yield">5.0%</span></span>
+              <span>Added exposure <span class="meta-val dur">~2.3%</span></span>
             </div>
-            <div class="position-desc">Moves with macro conditions independent of the other two positions. Takes up the remaining surplus and adds a tactical layer the portfolio doesn't currently have.</div>
+            <div class="position-desc">Commodity futures and inflation-linked instruments managed by PIMCO for positive real returns above inflation across rising price environments.</div>
           </div>
         </div>
       </div>
       <div class="data-total">
         <span class="total-label">Total invested from redeployed cash</span>
         <span class="total-amount">$302,103</span>
-      </div>
-
-      <div class="talking-points">
-        <div class="tp-header"><span class="tp-label">Talking points</span><div class="tp-rule"></div></div>
-        <div class="tp-summary" id="s-reb">The cash from Card 1 funds all three positions — nothing new required from the client. Two real gaps in the portfolio get closed: no fixed income, and too much riding on META and BAC. The Cresset position is time-sensitive — that yield goes away after May 7.</div>
-        <ul class="tp-bullets" id="b-reb">
-          <li><span class="tp-dot"></span><span>Entirely funded by the $302,103 confirmed surplus. The portfolio gets better and the client doesn't write a new check.</span></li>
-          <li><span class="tp-dot"></span><span><strong>Cresset Short Duration:</strong> The portfolio currently has zero bonds. This adds fixed income at 5.4% — with short enough duration that it's largely insulated from rate moves. The 5.4% yield is only available before the Fed cuts on May 7.</span></li>
-          <li><span class="tp-dot"></span><span><strong>Small Cap:</strong> META and BAC dominate the equity side with nothing balancing them. Small-cap diversification is the direct answer — different sector, different risk profile.</span></li>
-          <li><span class="tp-dot"></span><span>Same $302,103 goes from earning <strong>$2,400/yr</strong> to an expected <strong>~$19,939/yr</strong>. That's the difference between cash sitting in an account and capital that's actually working.</span></li>
-        </ul>
-        <button class="tp-toggle" onclick="toggleTP(this,'s-reb','b-reb')">Full talking points ▼</button>
       </div>
     </div>
     <div class="card-footer">
@@ -971,8 +1034,19 @@ body {
       </div>
       <div class="footer-right">
         <button class="footer-defer">Defer</button>
-        <button class="footer-action">Open GURU Allocator →</button>
+        <button class="footer-action" onclick="alert('→ Navigates to Investments tab — current holdings vs. model portfolio')">View investments →</button>
       </div>
+    </div>
+    <div class="talking-points">
+      <div class="tp-header"><span class="tp-label">Talking points</span><div class="tp-rule"></div></div>
+      <div class="tp-summary" id="s-reb">The $302,103 of excess liquidity could be deployed to rebalance your portfolio like we've been talking about. We could add 11% small cap, diversified growth and an inflation hedge. This would meaningfully better position your portfolio.</div>
+      <ul class="tp-bullets" id="b-reb">
+        <li><span class="tp-dot"></span><span>Entirely funded by the $302,103 confirmed surplus. The portfolio gets better and you don't write a new check.</span></li>
+        <li><span class="tp-dot"></span><span><strong>DFA US Small Cap:</strong> Systematic, rules-based strategy. 800+ holdings, value-tilted. Five-year historical return of 8.4%. Diversified growth that isn't concentrated in single names.</span></li>
+        <li><span class="tp-dot"></span><span><strong>Cresset Tactical Growth:</strong> Actively managed, rotating across sectors with macro conditions. Adds a tactical growth layer independent of your existing equity holdings.</span></li>
+        <li><span class="tp-dot"></span><span><strong>PIMCO Commodity Real Return:</strong> Real assets layer with low correlation to equities and bonds. Actively managed inflation hedge built for rising price environments over multi-decade horizons.</span></li>
+      </ul>
+      <button class="tp-toggle" onclick="toggleTP(this,'s-reb','b-reb')">Full talking points ▼</button>
     </div>
   </div>
 
@@ -986,28 +1060,39 @@ body {
       </div>
     </div>
     <div class="card-head">
-      <div class="card-title">$1.1M in money markets loses yield on May 7 — move to T-bills this week to lock the rate</div>
-      <div class="card-context">The Fed is expected to cut on May 7. Both money market positions reprice immediately. Moving into short-term government bonds before then locks the current yield for six months regardless of what the Fed does next.</div>
+      <div class="card-title">Move to T-bills to lock in rate before Fed cuts — 15 days before Fed meeting</div>
+      <div class="card-context">The Fed is expected to cut on May 7. Money market funds and bank accounts will reprice immediately. Moving into short-term government bonds before then locks the current yield for six months.</div>
       <div class="card-stat">
-        <div class="stat-num">$1,100,000</div>
-        <div class="stat-desc">exposed to rate repricing on May 7<em>$2,750/yr lost per 25-bp cut</em></div>
+        <div class="stat-block">
+          <div class="stat-num">$1,100,000</div>
+          <div class="stat-desc">rate-vulnerable cash</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num" style="color:#9A6B10">15<span style="font-size:16px;letter-spacing:0;font-weight:400"> days</span></div>
+          <div class="stat-desc">until Fed meeting</div>
+        </div>
       </div>
     </div>
     <div class="card-body">
-      <!-- BEFORE / AFTER GURU -->
-      <div class="card-decision">
-        <div class="decision-before">
-          <div class="decision-lbl">Before</div>
-          <div class="decision-val">$1.1M floating MM<br>Reprices May 7</div>
+      <!-- 3-COLUMN STAT ROW -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #E2DFD9;margin:-18px -22px 12px -22px;">
+        <div style="padding:8px 12px 8px 22px;border-right:1px solid #E2DFD9;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:4px;">Expected rate cut</div>
+          <div style="font-family:'DM Sans',sans-serif;font-weight:300;letter-spacing:-0.03em;font-size:16px;color:#9A6B10;line-height:1;">50 <span style="font-size:12px;letter-spacing:0;font-weight:400;">bps</span></div>
+          <div style="font-size:10px;color:#9A9890;margin-top:2px;">in next year</div>
         </div>
-        <div class="decision-arrow">→</div>
-        <div class="decision-after">
-          <div class="decision-lbl">After</div>
-          <div class="decision-val">6-mo T-bills · 5.2%</div>
-          <div class="decision-delta">Locked through Oct '26</div>
+        <div style="padding:8px 12px;border-right:1px solid #E2DFD9;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:4px;">After-tax income at risk</div>
+          <div style="font-family:'DM Sans',sans-serif;font-weight:300;letter-spacing:-0.03em;font-size:16px;color:#9A6B10;line-height:1;">$5,500<span style="font-size:12px;letter-spacing:0;font-weight:400;">/yr</span></div>
+          <div style="font-size:10px;color:#9A9890;margin-top:2px;">lost if nothing moves</div>
+        </div>
+        <div style="padding:8px 22px 8px 12px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#9A9890;margin-bottom:4px;">T-bill rate available</div>
+          <div style="font-family:'DM Sans',sans-serif;font-weight:300;letter-spacing:-0.03em;font-size:16px;color:#155234;line-height:1;">5.200<span style="font-size:12px;letter-spacing:0;font-weight:400;">%</span></div>
+          <div style="font-size:10px;color:#9A9890;margin-top:2px;">6-month · locked through Oct '26</div>
         </div>
       </div>
-      <div class="section-label" style="margin-top:14px;">Positions exposed to repricing</div>
+      <div class="section-label">Positions exposed to repricing</div>
       <div class="data-rows">
         <div class="data-row">
           <div>
@@ -1028,19 +1113,7 @@ body {
         <span class="total-label">Total exposed to repricing</span>
         <span class="total-amount">$1,100,000</span>
       </div>
-      <div class="plain-note"><strong>Proposed move:</strong> 6-month T-bills at 5.2%, locked through October 2026. Each 25bp cut avoided is worth ~$2,750/yr on this balance. T-bills trade on the secondary market — the money isn't locked up.</div>
-
-      <div class="talking-points">
-        <div class="tp-header"><span class="tp-label">Talking points</span><div class="tp-rule"></div></div>
-        <div class="tp-summary" id="s-rates">The rate is available today. The Fed removes it on May 7. This is about locking what exists now before it's gone — not a bet on where rates go from here. Deadline is May 5 because trades take two days to settle.</div>
-        <ul class="tp-bullets" id="b-rates">
-          <li><span class="tp-dot"></span><span>Both money market accounts — Citizens and Fidelity — reprice immediately when the Fed acts. The market expects a cut of 25–50bps on May 7. That's <strong>$2,750–$5,500/yr</strong> in lost yield on this balance if nothing moves.</span></li>
-          <li><span class="tp-dot"></span><span>6-month T-bills at 5.2% lock today's rate through October regardless of what happens after May 7. Short duration means the position doesn't take meaningful rate risk.</span></li>
-          <li><span class="tp-dot"></span><span>The money stays accessible. T-bills trade on the secondary market and mature automatically — nothing is tied up.</span></li>
-          <li><span class="tp-dot"></span><span>Trades settle in two business days. The window to act is <strong>May 5</strong>. After that, the rate lock isn't available.</span></li>
-        </ul>
-        <button class="tp-toggle" onclick="toggleTP(this,'s-rates','b-rates')">Full talking points ▼</button>
-      </div>
+      <div class="plain-note"><strong>Proposed move:</strong> 6-month T-bills at 5.200%, locked through October 2026. Each 25bp cut avoided is worth ~$2,750/yr on this balance. T-bills trade on the secondary market — the money isn't locked up.</div>
     </div>
     <div class="card-footer">
       <div class="footer-left">
@@ -1053,60 +1126,58 @@ body {
         <button class="footer-action">Approve</button>
       </div>
     </div>
+    <div class="talking-points">
+      <div class="tp-header"><span class="tp-label">Talking points</span><div class="tp-rule"></div></div>
+      <div class="tp-summary" id="s-rates">We are in a rate cutting cycle. The market expects two cuts in the next year. Moving the $1,100,000 in money markets to 6-month Treasury bills at 5.2% now locks today's rate through October — before the May 7 cut reprices everything. The window to act is May 5.</div>
+      <ul class="tp-bullets" id="b-rates">
+        <li><span class="tp-dot"></span><span>We are in a rate cutting cycle and the market expects two cuts in the next year. A 25–50 basis point cut on May 7 could mean <strong>$2,750–$5,500 in lost yield</strong> over the year on this balance alone.</span></li>
+        <li><span class="tp-dot"></span><span>We should better position your liquid cash — particularly your liquidity reserves. You have two money market funds: Citizens Private Bank Money Market at $225,000 and Fidelity Government Money Market at $875,000. Both reprice the day the Fed acts.</span></li>
+        <li><span class="tp-dot"></span><span>We suggest moving to 6-month Treasury bills at 5.2% to lock today's rate through October, regardless of what the Fed does after May 7.</span></li>
+        <li><span class="tp-dot"></span><span>The position doesn't take rate risk. We ideally hold to maturity, but the money stays accessible — Treasury bills can always be sold and settled in two business days.</span></li>
+      </ul>
+      <button class="tp-toggle" onclick="toggleTP(this,'s-rates','b-rates')">Full talking points ▼</button>
+    </div>
   </div>
 
   <!-- CARD 4: Cash Movements -->
   <div class="card cashflow" id="card-cashflow">
     <div class="card-cap">
-      <div class="cap-left"><span class="cap-category">Cash movement</span></div>
+      <div class="cap-left"><span class="cap-category">Money movement</span></div>
       <div class="cap-right">
         <span class="in-email-badge">In email</span>
         <span class="cap-priority">Monthly update</span>
       </div>
     </div>
     <div class="card-head">
-      <div class="card-title">April cash movements managed — two payments out, T-bill matured in, reserve intact</div>
-      <div class="card-context">Tuition Apr 1, estimated tax Apr 15. A Treasury bill that matured March 31 already returned $41,877 to reserve — nearly covers the outflow. Net draw on the reserve: $5,249. Floor maintained throughout.</div>
+      <div class="card-title">Upcoming March Money Movement — Where Every Dollar Sits</div>
+      <div class="card-context">In March we will move $47,126 to the operating cash accounts to rebuild 2-month expense coverage. The Citizens Money Market will be replenished by a maturing $135,000 Treasury bill on March 31 — that maturity is what creates the liquid middle layer for the move.</div>
       <div class="card-stat">
-        <div class="stat-num">$47,126</div>
-        <div class="stat-desc">moving Reserve → Operating this month<em>covers $30k tax + $15k tuition · Apr 15 &amp; Apr 1</em></div>
+        <div class="stat-num">$135,000</div>
+        <div class="stat-desc">Treasury bill maturing March 31 → Reserve</div>
       </div>
     </div>
     <div class="card-body">
-      <!-- BEFORE / AFTER GURU -->
-      <div class="card-decision">
-        <div class="decision-before">
-          <div class="decision-lbl">Before</div>
-          <div class="decision-val">Manual tracking<br>2 payments due this week</div>
-        </div>
-        <div class="decision-arrow">→</div>
-        <div class="decision-after">
-          <div class="decision-lbl">After</div>
-          <div class="decision-val">Advisor handles both</div>
-          <div class="decision-delta">Reserve floors intact</div>
-        </div>
-      </div>
       <!-- ── BUCKET FLOW DIAGRAM ── -->
       <div style="display:flex;flex-direction:column;gap:0;margin-top:14px;">
 
         <!-- OPERATING row -->
         <div style="display:flex;align-items:stretch;gap:12px;">
           <div style="width:108px;flex-shrink:0;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:16px 8px;background:#1e3a5f;">
-            <span style="font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.60);font-size:7.5px;font-family:inherit;">OPERATING</span>
+            <span style="font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.60);font-size:10px;font-family:inherit;">OPERATING</span>
             <span style="font-weight:300;color:#ffffff;font-size:18px;letter-spacing:-0.025em;font-variant-numeric:tabular-nums;line-height:1;font-family:inherit;">$132,050</span>
           </div>
           <div style="flex:1;border:1px solid rgba(30,58,95,0.18);border-radius:8px;overflow:hidden;">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(30,58,95,0.025);border-bottom:1px solid rgba(30,58,95,0.09);">
               <div style="min-width:0;margin-right:8px;">
                 <div style="font-size:11.5px;font-weight:600;color:#1e3a5f;line-height:1.3;font-family:inherit;">Chase Total Checking</div>
-                <div style="font-size:9.5px;color:#4a6a9a;margin-top:2px;font-family:inherit;">JPMorgan Chase · Daily operating</div>
+                <div style="font-size:10px;color:#4a6a9a;margin-top:2px;font-family:inherit;">JPMorgan Chase · Daily operating</div>
               </div>
               <span style="font-size:11.5px;font-weight:700;color:#1e3a5f;font-variant-numeric:tabular-nums;flex-shrink:0;font-family:inherit;">$25,050</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(30,58,95,0.025);">
               <div style="min-width:0;margin-right:8px;">
                 <div style="font-size:11.5px;font-weight:600;color:#1e3a5f;line-height:1.3;font-family:inherit;">Citizens Private Banking Checking</div>
-                <div style="font-size:9.5px;color:#4a6a9a;margin-top:2px;font-family:inherit;">Citizens Bank · Overflow / payroll</div>
+                <div style="font-size:10px;color:#4a6a9a;margin-top:2px;font-family:inherit;">Citizens Bank · Overflow / payroll</div>
               </div>
               <span style="font-size:11.5px;font-weight:700;color:#1e3a5f;font-variant-numeric:tabular-nums;flex-shrink:0;font-family:inherit;">$107,000</span>
             </div>
@@ -1122,21 +1193,21 @@ body {
                 <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 6,36 L 6,2"/>
               </polygon>
             </svg>
-            <span style="font-size:9.5px;font-weight:700;color:#1e3a5f;background:#eef2f8;border:1px solid #c5d4e8;padding:3px 10px;border-radius:20px;white-space:nowrap;font-family:inherit;">↑ $47,126 · Reserve → Operating · Apr 15</span>
+            <span style="font-size:10px;font-weight:700;color:#1e3a5f;background:#eef2f8;border:1px solid #c5d4e8;padding:3px 10px;border-radius:20px;font-family:inherit;">↑ $47,126 · Reserve → Operating · March</span>
           </div>
         </div>
 
         <!-- RESERVE row -->
         <div style="display:flex;align-items:stretch;gap:12px;">
           <div style="width:108px;flex-shrink:0;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:16px 8px;background:#7c4a0a;">
-            <span style="font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.60);font-size:7.5px;font-family:inherit;">RESERVE</span>
+            <span style="font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.60);font-size:10px;font-family:inherit;">RESERVE</span>
             <span style="font-weight:300;color:#ffffff;font-size:18px;letter-spacing:-0.025em;font-variant-numeric:tabular-nums;line-height:1;font-family:inherit;">$426,586</span>
           </div>
           <div style="flex:1;border:1px solid rgba(124,74,10,0.20);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(124,74,10,0.025);border-bottom:1px solid rgba(124,74,10,0.09);">
               <div style="min-width:0;margin-right:8px;">
                 <div style="font-size:11.5px;font-weight:600;color:#7c4a0a;line-height:1.3;font-family:inherit;">Citizens Private Bank Money Market</div>
-                <div style="font-size:9.5px;color:#a06020;margin-top:2px;font-family:inherit;">Citizens Bank · 3.65% APY · Autodraw to Operating</div>
+                <div style="font-size:10px;color:#a06020;margin-top:2px;font-family:inherit;">Citizens Bank · 3.65% APY · Autodraw to Operating</div>
               </div>
               <span style="font-size:11.5px;font-weight:700;color:#7c4a0a;font-variant-numeric:tabular-nums;flex-shrink:0;font-family:inherit;">$225,000</span>
             </div>
@@ -1148,19 +1219,19 @@ body {
                   <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 6,24 L 6,2"/>
                 </polygon>
               </svg>
-              <span style="font-size:9.5px;font-weight:700;color:#7c4a0a;background:#fdf5e6;border:1px solid #e8c87a;padding:3px 10px;border-radius:20px;white-space:nowrap;font-family:inherit;">↑ $41,877 · T-Bill matured Mar 31 → Reserve</span>
+              <span style="font-size:10px;font-weight:700;color:#7c4a0a;background:#fdf5e6;border:1px solid #e8c87a;padding:3px 10px;border-radius:20px;font-family:inherit;">↑ $135,000 · T-Bill matures Mar 31 → Reserve</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(124,74,10,0.025);border-top:1px solid rgba(124,74,10,0.09);">
               <div style="min-width:0;margin-right:8px;">
                 <div style="font-size:11.5px;font-weight:600;color:#7c4a0a;line-height:1.3;font-family:inherit;">Capital One 360 Performance Savings</div>
-                <div style="font-size:9.5px;color:#a06020;margin-top:2px;font-family:inherit;">Capital One · 3.78% APY</div>
+                <div style="font-size:10px;color:#a06020;margin-top:2px;font-family:inherit;">Capital One · 3.78% APY</div>
               </div>
               <span style="font-size:11.5px;font-weight:700;color:#7c4a0a;font-variant-numeric:tabular-nums;flex-shrink:0;font-family:inherit;">$15,000</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(124,74,10,0.025);border-top:1px solid rgba(124,74,10,0.09);">
               <div style="min-width:0;margin-right:8px;">
                 <div style="font-size:11.5px;font-weight:600;color:#7c4a0a;line-height:1.3;font-family:inherit;">Fidelity Government Money Market (SPAXX)</div>
-                <div style="font-size:9.5px;color:#a06020;margin-top:2px;font-family:inherit;">Fidelity · 2.50% 7-day yield · Idle sweep</div>
+                <div style="font-size:10px;color:#a06020;margin-top:2px;font-family:inherit;">Fidelity · 2.50% 7-day yield · Idle sweep</div>
               </div>
               <span style="font-size:11.5px;font-weight:700;color:#7c4a0a;font-variant-numeric:tabular-nums;flex-shrink:0;font-family:inherit;">$186,586</span>
             </div>
@@ -1179,21 +1250,21 @@ body {
                 <animateMotion dur="2.3s" repeatCount="indefinite" calcMode="linear" path="M 6,36 L 6,2"/>
               </polygon>
             </svg>
-            <span style="font-size:9.5px;font-weight:700;color:#155234;background:#edf5ef;border:1px solid #b0d4bc;padding:3px 10px;border-radius:20px;white-space:nowrap;font-family:inherit;">↑ Matures Mar 2026 → Reserve · at par</span>
+            <span style="font-size:10px;font-weight:700;color:#155234;background:#edf5ef;border:1px solid #b0d4bc;padding:3px 10px;border-radius:20px;font-family:inherit;">↑ Matures Mar 31, 2026 → Reserve · at par</span>
           </div>
         </div>
 
         <!-- BUILD row -->
         <div style="display:flex;align-items:stretch;gap:12px;">
           <div style="width:108px;flex-shrink:0;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:16px 8px;background:#155234;">
-            <span style="font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.60);font-size:7.5px;font-family:inherit;">BUILD</span>
+            <span style="font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.60);font-size:10px;font-family:inherit;">BUILD</span>
             <span style="font-weight:300;color:#ffffff;font-size:18px;letter-spacing:-0.025em;font-variant-numeric:tabular-nums;line-height:1;font-family:inherit;">$135,000</span>
           </div>
           <div style="flex:1;border:1px solid rgba(21,82,52,0.18);border-radius:8px;overflow:hidden;">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(21,82,52,0.025);">
               <div style="min-width:0;margin-right:8px;">
                 <div style="font-size:11.5px;font-weight:600;color:#155234;line-height:1.3;font-family:inherit;">U.S. Treasury Bills — 3-Month</div>
-                <div style="font-size:9.5px;color:#2a7a52;margin-top:2px;font-family:inherit;">Fidelity Investments · 3.95% · Matures Mar 2026</div>
+                <div style="font-size:10px;color:#2a7a52;margin-top:2px;font-family:inherit;">Fidelity Investments · 3.95% · Matures March 31, 2026</div>
               </div>
               <span style="font-size:11.5px;font-weight:700;color:#155234;font-variant-numeric:tabular-nums;flex-shrink:0;font-family:inherit;">$135,000</span>
             </div>
@@ -1201,44 +1272,41 @@ body {
         </div>
 
       </div><!-- end bucket flow -->
-
-      <div class="talking-points">
-        <div class="tp-header"><span class="tp-label">Talking points</span><div class="tp-rule"></div></div>
-        <div class="tp-summary" id="s-cf">A clean month. Two expected payments go out, a Treasury bill matures and offsets most of it, and the reserve stays above its minimum the whole time. Nothing here requires a decision.</div>
-        <ul class="tp-bullets" id="b-cf">
-          <li><span class="tp-dot"></span><span>Two payments this month: <strong>Dalton spring tuition $15,000</strong> on April 1 and <strong>Q1 estimated tax $30,000</strong> on April 15. Both were in the plan.</span></li>
-          <li><span class="tp-dot"></span><span><strong>$47,126</strong> moves from the Reserve Money Market to Operating Checking to cover both. The reserve stays above its $192,959 target throughout.</span></li>
-          <li><span class="tp-dot"></span><span>A T-bill that matured March 31 returned <strong>$41,877</strong> to reserve automatically — that's already sitting there, offsetting most of the April outflow. Net draw on reserve this month: $5,249.</span></li>
-          <li><span class="tp-dot"></span><span>Nothing else anticipated until July, when the property tax installment comes due.</span></li>
-        </ul>
-        <button class="tp-toggle" onclick="toggleTP(this,'s-cf','b-cf')">Full talking points ▼</button>
-      </div>
     </div>
     <div class="card-footer">
       <div class="footer-left">
         <label class="footer-check-label">
-          <input type="checkbox" class="footer-checkbox" onchange="handleCheck(this,'card-cashflow','cash movements')"> Include in client email
+          <input type="checkbox" class="footer-checkbox" onchange="handleCheck(this,'card-cashflow','money movement')"> Include in client email
         </label>
       </div>
       <div class="footer-right">
         <button class="footer-defer">Defer</button>
-        <button class="footer-action">Initiate Wire</button>
+        <button class="footer-action" onclick="alert('→ Navigates to Money Movement tab — full March flow detail')">View money movement →</button>
       </div>
+    </div>
+    <div class="talking-points">
+      <div class="tp-header"><span class="tp-label">Talking points</span><div class="tp-rule"></div></div>
+      <div class="tp-summary" id="s-cf">A $135,000 Treasury bill maturing March 31 is what creates the liquid middle layer. It lands in the Citizens Money Market automatically, and from there $47,126 moves to Operating to rebuild 2-month expense coverage. Every layer is funded. No new cash needed.</div>
+      <ul class="tp-bullets" id="b-cf">
+        <li><span class="tp-dot"></span><span>The <strong>$135,000 Treasury bill</strong> in the Capital Build bucket matures March 31 and settles directly into the Citizens Money Market — that maturity creates the liquid middle layer and makes the operating rebuild possible.</span></li>
+        <li><span class="tp-dot"></span><span><strong>$47,126</strong> moves from the Liquidity Reserve to Operating Checking in March to rebuild 2-month expense coverage. The reserve stays above its $192,959 floor throughout — the T-bill maturity replenishes what moves out.</span></li>
+        <li><span class="tp-dot"></span><span>The T-bill was placed specifically to line up with this March need. The capital is working at 3.95% until it's needed — not sitting idle in a low-yield account.</span></li>
+        <li><span class="tp-dot"></span><span>Nothing here requires a decision. This is GURU executing the plan — every transfer is pre-authorized and handled. You'll receive a confirmation as each movement settles.</span></li>
+      </ul>
+      <button class="tp-toggle" onclick="toggleTP(this,'s-cf','b-cf')">Full talking points ▼</button>
     </div>
   </div>
 
 </div>
 
-<!-- COMPOSE BAR -->
-<div class="compose-bar">
-  <div>
-    <div class="compose-label">Client email</div>
-    <div class="compose-status" id="compose-status">Check items above to include in the email to the Kesslers</div>
-  </div>
-  <div class="compose-btns">
-    <button class="btn-preview" id="btn-preview" disabled onclick="openModal()">Preview email</button>
-    <button class="btn-compose" id="btn-compose" disabled onclick="openModal()">Compose and send</button>
-  </div>
+<!-- FLOATING COMPOSE BUTTON -->
+<div class="fab-wrap">
+  <div class="fab-hint" id="fab-hint">Check cards above to include in email</div>
+  <button class="fab" id="fab" onclick="openModal()">
+    <span class="fab-icon">✉</span>
+    <span id="fab-label">Compose email</span>
+    <span class="fab-badge" id="fab-badge" style="display:none">0</span>
+  </button>
 </div>
 
 <!-- EMAIL MODAL -->
@@ -1263,31 +1331,51 @@ const checked = {};
 
 const sections = {
   'card-liquidity': {
-    topic: 'excess liquidity',
-    paras: [
-      'On the subject of your current cash balances: across your three account groups — Operating Checking, Citizens Money Market, CapitalOne, and Fidelity Sweep — we have identified $299,966 sitting above your reserve floor requirements. At the current blended rate of 0.8 percent, that amount earns approximately $2,400 per year. Moving it into the deployment positions we have been discussing would increase that to approximately $15,300 per year — a difference of $12,900 annually, or roughly $1,075 every month it remains idle.',
-      'Your cash targets are not affected by this repositioning. The 2-month operating target of $63,574 and the liquidity reserve of $192,959 both remain fully intact. Nothing about your day-to-day cash access changes. You can execute this in a single session whenever they give the go-ahead.'
+    category: 'Liquidity',
+    title: 'Your cash is working below its potential',
+    color: '#1e4d30',
+    bgColor: 'rgba(30,77,48,0.05)',
+    bullets: [
+      'The year-end bonus was a great outcome — it also pushed your cash well above what you need in reserve, which is a good problem to have.',
+      'You\'re holding about <strong>$302,000 more than your targets require</strong>. At today\'s rates, that money is earning almost nothing. We think it should be working harder.',
+      'This wouldn\'t touch your operating cash or your emergency reserve — both stay exactly where they need to be. It\'s purely the surplus on top.',
+      'Whenever you\'re ready, we can take care of this in a single session.'
     ]
   },
   'card-rebalance': {
-    topic: 'investment rebalance',
-    paras: [
-      'Related to the cash discussion: the $302,103 surplus has two proposed destinations. The first is the Cresset Short Duration Bond Fund at $179,980, targeting a yield of 5.4 percent per year — approximately $9,718 annually. This position has low sensitivity to interest rate movements, which is relevant given the May 7 Federal Reserve decision.',
-      'The second position is a small-capitalization mutual fund at $119,986, targeting a yield of 8.4 percent per year — approximately $10,079 annually. This fills an underweight in the growth equity segment of your portfolio. Together, the two positions target a combined blended yield of approximately 6.6 percent on the deployed balance, or $19,939 per year. You will walk through both positions in detail before executing anything.'
+    category: 'Investments',
+    title: 'A rebalance worth doing — and it\'s already funded',
+    color: '#1a3a6b',
+    bgColor: 'rgba(26,58,107,0.04)',
+    bullets: [
+      'We\'ve been talking about filling a few gaps in the portfolio. The surplus cash funds all of it — no new capital needed from you.',
+      'The plan adds small-cap exposure through <strong>DFA</strong>, a tactical growth layer through <strong>Cresset</strong>, and an inflation hedge through <strong>PIMCO</strong> — three different sources of return that aren\'t in the portfolio today.',
+      'Together, they\'re projected to generate around <strong>$20,600 a year</strong> — versus the roughly $2,400 the same money earns sitting in cash.',
+      'We\'ll walk through each position in detail before anything moves.'
     ]
   },
   'card-rates': {
-    topic: 'rate window',
-    paras: [
-      'There is a time-sensitive item on the interest rate side. You currently hold $1,100,000 across two money market accounts — Citizens Private Bank Money Market (account ending in 1482) at $225,000 and the Fidelity Government Money Market Fund (account ending in 4976) at $875,000. Both accounts reprice immediately when the Federal Reserve moves. The Fed is expected to cut rates by 25 basis points on May 7.',
-      'A 25-basis-point cut on $1,100,000 reduces annual interest income by approximately $2,750. The window to avoid this is to move the exposed balance into 6-month Treasury bills before the May 7 decision, locking in today\'s 5.2 percent yield through October. Treasury bills can be liquidated on the secondary market if needed before maturity. You would recommend acting no later than May 5 to ensure settlement. No decision is needed immediately — but you will need confirmation by end of next week.'
+    category: 'Interest Rates',
+    title: 'There\'s a window here — it closes May 5',
+    color: '#9A6B10',
+    bgColor: 'rgba(154,107,16,0.04)',
+    bullets: [
+      'The Fed is expected to cut rates on May 7. When they do, both of your money market accounts — about <strong>$1.1 million combined</strong> — will reprice immediately.',
+      'Moving that balance into 6-month Treasury bills now locks today\'s 5.2% rate through October, regardless of what happens at the meeting. The difference if we don\'t move is roughly <strong>$5,500 in annual income</strong>.',
+      'The money doesn\'t get locked up. T-bills trade on the secondary market and can always be sold. But we\'d need to move by <strong>May 5</strong> to make settlement in time.',
+      'No decision needed right now — but I wanted to make sure you had the full picture before the deadline.'
     ]
   },
   'card-cashflow': {
-    topic: 'cash movements',
-    paras: [
-      'I also want to give you advance notice of the account movements happening this month and next. In April, $47,126 will transfer from your Reserve Money Market to your Operating Checking account to cover the Q1 federal estimated tax payment of $30,000 (due April 15 via ACH) and the Dalton School spring tuition installment of $15,000 (due April 1 by wire). These are both executed by you — no action is needed from the client.',
-      'Your 3-month Treasury bill matured on March 31 and $41,877 returned automatically to the Reserve Money Market as a liquidity buffer. Your reserve balance remains above the required floor after all movements settle. You will send a confirmation note as each transfer completes.'
+    category: 'Money Movement',
+    title: 'March is already in motion — nothing needed from you',
+    color: '#1d4ed8',
+    bgColor: 'rgba(29,78,216,0.04)',
+    bullets: [
+      'A <strong>$135,000 Treasury bill matures March 31</strong> and lands in your Citizens Money Market automatically. That maturity is what funds everything else.',
+      'From there, <strong>$47,126 moves to your checking accounts</strong> to restore two months of expense coverage — right where it should be heading into spring.',
+      'Your reserve stays healthy throughout. The T-bill was placed specifically to align with this March need, so the timing is clean.',
+      'You\'ll receive a confirmation as each transfer settles. Nothing to sign, nothing to approve.'
     ]
   }
 };
@@ -1317,29 +1405,50 @@ function handleCheck(cb, cardId, topic) {
 
 function updateBar() {
   const sel = Object.entries(checked).filter(([,v]) => v);
-  const st = document.getElementById('compose-status');
-  const bp = document.getElementById('btn-preview');
-  const bc = document.getElementById('btn-compose');
+  const fab = document.getElementById('fab');
+  const badge = document.getElementById('fab-badge');
+  const label = document.getElementById('fab-label');
+  const hint = document.getElementById('fab-hint');
   if (!sel.length) {
-    st.textContent = 'Check items above to include in the email to the Kesslers';
-    st.classList.remove('active');
-    bp.disabled = bc.disabled = true;
+    fab.classList.remove('has-items');
+    badge.style.display = 'none';
+    label.textContent = 'Compose email';
+    hint.textContent = 'Check cards above to include in email';
   } else {
-    st.textContent = `${sel.length} item${sel.length > 1 ? 's' : ''} selected · ${sel.map(([,v])=>v).join(', ')}`;
-    st.classList.add('active');
-    bp.disabled = bc.disabled = false;
+    fab.classList.add('has-items');
+    badge.style.display = 'inline-flex';
+    badge.textContent = sel.length;
+    label.textContent = sel.length === 1 ? 'Send 1 item' : `Send ${sel.length} items`;
+    hint.textContent = sel.map(([,v]) => v).join(' · ');
   }
 }
 
 function openModal() {
   const sel = Object.entries(checked).filter(([,v]) => v);
   let html = '<p>Dear Sarah and Michael,</p>';
-  html += '<p>I wanted to reach out ahead of our next call with a few items that I think are worth discussing. Nothing here requires an immediate decision from you — but I want to make sure you have full visibility before the end of the month.</p>';
+  html += '<p>I wanted to send a few things over ahead of our next call. None of this requires an immediate decision from you — I just want to make sure we\'re not walking into the conversation cold on any of it.</p>';
   sel.forEach(([id]) => {
     const sec = sections[id];
-    if (sec) sec.paras.forEach(p => { html += `<p>${p}</p>`; });
+    if (!sec) return;
+    const bullets = sec.bullets.map(b =>
+      `<li style="display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:#3A3830;line-height:1.55;margin-bottom:6px;">
+        <span style="width:5px;height:5px;border-radius:50%;background:${sec.color};flex-shrink:0;margin-top:6px;display:inline-block;opacity:0.7;"></span>
+        <span>${b}</span>
+      </li>`
+    ).join('');
+    html += `
+      <div style="margin:20px 0 0;border-radius:6px;overflow:hidden;border:1px solid #E2DFD9;">
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;background:${sec.bgColor};border-bottom:1px solid rgba(0,0,0,0.07);">
+          <div style="width:3px;height:16px;border-radius:2px;background:${sec.color};flex-shrink:0;"></div>
+          <span style="font-size:10px;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:${sec.color};">${sec.category}</span>
+          <span style="font-size:12.5px;font-weight:500;color:#1A1915;margin-left:2px;">${sec.title}</span>
+        </div>
+        <div style="padding:12px 16px 14px;">
+          <ul style="list-style:none;margin:0;padding:0;">${bullets}</ul>
+        </div>
+      </div>`;
   });
-  html += '<p>Please let me know if any of this prompts questions before we next speak, or if you would like to schedule a call. I am available Thursday and Friday afternoon this week.</p>';
+  html += '<p style="margin-top:20px;">If anything here prompts questions before we speak, feel free to reply or call me directly. Otherwise I\'ll plan to walk through each of these with you on our next call.</p>';
   html += '<p>Warm regards,<br>Tara Whitfield<br>Whitfield Wealth Management</p>';
   document.getElementById('email-body').innerHTML = html;
   document.getElementById('modal').classList.add('open');
