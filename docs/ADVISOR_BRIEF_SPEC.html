@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f5f3ef;font-family:'DM Sans',system-ui,sans-serif;color:#1a1a1a;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding:48px 40px}
+/* title */
+.doc-title{font-size:26px;font-weight:600;color:#0c1828;letter-spacing:-0.02em;margin-bottom:6px}
+.doc-sub{font-size:14px;color:rgba(0,0,0,0.45);margin-bottom:48px;line-height:1.6}
+/* section */
+.sec{margin-bottom:44px}
+.sec-eyebrow{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(0,0,0,0.3);margin-bottom:6px}
+.sec-title{font-size:18px;font-weight:600;color:#0c1828;letter-spacing:-0.01em;margin-bottom:18px}
+/* spec blocks */
+.spec-block{background:#fff;border:1px solid rgba(0,0,0,0.08);margin-bottom:2px}
+.spec-row{display:grid;grid-template-columns:200px 1fr;border-bottom:1px solid rgba(0,0,0,0.05)}
+.spec-row:last-child{border-bottom:none}
+.spec-key{padding:10px 14px;font-size:11px;font-weight:600;color:rgba(0,0,0,0.5);background:rgba(0,0,0,0.02);border-right:1px solid rgba(0,0,0,0.05)}
+.spec-val{padding:10px 14px;font-size:12px;color:rgba(0,0,0,0.75);line-height:1.6}
+.spec-val code{font-family:'DM Sans',monospace;font-size:11px;background:rgba(0,0,0,0.06);padding:1px 5px;color:rgba(0,0,0,0.65);border-radius:2px}
+/* swatch */
+.sw{display:inline-flex;align-items:center;gap:6px;margin-right:10px}
+.sw-dot{width:12px;height:12px;border-radius:2px;border:0.5px solid rgba(0,0,0,0.1);flex-shrink:0;display:inline-block}
+/* divider */
+.div{height:1px;background:rgba(0,0,0,0.08);margin:40px 0}
+/* note */
+.note{background:rgba(30,79,156,0.06);border-left:3px solid #1E4F9C;padding:10px 14px;font-size:12px;color:rgba(0,0,0,0.65);line-height:1.6;margin-bottom:16px}
+.warn{background:rgba(155,32,32,0.05);border-left:3px solid #9b2020;padding:10px 14px;font-size:12px;color:rgba(0,0,0,0.65);line-height:1.6;margin-bottom:8px}
+.warn strong{color:#9b2020}.note strong{color:#1E4F9C}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="doc-title">Advisor Brief — CSS Specification</div>
+<div class="doc-sub">Complete styling instructions for cowork. Every value here is final. Do not deviate without discussion. This document covers: design tokens, page structure, component-by-component CSS, typography rules, spacing, and the things that must never change.</div>
+<!-- ═══════════════════════════
+     DESIGN TOKENS
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 1</div>
+  <div class="sec-title">Design tokens — CSS variables</div>
+  <div class="note"><strong>Note:</strong> All values below must be defined as CSS custom properties on <code>:root</code>. Never hardcode these values inline — always reference the variable.</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">--page</div><div class="spec-val"><code>hsl(220,5%,93%)</code> — page background. Cool near-white. Not linen, not pure white.</div></div>
+    <div class="spec-row"><div class="spec-key">--card</div><div class="spec-val"><code>#ffffff</code> — card background</div></div>
+    <div class="spec-row"><div class="spec-key">--navy</div><div class="spec-val"><code>hsl(222,45%,12%)</code> — primary text color, CTA buttons, nav active state</div></div>
+    <div class="spec-row"><div class="spec-key">--b1</div><div class="spec-val"><code>rgba(0,0,0,0.08)</code> — card borders, dividers, section borders</div></div>
+    <div class="spec-row"><div class="spec-key">--t1</div><div class="spec-val"><code>hsl(222,45%,12%)</code> — primary text (same as --navy)</div></div>
+    <div class="spec-row"><div class="spec-key">--t2</div><div class="spec-val"><code>rgba(0,0,0,0.55)</code> — secondary text, body copy, subtitles</div></div>
+    <div class="spec-row"><div class="spec-key">--t3</div><div class="spec-val"><code>rgba(0,0,0,0.38)</code> — tertiary text, labels, hints, placeholders</div></div>
+    <div class="spec-row"><div class="spec-key">--green</div><div class="spec-val"><span class="sw"><span class="sw-dot" style="background:#2e7a52"></span></span><code>#2e7a52</code> — positive outcomes, on-track status, income pickup. Also used as --liq (liquidity card color).</div></div>
+    <div class="spec-row"><div class="spec-key">--amber</div><div class="spec-val"><span class="sw"><span class="sw-dot" style="background:#c47c2b"></span></span><code>#c47c2b</code> — warnings, rate risk, urgency. Also used as --rate (interest rates card color).</div></div>
+    <div class="spec-row"><div class="spec-key">--red</div><div class="spec-val"><span class="sw"><span class="sw-dot" style="background:#9b2020"></span></span><code>#9b2020</code> — deficits, negative values only</div></div>
+    <div class="spec-row"><div class="spec-key">--liq</div><div class="spec-val"><span class="sw"><span class="sw-dot" style="background:#2e7a52"></span></span><code>#2e7a52</code> — liquidity card stripe, label, dominant KPI number</div></div>
+    <div class="spec-row"><div class="spec-key">--inv</div><div class="spec-val"><span class="sw"><span class="sw-dot" style="background:#1E4F9C"></span></span><code>#1E4F9C</code> — investments card stripe, label, dominant KPI number</div></div>
+    <div class="spec-row"><div class="spec-key">--rate</div><div class="spec-val"><span class="sw"><span class="sw-dot" style="background:#c47c2b"></span></span><code>#c47c2b</code> — interest rates card stripe, label, dominant KPI number</div></div>
+    <div class="spec-row"><div class="spec-key">--sans</div><div class="spec-val"><code>'DM Sans', system-ui, sans-serif</code> — all UI text, labels, body copy, numbers</div></div>
+    <div class="spec-row"><div class="spec-key">--serif</div><div class="spec-val"><code>'Playfair Display', Georgia, serif</code> — page headline, "Good morning Tara" eyebrow, card headlines only</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     TYPOGRAPHY RULES
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 2</div>
+  <div class="sec-title">Typography — sizes, weights, rules</div>
+  <div class="warn"><strong>Never use:</strong> Inter, Roboto, or system fonts for UI text. DM Sans only. Never use Playfair Display for anything other than the page eyebrow, page headline, and card headlines.</div>
+  <div class="warn"><strong>Never abbreviate:</strong> Write "Money Market Fund" not "MMF". "After-tax" not "AT". "Operating Cash" not "Op Cash". Full names everywhere, always.</div>
+  <div class="warn"><strong>Numbers:</strong> All amounts use <code>font-variant-numeric: tabular-nums</code> and <code>letter-spacing: -0.02em</code> minimum. Weight 300 for display amounts, weight 500 for totals.</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">Page eyebrow<br><small>"Good morning, Tara"</small></div><div class="spec-val">Playfair Display, 22px, weight 400, color <code>var(--t3)</code>, letter-spacing -0.01em, line-height 1.2, margin-bottom 6px</div></div>
+    <div class="spec-row"><div class="spec-key">Page headline</div><div class="spec-val">Playfair Display, 38px, weight 400, color <code>var(--navy)</code>, letter-spacing -0.02em, line-height 1.15, margin-bottom 10px</div></div>
+    <div class="spec-row"><div class="spec-key">Page subtitle<br><small>"GURU analysis complete"</small></div><div class="spec-val">DM Sans, 13px, weight 600, color <code>var(--green)</code>, letter-spacing 0.01em. Plain date text alongside it: 14px weight 400 <code>var(--t2)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Card label<br><small>"LIQUIDITY"</small></div><div class="spec-val">DM Sans, 10px, weight 700, letter-spacing 0.13em, text-transform uppercase. Color = card color variable (--liq, --inv, --rate)</div></div>
+    <div class="spec-row"><div class="spec-key">Card priority badge<br><small>"HIGH PRIORITY"</small></div><div class="spec-val">DM Sans, 8px, weight 700, letter-spacing 0.10em, text-transform uppercase, padding 3px 10px, border 1px solid. Color = card color variable. No background fill. No border-radius.</div></div>
+    <div class="spec-row"><div class="spec-key">Card headline</div><div class="spec-val">Playfair Display, 20px, weight 400, color <code>var(--navy)</code>, letter-spacing -0.01em, line-height 1.3, margin-bottom 6px</div></div>
+    <div class="spec-row"><div class="spec-key">Card subtext</div><div class="spec-val">DM Sans, 11px, weight 400, color <code>var(--t2)</code>, line-height 1.55</div></div>
+    <div class="spec-row"><div class="spec-key">KPI label<br><small>"EXCESS LIQUIDITY"</small></div><div class="spec-val">DM Sans, 8px, weight 700, letter-spacing 0.11em, text-transform uppercase, color <code>var(--t3)</code>, margin-bottom 5px</div></div>
+    <div class="spec-row"><div class="spec-key">KPI dominant value</div><div class="spec-val">DM Sans, 22px, weight 300, letter-spacing -0.03em, font-variant-numeric tabular-nums, line-height 1. Color = card color variable (--liq / --inv / --rate). ONE per card only — all other KPI values in plain navy.</div></div>
+    <div class="spec-row"><div class="spec-key">KPI supporting value</div><div class="spec-val">DM Sans, 14px, weight 300, color <code>var(--navy)</code>, letter-spacing -0.02em, font-variant-numeric tabular-nums. Never colored — always plain navy.</div></div>
+    <div class="spec-row"><div class="spec-key">KPI subtext</div><div class="spec-val">DM Sans, 10px, weight 400, color <code>var(--t3)</code>, margin-top 3px</div></div>
+    <div class="spec-row"><div class="spec-key">Section label<br><small>"LIQUIDITY NEEDED"</small></div><div class="spec-val">DM Sans, 8px, weight 700, letter-spacing 0.12em, text-transform uppercase, color <code>var(--t3)</code>, padding 8px 16px 4px, border-bottom 1px solid rgba(0,0,0,0.04)</div></div>
+    <div class="spec-row"><div class="spec-key">Row name</div><div class="spec-val">DM Sans, 12px, weight 500, color <code>var(--navy)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Row subtext</div><div class="spec-val">DM Sans, 10px, weight 400, color <code>var(--t3)</code>, margin-top 2px. Keep to one short phrase — no numbers in subtext.</div></div>
+    <div class="spec-row"><div class="spec-key">Row value</div><div class="spec-val">DM Sans, 13px, weight 300, color <code>var(--navy)</code>, font-variant-numeric tabular-nums, letter-spacing -0.02em</div></div>
+    <div class="spec-row"><div class="spec-key">Total row label</div><div class="spec-val">DM Sans, 11px, weight 600, color <code>var(--t2)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Total row value</div><div class="spec-val">DM Sans, 14px, weight 500, color <code>var(--navy)</code>, font-variant-numeric tabular-nums, letter-spacing -0.02em. Deployable excess/positive outcome: color <code>var(--liq)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Eyebrow stat label<br><small>"BONUS CASH SITTING IDLE"</small></div><div class="spec-val">DM Sans, 10px, weight 600, letter-spacing 0.07em, text-transform uppercase, color <code>var(--t3)</code>, margin-bottom 3px</div></div>
+    <div class="spec-row"><div class="spec-key">Eyebrow stat value</div><div class="spec-val">DM Sans, 18px, weight 500, font-variant-numeric tabular-nums. Color per semantic meaning (amber for idle, green for positive, red for deadline)</div></div>
+    <div class="spec-row"><div class="spec-key">Eyebrow stat descriptor<br><small>"for 47 days"</small></div><div class="spec-val">DM Sans, 12px, weight 400, color <code>var(--t3)</code>, inline alongside value with a space gap</div></div>
+    <div class="spec-row"><div class="spec-key">Situation overview body</div><div class="spec-val">DM Sans, 12px, weight 400, color <code>var(--t2)</code>, line-height 1.7. Bold key numbers: weight 600 color <code>var(--t1)</code>. Deadline dates: weight 600 color <code>var(--amber)</code>.</div></div>
+    <div class="spec-row"><div class="spec-key">Sleeve name<br><small>"DFA US Small Cap Value"</small></div><div class="spec-val">DM Sans, 12px, weight 500, color <code>var(--navy)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Sleeve subtext</div><div class="spec-val">DM Sans, 10px, weight 400, color <code>var(--t2)</code>, line-height 1.4. Historical % and added exposure % in weight 600 color <code>var(--green)</code>.</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     PAGE STRUCTURE
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 3</div>
+  <div class="sec-title">Page structure — top to bottom</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">Page background</div><div class="spec-val"><code>background: hsl(220,5%,93%)</code> on body. This is the cool near-white that shows between and around all cards.</div></div>
+    <div class="spec-row"><div class="spec-key">Page gutter</div><div class="spec-val">All page-level elements: <code>margin: 0 32px</code> or <code>padding: 0 32px</code>. Nothing bleeds to the edge.</div></div>
+    <div class="spec-row"><div class="spec-key">Page header</div><div class="spec-val">Padding: <code>24px 32px 0</code>. Background: <code>var(--page)</code>. Contains: left side (eyebrow + headline + subtitle), right side (compose button + 1440/1920 toggle + date).</div></div>
+    <div class="spec-row"><div class="spec-key">Compose button — position</div><div class="spec-val">Move to the page header, right side, above the 1440/1920 toggle. <strong>Remove the floating pill.</strong> It should be a navy outlined button: border 1px solid var(--navy), color var(--navy), background transparent, padding 7px 16px, font-size 11px weight 600. When clicked opens the compose flow.</div></div>
+    <div class="spec-row"><div class="spec-key">Space below header</div><div class="spec-val"><code>margin-bottom: 16px</code> on the ph-top flex row before the situation overview</div></div>
+    <div class="spec-row"><div class="spec-key">Situation overview</div><div class="spec-val">Full-width card, margin 0 32px. Two-column grid: 120px label left, 1fr body right. No top margin — connects directly to the header below.</div></div>
+    <div class="spec-row"><div class="spec-key">Eyebrow stat bar</div><div class="spec-val">Flush below the situation overview. <code>border-top: none</code> so they read as one connected unit. Same left/right margin as situation overview.</div></div>
+    <div class="spec-row"><div class="spec-key">Card grid</div><div class="spec-val">Padding: <code>16px 32px 32px</code>. <code>display: grid</code>, <code>grid-template-columns: repeat(3, 1fr)</code>, <code>gap: 20px</code>. Gap is 20px not 12px — cards need separation to feel like distinct executable actions.</div></div>
+    <div class="spec-row"><div class="spec-key">Max card width</div><div class="spec-val">No explicit max-width — let the grid handle it. But the 32px gutter on each side plus 20px gaps means each card is ~(viewport − 64px − 40px) / 3. At 1440px that's ~445px which is correct.</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     NAV BAR
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 4</div>
+  <div class="sec-title">Navigation bar</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">Identity bar height</div><div class="spec-val">36px. Background white. Border-bottom: <code>0.5px solid rgba(0,0,0,0.08)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Identity bar text</div><div class="spec-val">DM Sans, 10px, weight 500, letter-spacing 0.12em, text-transform uppercase. Left: client name <code>rgba(0,0,0,0.45)</code>. Right: advisor + date <code>rgba(0,0,0,0.30)</code>.</div></div>
+    <div class="spec-row"><div class="spec-key">Nav bar height</div><div class="spec-val">44px. Background white. Border-bottom: <code>0.5px solid rgba(0,0,0,0.08)</code></div></div>
+    <div class="spec-row"><div class="spec-key">GURU wordmark</div><div class="spec-val">DM Sans, 10px, weight 700, letter-spacing 0.14em, text-transform uppercase, <code>rgba(0,0,0,0.80)</code>. Padding-right 22px, border-right <code>0.5px solid rgba(0,0,0,0.08)</code>.</div></div>
+    <div class="spec-row"><div class="spec-key">Inactive nav tab</div><div class="spec-val">DM Sans, 10px, weight 600, letter-spacing 0.1em, text-transform uppercase, color <code>rgba(0,0,0,0.38)</code>. Padding 0 14px. Border-bottom: 2px solid transparent.</div></div>
+    <div class="spec-row"><div class="spec-key">Active nav tab</div><div class="spec-val">Same as inactive but color <code>rgba(0,0,0,0.85)</code>, border-bottom-color <code>rgba(0,0,0,0.78)</code></div></div>
+    <div class="spec-row"><div class="spec-key">GURU Intelligence tab</div><div class="spec-val">DM Sans, 10px, weight 600, letter-spacing 0.1em, text-transform uppercase, color <code>rgba(74,159,212,0.80)</code>. Pulse dot: 5px circle <code>#4A9FD4</code> with opacity animation.</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     SITUATION OVERVIEW
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 5</div>
+  <div class="sec-title">Situation overview card</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">Container</div><div class="spec-val"><code>background: #fff; border: 1px solid rgba(0,0,0,0.08); margin: 0 32px; display: grid; grid-template-columns: 120px 1fr;</code> No border-radius. No shadow.</div></div>
+    <div class="spec-row"><div class="spec-key">Label cell</div><div class="spec-val"><code>padding: 16px; border-right: 1px solid rgba(0,0,0,0.08);</code> Text: DM Sans, 8px, weight 700, letter-spacing 0.13em, text-transform uppercase, <code>var(--t3)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Body cell</div><div class="spec-val"><code>padding: 14px 18px;</code> DM Sans, 12px, weight 400, <code>var(--t2)</code>, line-height 1.7</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     EYEBROW STAT BAR
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 6</div>
+  <div class="sec-title">Eyebrow stat bar</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">Container</div><div class="spec-val"><code>margin: 0 32px; background: #fff; border: 1px solid rgba(0,0,0,0.08); border-top: none; display: flex; align-items: stretch; padding: 0 16px;</code> Border-top none so it sits flush with the situation overview above.</div></div>
+    <div class="spec-row"><div class="spec-key">Each stat block</div><div class="spec-val"><code>padding: 14px 20px 14px 12px; border-left: 3px solid [color]; margin: 10px 0; border-right: 1px solid rgba(0,0,0,0.08);</code> Last block: <code>border-right: none; margin-left: auto;</code></div></div>
+    <div class="spec-row"><div class="spec-key">Stat label</div><div class="spec-val">DM Sans, 10px, weight 600, letter-spacing 0.07em, text-transform uppercase, <code>var(--t3)</code>, margin-bottom 3px</div></div>
+    <div class="spec-row"><div class="spec-key">Stat value</div><div class="spec-val">DM Sans, 18px, weight 500, font-variant-numeric tabular-nums. Colors: idle/amber = <code>#c47c2b</code>, positive/green = <code>#2e7a52</code>, deadline/red = <code>#9b2020</code>, neutral = <code>var(--navy)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Stat descriptor</div><div class="spec-val">DM Sans, 12px, weight 400, <code>var(--t3)</code>, inline alongside value with a space gap</div></div>
+    <div class="spec-row"><div class="spec-key">Left border colors</div><div class="spec-val">Match the stat's semantic color. Idle/warning = amber. Positive = green. Deadline = red. Net worth = <code>rgba(0,0,0,0.12)</code> neutral.</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     CARD SHELL
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 7</div>
+  <div class="sec-title">Card shell — applies to all three cards</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">Container</div><div class="spec-val"><code>background: #fff; border: 1px solid rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column;</code> No border-radius. No box-shadow.</div></div>
+    <div class="spec-row"><div class="spec-key">Top stripe</div><div class="spec-val"><code>height: 3px; flex-shrink: 0;</code> Color = card variable (--liq, --inv, --rate)</div></div>
+    <div class="spec-row"><div class="spec-key">Card header band</div><div class="spec-val"><code>padding: 16px 16px 14px; border-bottom: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between;</code></div></div>
+    <div class="spec-row"><div class="spec-key">Headline section</div><div class="spec-val"><code>padding: 14px 16px 12px; border-bottom: 1px solid rgba(0,0,0,0.08);</code></div></div>
+    <div class="spec-row"><div class="spec-key">Internal dividers</div><div class="spec-val">All internal section dividers: <code>border-bottom: 1px solid rgba(0,0,0,0.08)</code>. Row-level dividers (lighter): <code>border-bottom: 1px solid rgba(0,0,0,0.04)</code></div></div>
+    <div class="spec-row"><div class="spec-key">Total row</div><div class="spec-val"><code>padding: 10px 16px; border-top: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.015); display: flex; justify-content: space-between; align-items: baseline; margin-top: auto;</code> Always the last element in the card. margin-top: auto pushes it to the bottom.</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     KPI GRID
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 8</div>
+  <div class="sec-title">KPI grid — the stat row inside each card</div>
+  <div class="note"><strong>Rule:</strong> One dominant number per card, colored in the card's color variable. All other numbers in plain <code>var(--navy)</code>. Never color more than one KPI cell per card.</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">Grid container</div><div class="spec-val"><code>padding: 0 16px; border-bottom: 1px solid rgba(0,0,0,0.08); display: grid;</code> Three columns: <code>grid-template-columns: 1.5fr 1fr 1fr</code>. Two columns: <code>1.5fr 1fr</code>.</div></div>
+    <div class="spec-row"><div class="spec-key">Dominant cell</div><div class="spec-val"><code>padding: 12px 14px 12px 0; border-right: 1px solid rgba(0,0,0,0.08);</code></div></div>
+    <div class="spec-row"><div class="spec-key">Supporting cells</div><div class="spec-val"><code>padding: 12px 0 12px 14px; border-right: 1px solid rgba(0,0,0,0.08);</code> Last cell: <code>border-right: none</code></div></div>
+    <div class="spec-row"><div class="spec-key">Card 1 — Liquidity</div><div class="spec-val">Dominant: Excess liquidity ($321,535) in <code>var(--liq)</code>. Supporting: Coverage (21.8 months) and Income pickup (+$28,675/yr) in <code>var(--navy)</code>.</div></div>
+    <div class="spec-row"><div class="spec-key">Card 2 — Investments</div><div class="spec-val">Dominant: Diversification added (~11%) in <code>var(--inv)</code>. Supporting: Cash deployed ($325,824) and 5-year weighted average return (6.9%) in <code>var(--navy)</code>.</div></div>
+    <div class="spec-row"><div class="spec-key">Card 3 — Interest rates</div><div class="spec-val">Dominant: Rate-vulnerable cash ($1,046,586) in <code>var(--rate)</code>. Supporting: After-tax income at risk ($5,233/yr) and T-bill rate available (5.200%) in <code>var(--navy)</code>.</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     CARD-SPECIFIC CONTENT
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 9</div>
+  <div class="sec-title">Card-specific content rules</div>
+  <div class="spec-block">
+    <div class="spec-row"><div class="spec-key">Card 1 table rows</div><div class="spec-val">Section label: 8px weight 700 all-caps <code>var(--t3)</code>. Indented rows: padding-left 28px, 12px weight 400 <code>var(--navy)</code>. Subtext: 10px weight 400 <code>var(--t3)</code> — one short phrase, no numbers. Value: 12px weight 300 <code>var(--navy)</code>. Subtotal row: 11px weight 600, 13px weight 500 value. Total liquid row: 12px weight 500 label, 13px weight 500 value.</div></div>
+    <div class="spec-row"><div class="spec-key">Card 1 table structure</div><div class="spec-val">Four lines only: (1) Cash for next 12 months of net outflows $237,101, (2) Operating cash on hand — 2 months $63,574, (3) Capital preservation — home purchase $135,000, subtotal Total liquidity needed $435,675. Then: Total liquid assets $693,636. Then total row: Deployable excess $257,961 in <code>var(--liq)</code>.</div></div>
+    <div class="spec-row"><div class="spec-key">Card 2 checkbox rows</div><div class="spec-val">Checkbox: 14×14px, border 1.5px solid <code>rgba(0,0,0,0.20)</code>, no border-radius. Checked state: background <code>var(--navy)</code>, ✓ in white 9px. Sleeve name: 12px weight 500 <code>var(--navy)</code>. First subtext line (stats): 10px weight 400 <code>var(--t2)</code>, historical % and added exposure % in weight 600 <code>var(--green)</code>. Second subtext line (description): 10px weight 400 <code>var(--t2)</code> line-height 1.4. Amount: 13px weight 300 <code>var(--navy)</code>.</div></div>
+    <div class="spec-row"><div class="spec-key">Card 3 table</div><div class="spec-val">Three columns: Position (left, 1fr), Current yield (right, 90px), Balance (right, 80px). Column header row: background <code>rgba(0,0,0,0.02)</code>, 8px weight 700 all-caps <code>var(--t3)</code>, padding 6px 16px. Position rows: padding 9px 16px, position name 12px weight 400 <code>var(--navy)</code>, subtext 10px <code>var(--t3)</code>, yield 12px weight 400 <code>var(--amber)</code>, balance 13px weight 300 <code>var(--navy)</code>. Full account names — no abbreviations.</div></div>
+    <div class="spec-row"><div class="spec-key">Card 3 positions</div><div class="spec-val">Citizens Private Bank Money Market · 3.65% · $225,000<br>CapitalOne 360 Performance Savings · 3.78% · $15,000<br>Fidelity Cash Sweep / SPAXX · 2.50% · $186,586<br>Fidelity 401(k) / IRA — Money Market Fund sleeve · 2.80% · $620,000. Total rate-vulnerable: $1,046,586 in <code>var(--rate)</code>.</div></div>
+  </div>
+</div>
+<!-- ═══════════════════════════
+     NEVER / ALWAYS
+═══════════════════════════ -->
+<div class="sec">
+  <div class="sec-eyebrow">Section 10</div>
+  <div class="sec-title">Hard rules — never deviate</div>
+  <div class="warn"><strong>Never:</strong> border-radius on any card, button, badge, input, or container. Everything is square-cornered.</div>
+  <div class="warn"><strong>Never:</strong> box-shadow on any element.</div>
+  <div class="warn"><strong>Never:</strong> More than one colored KPI number per card. The dominant number gets the card color. Everything else is plain navy.</div>
+  <div class="warn"><strong>Never:</strong> Abbreviate. "Money Market Fund" not "MMF". "Operating Cash" not "Op Cash". "After-tax" not "AT". Full names always.</div>
+  <div class="warn"><strong>Never:</strong> Inter, Roboto, or system-ui as the primary font. DM Sans only for UI. Playfair Display only for eyebrow, page headline, and card headlines.</div>
+  <div class="warn"><strong>Never:</strong> A floating compose button that overlaps content. Compose action belongs in the page header, top right.</div>
+  <div class="warn"><strong>Never:</strong> Two green dots / two status indicators in the page subtitle. One clean line: "GURU analysis complete · Ready to execute" in green, no dots.</div>
+  <div class="warn"><strong>Never:</strong> "50 bps expected rate cut" as a KPI in the interest rates card. The three KPIs are: rate-vulnerable cash (dominant, amber), after-tax income at risk, T-bill rate available.</div>
+</div>
+</div>
+</body>
+</html>

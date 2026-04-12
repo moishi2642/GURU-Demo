@@ -333,8 +333,11 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
   );
 }
 
-// ─── Demo date: simulate "today = March 6, 2026" ──────────────────────────────
-const DEMO_NOW = new Date(2026, 2, 6); // March 6, 2026
+// ─── Demo date: simulate "today = December 31, 2025" ──────────────────────────
+// SINGLE SOURCE OF TRUTH for all tab date displays.
+// This constant is visible / referenced from the GURU Intelligence tab header.
+// All other tabs derive their "today" from this value.
+const DEMO_NOW = new Date(2025, 11, 31); // December 31, 2025
 
 // ─── Institutional color palette — private wealth / Goldman aesthetic ─────────
 // Deep, desaturated. Navy, warm gold, forest, slate. No orange, no purple.
@@ -398,7 +401,7 @@ const fmtK = (v: number) => {
 };
 
 const PANEL_CLS =
-  "border border-border shadow-sm bg-card rounded-xl overflow-hidden";
+  "bg-white overflow-hidden [border:0.5px_solid_rgba(0,0,0,0.07)]";
 
 // Intelligence-layer panels — dark forest green analytical canvas
 const INTEL_PANEL_CLS =
@@ -418,31 +421,31 @@ const GURU_BUCKETS = {
   reserve: {
     label: "Operating Cash",
     short: "Checking — instantly available transaction accounts",
-    color: "#3da870",
-    tagCls: "bg-transparent border border-[#0e3320]/35 text-[#0e3320]",
+    color: "#1E4F9C",
+    tagCls: "bg-transparent border border-[#1E4F9C]/35 text-[#1E4F9C]",
   },
   yield: {
     label: "Liquidity Reserve",
     short: "Savings & money market — penalty-free, higher-yielding",
-    color: "#b8943f",
-    tagCls: "bg-transparent border border-[#3a2710]/35 text-[#3a2710]",
+    color: "#835800",
+    tagCls: "bg-transparent border border-[#835800]/35 text-[#835800]",
   },
   tactical: {
     label: "Capital Build",
     short: "Treasuries & fixed income — 1–3 year horizon",
-    color: "#5a85b8",
-    tagCls: "bg-transparent border border-[#162843]/35 text-[#162843]",
+    color: "#195830",
+    tagCls: "bg-transparent border border-[#195830]/35 text-[#195830]",
   },
   growth: {
     label: "Investments",
     short: "Long-horizon investments — equities, compounding wealth",
-    color: "#8878C3",
-    tagCls: "bg-transparent border border-[#2D1B6B]/35 text-[#2D1B6B]",
+    color: "#4A3FA0",
+    tagCls: "bg-transparent border border-[#4A3FA0]/35 text-[#4A3FA0]",
   },
   alternatives: {
     label: "Alternatives",
     short: "Real estate, private equity, RSUs — strategic illiquid assets",
-    color: "#888888",
+    color: "#5C5C6E",
     tagCls: "bg-transparent border border-slate-400/40 text-slate-600",
   },
 } as const;
@@ -582,11 +585,9 @@ function cashBuckets(assets: Asset[]) {
         yieldItems.push({ label: lbl, value: val });
       }
     } else if (a.type === "fixed_income") {
-      if (
-        desc.includes("treasur") ||
-        desc.includes("t-bill") ||
-        desc.includes("short")
-      ) {
+      // Capital Build: all non-retirement fixed income
+      // Matches computeLiquidityTargets() capitalBuild filter exactly
+      if (!/401|ira|roth/i.test(a.description ?? "")) {
         tactical += val;
         tacticalItems.push({ label: lbl, value: val });
       } else {
@@ -636,6 +637,381 @@ function cashBuckets(assets: Asset[]) {
     shortItems: yieldItems,
     mediumItems: tacticalItems,
   };
+}
+
+// ─── Shared cumulative NCF computation ───────────────────────────────────────
+// Exact mirror of the logic inside CashFlowForecastView that powers the
+// cumulative-cash-flow chart.  Extracted here so every panel that needs the
+// trough reads from ONE source of truth — not a separately-maintained formula.
+//
+// CF_PL_ROWS and CF_MONTHS are file-level constants; monthVal logic is replicated
+// faithfully (1-indexed months matching CF_MONTHS, same description matching).
+//
+// Returns
+//  • cumulativeByMonth — 12-element array (index 0 = Jan 2026 … 11 = Dec 2026)
+//  • troughIdx         — 0-based index of the minimum cumulative value (Nov → 10)
+//  • troughDepth       — absolute cash deficit at the trough (e.g. $125,096 for Kesslers)
+//  • netByMonth        — 12-element array of monthly NCF
+function computeCumulativeNCF(cashFlows: CashFlow[]): {
+  cumulativeByMonth: number[];
+  troughIdx:   number;
+  troughDepth: number;
+  netByMonth:  number[];
+} {
+  // 1-indexed month helper (matches CF_MONTHS where month: 1 = January)
+  const mvCF = (descs: string[], year: number, month: number): number =>
+    cashFlows
+      .filter((cf) => {
+        const d = new Date(cf.date as string);
+        return (
+          d.getUTCFullYear() === year &&
+          d.getUTCMonth() + 1 === month &&
+          descs.some((dm) => cf.description.toLowerCase().includes(dm.toLowerCase()))
+        );
+      })
+      .reduce((s, cf) => s + (cf.type === "inflow" ? Number(cf.amount) : -Number(cf.amount)), 0);
+
+  const vals: Record<string, number[]> = {};
+  for (const row of CF_PL_ROWS) {
+    if (row.kind === "item") {
+      vals[row.key] = CF_MONTHS.map((m) => mvCF(row.descs, m.year, m.month));
+    } else if (row.kind === "subtotal") {
+      if (row.sumOf) {
+        vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf!.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
+      } else if (row.descs) {
+        vals[row.key] = CF_MONTHS.map((m) => mvCF(row.descs!, m.year, m.month));
+      } else {
+        vals[row.key] = CF_MONTHS.map(() => 0);
+      }
+    } else if (row.kind === "total" && row.sumOf) {
+      vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf!.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
+    } else {
+      vals[row.key] = CF_MONTHS.map(() => 0);
+    }
+  }
+
+  const netByMonth = CF_MONTHS.map((_, mi) =>
+    CF_PL_ROWS.filter((r) => r.kind === "item").reduce((s, r) => s + (vals[r.key]?.[mi] ?? 0), 0)
+  );
+
+  const cumulativeByMonth = netByMonth.reduce<number[]>((acc, v, i) => {
+    acc.push((acc[i - 1] ?? 0) + v);
+    return acc;
+  }, []);
+
+  const troughIdx = cumulativeByMonth.reduce(
+    (minI, v, i) => (v < cumulativeByMonth[minI] ? i : minI),
+    0,
+  );
+
+  // troughDepth: cash needed at the low point.
+  // The cumulative NCF starts at 0 (post-bonus) and dips negative through the year
+  // before December bonus recovery — so the minimum is typically negative.
+  // troughDepth = |min| = how much cash you must hold from day-1 to stay solvent.
+  const troughMin  = cumulativeByMonth[troughIdx];
+  const troughDepth = troughMin < 0 ? Math.abs(troughMin) : troughMin;
+
+  return { cumulativeByMonth, troughIdx, troughDepth, netByMonth };
+}
+
+// ─── Shared liquidity target calculation ─────────────────────────────────────
+// Canonical source-of-truth for all liquidity metrics.
+// Both AdvisorBriefView and GuruLandingView call this.
+//
+// ── Terminology ──────────────────────────────────────────────────────────────
+//
+//  RESERVE TARGET
+//    12-month liquidity required across the two bank-deposit buckets:
+//    Operating Cash + Liquidity Reserve. Capital Build (goalSavings) is separate.
+//    reserveTarget + goalSavings = Total Liquidity Requirement (all 3 buckets).
+//    = troughDepth + operatingFloorAtTrough
+//    NOTE: this is the combined target for both bank buckets, not either one alone.
+//    See LIQUIDITY RESERVE TARGET below for the Liquidity Reserve bucket's portion.
+//
+//  LIQUIDITY RESERVE TARGET
+//    The target balance for the Liquidity Reserve bucket specifically.
+//    The Operating Cash bucket already covers the 2-month operatingTarget,
+//    so the reserve bucket covers the remaining shortfall.
+//    = reserveTarget − operatingTarget
+//
+//  OPERATING FLOOR AT TROUGH
+//    The client's operating account requirement as it stands AT the trough,
+//    not today. Same 2-month-forward methodology as today's operating target,
+//    but anchored to the trough month instead of the bonus date.
+//    = outflows(troughMonth+1) + outflows(troughMonth+2)
+//    When trough = November: December outflows + January outflows.
+//
+//  OPERATING TARGET (today)
+//    The 2-month forward outflow baseline from the bonus landing date.
+//    Sizes the operating account right now — not part of the reserve target.
+//    = outflows(bonusMonth+1) + outflows(bonusMonth+2)
+//
+//  GOAL SAVINGS
+//    Capital earmarked for a defined near-term expenditure (home purchase etc.).
+//    Calculation to be built; hardcoded at 0 until then.
+//
+//  TOTAL LIQUIDITY REQUIREMENT
+//    Everything the client needs to hold for liquidity purposes.
+//    = Reserve Target + Goal Savings
+//
+//  EXCESS LIQUIDITY
+//    = totalLiquid − Total Liquidity Requirement
+//    totalLiquid = operatingCash + liquidityReserve + capitalBuild
+//
+// BONUS_DATE is set to Dec 31 2025 — the day the year-end bonus landed.
+function computeLiquidityTargets(
+  assets: Asset[],
+  cashFlows: CashFlow[],
+  bonusDate: Date = new Date(2025, 11, 31), // Dec 31, 2025
+): {
+  operatingCash:           number;
+  operatingTarget:         number;
+  operatingExcess:         number;
+  liquidityReserve:        number;
+  reserveTarget:           number;          // full 12-month liquidity requirement (NOT the Liquidity Reserve bucket target)
+  liquidityReserveTarget:  number;          // Liquidity Reserve bucket target = reserveTarget − operatingTarget
+  reserveExcess:           number;          // liquidityReserve above its own bucket target
+  capitalBuild:            number;
+  totalLiquid:             number;
+  goalSavings:             number;
+  totalLiquidityReq:       number;
+  operatingFloorAtTrough:  number;
+  troughDepth:             number;
+  excessLiquidity:         number;
+  monthlyRate:             number;
+  coverageMonths:          number;
+} {
+  // ── Account groupings ──────────────────────────────────────────────────────
+  // Operating Cash: checking accounts — instant same-day liquidity, no yield
+  const operatingCash = assets
+    .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
+    .reduce((s, a) => s + Number(a.value), 0);
+
+  // Liquidity Reserve: bank deposit products (savings, money market accounts,
+  // high-yield savings) — same-day to T+1, FDIC-insured, yield-optimized
+  const liquidityReserve = assets
+    .filter(a => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"))
+    .reduce((s, a) => s + Number(a.value), 0);
+
+  // Capital Build: investment-grade short-duration market instruments —
+  // Treasuries, T-bills, money market funds, CDs, munis, short-duration fixed income.
+  // Excludes retirement accounts (401k, IRA, Roth) which are long-horizon, illiquid.
+  const capitalBuild = assets
+    .filter(a => a.type === "fixed_income" && !/401|ira|roth/i.test(a.description ?? ""))
+    .reduce((s, a) => s + Number(a.value), 0);
+
+  const totalLiquid = operatingCash + liquidityReserve + capitalBuild;
+
+  // ── Helper: sum outflows for a given year/month (1-indexed month) ─────────
+  const monthOutflows = (year: number, month: number): number =>
+    cashFlows
+      .filter(cf => cf.type === "outflow")
+      .filter(cf => {
+        const d = new Date(cf.date as string);
+        return d.getUTCFullYear() === year && d.getUTCMonth() + 1 === month;
+      })
+      .reduce((s, cf) => s + Number(cf.amount), 0);
+
+  // ── Trough — single source of truth from CF tab computation ──────────────
+  const { troughIdx, troughDepth } = computeCumulativeNCF(cashFlows);
+
+  // ── Operating floor AT the trough ────────────────────────────────────────
+  // 2 months forward from the trough month (not from today).
+  // troughIdx is 0-based into CF_MONTHS (Nov trough → idx 10).
+  // Wraps correctly: Nov+1 = Dec (idx 11), Nov+2 = Jan (idx 0).
+  const fwd1 = CF_MONTHS[(troughIdx + 1) % CF_MONTHS.length];
+  const fwd2 = CF_MONTHS[(troughIdx + 2) % CF_MONTHS.length];
+  const operatingFloorAtTrough = monthOutflows(fwd1.year, fwd1.month)
+                               + monthOutflows(fwd2.year, fwd2.month);
+
+  // ── Reserve Target = total 12-month liquidity needed ─────────────────────
+  const reserveTarget = troughDepth + operatingFloorAtTrough;
+
+  // ── Operating target (today) ──────────────────────────────────────────────
+  // 2 months forward from the bonus landing date. Sizes the operating account now.
+  const bm  = bonusDate.getMonth();                                        // 0-indexed
+  const bm1 = (bm + 1) % 12;
+  const by1 = bm === 11 ? bonusDate.getFullYear() + 1 : bonusDate.getFullYear();
+  const bm2 = (bm1 + 1) % 12;
+  const by2 = bm1 === 11 ? by1 + 1 : by1;
+  const operatingTarget = monthOutflows(by1, bm1 + 1) + monthOutflows(by2, bm2 + 1) || 63574;
+
+  // ── Goal Savings ──────────────────────────────────────────────────────────
+  // Capital earmarked for a near-term goal (home purchase, etc.).
+  // For now: equals the Capital Build balance (Treasuries already earmarked).
+  // For a new client with no Treasuries this is 0 automatically.
+  // TODO: derive properly as max(0, eventAmount − projectedNCFtoEventDate)
+  const goalSavings = capitalBuild;
+
+  // ── Total Liquidity Requirement & Excess ─────────────────────────────────
+  const totalLiquidityReq = reserveTarget + goalSavings;
+  const excessLiquidity   = Math.max(0, totalLiquid - totalLiquidityReq);
+
+  const operatingExcess = Math.max(0, operatingCash - operatingTarget);
+
+  // ── Per-bucket targets ────────────────────────────────────────────────────
+  // The Liquidity Reserve bucket does NOT need to cover the full reserveTarget —
+  // the Operating Cash bucket already covers the 2-month operatingTarget.
+  // Liquidity Reserve target = the remainder of the 12-month requirement.
+  const liquidityReserveTarget = Math.max(0, reserveTarget - operatingTarget);
+  const reserveExcess          = Math.max(0, liquidityReserve - liquidityReserveTarget);
+
+  const monthlyRate    = operatingTarget / 2;
+  const coverageMonths = monthlyRate > 0 ? totalLiquid / monthlyRate : 0;
+
+  return {
+    operatingCash,    operatingTarget,         operatingExcess,
+    liquidityReserve, reserveTarget,           liquidityReserveTarget,  reserveExcess,
+    capitalBuild,     totalLiquid,
+    goalSavings,      totalLiquidityReq,
+    operatingFloorAtTrough, troughDepth,
+    excessLiquidity, monthlyRate, coverageMonths,
+  };
+}
+
+// ─── Return Optimization Calculator ──────────────────────────────────────────
+// Computes current vs. pro-forma after-tax annual income across all liquid,
+// non-retirement accounts. "Pro-forma" uses the highest AT yield from
+// BUCKET_PRODUCTS for each GURU bucket.
+//
+// Tax rates (Kessler — NYC resident):
+//   Bank deposits (checking, savings, MM): 47% = federal 35% + NY state 8% + NYC 4%
+//   Treasuries / treasury-only MMFs:       35% = federal only (state/city exempt)
+//   Equity / LTCG:                         20%
+//
+// Best-product AT yields per bucket (highest atYield in BUCKET_PRODUCTS):
+//   Checking → CIT Money Market Bank Account:   4.30% gross / 2.28% AT (BANK_TAX)
+//   Reserve  → JPMorgan 100% Treasuries MMF:    4.30% gross / 2.80% AT (TREAS_TAX)
+//   Capital  → S&P Low Volatility Index ETF:    6.50% gross / 4.42% AT (highest Build)
+//   Equity   → investment portfolio (unchanged):10.00% gross / 8.00% AT (LTCG_TAX)
+//
+// Excluded: real_estate, alternatives (PE/crypto), unvested RSUs, retirement accts
+const BANK_TAX       = 0.47;    // 47% — NYC combined: federal (35%) + state (8%) + city (4%)
+const TREAS_TAX      = 0.35;    // 35% — federal only; treasury securities state/city exempt
+const LTCG_TAX       = 0.20;    // 20% — long-term capital gains
+const INVEST_GROSS   = 0.10;    // 10% — assumed gross investment portfolio return
+const CHECKING_GROSS = 0.0001;  // 0.01% — actual checking yield (from ASSET_RETURNS data)
+
+const PROFORMA_AT = {
+  checking: 0.0228, // CIT Money Market: 4.30% gross × (1 − 47%) = 2.28% AT
+  reserve:  0.0280, // JPMorgan 100% Treasuries MMF: 4.30% × (1 − 35%) = 2.80% AT
+  capital:  0.0520, // S&P Low Volatility Index: 6.50% × (1 − 20% LTCG) = 5.20% AT (highest Build)
+  equity:   INVEST_GROSS * (1 - LTCG_TAX), // 8.00% AT — unchanged, already invested
+} as const;
+
+interface ReturnAccountDetail {
+  description:      string;
+  balance:          number;
+  grossYield:       number;
+  currentATYield:   number;
+  currentATIncome:  number;
+  proformaATYield:  number;
+  proformaATIncome: number;
+  bucket:           keyof typeof PROFORMA_AT;
+}
+
+function parseYieldFromDesc(description: string): number | null {
+  const m = (description ?? "").match(/(\d+\.?\d*)%/);
+  return m ? parseFloat(m[1]) / 100 : null;
+}
+
+function computeReturnOptimization(assets: Asset[], cashFlows?: CashFlow[]): {
+  accounts:             ReturnAccountDetail[];
+  currentAnnualIncome:  number;
+  proformaAnnualIncome: number;
+  annualPickup:         number;
+} {
+  const accounts: ReturnAccountDetail[] = [];
+
+  for (const a of assets) {
+    const rawDesc = a.description ?? "";
+    const desc    = rawDesc.toLowerCase();
+    const balance = Number(a.value ?? 0);
+    if (balance <= 0) continue;
+
+    // Exclusions
+    if (a.type === "real_estate")         continue;
+    if (a.type === "alternative")         continue;
+    if (/401|ira|roth/i.test(rawDesc))    continue;  // retirement accounts
+    if (/rsu|unvested|carry/i.test(desc)) continue;  // illiquid / unvested equity
+
+    let bucket: ReturnAccountDetail["bucket"];
+    let grossYield: number;
+    let taxRate: number;
+
+    if (a.type === "cash") {
+      if (desc.includes("checking")) {
+        bucket     = "checking";
+        grossYield = CHECKING_GROSS; // 0.01% — actual checking yield (ASSET_RETURNS)
+        taxRate    = BANK_TAX;       // 47% — NYC combined rate for bank deposit interest
+      } else {
+        bucket     = "reserve";
+        grossYield = parseYieldFromDesc(rawDesc) ?? CHECKING_GROSS;
+        // Treasuries-only MMFs (e.g. Fidelity SPAXX govt variant) → 35%; bank deposits → 47%
+        // Fidelity Cash Sweep is a general purpose MMF → BANK_TAX
+        taxRate    = BANK_TAX;
+      }
+    } else if (a.type === "fixed_income") {
+      bucket     = "capital";
+      grossYield = parseYieldFromDesc(rawDesc) ?? 0.035;
+      taxRate    = TREAS_TAX; // Treasuries: federal only (35%), state/city exempt
+    } else if (a.type === "equity") {
+      bucket     = "equity";
+      grossYield = INVEST_GROSS;
+      taxRate    = LTCG_TAX;
+    } else {
+      continue;
+    }
+
+    const currentATYield  = grossYield * (1 - taxRate);
+    const proformaATYield = PROFORMA_AT[bucket];
+
+    accounts.push({
+      description:      rawDesc,
+      balance,
+      grossYield,
+      currentATYield,
+      currentATIncome:  Math.round(balance * currentATYield),
+      proformaATYield,
+      proformaATIncome: Math.round(balance * proformaATYield),
+      bucket,
+    });
+  }
+
+  const currentAnnualIncome = accounts.reduce((s, a) => s + a.currentATIncome, 0);
+
+  let proformaAnnualIncome: number;
+
+  if (cashFlows) {
+    // Target-based pro-forma: matches income optimization table exactly.
+    // Each bucket is sized to its target; excess cash is deployed to new investments at equity rate.
+    const {
+      operatingTarget,
+      liquidityReserveTarget,
+      capitalBuild: capitalBuildBal,
+      excessLiquidity,
+    } = computeLiquidityTargets(assets, cashFlows);
+
+    // Equity bucket: existing accounts, pro-forma rate already at PROFORMA_AT.equity
+    const equityProforma = accounts
+      .filter(a => a.bucket === "equity")
+      .reduce((s, a) => s + a.proformaATIncome, 0);
+
+    proformaAnnualIncome = Math.round(
+      operatingTarget   * PROFORMA_AT.checking +  // Operating at CIT MM rate
+      liquidityReserveTarget * PROFORMA_AT.reserve + // Reserve at JPMorgan Treasuries MMF rate
+      capitalBuildBal   * PROFORMA_AT.capital +   // Capital Build at S&P Low Vol rate
+      equityProforma +                             // Existing equity unchanged
+      excessLiquidity   * PROFORMA_AT.equity       // New investments: excess deployed at 8% AT
+    );
+  } else {
+    // Legacy: apply best rate to full current balance per bucket (no redistribution)
+    proformaAnnualIncome = accounts.reduce((s, a) => s + a.proformaATIncome, 0);
+  }
+
+  const annualPickup = proformaAnnualIncome - currentAnnualIncome;
+
+  return { accounts, currentAnnualIncome, proformaAnnualIncome, annualPickup };
 }
 
 function computeTrough(forecastData: ReturnType<typeof buildForecast>) {
@@ -737,15 +1113,18 @@ function NetWorthPanel({
     SERIF:    "'Instrument Serif', Georgia, serif",
   };
 
-  // Excess liquidity — coverage-month methodology (matches allocation tool)
-  // Op Cash target: 2 months × $20,939/mo; Reserve target: 12 months × $18,066/mo
-  const { totalLiquid: nwLiquid, reserve: nwReserve, yieldBucket: nwYield } = cashBuckets(assets);
-  const nwForecast = buildForecast(cashFlows);
-  const nwTrough   = computeTrough(nwForecast); // kept for other uses
-  const GURU_OP_RATE  = 20939;
-  const GURU_RES_RATE = 18066;
-  const nwExcess   = Math.max(0, nwReserve - 2 * GURU_OP_RATE) + Math.max(0, nwYield - 12 * GURU_RES_RATE);
-  const nwPickup   = Math.round(nwExcess * 0.0307); // ~$9,200 after-tax at 3.07%
+  // Excess liquidity — single source of truth via computeLiquidityTargets()
+  const { totalLiquid: nwLiquid } = cashBuckets(assets);
+  const {
+    excessLiquidity: nwExcess,
+  } = computeLiquidityTargets(assets, cashFlows);
+  // Income pickup: full portfolio current AT income vs. pro-forma (target-based redistribution).
+  // annualPickup = proformaAnnualIncome − currentAnnualIncome (true delta, not total optimized).
+  const {
+    currentAnnualIncome:  nwCurrentIncome,
+    proformaAnnualIncome: nwProformaIncome,
+    annualPickup:         nwPickup,
+  } = computeReturnOptimization(assets, cashFlows);
 
   // Home equity & HELOC
   const reAssets   = assets.filter(a => a.type === "real_estate");
@@ -814,13 +1193,13 @@ function NetWorthPanel({
           <div style={{ display:"flex", alignItems:"flex-end", gap:0, marginBottom:10 }}>
             <div style={{ flex:1, paddingRight:16, borderRight:"1px solid rgba(255,255,255,0.08)" }}>
               <div style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(255,255,255,0.38)", marginBottom:3 }}>Excess Liquidity</div>
-              <div style={{ fontFamily:CF2.INTER, fontSize:30, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const }}>{`$${Math.round(nwExcess/1000)}K`}</div>
-              <div style={{ fontFamily:CF2.INTER, fontSize:9.5, color:"rgba(255,255,255,0.45)", marginTop:4 }}>Above reserve floor · <span style={{ color:"rgba(94,204,138,0.7)" }}>deployable now</span></div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:30, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const }}>{`$${Math.round(nwExcess).toLocaleString()}`}</div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:9.5, color:"rgba(255,255,255,0.45)", marginTop:4 }}>Above total liquidity requirement · <span style={{ color:"rgba(94,204,138,0.7)" }}>deployable now</span></div>
             </div>
             <div style={{ flex:1, paddingLeft:16 }}>
               <div style={{ fontFamily:CF2.INTER, fontSize:9, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(255,255,255,0.38)", marginBottom:3 }}>Income Pickup</div>
-              <div style={{ fontFamily:CF2.INTER, fontSize:30, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const }}>{`+$${Math.round(nwPickup/1000)}K`}<span style={{ fontSize:12, color:"rgba(94,204,138,0.7)", marginLeft:2 }}>/yr</span></div>
-              <div style={{ fontFamily:CF2.INTER, fontSize:9.5, color:"rgba(255,255,255,0.45)", marginTop:4 }}>If deployed at GURU rates · <span style={{ color:"rgba(94,204,138,0.7)" }}>~7% AT</span></div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:30, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const }}>{`+$${Math.round(nwPickup).toLocaleString()}`}<span style={{ fontSize:12, color:"rgba(94,204,138,0.7)", marginLeft:2 }}>/yr</span></div>
+              <div style={{ fontFamily:CF2.INTER, fontSize:9.5, color:"rgba(255,255,255,0.45)", marginTop:4 }}>Pro-forma vs. current · <span style={{ color:"rgba(94,204,138,0.7)" }}>${Math.round(nwCurrentIncome).toLocaleString()} → ${Math.round(nwProformaIncome).toLocaleString()}/yr</span></div>
             </div>
           </div>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -1559,13 +1938,22 @@ interface WFlowTank {
   badge?: string; badgeSub?: string; stable?: boolean;
 }
 
-function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
+function DashboardFlowWidget({
+  onNavigate,
+  assets,
+  cashFlows,
+}: {
+  onNavigate: () => void;
+  assets: Asset[];
+  cashFlows: CashFlow[];
+}) {
+  const { operatingCash, liquidityReserve, capitalBuild } = computeLiquidityTargets(assets, cashFlows);
   const [scheduled, setScheduled] = useState<Set<string>>(new Set(["prop-tax-jan"]));
 
   const OBLIGATIONS = [
     { id: "prop-tax-jan", label: "NYC Property Tax — 1st Installment", amount: 17500, due: new Date(2026, 0, 15), method: "Wire", category: "tax" },
     { id: "est-tax-q1",   label: "Federal Estimated Tax — Q1 2026",    amount: 30000, due: new Date(2026, 3, 15), method: "ACH",  category: "tax" },
-    { id: "tuition-spring", label: "Private School Tuition — Spring",   amount: 15000, due: new Date(2026, 3, 1),  method: "Wire", category: "education" },
+    { id: "tuition-spring", label: "Dalton — Spring Tuition",   amount: 15000, due: new Date(2026, 3, 1),  method: "Wire", category: "education" },
     { id: "prop-tax-jul", label: "NYC Property Tax — 2nd Installment",  amount: 17500, due: new Date(2026, 6, 15), method: "Wire", category: "tax" },
     { id: "est-tax-q3",   label: "Federal Estimated Tax — Q3 2026",     amount: 30000, due: new Date(2026, 8, 15), method: "ACH",  category: "tax" },
   ];
@@ -1597,7 +1985,7 @@ function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
 
         {/* ── Left: Animated Cash Flow (mini version of Card 4) ── */}
         <div className="px-4 py-4">
-          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Scheduled Cash Movements · January</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-3">Scheduled Cash Movements · {format(addMonths(DEMO_NOW, 1), "MMMM")}</p>
           <div className="flex flex-col gap-0">
 
             {/* Operating Cash bucket row */}
@@ -1605,7 +1993,7 @@ function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
               <div className="w-[78px] flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1 py-3" style={{ background: "#1d4ed8" }}>
                 <Wallet className="w-3 h-3 text-white/80" />
                 <span className="font-black uppercase tracking-widest text-white text-center px-1 text-[8px] leading-tight">Operating Cash</span>
-                <span className="font-black tabular-nums text-white/90 text-[9px]">$90,879</span>
+                <span className="font-black tabular-nums text-white/90 text-[9px]">{fmt(operatingCash)}</span>
               </div>
               <div className="flex-1 border border-blue-200 rounded-lg overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-3 bg-blue-50/60">
@@ -1644,7 +2032,7 @@ function DashboardFlowWidget({ onNavigate }: { onNavigate: () => void }) {
               <div className="w-[78px] flex-shrink-0 rounded-lg flex flex-col items-center justify-center gap-1 py-3" style={{ background: "#d97706" }}>
                 <ShieldCheck className="w-3 h-3 text-white/80" />
                 <span className="font-black uppercase tracking-widest text-white text-center px-1 text-[8px] leading-tight">Reserve Cash</span>
-                <span className="font-black tabular-nums text-white/90 text-[9px]">$129,385</span>
+                <span className="font-black tabular-nums text-white/90 text-[9px]">{fmt(liquidityReserve)}</span>
               </div>
               {/* Branch connector */}
               <div className="flex-shrink-0 relative" style={{ width: 18, alignSelf: "stretch" }}>
@@ -2035,6 +2423,8 @@ function liabComment(l: Liability): AssetComment | null {
   return null;
 }
 
+type LiquidBucket = "operating" | "reserve" | "capital" | null;
+
 interface BsGroup {
   category: string;
   items: {
@@ -2043,16 +2433,35 @@ interface BsGroup {
     value: number;
     rate: string | null;
     ret: string | null;
+    atYield: string | null;
     comment: AssetComment | null;
+    bucket?: LiquidBucket;
   }[];
   subtotal: number;
   avgRate: string | null;
+  avgAtYield: string | null;
 }
 
 interface BsSection {
   label: string;
   groups: BsGroup[];
   total: number;
+}
+
+// Weighted average after-tax yield from already-computed items (used by buildAssetGroups + BsTable).
+function wavgAtYieldFromItems(items: Array<{ value: number; atYield: string | null }>): string | null {
+  let wsum = 0, covered = 0;
+  for (const it of items) {
+    if (!it.atYield) continue;
+    const isPlus = it.atYield.startsWith("+");
+    const pct = parseFloat(isPlus ? it.atYield.slice(1).replace("%", "") : it.atYield.replace("%", ""));
+    if (!isNaN(pct)) { wsum += pct * it.value; covered += it.value; }
+  }
+  if (!covered) return null;
+  const avg = wsum / covered;
+  if (avg <= 0.005) return null;
+  const equityVal = items.filter(i => i.atYield?.startsWith("+")).reduce((s, i) => s + i.value, 0);
+  return equityVal > covered / 2 ? `+${avg.toFixed(1)}%` : `${avg.toFixed(2)}%`;
 }
 
 function buildAssetGroups(assets: Asset[]): BsSection[] {
@@ -2080,23 +2489,30 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
   const brokerageCash = assets.filter((a) => isBrokerageCash(a));
   const brokerage     = assets.filter((a) => isBrokerage(a));
 
-  const mkBrokerageCashGroup = (): BsGroup => ({
-    category: "Brokerage Cash",
-    items: brokerageCash.map((a) => {
+  const mkBrokerageCashGroup = (): BsGroup => {
+    const items = brokerageCash.map((a) => {
       const desc = a.description ?? "";
       const isFidelity = desc.toLowerCase().includes("fidelity");
+      const grossRet = lookupReturn(desc);
       return {
         label: isFidelity ? "Fidelity (Cash)" : desc.split("(")[0].split("—")[0].split("–")[0].trim(),
         subtitle: lookupBsSubtitle(desc, BS_ASSET_SUBTITLES),
         value: Number(a.value),
         rate: extractRate(desc),
-        ret: lookupReturn(desc),
+        ret: grossRet,
+        atYield: atYieldStr(grossRet, a.type),
         comment: assetComment(a),
+        bucket: getBucket(a),
       };
-    }),
-    subtotal: brokerageCash.reduce((s, a) => s + Number(a.value), 0),
-    avgRate: wavgRate(brokerageCash),
-  });
+    });
+    return {
+      category: "Brokerage Cash",
+      items,
+      subtotal: brokerageCash.reduce((s, a) => s + Number(a.value), 0),
+      avgRate: wavgRate(brokerageCash),
+      avgAtYield: wavgAtYieldFromItems(items),
+    };
+  };
 
   // Extract the broker/institution name from an asset description.
   // "Cresset Capital Mgmt — Portfolio"  →  "Cresset Capital Mgmt"
@@ -2113,27 +2529,37 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
 
   // Build a broker-aggregated group: one line per institution.
   const mkBrokerageGroup = (arr: Asset[]): BsGroup => {
-    const map: Record<string, { value: number; descs: string[] }> = {};
+    const map: Record<string, { value: number; descs: string[]; primaryType: string }> = {};
     for (const a of arr) {
       const inst = extractInstitution(a.description ?? "");
-      if (!map[inst]) map[inst] = { value: 0, descs: [] };
+      if (!map[inst]) map[inst] = { value: 0, descs: [], primaryType: a.type };
       map[inst].value += Number(a.value);
       map[inst].descs.push(a.description ?? "");
+      // If any holding is equity, the group uses equity (LTCG) tax treatment
+      if (a.type === "equity") map[inst].primaryType = "equity";
     }
-    const items = Object.entries(map).map(([inst, data]) => ({
-      label: inst,
-      subtitle: lookupBsSubtitle(inst, BS_ASSET_SUBTITLES) ??
-                lookupBsSubtitle(data.descs[0] ?? "", BS_ASSET_SUBTITLES),
-      value: data.value,
-      rate: null as string | null,
-      ret: lookupReturn(data.descs.length === 1 ? data.descs[0] : inst),
-      comment: null as string | null,
-    }));
+    const items = Object.entries(map).map(([inst, data]) => {
+      const grossRet = lookupReturn(data.descs.length === 1 ? data.descs[0] : inst);
+      // Capital Build: fixed_income, non-retirement assets earn the "capital" bucket badge
+      const bucket: LiquidBucket = data.primaryType === "fixed_income" ? "capital" : null;
+      return {
+        label: inst,
+        subtitle: lookupBsSubtitle(inst, BS_ASSET_SUBTITLES) ??
+                  lookupBsSubtitle(data.descs[0] ?? "", BS_ASSET_SUBTITLES),
+        value: data.value,
+        rate: null as string | null,
+        ret: grossRet,
+        atYield: atYieldStr(grossRet, data.primaryType),
+        comment: null as AssetComment | null,
+        bucket,
+      };
+    });
     return {
       category: "Taxable Brokerage",
       items,
       subtotal: arr.reduce((s, a) => s + Number(a.value), 0),
       avgRate: null,
+      avgAtYield: wavgAtYieldFromItems(items),
     };
   };
   const altAssets   = assets.filter((a) => a.type === "alternative" && !isCarry(a));
@@ -2174,14 +2600,45 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
     return null;
   };
 
-  const toItem = (a: Asset) => ({
-    label: a.description.split("(")[0].split("—")[0].split("–")[0].trim(),
-    subtitle: lookupBsSubtitle(a.description, BS_ASSET_SUBTITLES),
-    value: Number(a.value),
-    rate: extractRate(a.description),
-    ret: lookupReturn(a.description),
-    comment: assetComment(a),
-  });
+  // Compute after-tax yield string from a gross return string and asset type.
+  // - "+ prefix" = total equity return → LTCG tax rate (20%)
+  // - plain "X.XX%" = income yield → TREAS_TAX (35%) for fixed_income, BANK_TAX (47%) for cash
+  // - IRR / est. / negligible (≤0.01%) → null (too complex or immaterial)
+  const atYieldStr = (grossRet: string | null, assetType: string): string | null => {
+    if (!grossRet) return null;
+    if (grossRet.includes("IRR") || grossRet.includes("est.")) return null;
+    if (grossRet.startsWith("+")) {
+      const pct = parseFloat(grossRet.slice(1).replace("%", ""));
+      if (isNaN(pct)) return null;
+      return `+${(pct * (1 - LTCG_TAX)).toFixed(1)}%`;
+    }
+    const pct = parseFloat(grossRet.replace("%", ""));
+    if (isNaN(pct) || pct <= 0.01) return null;
+    const taxRate = assetType === "fixed_income" ? TREAS_TAX : BANK_TAX;
+    return `${(pct * (1 - taxRate)).toFixed(2)}%`;
+  };
+
+  const getBucket = (a: Asset): LiquidBucket => {
+    const d = (a.description ?? "").toLowerCase();
+    if (a.type === "cash" && d.includes("checking")) return "operating";
+    if (a.type === "cash") return "reserve";
+    if (a.type === "fixed_income" && !isRetirement(a)) return "capital";
+    return null;
+  };
+
+  const toItem = (a: Asset) => {
+    const grossRet = lookupReturn(a.description);
+    return {
+      label: a.description.split("(")[0].split("—")[0].split("–")[0].trim(),
+      subtitle: lookupBsSubtitle(a.description, BS_ASSET_SUBTITLES),
+      value: Number(a.value),
+      rate: extractRate(a.description),
+      ret: grossRet,
+      atYield: atYieldStr(grossRet, a.type),
+      comment: assetComment(a),
+      bucket: getBucket(a),
+    };
+  };
 
   const subtot = (arr: Asset[]) => arr.reduce((s, a) => s + Number(a.value), 0);
   const wavgRate = (arr: Asset[]) => {
@@ -2193,12 +2650,10 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
     }, 0);
     return weighted > 0 ? (weighted / total).toFixed(2) : null;
   };
-  const mkGroup = (category: string, arr: Asset[]): BsGroup => ({
-    category,
-    items: arr.map(toItem),
-    subtotal: subtot(arr),
-    avgRate: wavgRate(arr),
-  });
+  const mkGroup = (category: string, arr: Asset[]): BsGroup => {
+    const items = arr.map(toItem);
+    return { category, items, subtotal: subtot(arr), avgRate: wavgRate(arr), avgAtYield: wavgAtYieldFromItems(items) };
+  };
 
   const sections: BsSection[] = [];
 
@@ -2262,6 +2717,7 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
         ? parseFloat(l.interestRate).toFixed(2)
         : null,
     ret: null,
+    atYield: null as string | null,
     comment: liabComment(l),
   });
 
@@ -2272,6 +2728,7 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
       items: cc.map(toItem),
       subtotal: subtot(cc),
       avgRate: wavgRate(cc),
+      avgAtYield: null,
     });
   if (student.length)
     groups.push({
@@ -2279,6 +2736,7 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
       items: student.map(toItem),
       subtotal: subtot(student),
       avgRate: wavgRate(student),
+      avgAtYield: null,
     });
   if (mortg.length)
     groups.push({
@@ -2286,6 +2744,7 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
       items: mortg.map(toItem),
       subtotal: subtot(mortg),
       avgRate: wavgRate(mortg),
+      avgAtYield: null,
     });
   if (profLoan.length)
     groups.push({
@@ -2293,6 +2752,7 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
       items: profLoan.map(toItem),
       subtotal: subtot(profLoan),
       avgRate: wavgRate(profLoan),
+      avgAtYield: null,
     });
   if (capComm.length)
     groups.push({
@@ -2300,6 +2760,7 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
       items: capComm.map(toItem),
       subtotal: subtot(capComm),
       avgRate: null,
+      avgAtYield: null,
     });
   return groups;
 }
@@ -2320,7 +2781,7 @@ function BsTable({
   totalRate?: string | null;
   isLiability?: boolean;
 }) {
-  const COLS = isLiability ? "1fr 90px 72px 90px" : "1fr 90px 72px 80px";
+  const COLS = isLiability ? "1fr 90px 72px 90px" : "minmax(100px,220px) 76px 90px 62px 62px 80px";
   const retCls = (r: string | null) => {
     if (!r) return "text-muted-foreground/40";
     if (r.startsWith("+")) return "text-emerald-400 font-semibold";
@@ -2353,10 +2814,17 @@ function BsTable({
     borderBottom: `1px solid ${BS_BORDER}`,
   };
 
+  const BUCKET_PILL: Record<NonNullable<LiquidBucket>, { label: string; bg: string; color: string }> = {
+    operating: { label: "Operating",  bg: "rgba(91,143,204,0.15)", color: "hsl(215,65%,65%)" },
+    reserve:   { label: "Reserve",    bg: "rgba(255,200,60,0.12)",  color: "hsl(42,80%,60%)"  },
+    capital:   { label: "Capital",    bg: "rgba(180,140,80,0.15)", color: "hsl(35,65%,58%)"  },
+  };
+
   const renderItems = (items: BsGroup["items"], indent = "pl-8") =>
     items.map((item, ii) => {
       const rowBg = ii % 2 === 0 ? BS_BG_BASE : BS_BG_ALT;
       const rateVal = item.ret ?? (item.rate ? `${item.rate}%` : null);
+      const pill = item.bucket ? BUCKET_PILL[item.bucket] : null;
       return (
         <div key={ii} className="grid" style={{ gridTemplateColumns: COLS, background: rowBg }}>
           <div style={{ ...cellBase, paddingLeft: 28 }}>
@@ -2365,6 +2833,15 @@ function BsTable({
               <div style={{ fontFamily: MONO, fontSize: 9, color: "hsl(210,15%,40%)", lineHeight: 1.3, marginTop: 1 }}>{item.subtitle}</div>
             )}
           </div>
+          {!isLiability && (
+            <div style={{ ...cellBase, textAlign: "center", padding: "4px 6px" }}>
+              {pill ? (
+                <span style={{ display: "inline-block", fontFamily: MONO, fontSize: 8, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", padding: "1px 5px", borderRadius: 10, background: pill.bg, color: pill.color, whiteSpace: "nowrap" }}>
+                  {pill.label}
+                </span>
+              ) : null}
+            </div>
+          )}
           <div style={{ ...cellBase, textAlign: "right", color: item.value > 0 ? BS_TEXT : BS_TEXT_MUTED, fontWeight: 500 }}>
             {item.value > 0 ? fmt(item.value) : "—"}
           </div>
@@ -2374,6 +2851,11 @@ function BsTable({
               : (item.rate ? `${item.rate}%` : <span style={{ color: "hsl(210,10%,30%)" }}>—</span>)
             }
           </div>
+          {!isLiability && (
+            <div style={{ ...cellBase, textAlign: "right", color: item.atYield ? (item.atYield.startsWith("+") ? "hsl(152,55%,55%)" : "hsl(152,40%,48%)") : "hsl(210,10%,30%)" }}>
+              {item.atYield ?? <span style={{ color: "hsl(210,10%,30%)" }}>—</span>}
+            </div>
+          )}
           <div style={{ ...cellBase }}>
             {item.comment && (
               <span style={{ fontSize: 9.5, color: item.comment.color === "red" ? "hsl(0,65%,55%)" : item.comment.color === "orange" ? "hsl(38,78%,52%)" : BS_TEXT_MUTED }}>
@@ -2391,10 +2873,16 @@ function BsTable({
       {showSubtotal && (
         <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRPHDR, borderTop: `1px solid ${BS_BORDER_SEC}`, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
           <div style={{ ...cellBase, paddingLeft: 14, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: BS_GREEN_DIM, borderBottom: "none" }}>{group.category}</div>
+          {!isLiability && <div style={{ ...cellBase, borderBottom: "none" }} />}
           <div style={{ ...cellBase, textAlign: "right", fontWeight: 700, color: BS_TEXT, borderBottom: "none" }}>{fmt(group.subtotal)}</div>
           <div style={{ ...cellBase, textAlign: "right", color: BS_TEXT_MUTED, borderBottom: "none" }}>
             {group.avgRate ? `${group.avgRate}%` : ""}
           </div>
+          {!isLiability && (
+            <div style={{ ...cellBase, textAlign: "right", color: group.avgAtYield ? (group.avgAtYield.startsWith("+") ? "hsl(152,52%,52%)" : "hsl(152,38%,45%)") : "", borderBottom: "none" }}>
+              {group.avgAtYield ?? ""}
+            </div>
+          )}
           <div style={{ ...cellBase, borderBottom: "none" }} />
         </div>
       )}
@@ -2410,11 +2898,23 @@ function BsTable({
 
   return (
     <div style={{ border: `1px solid ${BS_BORDER}`, borderRadius: 10, overflow: "hidden", fontFamily: MONO }}>
+      {/* Parent "Yield / Return" label spanning Pre-Tax + After-Tax columns */}
+      {!isLiability && (
+        <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT, borderBottom: `1px solid ${BS_BORDER_SEC}`, minHeight: 20 }}>
+          <div style={{ gridColumn: "1 / 4" }} />
+          <div style={{ gridColumn: "4 / 6", textAlign: "center", fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "hsl(210,35%,55%)", padding: "3px 8px 2px" }}>
+            Yield / Return
+          </div>
+          <div />
+        </div>
+      )}
       {/* Header */}
       <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT }}>
         <div style={{ ...hdrCell, paddingLeft: 12 }}>{isLiability ? "Liability Category" : "Asset Category"}</div>
+        {!isLiability && <div style={{ ...hdrCell, textAlign: "center" }}>Bucket</div>}
         <div style={{ ...hdrCell, textAlign: "right" }}>Balance</div>
-        <div style={{ ...hdrCell, textAlign: "right" }}>{isLiability ? "Cost" : "Yield / Return"}</div>
+        <div style={{ ...hdrCell, textAlign: "right" }}>{isLiability ? "Cost" : "Pre-Tax"}</div>
+        {!isLiability && <div style={{ ...hdrCell, textAlign: "right" }}>After-Tax</div>}
         <div style={{ ...hdrCell }}>Notes</div>
       </div>
       {/* Sectioned asset rows */}
@@ -2422,12 +2922,24 @@ function BsTable({
         <div key={sec.label}>
           {sec.groups.map((group) => renderGroup(group, sec.groups.length > 1 || group.items.length > 1))}
           {/* Section total */}
-          <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_SECTOT, borderTop: `2px solid ${BS_BORDER_SEC}`, borderBottom: `2px solid ${BS_BORDER_SEC}` }}>
-            <div style={{ ...cellBase, paddingLeft: 12, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: BS_GREEN_MED, borderLeft: `3px solid ${BS_GREEN_DIM}`, borderBottom: "none" }}>{sec.label}</div>
-            <div style={{ ...cellBase, textAlign: "right", fontWeight: 800, color: BS_TEXT, borderBottom: "none" }}>{fmt(sec.total)}</div>
-            <div style={{ ...cellBase, borderBottom: "none" }} />
-            <div style={{ ...cellBase, borderBottom: "none" }} />
-          </div>
+          {(() => {
+            const secItems = sec.groups.flatMap(g => g.items);
+            const secAtYield = wavgAtYieldFromItems(secItems);
+            return (
+              <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_SECTOT, borderTop: `2px solid ${BS_BORDER_SEC}`, borderBottom: `2px solid ${BS_BORDER_SEC}` }}>
+                <div style={{ ...cellBase, paddingLeft: 12, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: BS_GREEN_MED, borderLeft: `3px solid ${BS_GREEN_DIM}`, borderBottom: "none" }}>{sec.label}</div>
+                {!isLiability && <div style={{ ...cellBase, borderBottom: "none" }} />}
+                <div style={{ ...cellBase, textAlign: "right", fontWeight: 800, color: BS_TEXT, borderBottom: "none" }}>{fmt(sec.total)}</div>
+                <div style={{ ...cellBase, borderBottom: "none" }} />
+                {!isLiability && (
+                  <div style={{ ...cellBase, textAlign: "right", color: secAtYield ? (secAtYield.startsWith("+") ? "hsl(152,52%,52%)" : "hsl(152,38%,45%)") : "", borderBottom: "none" }}>
+                    {secAtYield ?? ""}
+                  </div>
+                )}
+                <div style={{ ...cellBase, borderBottom: "none" }} />
+              </div>
+            );
+          })()}
         </div>
       ))}
       {/* Flat liability rows (no sections) */}
@@ -2447,10 +2959,12 @@ function BsTable({
       {/* Grand total */}
       <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT, borderTop: `2px solid ${BS_BORDER_SEC}` }}>
         <div style={{ ...cellBase, paddingLeft: 12, fontWeight: 900, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: BS_TEXT, borderBottom: "none", borderLeft: `3px solid hsl(210,55%,50%)` }}>{totalLabel}</div>
+        {!isLiability && <div style={{ ...cellBase, borderBottom: "none" }} />}
         <div style={{ ...cellBase, textAlign: "right", fontWeight: 900, color: BS_TEXT, borderBottom: "none" }}>{fmt(totalValue)}</div>
         <div style={{ ...cellBase, textAlign: "right", color: BS_TEXT_MUTED, borderBottom: "none" }}>
           {totalRate ? `${totalRate}%` : ""}
         </div>
+        {!isLiability && <div style={{ ...cellBase, borderBottom: "none" }} />}
         <div style={{ ...cellBase, borderBottom: "none" }} />
       </div>
     </div>
@@ -2709,8 +3223,8 @@ const CF_PL_ROWS: PLRowDef[] = [
   {
     key: "tuition",
     kind: "item",
-    label: "Private School Tuition",
-    descs: ["Private School Tuition"],
+    label: "Dalton Tuition",
+    descs: ["Dalton Tuition"],
   },
   {
     key: "sub_living",
@@ -2832,8 +3346,23 @@ function CashFlowForecastView({
   autoFullScreen?: boolean;
   onCloseFullScreen?: () => void;
 }) {
-  const { reserve, yieldBucket, tactical, totalLiquid, reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
-  const startBalance = reserve;
+  // ── Canonical liquidity values — single source of truth for all KPIs ────────
+  const {
+    operatingCash:          cfOperatingCash,
+    liquidityReserve:       cfLiquidityReserve,
+    capitalBuild:           cfCapitalBuild,
+    totalLiquid,
+    reserveTarget,
+    liquidityReserveTarget,
+    totalLiquidityReq,
+    excessLiquidity,
+    operatingTarget:        cfOperatingTarget,
+    troughDepth:            cfTroughDepth,
+  } = computeLiquidityTargets(assets, cashFlows);
+
+  // cashBuckets() used only for bucket item lists (drill-down display rows)
+  const { reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
+  const startBalance = cfOperatingCash;
 
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
@@ -2969,7 +3498,9 @@ function CashFlowForecastView({
     return { key: q.key, label: q.label, start: qStart, inflow, coreOut, oneTimeOut, end: qEnd };
   });
 
-  const RESERVE_FLOOR = 194196;
+  // Reserve floor for Liquidity Runway chart = Reserve Target from computeLiquidityTargets()
+  // This is the minimum liquid balance the client must maintain at all times.
+  const RESERVE_FLOOR = reserveTarget;
   const fmtQK = (v: number) => `$${Math.round(Math.abs(v)).toLocaleString()}`;
 
   // ── Balance forecast for Chart B ─────────────────────────────────────────
@@ -3300,10 +3831,15 @@ function CashFlowForecastView({
                 </div>
                 {/* ── HERO: Excess Liquidity (full-width, big numbers) ─────────── */}
                 {(()=>{
-                  // Coverage-month methodology — matches allocation tool ($299,966 ≈ $299,926)
-                  const excessLiqAmt  = Math.max(0, reserve - 2 * 20939) + Math.max(0, yieldBucket - 12 * 18066);
-                  const deployableAmt = Math.round(excessLiqAmt * 0.623);
-                  const potentialInc  = Math.round(deployableAmt * 0.0696);
+                  // excessLiquidity from computeLiquidityTargets() at component top.
+                  // Income pickup: full portfolio current AT vs pro-forma (best product per bucket).
+                  // annualPickup = proformaAnnualIncome − currentAnnualIncome (true delta).
+                  const excessLiqAmt = excessLiquidity;
+                  const {
+                    currentAnnualIncome:  cfCurrentIncome,
+                    proformaAnnualIncome: cfProformaIncome,
+                    annualPickup:         potentialInc,
+                  } = computeReturnOptimization(assets, cashFlows);
                   const liqIsActive   = alertHighlight === "liq";
                   return (
                     <div
@@ -3346,21 +3882,21 @@ function CashFlowForecastView({
                         <div style={{ flex:1, paddingRight:20, borderRight:"1px solid rgba(255,255,255,0.08)" }}>
                           <div style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(255,255,255,0.38)", marginBottom:4 }}>Excess Liquidity</div>
                           <div style={{ fontFamily:CF2.INTER, fontSize:36, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const, letterSpacing:"-0.01em" }}>
-                            {`$${excessLiqAmt >= 1000000 ? (excessLiqAmt/1000000).toFixed(2)+"M" : Math.round(excessLiqAmt/1000)+"K"}`}
+                            {`$${Math.round(excessLiqAmt).toLocaleString()}`}
                           </div>
                           <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.45)", marginTop:5, lineHeight:1.4 }}>
-                            Above reserve floor &nbsp;·&nbsp; <span style={{ color:"rgba(94,204,138,0.7)" }}>{`$${Math.round(deployableAmt/1000)}K deployable`}</span>
+                            Above total liquidity requirement &nbsp;·&nbsp; <span style={{ color:"rgba(94,204,138,0.7)" }}>fully deployable</span>
                           </div>
                         </div>
                         {/* Right: Potential Income Pickup */}
                         <div style={{ flex:1, paddingLeft:20 }}>
                           <div style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.09em", color:"rgba(255,255,255,0.38)", marginBottom:4 }}>Potential Income Pickup</div>
                           <div style={{ fontFamily:CF2.INTER, fontSize:36, fontWeight:300, lineHeight:1, color:CF2.green, fontVariantNumeric:"tabular-nums" as const, letterSpacing:"-0.01em" }}>
-                            {`+$${potentialInc >= 10000 ? (potentialInc/1000).toFixed(1)+"K" : potentialInc.toLocaleString()}`}
+                            {`+$${Math.round(potentialInc).toLocaleString()}`}
                             <span style={{ fontSize:14, fontWeight:400, color:"rgba(94,204,138,0.7)", marginLeft:3 }}>/yr</span>
                           </div>
                           <div style={{ fontFamily:CF2.INTER, fontSize:10, color:"rgba(255,255,255,0.45)", marginTop:5, lineHeight:1.4 }}>
-                            If deployed at current AT yields &nbsp;·&nbsp; <span style={{ color:"rgba(94,204,138,0.7)" }}>~7% after-tax</span>
+                            Pro-forma vs. current &nbsp;·&nbsp; <span style={{ color:"rgba(94,204,138,0.7)" }}>${Math.round(cfCurrentIncome).toLocaleString()} → ${Math.round(cfProformaIncome).toLocaleString()}/yr</span>
                           </div>
                         </div>
                       </div>
@@ -3681,7 +4217,7 @@ function CashFlowForecastView({
                           axisLine={false} tickLine={false} width={72}
                         />
                         <ReferenceLine y={RESERVE_FLOOR} stroke="rgba(94,204,138,0.45)" strokeDasharray="5 4" strokeWidth={1.5}
-                          label={{ value:"$194,000 reserve floor", position:"insideTopRight", fill:"rgba(94,204,138,0.6)", fontSize:9, fontFamily:"Inter, system-ui, sans-serif", fontWeight:600 }}
+                          label={{ value:`${fmt(RESERVE_FLOOR)} reserve floor`, position:"insideTopRight", fill:"rgba(94,204,138,0.6)", fontSize:9, fontFamily:"Inter, system-ui, sans-serif", fontWeight:600 }}
                         />
                         <Bar dataKey="floor" stackId="liq" fill="url(#liqFloorGrad)" radius={[0,0,3,3]} isAnimationActive={false} activeBar={{ fill:"rgba(94,204,138,0.55)", stroke:"rgba(94,204,138,0.4)", strokeWidth:1 }} />
                         <Bar dataKey="excess" stackId="liq" fill="url(#liqExcessGrad)" radius={[3,3,0,0]} isAnimationActive={false} activeBar={{ fill:"#7aabdf", stroke:"rgba(122,171,223,0.4)", strokeWidth:1 }}>
@@ -4574,7 +5110,7 @@ const MM_LEDGER: MMLedgerRow[] = [
 const MM_BILLS = [
   { icon: Home,         label: "Mortgage",           institution: "Wells Fargo",     amount: 4847, cadence: "Monthly", bucket: "op",  next: "Apr 1" },
   { icon: CreditCard,   label: "Credit Cards",       institution: "AmEx / Chase",    amount: 2200, cadence: "Monthly", bucket: "op",  next: "Apr 5" },
-  { icon: GraduationCap,label: "Buckley School",      institution: "The Buckley School", amount: 2500, cadence: "Monthly", bucket: "op",  next: "Apr 1" },
+  { icon: GraduationCap,label: "Dalton School",       institution: "The Dalton School",  amount: 2500, cadence: "Monthly", bucket: "op",  next: "Apr 1" },
   { icon: ShieldCheck,  label: "Home + Auto Ins.",   institution: "Chubb",           amount: 660,  cadence: "Monthly", bucket: "op",  next: "Apr 15" },
   { icon: Bolt,         label: "Utilities",          institution: "ConEd / PSEG",    amount: 800,  cadence: "Monthly", bucket: "op",  next: "Apr 12" },
   { icon: Car,          label: "Auto Lease",         institution: "BMW Financial",   amount: 1150, cadence: "Monthly", bucket: "op",  next: "Apr 18" },
@@ -4585,7 +5121,7 @@ const MM_BILLS = [
 const MM_GURU_ACTIONS = [
   { month: "Jan", action: "Operating deficit $19,626 — pulled from Reserve MMF",    type: "pull",    amount: 19626 },
   { month: "Feb", action: "Operating surplus — no Reserve draw needed",              type: "balanced",amount: 0 },
-  { month: "Mar", action: "Q1 tax + Buckley tuition — pulled $47,126 from Reserve",  type: "pull",    amount: 47126 },
+  { month: "Mar", action: "Q1 tax + Dalton tuition — pulled $47,126 from Reserve",  type: "pull",    amount: 47126 },
   { month: "Apr", action: "Operating deficit $6,126 — pulled from Reserve MMF",     type: "pull",    amount: 6126 },
   { month: "May", action: "Operating deficit $3,126 — pulled from Reserve MMF",     type: "pull",    amount: 3126 },
   { month: "Jun", action: "Home repair expense — pulled $21,626 from Reserve",       type: "pull",    amount: 21626 },
@@ -4596,6 +5132,674 @@ const MM_GURU_ACTIONS = [
   { month: "Nov", action: "Reserve depleted — used Build ladder: $26,245 + $3,334", type: "pull",    amount: 29579 },
   { month: "Dec", action: "Income surplus — Reserve fully replenished to $129,389", type: "replenish",amount: 129389 },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LiquidityWaterfallView — GURU Intelligence · Liquidity Model tab
+// Full row-by-row asset waterfall: Operating Cash → Liquidity Reserve → Capital Build
+// Mirrors Excel Cash Flow tab rows 75–107. Financial model formatting.
+// ─────────────────────────────────────────────────────────────────────────────
+function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // ── Opening balances from single source of truth ───────────────────────────
+  const { operatingCash, liquidityReserve, capitalBuild } = computeLiquidityTargets(assets, cashFlows);
+
+  // ── Yields from current account balances (weighted average, not GURU optimizer picks) ──
+  const opsBucketAssets = assets.filter(a => assetBucketKey(a) === "reserve");
+  const rsvBucketAssets = assets.filter(a => assetBucketKey(a) === "yield_");
+  const bldBucketAssets = assets.filter(a => assetBucketKey(a) === "tactical");
+  const opsYields = liquidAssetYields(opsBucketAssets);
+  const rsvYields = liquidAssetYields(rsvBucketAssets);
+  const bldYields = liquidAssetYields(bldBucketAssets);
+  const OPS_PRETAX = opsYields.pretax;  const OPS_AT = opsYields.at;
+  const RSV_PRETAX = rsvYields.pretax;  const RSV_AT = rsvYields.at;
+  const BLD_PRETAX = bldYields.pretax;  const BLD_AT = bldYields.at;
+
+  // ── Income breakdown — matching CF Forecast categories ────────────────────
+  // Compute income items using the same description-matching logic as CashFlowForecastWaterfallView.
+  // This ensures "Total Income" here ties exactly to "Total Cash Income" in the CF Forecast tab.
+  const CF_YEAR = 2026;
+  const cashItems = (descs: string[], mo: number): number =>
+    cashFlows
+      .filter(cf => {
+        const d = new Date(cf.date);
+        return d.getUTCFullYear() === CF_YEAR &&
+               (d.getUTCMonth() + 1) === mo &&
+               cf.type === "inflow" &&
+               descs.some(desc => (cf.description ?? "").includes(desc));
+      })
+      .reduce((s, cf) => s + Number(cf.amount), 0);
+
+  const COMP_DESCS   = ["Michael — Net Monthly", "Monthly Net Salaries", "Sarah — Net Monthly", "Partner 1 Year-End", "Partner 2 Year-End"];
+  const INT_DESCS    = ["Reserve MMF"];
+  const RENTAL_DESCS = ["Investment Property Rental Income"];
+
+  const forecast = buildForecast(cashFlows);
+
+  // ── Month-by-month waterfall simulation ────────────────────────────────────
+  // Operating Cash: all inflows land here; all expenses drawn from here.
+  // Liquidity Reserve + Capital Build: static balances in this base scenario (no optimizer transfers).
+  let opsBal = operatingCash;
+  const rsvBal = liquidityReserve;
+  const bldBal = capitalBuild;
+
+  const data = MO.map((_mo, i) => {
+    const moNum  = i + 1;
+    const { outflow } = forecast[i];
+
+    // Income — broken out to match CF Forecast structure
+    const opsComp      = cashItems(COMP_DESCS,   moNum);  // compensation matches CF "Cash Compensation" subtotal
+    const opsIntIncome = cashItems(INT_DESCS,     moNum);  // bank interest matches CF "Interest From Bank Accounts"
+    const opsRental    = cashItems(RENTAL_DESCS,  moNum);  // rental income (netted into expenses per property view)
+    const opsIncome    = opsComp + opsIntIncome;
+
+    // Operating Cash flows — expenses are net (rental income offsets property costs)
+    const opsBegin = opsBal;
+    const opsExp   = outflow - opsRental;
+    const opsEnd   = opsBal + opsIncome - opsExp;
+    const opsAtInt = Math.max(0, opsEnd) * (OPS_AT / 12);
+    opsBal = opsEnd;
+
+    // Reserve — static balance, interest earned but not reinvested
+    const rsvAtInt = rsvBal * (RSV_AT / 12);
+
+    // Capital Build — static balance, interest earned but not reinvested
+    const bldAtInt = bldBal * (BLD_AT / 12);
+
+    return {
+      mo: _mo,
+      ops:  { begin: opsBegin, comp: opsComp, intIncome: opsIntIncome, income: opsIncome, expenses: opsExp, end: opsEnd, atInt: opsAtInt },
+      rsv:  { begin: rsvBal, end: rsvBal, atInt: rsvAtInt },
+      bld:  { begin: bldBal, end: bldBal, atInt: bldAtInt },
+      totalEnd:   opsEnd + rsvBal + bldBal,
+      totalAtInt: opsAtInt + rsvAtInt + bldAtInt,
+    };
+  });
+
+  // ── Annual totals ──────────────────────────────────────────────────────────
+  const ann = {
+    opsComp:     data.reduce((s, d) => s + d.ops.comp,       0),
+    opsIntIncome:data.reduce((s, d) => s + d.ops.intIncome,  0),
+    opsIncome:   data.reduce((s, d) => s + d.ops.income,     0),
+    opsExpenses: data.reduce((s, d) => s + d.ops.expenses,   0),
+    opsAtInt:    data.reduce((s, d) => s + d.ops.atInt,      0),
+    rsvAtInt:    data.reduce((s, d) => s + d.rsv.atInt,      0),
+    bldAtInt:    data.reduce((s, d) => s + d.bld.atInt,      0),
+    totalAtInt:  data.reduce((s, d) => s + d.totalAtInt,     0),
+  };
+
+  // ── Number formatters ──────────────────────────────────────────────────────
+  const fmt = (v: number): string => {
+    if (Math.round(v) === 0) return "—";
+    const abs = Math.abs(Math.round(v));
+    const s = abs.toLocaleString("en-US");
+    return v < 0 ? `(${s})` : s;
+  };
+  const fmtPct = (v: number) => `${(v * 100).toFixed(2)}%`;
+
+  // ── Design tokens ──────────────────────────────────────────────────────────
+  const MONO  = "'JetBrains Mono', 'Courier New', monospace";
+  const UI    = "Inter, system-ui, sans-serif";
+  const DS_BG = "#0c1828";
+  const GREEN = "#44e08a";
+  const OPS_C = "#4a7fd4";
+  const RSV_C = "#c49a30";
+  const BLD_C = "#3aad61";
+  const SEP_C = "rgba(255,255,255,0.08)";
+  const COL_W = 76;
+  const LBL_W = 240;
+  const ANN_W = 96;
+
+  // ── Shared cell style helpers ──────────────────────────────────────────────
+  const cellBase: React.CSSProperties = {
+    fontFamily: MONO, fontSize: 11, textAlign: "right" as const,
+    padding: "3px 10px 3px 4px", whiteSpace: "nowrap" as const,
+    color: "rgba(255,255,255,0.82)", borderLeft: `0.5px solid ${SEP_C}`,
+    minWidth: COL_W, width: COL_W,
+  };
+  const labelBase: React.CSSProperties = {
+    fontFamily: UI, fontSize: 11, padding: "3px 12px 3px 16px",
+    color: "rgba(255,255,255,0.70)", whiteSpace: "nowrap" as const,
+    position: "sticky" as const, left: 0, background: DS_BG, zIndex: 2,
+    borderRight: `1px solid rgba(255,255,255,0.12)`,
+    minWidth: LBL_W, width: LBL_W,
+  };
+  const annBase: React.CSSProperties = {
+    ...cellBase, minWidth: ANN_W, width: ANN_W, fontWeight: 500,
+    borderLeft: `1px solid rgba(255,255,255,0.18)`,
+  };
+
+  // ── Row builder helpers ────────────────────────────────────────────────────
+  const rowBg = (shade: "normal"|"subtotal"|"ending"|"total"|"section"): React.CSSProperties => {
+    switch (shade) {
+      case "section":  return { background: "rgba(255,255,255,0.04)" };
+      case "subtotal": return { background: "rgba(255,255,255,0.04)" };
+      case "ending":   return { background: "rgba(255,255,255,0.07)" };
+      case "total":    return { background: "rgba(255,255,255,0.11)" };
+      default:         return { background: "transparent" };
+    }
+  };
+
+  const sectionHeader = (label: string, color: string, product: string, pretax: string, at: string) => (
+    <tr style={{ ...rowBg("section") }}>
+      <td colSpan={14} style={{
+        fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
+        textTransform: "uppercase" as const, color,
+        padding: "6px 16px",
+        position: "sticky" as const, left: 0,
+        borderTop: `1px solid ${color}33`, borderBottom: `0.5px solid ${color}33`,
+      }}>
+        {label}
+        <span style={{ marginLeft: 10, opacity: 0.55, fontWeight: 400, letterSpacing: "0.06em", fontSize: 9 }}>{product}</span>
+        <span style={{ marginLeft: 14, opacity: 0.50, fontWeight: 400, letterSpacing: 0, fontSize: 9, textTransform: "none" as const }}>
+          Pre-Tax: {pretax}&nbsp;&nbsp;·&nbsp;&nbsp;After-Tax: {at}
+        </span>
+      </td>
+    </tr>
+  );
+
+  const dataRow = (
+    label: string,
+    values: number[],
+    annVal: number | null,
+    shade: "normal"|"subtotal"|"ending"|"total",
+    opts: {
+      indent?: number; color?: string; paren?: boolean; isGreen?: boolean;
+      dim?: boolean; labelBold?: boolean;
+    } = {}
+  ) => {
+    const { indent = 0, paren = false, isGreen = false, dim = false, labelBold = false } = opts;
+    const bg = rowBg(shade);
+    const txtColor = isGreen ? GREEN : dim ? "rgba(255,255,255,0.35)" : opts.color ?? "rgba(255,255,255,0.82)";
+    const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderRight: `1px solid rgba(255,255,255,0.12)` };
+    return (
+      <tr style={bg}>
+        <td style={{ ...labelBase, ...lBg, paddingLeft: 16 + indent * 16, fontWeight: labelBold ? 600 : 400, color: isGreen ? GREEN : "rgba(255,255,255,0.75)" }}>
+          {label}
+        </td>
+        {values.map((v, i) => {
+          const display = paren ? (v !== 0 ? `(${Math.abs(Math.round(v)).toLocaleString("en-US")})` : "—") : fmt(v);
+          return (
+            <td key={i} style={{ ...cellBase, color: txtColor, fontWeight: shade === "total" || shade === "ending" ? 500 : 400 }}>
+              {display}
+            </td>
+          );
+        })}
+        <td style={{ ...annBase, color: isGreen ? GREEN : txtColor, fontWeight: shade === "total" || shade === "ending" ? 600 : 400 }}>
+          {annVal !== null ? (paren ? (annVal !== 0 ? `(${Math.abs(Math.round(annVal)).toLocaleString("en-US")})` : "—") : fmt(annVal)) : ""}
+        </td>
+      </tr>
+    );
+  };
+
+  // Yield rate row — displays annual rate in every column (market standard)
+  const yieldRow = (label: string, annualRate: number, color?: string) => (
+    <tr style={{ background: "transparent" }}>
+      <td style={{ ...labelBase, background: DS_BG, paddingLeft: 32, fontSize: 10, color: color ?? "rgba(255,255,255,0.32)", fontStyle: "italic" as const }}>
+        {label}
+      </td>
+      {MO.map((_, i) => (
+        <td key={i} style={{ ...cellBase, fontSize: 10, color: color ?? "rgba(255,255,255,0.32)", fontStyle: "italic" as const }}>
+          {fmtPct(annualRate)}
+        </td>
+      ))}
+      <td style={{ ...annBase, fontSize: 10, color: color ?? "rgba(255,255,255,0.32)", fontStyle: "italic" as const }}>
+        {fmtPct(annualRate)}
+      </td>
+    </tr>
+  );
+
+  const sepRow = (color?: string) => (
+    <tr style={{ height: 10 }}>
+      <td colSpan={14} style={{ borderTop: color ? `1px solid ${color}33` : "none", background: DS_BG, position: "sticky" as const, left: 0 }} />
+    </tr>
+  );
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 40px 80px" }}>
+
+      {/* ── Header ── */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 6 }}>
+          <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: GREEN }}>
+            GURU INTELLIGENCE · LQ-7
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
+            ASSET WATERFALL MODEL · FY 2026 · STATUS QUO (OPTIMIZER OFF)
+          </div>
+        </div>
+        <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+          Month-by-month balance ledger for each liquidity bucket.
+          Opening balances from live account data · Income &amp; expenses from 2026 cash flow schedule · After-Tax yields applied from GURU-recommended instruments.
+        </div>
+      </div>
+
+      {/* ── Opening Balance Summary Strip ── */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+        {[
+          { label: "Operating Cash",    value: operatingCash,    color: OPS_C, pretax: `${(OPS_PRETAX * 100).toFixed(2)}%`, at: `${(OPS_AT * 100).toFixed(2)}%` },
+          { label: "Liquidity Reserve", value: liquidityReserve, color: RSV_C, pretax: `${(RSV_PRETAX * 100).toFixed(2)}%`, at: `${(RSV_AT * 100).toFixed(2)}%` },
+          { label: "Capital Build",     value: capitalBuild,     color: BLD_C, pretax: `${(BLD_PRETAX * 100).toFixed(2)}%`, at: `${(BLD_AT * 100).toFixed(2)}%` },
+        ].map(({ label, value, color, pretax, at }) => (
+          <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `0.5px solid rgba(255,255,255,0.08)`, borderTop: `2px solid ${color}`, padding: "10px 14px" }}>
+            <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 4 }}>{label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color: "rgba(255,255,255,0.92)", marginBottom: 6 }}>
+              {value.toLocaleString("en-US")}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.40)", marginBottom: 1 }}>Pre-Tax: {pretax} annual</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: GREEN, fontWeight: 500 }}>After-Tax: {at} annual</div>
+          </div>
+        ))}
+        <div style={{ flex: 1, background: "rgba(68,224,138,0.06)", border: `0.5px solid rgba(68,224,138,0.18)`, padding: "10px 14px" }}>
+          <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 4 }}>Annual After-Tax Interest</div>
+          <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color: GREEN, marginBottom: 4 }}>
+            {Math.round(ann.totalAtInt).toLocaleString("en-US")}
+          </div>
+          <div style={{ fontFamily: UI, fontSize: 10, color: "rgba(255,255,255,0.38)", marginBottom: 2 }}>All three buckets combined</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.38)" }}>
+            Blended rate: {fmtPct(ann.totalAtInt / (operatingCash + liquidityReserve + capitalBuild))} After-Tax
+          </div>
+        </div>
+      </div>
+
+      {/* ── Waterfall Table ── */}
+      <div style={{ overflowX: "auto", border: `0.5px solid rgba(255,255,255,0.10)` }}>
+        <table style={{ borderCollapse: "collapse" as const, width: "100%", minWidth: LBL_W + COL_W * 12 + ANN_W, background: DS_BG }}>
+          <thead>
+            <tr style={{ background: "rgba(255,255,255,0.06)", borderBottom: `1px solid rgba(255,255,255,0.12)` }}>
+              <th style={{ ...labelBase, background: "rgba(255,255,255,0.06)", zIndex: 3, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.40)", textAlign: "left" as const, padding: "6px 12px 6px 16px" }}>
+                ACCOUNT / LINE ITEM
+              </th>
+              {MO.map(m => (
+                <th key={m} style={{ ...cellBase, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.40)", padding: "6px 10px 6px 4px" }}>{m}</th>
+              ))}
+              <th style={{ ...annBase, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.40)", padding: "6px 10px 6px 4px" }}>ANNUAL</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            {/* ═══ SECTION 1: OPERATING CASH ═══ */}
+            {sectionHeader("Operating Cash", OPS_C, "Weighted average — current holdings", `${(OPS_PRETAX*100).toFixed(2)}%`, `${(OPS_AT*100).toFixed(2)}%`)}
+            {dataRow("Beginning Balance",
+              data.map(d => d.ops.begin), operatingCash, "normal", {})}
+            {dataRow("+ Cash Compensation",
+              data.map(d => d.ops.comp), ann.opsComp, "normal", { indent: 1 })}
+            {dataRow("+ Bank Interest Income",
+              data.map(d => d.ops.intIncome), ann.opsIntIncome, "normal", { indent: 1 })}
+            {dataRow("Total Income",
+              data.map(d => d.ops.income), ann.opsIncome, "subtotal", { labelBold: true })}
+            {dataRow("− Expenses",
+              data.map(d => d.ops.expenses), ann.opsExpenses, "normal", { indent: 1, paren: true })}
+            {dataRow("Ending Balance",
+              data.map(d => d.ops.end), data[11].ops.end, "ending", { labelBold: true })}
+            {yieldRow("Pre-Tax Yield (annual)",  OPS_PRETAX)}
+            {yieldRow("After-Tax Yield (annual)", OPS_AT, GREEN)}
+            {dataRow("+ After-Tax Interest Income",
+              data.map(d => d.ops.atInt), ann.opsAtInt, "normal", { indent: 1, isGreen: true })}
+
+            {sepRow(OPS_C)}
+
+            {/* ═══ SECTION 2: LIQUIDITY RESERVE ═══ */}
+            {sectionHeader("Liquidity Reserve", RSV_C, "Weighted average — current holdings", `${(RSV_PRETAX*100).toFixed(2)}%`, `${(RSV_AT*100).toFixed(2)}%`)}
+            {dataRow("Beginning Balance",
+              data.map(d => d.rsv.begin), liquidityReserve, "normal", {})}
+            {dataRow("+ Income Allocation",
+              data.map(() => 0), 0, "normal", { indent: 1 })}
+            {dataRow("− Expenses",
+              data.map(() => 0), 0, "normal", { indent: 1, paren: false })}
+            {dataRow("Ending Balance",
+              data.map(d => d.rsv.end), data[11].rsv.end, "ending", { labelBold: true })}
+            {yieldRow("Pre-Tax Yield (annual)",  RSV_PRETAX)}
+            {yieldRow("After-Tax Yield (annual)", RSV_AT, GREEN)}
+            {dataRow("+ After-Tax Interest Income",
+              data.map(d => d.rsv.atInt), ann.rsvAtInt, "normal", { indent: 1, isGreen: true })}
+
+            {sepRow(RSV_C)}
+
+            {/* ═══ SECTION 3: CAPITAL BUILD ═══ */}
+            {sectionHeader("Capital Build", BLD_C, "Weighted average — current holdings", `${(BLD_PRETAX*100).toFixed(2)}%`, `${(BLD_AT*100).toFixed(2)}%`)}
+            {dataRow("Beginning Balance",
+              data.map(d => d.bld.begin), capitalBuild, "normal", {})}
+            {dataRow("+ Income Allocation",
+              data.map(() => 0), 0, "normal", { indent: 1 })}
+            {dataRow("− Expenses",
+              data.map(() => 0), 0, "normal", { indent: 1, paren: false })}
+            {dataRow("Ending Balance",
+              data.map(d => d.bld.end), data[11].bld.end, "ending", { labelBold: true })}
+            {yieldRow("Pre-Tax Yield (annual)",  BLD_PRETAX)}
+            {yieldRow("After-Tax Yield (annual)", BLD_AT, GREEN)}
+            {dataRow("+ After-Tax Interest Income",
+              data.map(d => d.bld.atInt), ann.bldAtInt, "normal", { indent: 1, isGreen: true })}
+
+            {sepRow()}
+
+            {/* ═══ TOTALS ═══ */}
+            <tr style={{ height: 2, background: "rgba(255,255,255,0.14)" }}>
+              <td colSpan={14} />
+            </tr>
+            {dataRow("Total Liquid Ending Balance",
+              data.map(d => d.totalEnd), data[11].totalEnd, "total", { labelBold: true })}
+            {dataRow("Total After-Tax Interest Income",
+              data.map(d => d.totalAtInt), ann.totalAtInt, "total", { labelBold: true, isGreen: true })}
+
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Footnote ── */}
+      <div style={{ marginTop: 12 }}>
+        <div style={{ fontFamily: UI, fontSize: 10, color: "rgba(255,255,255,0.25)", lineHeight: 1.7 }}>
+          <span style={{ color: "rgba(255,255,255,0.40)", fontWeight: 600 }}>Assumptions</span>
+          {" "}· Income &amp; expense flows from live 2026 cash flow schedule · Opening balances from account data as of Dec 29, 2025
+          · Liquidity Reserve &amp; Capital Build balances static — inter-bucket GURU optimizer transfers not applied in this scenario
+          · After-Tax yields applied monthly on ending balance (Operating Cash) or beginning balance (Reserve, Capital Build)
+          · Negative Operating Cash balance indicates a temporary intra-month shortfall — covered by Reserve sweep in the GURU optimized scenario
+          · Expenses shown net of rental income — investment property cash flows reported on a net basis consistent with Cash Flow Forecast
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CashFlowForecastWaterfallView — GURU Intelligence · Cash flow forecast tab
+// Full P&L ledger: CF_PL_ROWS × CF_MONTHS — same financial model style as
+// LiquidityWaterfallView. Every line item auditable against live cashflow data.
+// ─────────────────────────────────────────────────────────────────────────────
+function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const MO = CF_MONTHS.map(m => m.label);
+
+  // ── Interest income from Asset Forecast model ──────────────────────────────
+  // The "Interest From Bank Accounts" row is driven by the same After-Tax yield model
+  // used in the Asset Forecast tab, so both tabs tie to the same numbers.
+  const monthlyBucketInt = computeMonthlyBucketInterest(assets, cashFlows);
+
+  // ── Compute all row values (mirrors computeCumulativeNCF logic) ────────────
+  const mvCF = (descs: string[], year: number, month: number): number =>
+    cashFlows
+      .filter(cf => {
+        const d = new Date(cf.date as string);
+        return (
+          d.getUTCFullYear() === year &&
+          d.getUTCMonth() + 1 === month &&
+          descs.some(dm => cf.description.toLowerCase().includes(dm.toLowerCase()))
+        );
+      })
+      .reduce((s, cf) => s + (cf.type === "inflow" ? Number(cf.amount) : -Number(cf.amount)), 0);
+
+  const vals: Record<string, number[]> = {};
+
+  for (const row of CF_PL_ROWS) {
+    if (row.kind === "item") {
+      // Reserve interest row is overridden with model-computed bucket After-Tax interest
+      if (row.key === "reserve_int") {
+        vals[row.key] = monthlyBucketInt;
+      } else {
+        vals[row.key] = CF_MONTHS.map(m => mvCF(row.descs, m.year, m.month));
+      }
+    } else if (row.kind === "subtotal") {
+      if (row.sumOf) {
+        vals[row.key] = CF_MONTHS.map((_, mi) =>
+          (row.sumOf as string[]).reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
+      } else if (row.descs) {
+        vals[row.key] = CF_MONTHS.map(m => mvCF(row.descs as string[], m.year, m.month));
+      } else {
+        vals[row.key] = CF_MONTHS.map(() => 0);
+      }
+    } else if (row.kind === "total" && row.sumOf) {
+      vals[row.key] = CF_MONTHS.map((_, mi) =>
+        (row.sumOf as string[]).reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
+    } else {
+      vals[row.key] = CF_MONTHS.map(() => 0);
+    }
+  }
+
+  // Compute special derived totals
+  const itemRows = CF_PL_ROWS.filter(r => r.kind === "item");
+  const netByMonth     = CF_MONTHS.map((_, mi) =>
+    itemRows.reduce((s, r) => s + (vals[r.key]?.[mi] ?? 0), 0));
+  const outflowByMonth = CF_MONTHS.map((_, mi) =>
+    itemRows.reduce((s, r) => { const v = vals[r.key]?.[mi] ?? 0; return s + Math.min(0, v); }, 0));
+  const cumByMonth     = netByMonth.reduce<number[]>((acc, v, i) => {
+    acc.push((acc[i - 1] ?? 0) + v); return acc; }, []);
+
+  for (const row of CF_PL_ROWS) {
+    if (row.kind === "total" && row.compute) {
+      if      (row.compute === "outflow")    vals[row.key] = outflowByMonth;
+      else if (row.compute === "net")        vals[row.key] = netByMonth;
+      else if (row.compute === "cumulative") vals[row.key] = cumByMonth;
+    }
+  }
+
+  // Annual summary values
+  const annualIncome   = itemRows.reduce((s, r) => {
+    const sum = (vals[r.key] ?? []).reduce((a, v) => a + Math.max(0, v), 0);
+    return s + sum;
+  }, 0);
+  const annualExpenses = itemRows.reduce((s, r) => {
+    const sum = (vals[r.key] ?? []).reduce((a, v) => a + Math.min(0, v), 0);
+    return s + sum;
+  }, 0);
+  const annualNet      = netByMonth.reduce((s, v) => s + v, 0);
+  const troughDepth    = Math.min(...cumByMonth);
+
+  // ── Number formatters ──────────────────────────────────────────────────────
+  const fmt = (v: number): string => {
+    if (Math.round(v) === 0) return "—";
+    const abs = Math.abs(Math.round(v));
+    const s = abs.toLocaleString("en-US");
+    return v < 0 ? `(${s})` : s;
+  };
+
+  // ── Design tokens (matching LiquidityWaterfallView) ───────────────────────
+  const MONO  = "'JetBrains Mono', 'Courier New', monospace";
+  const UI    = "Inter, system-ui, sans-serif";
+  const DS_BG = "#0c1828";
+  const GREEN = "#44e08a";
+  const AMBER = "#d4950a";
+  const SEP_C = "rgba(255,255,255,0.07)";
+  const COL_W = 76;
+  const LBL_W = 220;
+  const ANN_W = 92;
+
+  const cellBase: React.CSSProperties = {
+    fontFamily: MONO, fontSize: 11, textAlign: "right" as const,
+    padding: "3px 9px 3px 3px", whiteSpace: "nowrap" as const,
+    color: "rgba(255,255,255,0.75)", borderLeft: `0.5px solid ${SEP_C}`,
+    minWidth: COL_W, width: COL_W,
+  };
+  const labelBase: React.CSSProperties = {
+    fontFamily: UI, fontSize: 11, padding: "3px 12px 3px 14px",
+    color: "rgba(255,255,255,0.68)", whiteSpace: "nowrap" as const,
+    position: "sticky" as const, left: 0, background: DS_BG, zIndex: 2,
+    borderRight: "1px solid rgba(255,255,255,0.12)",
+    minWidth: LBL_W, width: LBL_W,
+  };
+  const annBase: React.CSSProperties = {
+    ...cellBase, minWidth: ANN_W, width: ANN_W, fontWeight: 500,
+    borderLeft: "1px solid rgba(255,255,255,0.16)",
+  };
+
+  const rowBgs: Record<string, string> = {
+    normal:   "transparent",
+    subtotal: "rgba(255,255,255,0.04)",
+    total:    "rgba(255,255,255,0.10)",
+    group:    "rgba(255,255,255,0.03)",
+  };
+
+  // ── Group → accent color mapping ───────────────────────────────────────────
+  const groupColors: Record<string, string> = {
+    "EARNED INCOME": "#4a7fd4",
+    "TRIBECA — PRIMARY RESIDENCE": "#835800",
+    "SARASOTA — INVESTMENT PROPERTY": "#856100",
+    "DEPENDENT CARE & EDUCATION": "#6b5db5",
+    "CREDIT CARD": "#8b4040",
+    "LIFESTYLE": "#5a7a6a",
+    "DEBT SERVICE": "#8b5540",
+    "TAXES": "#9a4030",
+    "TRAVEL": "#4a6080",
+    "YEAR-END & MISC": "#506070",
+  };
+  let currentGroupColor = "rgba(255,255,255,0.40)";
+
+  // ── Row renderer ───────────────────────────────────────────────────────────
+  const renderRow = (row: PLRowDef): React.ReactNode => {
+    if (row.kind === "group") {
+      currentGroupColor = groupColors[row.label] ?? "rgba(255,255,255,0.35)";
+      return (
+        <tr key={row.key} style={{ background: rowBgs.group, borderTop: `0.5px solid ${currentGroupColor}40` }}>
+          <td colSpan={14} style={{
+            fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.13em",
+            textTransform: "uppercase" as const, color: currentGroupColor,
+            padding: "5px 14px 5px 14px", position: "sticky" as const, left: 0,
+            borderBottom: `0.5px solid ${currentGroupColor}40`,
+          }}>
+            {row.label}
+          </td>
+        </tr>
+      );
+    }
+
+    const rowVals = vals[row.key] ?? CF_MONTHS.map(() => 0);
+    const isSubtotal  = row.kind === "subtotal" || ("renderAs" in row && row.renderAs === "subtotal");
+    const isTotal     = row.kind === "total";
+    const bg          = isTotal ? rowBgs.total : isSubtotal ? rowBgs.subtotal : rowBgs.normal;
+    const indent      = !isSubtotal && !isTotal ? 14 : 0;
+    const lBgColor    = isTotal ? "rgba(255,255,255,0.06)" : isSubtotal ? "rgba(255,255,255,0.03)" : DS_BG;
+
+    // Annual value: sum for most rows; Dec ending for cumulative
+    let annVal: number;
+    if (isTotal && "compute" in row && row.compute === "cumulative") {
+      annVal = cumByMonth[11] ?? 0;  // year-end cumulative
+    } else if (isTotal && "compute" in row && row.compute === "outflow") {
+      annVal = annualExpenses;
+    } else if (isTotal && "compute" in row && row.compute === "net") {
+      annVal = annualNet;
+    } else {
+      annVal = rowVals.reduce((s, v) => s + v, 0);
+    }
+
+    // Text color for total rows
+    const totalAccent = isTotal && "accent" in row
+      ? (row.accent === "green" ? GREEN : AMBER)
+      : null;
+
+    const labelColor  = totalAccent ?? (isSubtotal ? "rgba(255,255,255,0.80)" : "rgba(255,255,255,0.65)");
+    const labelWeight = isTotal ? 700 : isSubtotal ? 600 : 400;
+
+    return (
+      <tr key={row.key} style={{ background: bg }}>
+        <td style={{
+          ...labelBase, background: lBgColor, paddingLeft: 14 + indent,
+          fontWeight: labelWeight, color: labelColor,
+          fontSize: isTotal ? 11 : 11,
+          letterSpacing: isTotal ? "0.03em" : "normal",
+        }}>
+          {row.label}
+        </td>
+        {rowVals.map((v, i) => {
+          let color = totalAccent ?? "rgba(255,255,255,0.75)";
+          // For net/cumulative rows: green positive, amber negative
+          if (isTotal && "compute" in row && (row.compute === "net" || row.compute === "cumulative")) {
+            color = v >= 0 ? GREEN : AMBER;
+          }
+          return (
+            <td key={i} style={{
+              ...cellBase,
+              color,
+              fontWeight: isTotal ? 600 : isSubtotal ? 500 : 400,
+              fontSize: isTotal ? 11 : 11,
+            }}>
+              {fmt(v)}
+            </td>
+          );
+        })}
+        <td style={{
+          ...annBase,
+          color: totalAccent ?? (isTotal && "compute" in row && (row.compute === "net" || row.compute === "cumulative")
+            ? (annVal >= 0 ? GREEN : AMBER)
+            : "rgba(255,255,255,0.80)"),
+          fontWeight: isTotal ? 700 : isSubtotal ? 600 : 500,
+          fontStyle: (isTotal && "compute" in row && row.compute === "cumulative") ? "italic" as const : "normal" as const,
+        }}>
+          {(isTotal && "compute" in row && row.compute === "cumulative") ? `Dec: ${fmt(annVal)}` : fmt(annVal)}
+        </td>
+      </tr>
+    );
+  };
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 40px 80px" }}>
+
+      {/* ── Header ── */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 6 }}>
+          <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: GREEN }}>
+            GURU INTELLIGENCE · CF-12
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
+            CASH FLOW FORECAST · FY 2026 · KESSLER FAMILY
+          </div>
+        </div>
+        <div style={{ fontFamily: UI, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+          Full P&amp;L ledger — every line item sourced from live cash flow schedule. All figures auditable.
+        </div>
+      </div>
+
+      {/* ── Summary KPI strip ── */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 18 }}>
+        {[
+          { label: "Total Cash Income",    val: annualIncome,   color: GREEN },
+          { label: "Total Cash Expenses",  val: annualExpenses, color: AMBER },
+          { label: "Net Cash Flow (FY)",   val: annualNet,      color: annualNet >= 0 ? GREEN : AMBER },
+          { label: "Trough (Nov)",         val: troughDepth,    color: troughDepth < 0 ? AMBER : GREEN, note: "lowest cumulative NCF — sizes reserve" },
+        ].map(({ label, val, color, note }) => (
+          <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `0.5px solid rgba(255,255,255,0.08)`, padding: "10px 14px" }}>
+            <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>{label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color }}>{fmt(val)}</div>
+            {note && <div style={{ fontFamily: UI, fontSize: 9, color: "rgba(255,255,255,0.28)", marginTop: 3 }}>{note}</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* ── P&L Table ── */}
+      <div style={{ overflowX: "auto", border: `0.5px solid rgba(255,255,255,0.10)` }}>
+        <table style={{ borderCollapse: "collapse" as const, minWidth: LBL_W + COL_W * 12 + ANN_W, background: DS_BG }}>
+          <thead>
+            <tr style={{ background: "rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
+              <th style={{ ...labelBase, background: "rgba(255,255,255,0.06)", zIndex: 3,
+                fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.10em",
+                textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)",
+                textAlign: "left" as const, padding: "6px 12px 6px 14px" }}>
+                LINE ITEM
+              </th>
+              {MO.map(m => (
+                <th key={m} style={{ ...cellBase, fontFamily: UI, fontSize: 9, fontWeight: 700,
+                  letterSpacing: "0.08em", textTransform: "uppercase" as const,
+                  color: "rgba(255,255,255,0.38)", padding: "6px 9px 6px 3px" }}>{m}</th>
+              ))}
+              <th style={{ ...annBase, fontFamily: UI, fontSize: 9, fontWeight: 700,
+                letterSpacing: "0.08em", textTransform: "uppercase" as const,
+                color: "rgba(255,255,255,0.38)", padding: "6px 9px 6px 3px" }}>ANNUAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {CF_PL_ROWS.map(row => renderRow(row))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ── Footnote ── */}
+      <div style={{ marginTop: 12 }}>
+        <div style={{ fontFamily: UI, fontSize: 10, color: "rgba(255,255,255,0.25)", lineHeight: 1.7 }}>
+          <span style={{ color: "rgba(255,255,255,0.40)", fontWeight: 600 }}>Data source</span>
+          {" "}· All figures sourced from live cash flow schedule · Inflows positive, outflows in parentheses · Annual column sums Jan–Dec except Cumulative (shows Dec year-end balance)
+          · Trough depth feeds directly into reserve target calculation in Asset Forecast
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function MoneyMovementView({
   assets,
@@ -4869,11 +6073,11 @@ function MoneyMovementView({
     [{ label: "NYC Property Tax",     amount: 17500 }],                                           // Jan
     [],                                                                                            // Feb
     [],                                                                                            // Mar
-    [{ label: "Q1 Est. Tax",          amount: 30000 }, { label: "Buckley Tuition", amount: 15000 }], // Apr
+    [{ label: "Q1 Est. Tax",          amount: 30000 }, { label: "Dalton Tuition", amount: 15000 }], // Apr
     [{ label: "Memorial Day Travel",  amount:  4000 }],                                           // May
     [{ label: "Weekend Travel",       amount:  1000 }],                                           // Jun
-    [{ label: "Buckley Tuition Q3",   amount: 15000 }, { label: "Summer Vacation", amount: 4500 }], // Jul
-    [{ label: "Buckley Tuition Q3",   amount: 15000 }],                                           // Aug
+    [{ label: "Dalton Tuition Q3",   amount: 15000 }, { label: "Summer Vacation", amount: 4500 }], // Jul
+    [{ label: "Dalton Tuition Q3",   amount: 15000 }],                                           // Aug
     [],                                                                                            // Sep
     [],                                                                                            // Oct
     [{ label: "Year-end Expenses",    amount:  4000 }],                                           // Nov
@@ -6088,7 +7292,13 @@ function GuruAllocationView({
   const resExcessT = Math.max(0, flowCurrentT - resTargetAmtT);
   const totalExcessT = opExcessT + resExcessT;
   const liquidCoverageT = opCurrentMonthsT + resCurrentMonthsT;
-  const returnPickupT = Math.round(totalExcessT * 0.054);
+  // Income pickup: full portfolio current AT income vs. pro-forma (target-based redistribution).
+  // True delta — pro-forma minus current, not just the product yield × excess.
+  const {
+    currentAnnualIncome:  atCurrentT,
+    proformaAnnualIncome: atProformaT,
+    annualPickup:         returnPickupT,
+  } = computeReturnOptimization(assets, cashFlows);
   const excessProdsT = [
     { name: "Cresset Short Duration", risk: "Low risk", grossYield: "6.10%", atYield: "5.40%", annualIncome: Math.round(totalExcessT * 0.054), liquidity: "Daily liquidity · small NAV movement", rec: true },
     { name: "JPMorgan 100% Treasuries MMF", risk: "Zero risk", grossYield: "4.30%", atYield: "2.80%", annualIncome: Math.round(totalExcessT * 0.028), liquidity: "Same-day liquidity · stable NAV", rec: false },
@@ -6138,7 +7348,7 @@ function GuruAllocationView({
               { label: "Total Assets", val: fmt(totalAssets), sub: "Full balance sheet", color: "rgba(255,255,255,0.9)" },
               { label: "Liquid Coverage", val: `${liquidCoverageT.toFixed(1)} months`, sub: `Target: ${opMonthsLocal + resMonthsLocal} months`, color: "#9a7b3c" },
               { label: "Excess Liquidity", val: fmt(totalExcessT), sub: "Above coverage threshold", color: "#9a7b3c" },
-              { label: "Return Pickup / Year", val: `+${fmt(returnPickupT)}`, sub: "If deployed today", color: "#2e7a52" },
+              { label: "Income Pickup / Year", val: `+${fmt(returnPickupT)}`, sub: `${fmt(atCurrentT)} → ${fmt(atProformaT)} AT`, color: "#2e7a52" },
             ].map((m) => (
               <div key={m.label}>
                 <p className="text-[9px] font-semibold uppercase tracking-[0.12em] mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{m.label}</p>
@@ -6434,7 +7644,7 @@ function GuruAllocationView({
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#9a7b3c", opacity: 0.75 }} />
               <span className="text-[9px] font-bold uppercase tracking-[0.14em] flex-shrink-0" style={{ color: "#9a7b3c" }}>GURU</span>
               <span className="text-muted-foreground/40 select-none px-0.5">·</span>
-              <span className="text-[10px] italic text-muted-foreground">Based on market yields and your {opMonthsLocal + resMonthsLocal}-month liquidity policy, GURU recommends short-duration income strategies · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>{fmt(returnPickupT)}/yr</span> return pickup at optimal after-tax yield.</span>
+              <span className="text-[10px] italic text-muted-foreground">Based on market yields and your {opMonthsLocal + resMonthsLocal}-month liquidity policy, GURU recommends short-duration income strategies · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>+{fmt(returnPickupT)}/yr</span> income pickup vs. current portfolio ({fmt(atCurrentT)} → {fmt(atProformaT)} AT).</span>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -6493,6 +7703,12 @@ function DetailsView({
   const totalLiab = liabilities.reduce((s, l) => s + Number(l.value), 0);
   const netWorth = totalAssets - totalLiab;
 
+  // Liquid bucket totals for Total Liquid Assets card
+  const dvOpCash   = assets.filter(a => assetBucketKey(a) === "reserve").reduce((s, a) => s + Number(a.value), 0);
+  const dvResCash  = assets.filter(a => assetBucketKey(a) === "yield_").reduce((s, a) => s + Number(a.value), 0);
+  const dvCapBuild = assets.filter(a => assetBucketKey(a) === "tactical").reduce((s, a) => s + Number(a.value), 0);
+  const dvTotalLiquid = dvOpCash + dvResCash + dvCapBuild;
+
   const assetGroups = buildAssetGroups(assets);
   const liabGroups = buildLiabilityGroups(liabilities);
 
@@ -6535,30 +7751,65 @@ function DetailsView({
 
       {tab === "bs" && (
         <div className="space-y-4" style={{ padding: "0" }}>
-          {/* ── Page header — matches allocation/cashflow style ── */}
-          <div style={{ padding: "18px 32px 0", display: "flex", alignItems: "baseline", gap: 12 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 300, color: "rgba(255,255,255,0.88)", letterSpacing: "-0.01em", margin: 0, fontFamily: "Inter, system-ui, sans-serif" }}>Net Worth</h1>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.32)", letterSpacing: "0.04em", fontFamily: "Inter, system-ui, sans-serif" }}>Kessler Family · {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span>
-          </div>
-          {/* GURU DETECTIONS banner */}
-          <div style={{ background: "#3a5580", padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          {/* ── GURU Detection Cards ── */}
+          <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
+            {/* Detection System header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px 7px", borderBottom: "1px solid rgba(91,143,204,0.18)" }}>
+              <div style={{ width: 3, height: 16, background: "#5ecc8a", borderRadius: 1.5, flexShrink: 0 }} />
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#5ecc8a", display: "inline-block", flexShrink: 0, animation: "pulse 2s ease-in-out infinite" }} />
-              <span style={{ fontFamily: CF2.INTER, fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.9)" }}>GURU Detections</span>
+              <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(180,215,255,0.88)" }}>Detection System</span>
+              <span style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.28)", marginLeft: "auto", letterSpacing: "0.05em", textTransform: "uppercase" as const }}>3 Active</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-              <div>
-                <p style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>Total Assets</p>
-                <p style={{ fontFamily: "system-ui", fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.95)", fontVariantNumeric: "tabular-nums" as const }}>{fmt(totalAssets)}</p>
+            {/* Detection cards row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, padding: "7px 10px 9px" }}>
+              {/* Card 1: Total Assets */}
+              <div style={{ background: "rgba(0,0,0,0.22)", borderRadius: 5, border: "1px solid rgba(91,143,204,0.18)", borderLeft: "2.5px solid rgba(91,143,204,0.55)", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(180,215,255,0.88)" }}>Total Assets</span>
+                  <span style={{ fontFamily: CF2.INTER, fontSize: 8, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>Dec 29, 2025</span>
+                </div>
+                <div style={{ fontFamily: CF2.INTER, fontSize: 22, fontWeight: 300, color: "rgba(180,215,255,0.95)", letterSpacing: "-0.015em", fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(totalAssets)}</div>
+                <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.45)", lineHeight: 1.3 }}>Across all accounts &amp; holdings · synced live</div>
               </div>
-              <div>
-                <p style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>Total Liabilities</p>
-                <p style={{ fontFamily: "system-ui", fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,0.95)" }}>{fmt(totalLiab)}</p>
+              {/* Card 2: Total Liabilities */}
+              <div style={{ background: "rgba(0,0,0,0.22)", borderRadius: 5, border: "1px solid rgba(155,32,32,0.22)", borderLeft: "2.5px solid rgba(155,32,32,0.55)", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(255,180,180,0.82)" }}>Total Liabilities</span>
+                  <span style={{ fontFamily: CF2.INTER, fontSize: 8, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>Dec 29, 2025</span>
+                </div>
+                <div style={{ fontFamily: CF2.INTER, fontSize: 22, fontWeight: 300, color: "rgba(255,180,180,0.90)", letterSpacing: "-0.015em", fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(totalLiab)}</div>
+                <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.45)", lineHeight: 1.3 }}>Mortgage + consumer debt · leverage ratio tracked</div>
               </div>
-              <div>
-                <p style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>Net Worth</p>
-                <p style={{ fontFamily: "system-ui", fontSize: 18, fontWeight: 700, color: CF2.green }}>{fmt(netWorth)}</p>
+              {/* Card 3: Net Worth — hero green */}
+              <div style={{ background: "rgba(0,0,0,0.26)", borderRadius: 5, border: "1px solid rgba(94,204,138,0.28)", borderLeft: "2.5px solid rgba(94,204,138,0.55)", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(94,204,138,0.88)" }}>Net Worth</span>
+                  <span style={{ fontFamily: CF2.INTER, fontSize: 8, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: CF2.green, border: `1px solid rgba(94,204,138,0.35)`, borderRadius: 2, padding: "1px 6px" }}>LIVE</span>
+                </div>
+                <div style={{ fontFamily: CF2.INTER, fontSize: 22, fontWeight: 300, color: CF2.green, letterSpacing: "-0.015em", fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(netWorth)}</div>
+                <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.45)", lineHeight: 1.3 }}>Assets minus liabilities · continuously updated</div>
               </div>
+            </div>
+          </div>
+
+          {/* ── Total Liquid Assets card ── */}
+          <div style={{ padding: "7px 10px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+              <div style={{ width: 3, height: 14, background: "#44e08a", borderRadius: 1.5, flexShrink: 0 }} />
+              <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.10em", color: "rgba(180,215,255,0.75)" }}>Total Liquid Assets</span>
+              <span style={{ fontFamily: CF2.INTER, fontSize: 18, fontWeight: 300, color: "#5ecc8a", letterSpacing: "-0.015em", fontVariantNumeric: "tabular-nums" as const, marginLeft: "auto" }}>{fmt(dvTotalLiquid)}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+              {([
+                { label: "Operating Cash",     val: dvOpCash,   color: "#1E4F9C", pill: "Checking" },
+                { label: "Liquidity Reserve",  val: dvResCash,  color: "#835800", pill: "Reserve" },
+                { label: "Capital Build",       val: dvCapBuild, color: "#195830", pill: "Capital" },
+              ] as const).map(b => (
+                <div key={b.label} style={{ background: "rgba(0,0,0,0.20)", borderRadius: 4, border: "1px solid rgba(255,255,255,0.06)", borderLeft: `2.5px solid ${b.color}`, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.45)" }}>{b.label}</span>
+                  <span style={{ fontFamily: CF2.INTER, fontSize: 16, fontWeight: 300, color: "rgba(255,255,255,0.88)", letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums" as const }}>{fmt(b.val)}</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -6585,12 +7836,13 @@ function DetailsView({
               <div style={{ border: `1px solid ${CF2.border}`, borderRadius: "10px", overflow: "hidden", background: CF2.card }}>
                 <div
                   className="grid"
-                  style={{ gridTemplateColumns: "1fr 90px 56px 90px", background: CF2.elevated }}
+                  style={{ gridTemplateColumns: "1fr 90px 62px 62px 80px", background: CF2.elevated }}
                 >
                   <div style={{ padding: "12px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.06em", color: CF2.green }}>Net Worth</div>
                   <div style={{ padding: "12px", textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: "13px", fontWeight: 900, color: CF2.green }}>
                     {fmt(netWorth)}
                   </div>
+                  <div style={{ padding: "12px" }} />
                   <div style={{ padding: "12px" }} />
                   <div style={{ padding: "12px" }} />
                 </div>
@@ -6604,6 +7856,430 @@ function DetailsView({
     </div>
   );
 }
+
+// ─── Cash Flow Advisor View ───────────────────────────────────────────────────
+function CashFlowAdvisorView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const FONT  = "'Inter', system-ui, sans-serif";
+  const SERIF = "'Playfair Display', Georgia, serif";
+  const BG    = "hsl(220,5%,93%)";
+  const BORDER = "rgba(0,0,0,0.07)";
+  const NAVY  = "hsl(222,45%,12%)";
+  const MUTED = "rgba(0,0,0,0.38)";
+
+  // ── Compute vals — same logic as CashFlowForecastView (single source of truth) ──
+  function monthVal(descs: string[], year: number, month: number): number {
+    return cashFlows
+      .filter(cf => {
+        const d = new Date(cf.date as string);
+        return d.getUTCFullYear() === year && d.getUTCMonth() + 1 === month &&
+          descs.some(dm => cf.description.toLowerCase().includes(dm.toLowerCase()));
+      })
+      .reduce((s, cf) => s + (cf.type === "inflow" ? Number(cf.amount) : -Number(cf.amount)), 0);
+  }
+
+  const vals: Record<string, number[]> = {};
+  for (const row of CF_PL_ROWS) {
+    if (row.kind === "item") {
+      vals[row.key] = CF_MONTHS.map(m => monthVal(row.descs as string[], m.year, m.month));
+    } else if (row.kind === "subtotal") {
+      if (row.sumOf) vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf!.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
+      else if (row.descs) vals[row.key] = CF_MONTHS.map(m => monthVal(row.descs!, m.year, m.month));
+      else vals[row.key] = CF_MONTHS.map(() => 0);
+    } else if (row.kind === "total" && row.sumOf) {
+      vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf!.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
+    } else {
+      vals[row.key] = CF_MONTHS.map(() => 0);
+    }
+  }
+
+  const inflowByMonth  = CF_MONTHS.map((_, mi) => CF_PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + Math.max(0, vals[r.key]?.[mi] ?? 0), 0));
+  const outflowByMonth = CF_MONTHS.map((_, mi) => CF_PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + Math.min(0, vals[r.key]?.[mi] ?? 0), 0));
+  const netByMonth     = CF_MONTHS.map((_, mi) => CF_PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + (vals[r.key]?.[mi] ?? 0), 0));
+  const cumulativeByMonth = netByMonth.reduce<number[]>((acc, v, i) => { acc.push((acc[i - 1] ?? 0) + v); return acc; }, []);
+
+  // Fill compute= total rows
+  vals["total_expenses"] = outflowByMonth;
+  vals["total_net"]      = netByMonth;
+  vals["total_cum"]      = cumulativeByMonth;
+
+  const annualInflows  = inflowByMonth.reduce((s, v) => s + v, 0);
+  const annualOutflows = Math.abs(outflowByMonth.reduce((s, v) => s + v, 0));
+  const annualNet      = netByMonth.reduce((s, v) => s + v, 0);
+  const troughIdx      = cumulativeByMonth.reduce((mi, v, i) => v < cumulativeByMonth[mi] ? i : mi, 0);
+
+  const { excessLiquidity, coverageMonths, troughDepth } = computeLiquidityTargets(assets, cashFlows);
+
+  // ── Chart data ──
+  const chartData = CF_MONTHS.map((m, i) => ({ label: m.label, value: cumulativeByMonth[i] }));
+  const cumMin = Math.min(...cumulativeByMonth, 0);
+  const cumMax = Math.max(...cumulativeByMonth, 0);
+  const cumRange = cumMax - cumMin || 1;
+  const zeroTopPct = Math.round((cumMax / cumRange) * 100);
+
+  const fmtCell = (v: number): string => {
+    if (v === 0) return "—";
+    const abs = Math.abs(Math.round(v));
+    return v < 0 ? `(${fmt(abs)})` : fmt(abs);
+  };
+
+  // ── Liquid Account Balance Forecast — hardcoded from Prototype Model v4.xlsx ──
+  const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // ── Bucket colors (from GURU_BUCKETS canonical) ─────────────────────────────
+  // ── Bucket colors ────────────────────────────────────────────────────────────
+  const OPS_COLOR = "#1E4F9C";   // Operating Cash
+  const RSV_COLOR = "#835800";   // Liquidity Reserve
+  const BLD_COLOR = "#195830";   // Capital Build
+
+  // ── GURU Optimized balance forecast (Prototype Model v4.xlsx — Money Movement) ─
+  // Values from Prototype Model v4.xlsx — Money Movement sheet, GURU rows (rounded)
+  const FC_OPS = [41879,86879,90879,46879,62379,76379,56879,41879,45879,73332,86832,76879];
+  const FC_RSV = [156062,109323,103507,100629,79242,62326,60365,58383,52396,22946,3408,179127];
+  const FC_BLD = [193533,193958,194384,194811,195239,195667,196097,196528,196959,197392,197825,219586];
+
+  const rsvTroughIdx = FC_RSV.reduce((mi, v, i) => v < FC_RSV[mi] ? i : mi, 0);
+
+  const fcChartData = MONTHS_SHORT.map((mo, i) => ({
+    month: mo,
+    ops: FC_OPS[i],
+    rsv: FC_RSV[i],
+    bld: FC_BLD[i],
+  }));
+
+  const fmtBal = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
+
+  return (
+    <div style={{ background: BG, minHeight: "100%", fontFamily: FONT, overflowY: "auto" }}>
+      <div style={{ padding: "32px 48px 80px" }}>
+
+        {/* ── KPI Strip ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginBottom: 16 }}>
+          {([
+            { label: "Annual Inflows",    value: fmt(annualInflows),                                                    color: "#195830", sub: "Earned income · 2026" },
+            { label: "Annual Outflows",   value: fmt(annualOutflows),                                                   color: "#8B2020", sub: "Total expenditure · 2026" },
+            { label: "Annual Net",        value: (annualNet >= 0 ? "+" : "") + fmt(Math.abs(annualNet)),                color: annualNet >= 0 ? "#195830" : "#8B2020", sub: "Net surplus · 2026" },
+            { label: "Coverage",          value: `${coverageMonths.toFixed(1)} mo`,                                    color: NAVY, sub: "vs. 12-mo target" },
+            { label: "Trough",            value: fmt(troughDepth),                                                     color: "#835800", sub: `${CF_MONTHS[troughIdx]?.label ?? "Nov"} · max drawdown` },
+            { label: "Excess Deployable", value: fmt(excessLiquidity),                                                 color: "#4A3FA0", sub: "Above reserve target" },
+          ] as const).map((kpi, i) => (
+            <div key={i} style={{ background: "#FFFFFF", border: `0.5px solid ${BORDER}`, padding: "14px 18px" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: MUTED, marginBottom: 8 }}>{kpi.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 300, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" as const, color: kpi.color, lineHeight: 1, marginBottom: 5 }}>{kpi.value}</div>
+              <div style={{ fontSize: 10, color: MUTED }}>{kpi.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Net Cumulative Cash Flow Chart ── */}
+        <div style={{ background: "#FFFFFF", border: `0.5px solid ${BORDER}`, marginBottom: 16 }}>
+          <div style={{ padding: "14px 18px 12px", borderBottom: `0.5px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: MUTED, marginBottom: 3 }}>Net Cumulative Cash Flow · Jan–Dec 2026</div>
+              <div style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 400, color: NAVY, letterSpacing: "-0.01em" }}>
+                12-Month Forward Cash Position
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", background: "rgba(131,88,0,0.05)", border: "0.5px solid rgba(131,88,0,0.18)" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#835800", flexShrink: 0 }} />
+              <span style={{ fontSize: 10, fontWeight: 600, color: "#835800" }}>
+                {CF_MONTHS[troughIdx]?.label ?? "Nov"} trough
+              </span>
+              <span style={{ fontSize: 10, color: "#835800", fontVariantNumeric: "tabular-nums" as const }}>
+                ({fmt(troughDepth)})
+              </span>
+            </div>
+          </div>
+          <div style={{ height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 16, right: 32, left: 8, bottom: 8 }}>
+                <defs>
+                  <linearGradient id="cfAdvisorFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset={`${zeroTopPct}%`} stopColor="#195830" stopOpacity={0.12} />
+                    <stop offset={`${zeroTopPct}%`} stopColor="#8B2020" stopOpacity={0.10} />
+                    <stop offset="100%"             stopColor="#8B2020" stopOpacity={0.20} />
+                  </linearGradient>
+                  <linearGradient id="cfAdvisorStroke" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset={`${zeroTopPct}%`} stopColor="#195830" />
+                    <stop offset={`${zeroTopPct}%`} stopColor="#8B2020" />
+                    <stop offset="100%"             stopColor="#8B2020" />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fill: "rgba(0,0,0,0.38)", fontFamily: FONT }}
+                  axisLine={{ stroke: "rgba(0,0,0,0.08)" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 9, fill: "rgba(0,0,0,0.32)", fontFamily: FONT }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: number) => v === 0 ? "$0" : `${v < 0 ? "-" : "+"}$${Math.round(Math.abs(v) / 1000)}K`}
+                  width={56}
+                  domain={["auto", "auto"]}
+                />
+                <ReferenceLine
+                  y={0}
+                  stroke="rgba(0,0,0,0.28)"
+                  strokeWidth={1}
+                  strokeDasharray="5 4"
+                  label={{ value: "break-even", position: "insideTopRight", fontSize: 9, fill: "rgba(0,0,0,0.30)", fontFamily: FONT, dy: -6 }}
+                />
+                <RechartsTooltip
+                  contentStyle={{ background: "#fff", border: "0.5px solid rgba(0,0,0,0.10)", borderRadius: 0, fontSize: 11, fontFamily: FONT, boxShadow: "0 2px 16px rgba(0,0,0,0.08)", padding: "8px 12px" }}
+                  formatter={(v: number) => [fmt(Math.abs(v)), v < 0 ? "Cumulative Deficit" : "Cumulative Surplus"]}
+                  labelStyle={{ fontSize: 10, fontWeight: 700, color: NAVY, marginBottom: 3 }}
+                  cursor={{ stroke: "rgba(0,0,0,0.10)", strokeWidth: 1 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="url(#cfAdvisorStroke)"
+                  strokeWidth={2}
+                  fill="url(#cfAdvisorFill)"
+                  dot={(props: any) => {
+                    if (props.index === troughIdx) {
+                      return <circle key="trough-dot" cx={props.cx} cy={props.cy} r={5} fill="#835800" stroke="#fff" strokeWidth={2} />;
+                    }
+                    return <g key={props.index} />;
+                  }}
+                  activeDot={{ r: 4, fill: NAVY, stroke: "#fff", strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* ── Full Monthly Cash Flow Statement ── */}
+        <div style={{ background: "#FFFFFF", border: `0.5px solid ${BORDER}`, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ padding: "14px 18px 12px", borderBottom: `0.5px solid ${BORDER}` }}>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: MUTED, marginBottom: 3 }}>Cash Flow Statement</div>
+            <div style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 400, color: NAVY }}>Monthly Detail · {format(addMonths(DEMO_NOW, 1), "MMMM")} – {format(addMonths(DEMO_NOW, 12), "MMMM yyyy")}</div>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT }}>
+              <thead>
+                <tr style={{ background: "hsl(220,5%,97%)", borderBottom: `0.5px solid ${BORDER}` }}>
+                  <th style={{ position: "sticky" as const, left: 0, zIndex: 2, background: "hsl(220,5%,97%)", padding: "8px 18px", textAlign: "left" as const, fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: MUTED, minWidth: 218, borderRight: `0.5px solid ${BORDER}` }}>
+                    Line Item
+                  </th>
+                  {CF_MONTHS.map((m, mi) => (
+                    <th key={m.label} style={{ padding: "8px 9px", textAlign: "right" as const, fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: mi === troughIdx ? "#835800" : MUTED, minWidth: 70, background: mi === troughIdx ? "rgba(131,88,0,0.04)" : "transparent", whiteSpace: "nowrap" as const }}>
+                      {m.label}{mi === troughIdx ? " ▾" : ""}
+                    </th>
+                  ))}
+                  <th style={{ padding: "8px 18px", textAlign: "right" as const, fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: MUTED, minWidth: 86, borderLeft: `0.5px solid ${BORDER}` }}>
+                    2026
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {CF_PL_ROWS.map((row, ri) => {
+                  const rowVals = vals[row.key] ?? CF_MONTHS.map(() => 0);
+                  const annual  = rowVals.reduce((s, v) => s + v, 0);
+
+                  if (row.kind === "group") {
+                    return (
+                      <tr key={row.key}>
+                        <td colSpan={14} style={{ padding: "9px 18px 7px", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.35)", background: "hsl(220,5%,97%)", borderTop: ri > 0 ? `0.5px solid ${BORDER}` : "none", borderBottom: `0.5px solid ${BORDER}` }}>
+                          {row.label}
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  const isTotal    = row.kind === "total";
+                  const isSubtotal = row.kind === "subtotal" || (row as any).renderAs === "subtotal";
+                  const rowBg      = isTotal ? "hsl(220,5%,97%)" : "#FFFFFF";
+                  const labelWt    = isTotal ? 700 : isSubtotal ? 600 : 400;
+                  const labelColor = isTotal ? NAVY : isSubtotal ? "rgba(0,0,0,0.72)" : "rgba(0,0,0,0.60)";
+                  const indent     = (!isTotal && !isSubtotal) ? "28px" : "18px";
+                  const rowBorderT = (isTotal || isSubtotal) ? `0.5px solid ${BORDER}` : "none";
+                  const rowBorderB = `0.5px solid rgba(0,0,0,0.04)`;
+
+                  return (
+                    <tr key={row.key} style={{ background: rowBg, borderTop: rowBorderT }}>
+                      <td style={{ position: "sticky" as const, left: 0, zIndex: 1, background: rowBg, padding: `5px 18px 5px ${indent}`, fontWeight: labelWt, color: labelColor, fontSize: isTotal ? 11 : 10.5, borderRight: `0.5px solid ${BORDER}`, borderBottom: rowBorderB }}>
+                        {row.label}
+                      </td>
+                      {rowVals.map((v, mi) => {
+                        const cc = isTotal
+                          ? (v >= 0 ? "#195830" : "#8B2020")
+                          : isSubtotal
+                          ? (v >= 0 ? "#1a4d2e" : "#5a1a1a")
+                          : v < 0 ? "#7a2a2a" : v > 0 ? "#1a4d2e" : "rgba(0,0,0,0.22)";
+                        return (
+                          <td key={mi} style={{ padding: "5px 9px", textAlign: "right" as const, fontWeight: isTotal ? 600 : isSubtotal ? 500 : 400, color: cc, fontSize: isTotal ? 11 : 10.5, fontVariantNumeric: "tabular-nums" as const, whiteSpace: "nowrap" as const, borderBottom: rowBorderB, background: mi === troughIdx ? "rgba(131,88,0,0.03)" : "transparent" }}>
+                            {fmtCell(v)}
+                          </td>
+                        );
+                      })}
+                      <td style={{ padding: "5px 18px", textAlign: "right" as const, fontWeight: isTotal ? 700 : isSubtotal ? 600 : 400, color: isTotal ? (annual >= 0 ? "#195830" : "#8B2020") : isSubtotal ? (annual >= 0 ? "#1a4d2e" : "#5a1a1a") : annual < 0 ? "#7a2a2a" : annual > 0 ? "#1a4d2e" : "rgba(0,0,0,0.22)", fontSize: isTotal ? 11 : 10.5, fontVariantNumeric: "tabular-nums" as const, whiteSpace: "nowrap" as const, borderLeft: `0.5px solid ${BORDER}`, borderBottom: rowBorderB, background: isTotal ? "hsl(220,5%,97%)" : "transparent" }}>
+                        {fmtCell(annual)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            LIQUID ACCOUNT BALANCE FORECAST
+            Prototype Model v4.xlsx — Money Movement sheet (GURU scenario)
+            Operating Cash · Liquidity Reserve · Capital Build
+            ══════════════════════════════════════════════════════════════════════ */}
+        <div style={{ background: "#FFFFFF", border: `0.5px solid ${BORDER}`, overflow: "hidden", marginBottom: 16 }}>
+          {/* Section header */}
+          <div style={{ padding: "14px 18px 12px", borderBottom: `0.5px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: MUTED, marginBottom: 3 }}>Liquid Account Balance Forecast · GURU Optimized</div>
+              <div style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 400, color: NAVY, letterSpacing: "-0.01em" }}>
+                Operating Cash · Liquidity Reserve · Capital Build
+              </div>
+            </div>
+            {/* Legend */}
+            <div style={{ display: "flex", gap: 20, flexShrink: 0 }}>
+              {([
+                { label: "Operating Cash",    color: OPS_COLOR },
+                { label: "Liquidity Reserve", color: RSV_COLOR },
+                { label: "Capital Build",     color: BLD_COLOR },
+              ]).map((l, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 18, height: 3, background: l.color, borderRadius: 2, flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: MUTED }}>{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Area chart */}
+          <div style={{ height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={fcChartData} margin={{ top: 16, right: 32, left: 8, bottom: 8 }}>
+                <defs>
+                  <linearGradient id="fv_opsG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={OPS_COLOR} stopOpacity={0.14} />
+                    <stop offset="95%" stopColor={OPS_COLOR} stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="fv_rsvG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={RSV_COLOR} stopOpacity={0.14} />
+                    <stop offset="95%" stopColor={RSV_COLOR} stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="fv_bldG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={BLD_COLOR} stopOpacity={0.14} />
+                    <stop offset="95%" stopColor={BLD_COLOR} stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: MUTED, fontFamily: FONT }} axisLine={{ stroke: "rgba(0,0,0,0.08)" }} tickLine={false} />
+                <YAxis
+                  tick={{ fontSize: 9, fill: MUTED, fontFamily: FONT }}
+                  axisLine={false} tickLine={false} width={64}
+                  tickFormatter={(v: number) => `$${Math.round(v / 1000)}K`}
+                  domain={[0, "auto"]}
+                />
+                <RechartsTooltip
+                  contentStyle={{ background: "#fff", border: "0.5px solid rgba(0,0,0,0.10)", borderRadius: 0, fontSize: 11, fontFamily: FONT, boxShadow: "0 2px 16px rgba(0,0,0,0.08)", padding: "8px 12px" }}
+                  formatter={(v: number, name: string) => [fmtBal(v), name === "ops" ? "Operating Cash" : name === "rsv" ? "Liquidity Reserve" : "Capital Build"]}
+                  labelStyle={{ fontSize: 10, fontWeight: 700, color: NAVY, marginBottom: 3 }}
+                  cursor={{ stroke: "rgba(0,0,0,0.08)", strokeWidth: 1 }}
+                />
+                <Area type="monotone" dataKey="ops" stroke={OPS_COLOR} strokeWidth={2} fill="url(#fv_opsG)" dot={false} activeDot={{ r: 3, fill: OPS_COLOR, stroke: "#fff", strokeWidth: 2 }} name="ops" />
+                <Area type="monotone" dataKey="rsv" stroke={RSV_COLOR} strokeWidth={2} fill="url(#fv_rsvG)"
+                  dot={(props: any) => {
+                    if (props.index === rsvTroughIdx) {
+                      return <circle key="rsv-trough" cx={props.cx} cy={props.cy} r={5} fill={RSV_COLOR} stroke="#fff" strokeWidth={2} />;
+                    }
+                    return <g key={props.index} />;
+                  }}
+                  activeDot={{ r: 3, fill: RSV_COLOR, stroke: "#fff", strokeWidth: 2 }} name="rsv"
+                />
+                <Area type="monotone" dataKey="bld" stroke={BLD_COLOR} strokeWidth={2} fill="url(#fv_bldG)" dot={false} activeDot={{ r: 3, fill: BLD_COLOR, stroke: "#fff", strokeWidth: 2 }} name="bld" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* ── Monthly balance table ── */}
+        <div style={{ background: "#FFFFFF", border: `0.5px solid ${BORDER}`, overflow: "hidden" }}>
+          <div style={{ padding: "14px 18px 12px", borderBottom: `0.5px solid ${BORDER}` }}>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: MUTED, marginBottom: 3 }}>Month-End Balance · Kessler Family · 2026</div>
+            <div style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 400, color: NAVY }}>Liquid Account Forecast — GURU Optimized</div>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FONT }}>
+              <thead>
+                <tr style={{ background: "hsl(220,5%,97%)", borderBottom: `0.5px solid ${BORDER}` }}>
+                  <th style={{ position: "sticky" as const, left: 0, zIndex: 2, background: "hsl(220,5%,97%)", padding: "8px 18px", textAlign: "left" as const, fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: MUTED, minWidth: 220, borderRight: `0.5px solid ${BORDER}` }}>Bucket</th>
+                  {MONTHS_SHORT.map((mo, mi) => (
+                    <th key={mo} style={{ padding: "8px 10px", textAlign: "right" as const, fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: mi === rsvTroughIdx ? RSV_COLOR : MUTED, minWidth: 78, background: mi === rsvTroughIdx ? "rgba(131,88,0,0.04)" : "transparent", whiteSpace: "nowrap" as const }}>
+                      {mo}{mi === rsvTroughIdx ? " ▾" : ""}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {([
+                  { label: "Operating Cash",    color: OPS_COLOR, values: FC_OPS, desc: "Checking · daily float" },
+                  { label: "Liquidity Reserve", color: RSV_COLOR, values: FC_RSV, desc: "MMF · T-bills (short)" },
+                  { label: "Capital Build",     color: BLD_COLOR, values: FC_BLD, desc: "Treasuries · goal savings" },
+                ] as const).map((bucket, bi) => (
+                  <tr key={bi} style={{ background: "#FFFFFF", borderTop: bi > 0 ? `0.5px solid ${BORDER}` : "none" }}>
+                    <td style={{ position: "sticky" as const, left: 0, zIndex: 1, background: "#FFFFFF", padding: "10px 18px", borderRight: `0.5px solid ${BORDER}`, borderBottom: `0.5px solid rgba(0,0,0,0.04)` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 3, height: 32, background: bucket.color, flexShrink: 0, borderRadius: 1 }} />
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: NAVY }}>{bucket.label}</div>
+                          <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{bucket.desc}</div>
+                        </div>
+                      </div>
+                    </td>
+                    {(bucket.values as number[]).map((v, mi) => {
+                      const prev = mi > 0 ? (bucket.values as number[])[mi - 1] : v;
+                      const delta = v - prev;
+                      const isTrough = bucket.color === RSV_COLOR && mi === rsvTroughIdx;
+                      return (
+                        <td key={mi} style={{ padding: "10px 10px", textAlign: "right" as const, fontSize: 11, fontVariantNumeric: "tabular-nums" as const, color: isTrough ? RSV_COLOR : NAVY, background: isTrough ? "rgba(131,88,0,0.04)" : "transparent", whiteSpace: "nowrap" as const, verticalAlign: "top" as const, borderBottom: `0.5px solid rgba(0,0,0,0.04)` }}>
+                          {fmtBal(v)}
+                          {mi > 0 && (
+                            <div style={{ fontSize: 9, color: delta >= 0 ? "#195830" : "#8B2020", marginTop: 2 }}>
+                              {delta >= 0 ? "+" : ""}{fmtBal(Math.abs(delta))}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+                {/* Total row */}
+                <tr style={{ background: "hsl(220,5%,97%)", borderTop: `0.5px solid ${BORDER}` }}>
+                  <td style={{ position: "sticky" as const, left: 0, zIndex: 1, background: "hsl(220,5%,97%)", padding: "10px 18px", fontSize: 11, fontWeight: 700, color: NAVY, borderRight: `0.5px solid ${BORDER}` }}>Total Liquid Assets</td>
+                  {MONTHS_SHORT.map((_, mi) => {
+                    const total = FC_OPS[mi] + FC_RSV[mi] + FC_BLD[mi];
+                    const prevT = mi > 0 ? FC_OPS[mi-1] + FC_RSV[mi-1] + FC_BLD[mi-1] : total;
+                    const delta = total - prevT;
+                    return (
+                      <td key={mi} style={{ padding: "10px 10px", textAlign: "right" as const, fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums" as const, color: NAVY, background: mi === rsvTroughIdx ? "rgba(131,88,0,0.03)" : "transparent", whiteSpace: "nowrap" as const, verticalAlign: "top" as const }}>
+                        {fmtBal(total)}
+                        {mi > 0 && (
+                          <div style={{ fontSize: 9, fontWeight: 400, color: delta >= 0 ? "#195830" : "#8B2020", marginTop: 2 }}>
+                            {delta >= 0 ? "+" : ""}{fmtBal(Math.abs(delta))}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 
 // ─── Advisor Brief View ───────────────────────────────────────────────────────
 function AdvisorBriefView({
@@ -6617,1085 +8293,891 @@ function AdvisorBriefView({
   cashFlows: CashFlow[];
   onNavigate: (v: string) => void;
 }) {
-  const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
+  // ── Live calculations — single source of truth via computeLiquidityTargets() ──
+  // All liquidity metrics flow from the shared function that also drives the
+  // GURU Intelligence detection panel. Changing the bonus date cascades everywhere.
+  const av = (desc: string, type?: string) =>
+    Number(assets.find(a => (type ? a.type === type : true) && (a.description ?? "").includes(desc))?.value ?? 0);
 
-  // ── Liquidity calcs — coverage-month methodology (matches allocation tool) ──
-  const { totalLiquid: _abvTotalLiquid, reserve: _abvReserve, yieldBucket: _abvYield, yieldItems: _abvYieldItems } = cashBuckets(assets);
-  const _abvForecast = buildForecast(cashFlows);
-  const cashTroughBuffer = computeTrough(_abvForecast); // kept for other uses
-  const guruReserveTarget = cashTroughBuffer;
-  // cashExcess: op excess (2-mo) + reserve excess (12-mo) — matches allocation tool $299,926
-  const cashExcess = Math.max(0, _abvReserve - 2 * 20939) + Math.max(0, _abvYield - 12 * 18066);
-  // reserveItems = all non-checking cash (savings, MM, Fidelity Cash)
-  const reserveItems = assets.filter(
-    (a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"),
+  const fidelity401k   = av("401", "fixed_income");
+
+  const {
+    operatingCash,
+    operatingTarget,
+    operatingExcess,
+    liquidityReserve,
+    reserveTarget,
+    reserveExcess,
+    capitalBuild,
+    totalLiquid,
+    troughDepth,
+    goalSavings,
+    totalLiquidityReq,
+    excessLiquidity,
+    monthlyRate,
+    coverageMonths,
+  } = computeLiquidityTargets(assets, cashFlows);
+  // Table liquidity needed = trough + 2-month operating floor + capital preservation goal
+  const liquidityNeededTable = troughDepth + operatingTarget + goalSavings;
+  const deployableExcess = Math.max(0, totalLiquid - liquidityNeededTable);
+
+  // Full portfolio return optimization — current AT income vs. pro-forma (target-based redistribution).
+  // annualPickup = proformaAnnualIncome − currentAnnualIncome (true delta, not total optimized).
+  const {
+    currentAnnualIncome:  annualReturnCurrent,
+    proformaAnnualIncome: annualReturnOptimized,
+    annualPickup:         annualReturnPickup,
+  } = computeReturnOptimization(assets, cashFlows);
+  const monthlyOpportunityCost = Math.round(annualReturnPickup / 12);
+
+  // Days idle since bonus landed — hardcoded for demo
+  // Bonus lands Dec 31, 2025 (same as DEMO_NOW). 47 days represents the urgency scenario.
+  const daysIdle = 47;
+
+  // Individual account lookups for display labels in Card 1 data rows
+  const chaseChecking    = av("Chase Total Checking");
+  const citizensChecking = av("Citizens Private Banking Checking");
+
+  // Rate-vulnerable cash (all floating-rate: MM + savings + 401k/IRA in MMF)
+  // Re-derive from assets for rate card (includes 401k MMF)
+  const citizensMM   = av("Citizens Private Bank Money Market");
+  const capitalOne   = av("CapitalOne");
+  const fidelityMMF  = av("Fidelity", "cash");
+  const rateVulnerableCash = citizensMM + capitalOne + fidelityMMF + fidelity401k;
+
+  // Days until Fed meeting — hardcoded for demo urgency
+  // May 7, 2026 Fed decision is 127 days from Dec 31, 2025
+  const daysUntilFed = 127;
+
+  // Income at risk from 50bps cut (pre-tax for display, matches client intuition)
+  const incomeAtRisk = Math.round(rateVulnerableCash * 0.005);
+
+  // Net worth for action strip
+  const netWorthTotal = assets.reduce((s, a) => s + Number(a.value ?? 0), 0)
+                      - liabilities.reduce((s, l) => s + Number(l.amount ?? 0), 0);
+
+  // Diversification % = excessLiquidity / (investPortfolio + excessLiquidity)
+  // investPortfolio = all equity + fixed_income + alternative, excluding carry and unvested RSUs
+  const investPortfolioTotal = assets
+    .filter(a => ["equity", "fixed_income", "alternative"].includes(a.type) &&
+      !(a.description ?? "").toLowerCase().includes("carry") &&
+      !/(rsu|unvested)/i.test(a.description ?? ""))
+    .reduce((s, a) => s + Number(a.value ?? 0), 0);
+  const diversificationPct = investPortfolioTotal > 0
+    ? Math.round(excessLiquidity / (investPortfolioTotal + excessLiquidity) * 100)
+    : 11;
+
+  // ── UI state ────────────────────────────────────────────────────────────────
+  const [checked,      setChecked]      = useState<Set<string>>(new Set());
+  const [fundChecked,  setFundChecked]  = useState<Set<string>>(new Set(["dfa", "cresset", "pimco"]));
+  const [showEmail,    setShowEmail]    = useState(false);
+  const [copied,       setCopied]       = useState(false);
+  const [tpOpen,       setTpOpen]       = useState<Set<string>>(new Set());
+
+  const toggle       = (k: string) => setChecked(p     => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const toggleFund   = (k: string) => setFundChecked(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const toggleTp     = (k: string) => setTpOpen(p      => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; });
+
+  // ── Shared style atoms ───────────────────────────────────────────────────────
+  const FONT   = "'DM Sans', sans-serif";
+  const SERIF  = "'Playfair Display', serif";
+  const BG     = "hsl(220,5%,93%)";
+  const BORDER = "rgba(0,0,0,0.07)";
+
+  const accentColor: Record<string, string> = {
+    liquidity: "#2e7a52",
+    invest:    "#1E4F9C",
+    rates:     "#c47c2b",
+    cashflow:  "#1d4ed8",
+  };
+
+  // Card shell — #FFFFFF, 1px border, no border-radius, no shadow; top stripe applied per card
+  const cardStyle: React.CSSProperties = {
+    background: "#FFFFFF", border: `1px solid rgba(0,0,0,0.08)`,
+    display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden",
+  };
+
+  // Card head — padding per spec §7
+  const headStyle: React.CSSProperties = {
+    padding: "14px 16px 12px", borderBottom: `1px solid rgba(0,0,0,0.08)`,
+    display: "flex", flexDirection: "column",
+  };
+
+  // KPI grid — 1.5fr 1fr 1fr; first cell is dominant (colored), rest are supporting (navy)
+  // Spec §8: padding 0 16px on container, cells have their own padding
+  const statStrip = (cols: Array<{ label: string; value: React.ReactNode; sub?: string }>) => (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: cols.length === 2 ? "1.5fr 1fr" : "1.5fr 1fr 1fr",
+      borderBottom: `1px solid rgba(0,0,0,0.08)`,
+      padding: "0 16px",
+    }}>
+      {cols.map((col, i) => (
+        <div key={i} style={{
+          padding: i === 0 ? "12px 14px 12px 0" : "12px 0 12px 14px",
+          borderRight: i < cols.length - 1 ? `1px solid rgba(0,0,0,0.08)` : "none",
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 5 }}>{col.label}</div>
+          <div>{col.value}</div>
+          {col.sub && <div style={{ fontSize: 11, color: "rgba(0,0,0,0.38)", marginTop: 3, lineHeight: 1.4 }}>{col.sub}</div>}
+        </div>
+      ))}
+    </div>
   );
-  // Non-treasury cash = used for the yield/Fed-cut card only (non-Fidelity bank accounts)
-  const _seenDescs = new Set<string>();
-  const _nonTreasuryCash = reserveItems.filter((a) => {
-    const key = (a.description ?? "").slice(0, 30).toLowerCase();
-    if (_seenDescs.has(key)) return false;
-    _seenDescs.add(key);
-    return true;
-  }).reduce((s, a) => s + Number(a.value), 0);
-  const brokerageCashItems = assets.filter(
-    (a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("brokerage"),
+
+  // KPI dominant number — 22px weight 300, colored (one per card only)
+  const bigNum = (val: string | number, color: string, unit?: string) => (
+    <div style={{ fontFamily: FONT, fontWeight: 300, fontSize: 22, letterSpacing: "-0.03em", color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+      {val}{unit && <span style={{ fontSize: 13, letterSpacing: 0, fontWeight: 400 }}>{unit}</span>}
+    </div>
   );
-  const totalToDeploy = Math.round(cashExcess);
 
-  // ── Yield calcs ──
-  const _currentLiquidYield = 1.4;
-  const _guruLiquidYield = 2.7;
-  const liquidHero = _abvTotalLiquid;
-  const _yieldPickupAnnual = Math.round(liquidHero * ((_guruLiquidYield - _currentLiquidYield) / 100));
-  const bpsPickup = Math.round((_guruLiquidYield - _currentLiquidYield) * 100);
+  // KPI supporting number — 14px weight 300, always plain navy (spec §8)
+  const suppNum = (val: string | number, unit?: string) => (
+    <div style={{ fontFamily: FONT, fontWeight: 300, fontSize: 14, letterSpacing: "-0.02em", color: "#1a2a4a", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+      {val}{unit && <span style={{ fontSize: 11, letterSpacing: 0, fontWeight: 400 }}>{unit}</span>}
+    </div>
+  );
 
-  // ── Fed rate cut lock-in scenario ──
-  // non-treasury exposure = idle bank cash minus the reserve buffer
-  const _fedCutBps = 50;
-  const _excessNotTreasuries = Math.max(0, _nonTreasuryCash - cashTroughBuffer);
-  const _fedLockInSavings = Math.round(_excessNotTreasuries * (_fedCutBps / 10000));
+  // Data row — name 12px 500, subtext 10px, value 13px weight 300
+  const dataRow = (name: React.ReactNode, sub: React.ReactNode, amount: string) => (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid #ECEAE5" }}>
+      <div style={{ minWidth: 0, marginRight: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: "#1A1915", lineHeight: 1.3 }}>{name}</div>
+        {sub && <div style={{ fontSize: 11, color: "#9A9890", marginTop: 2, lineHeight: 1.4 }}>{sub}</div>}
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 300, color: "#1A1915", flexShrink: 0, textAlign: "right", marginLeft: 8, fontVariantNumeric: "tabular-nums" }}>{amount}</div>
+    </div>
+  );
 
-  // ── Single-stock risk ──
-  const singleStockVal = assets
-    .filter((a) => (a.description ?? "").toLowerCase().match(/meta|bank of america|bofA|single/i))
-    .reduce((s, a) => s + Number(a.value), 0);
-  const singleStockPct = totalAssets > 0 ? ((singleStockVal / totalAssets) * 100).toFixed(1) : "0";
+  // Section label
+  const sectionLabel = (text: string) => (
+    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "#9A9890", marginBottom: 8 }}>{text}</div>
+  );
 
-  // ── Workflow state ──
-  const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [showEmail, setShowEmail] = useState(false);
-  const [emailCopied, setEmailCopied] = useState(false);
-  const [wireModalId, setWireModalId] = useState<string | null>(null);
-  const [wireFromAccount, setWireFromAccount] = useState<Record<string, string>>({});
-  const [wireScheduleDate, setWireScheduleDate] = useState<Record<string, string>>({});
-  const [wireMemo, setWireMemo] = useState<Record<string, string>>({});
-  const [scheduled, setScheduled] = useState<Set<string>>(new Set());
+  // Card footer (checkbox + CTA)
+  const cardFooter = (cardKey: string, accent: string, ctaLabel: string, urgencyText?: string, onCta?: () => void) => (
+    <div style={{ padding: "10px 18px", borderTop: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: "auto" }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={checked.has(cardKey)}
+          onChange={() => toggle(cardKey)}
+          style={{ width: 15, height: 15, accentColor: accent, cursor: "pointer" }}
+        />
+        <span style={{ fontSize: 11, fontWeight: 600, color: accent }}>Include in email</span>
+      </label>
+      {urgencyText && (
+        <span style={{ fontSize: 9, fontWeight: 600, color: "#8B2020", display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#8B2020", display: "inline-block" }} />
+          {urgencyText}
+        </span>
+      )}
+      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+        <button style={{ fontFamily: FONT, fontSize: 11, fontWeight: 500, padding: "6px 14px", borderRadius: 6, border: `1px solid ${accent}30`, background: "rgba(255,255,255,0.7)", color: accent, cursor: "pointer" }}>
+          Defer
+        </button>
+        <button
+          onClick={onCta}
+          style={{ fontFamily: FONT, fontSize: 11, fontWeight: 700, padding: "6px 18px", borderRadius: 6, border: "none", background: accent, color: "#fff", cursor: "pointer", letterSpacing: "0.02em" }}
+        >
+          {ctaLabel}
+        </button>
+      </div>
+    </div>
+  );
 
-  const toggle = (key: string) =>
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
+  // Talking points — summary always visible, bullets toggle on "Full talking points"
+  const talkingPoints = (cardKey: string, summary: string, bullets: string[]) => (
+    <div style={{ borderTop: `0.5px solid rgba(0,0,0,0.07)`, background: "hsl(220,5%,97%)" }}>
+      {/* Header label + rule */}
+      <div style={{ display: "flex", alignItems: "center", padding: "12px 18px 0" }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#9A9890", whiteSpace: "nowrap", marginRight: 12 }}>Talking points</span>
+        <div style={{ flex: 1, height: 1, background: "#E2DFD9" }} />
+      </div>
+      {/* Summary — always visible */}
+      <div style={{ padding: "8px 18px 0" }}>
+        <p style={{ fontSize: 12, color: "#56544C", lineHeight: 1.7 }}>{summary}</p>
+      </div>
+      {/* Bullets — toggled */}
+      {tpOpen.has(cardKey) && (
+        <ul style={{ margin: 0, padding: "8px 18px 0", listStyle: "none", display: "flex", flexDirection: "column" }}>
+          {bullets.map((b, i) => (
+            <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 0", borderBottom: i < bullets.length - 1 ? "1px solid #E2DFD9" : "none", fontSize: 12, color: "#56544C", lineHeight: 1.7 }}>
+              <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#C8C5BE", flexShrink: 0, marginTop: 8 }} />
+              <span dangerouslySetInnerHTML={{ __html: b }} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {/* Toggle button */}
+      <button
+        onClick={() => toggleTp(cardKey)}
+        style={{ display: "block", margin: "8px 18px 12px", fontSize: 10, fontWeight: 500, color: tpOpen.has(cardKey) ? "#183B6E" : "#9A9890", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: FONT }}
+      >
+        {tpOpen.has(cardKey) ? "Hide talking points ▲" : "Full talking points ▼"}
+      </button>
+    </div>
+  );
 
-  // ── Upcoming Obligations (wire-worthy large payments) ──
-  const OBLIGATIONS = [
-    {
-      id: "prop-tax-jan",
-      label: "NYC Property Tax — 1st Installment",
-      amount: 17500,
-      due: new Date(2026, 0, 15),
-      payee: "NYC Dept. of Finance",
-      acct: "Acct #4821",
-      method: "Wire",
-      from: "Citizens Private Banking",
-      category: "tax",
-      routing: "026013673",
-    },
-    {
-      id: "est-tax-q1",
-      label: "Federal Estimated Income Tax — Q1 2026",
-      amount: 30000,
-      due: new Date(2026, 3, 15),
-      payee: "Internal Revenue Service",
-      acct: "EFTPS",
-      method: "ACH",
-      from: "Citizens Private Banking",
-      category: "tax",
-      routing: "061036010",
-    },
-    {
-      id: "tuition-spring",
-      label: "Private School Tuition — Spring Installment",
-      amount: 15000,
-      due: new Date(2026, 3, 1),
-      payee: "Dalton School",
-      acct: "Acct #8840",
-      method: "Wire",
-      from: "Chase Total Checking",
-      category: "education",
-      routing: "021000021",
-    },
-    {
-      id: "prop-tax-jul",
-      label: "NYC Property Tax — 2nd Installment",
-      amount: 17500,
-      due: new Date(2026, 6, 15),
-      payee: "NYC Dept. of Finance",
-      acct: "Acct #4821",
-      method: "Wire",
-      from: "Citizens Private Banking",
-      category: "tax",
-      routing: "026013673",
-    },
-    {
-      id: "est-tax-q3",
-      label: "Federal Estimated Income Tax — Q3 2026",
-      amount: 30000,
-      due: new Date(2026, 8, 15),
-      payee: "Internal Revenue Service",
-      acct: "EFTPS",
-      method: "ACH",
-      from: "Citizens Private Banking",
-      category: "tax",
-      routing: "061036010",
-    },
-  ];
-
-  const oblCatStyle = (cat: string) =>
-    cat === "tax"
-      ? "text-rose-700 bg-rose-50 border-rose-200"
-      : cat === "education"
-      ? "text-violet-700 bg-violet-50 border-violet-200"
-      : "text-slate-700 bg-slate-50 border-slate-200";
-
-  // ── Email composer ──
-  const buildEmail = () => {
+  // ── Email builder ────────────────────────────────────────────────────────────
+  const buildEmailText = () => {
     const paras: string[] = [];
     if (checked.has("liquidity"))
-      paras.push(
-        `As we approach the new year, your December bonus has created a meaningful liquidity surplus — roughly ${fmt(totalToDeploy)} above your 3-month Reserve Cash target. Rather than letting that sit idle, we'd like to put it to work for you across the Capital Build and Investments allocations we've modeled. The opportunity cost of leaving it in cash is real, and we think the timing is right to act.`,
-      );
-    if (checked.has("rebalance"))
-      paras.push(
-        `We've also been monitoring your single-stock concentration. Your E*Trade positions in Meta and Bank of America now represent about ${singleStockPct}% of your total portfolio — above the 5% threshold we'd generally feel comfortable with. We'd like to walk you through a gradual trim strategy that reduces that risk without triggering a large tax event all at once.`,
-      );
-    if (checked.has("yield"))
-      paras.push(
-        `On the fixed-income side, the Fed is expected to cut rates by another 50 bps. We have ${fmt(_excessNotTreasuries)} of excess cash sitting outside of treasuries that we can lock in at today's rates before that cut happens. Acting now preserves roughly ${fmt(_fedLockInSavings)} per year in yield — at no added risk. We think this window is time-sensitive.`,
-      );
+      paras.push(`Your December bonus has created a meaningful liquidity surplus of ${fmt(excessLiquidity)} above what you need for the next 12 months. This cash has been sitting at 0.8% for ${daysIdle} days — earning ${fmt(annualReturnCurrent)}/yr when it should be generating closer to ${fmt(annualReturnOptimized)}/yr after tax. We'd like to put this to work in the investment portfolio. Everything is modeled and ready — just needs your go-ahead.`);
+    if (checked.has("invest"))
+      paras.push(`Your portfolio currently has no fixed income, is overweight in two single names, and lacks diversified growth exposure. We've mapped out three sleeves — small cap, tactical growth, and commodities — that would be funded entirely from the excess cash. Combined, they add an estimated $20,625/yr in return and bring the portfolio to a more balanced construction.`);
+    if (checked.has("rates"))
+      paras.push(`The Fed is expected to cut rates on May 7. You have ${fmt(rateVulnerableCash)} sitting in money markets and savings accounts that will reprice immediately when that happens. Moving into a 6-month T-bill now locks in 5.200% through October — that window closes May 5. We recommend acting before then.`);
     if (checked.has("cashflow"))
-      paras.push(
-        `I also wanted to give you a heads-up on some account movements we will be making on your behalf over the next month:\n\nOPERATING CASH\n• In March, $47,126 will move from your Reserve Money Market into your Operating Checking Account to cover the Q1 tax payment and spring tuition — this rebuilds your two-month expense buffer.\n\nRESERVE\n• Your 3-Month Treasury Bill matures on March 31st — those $41,877 in proceeds will stay in your Reserve Money Market as a liquidity buffer, keeping it ready to fund operations through the spring.\n\nBUILD\n• Your Build Account is holding flat at approximately $194,000, earning around 4.75% passively. No changes are planned — this account remains earmarked as long-term savings toward the home upgrade when you are ready to move forward.`,
-      );
+      paras.push(`I wanted to flag an upcoming movement in your accounts: a $135,000 Treasury bill matures March 31 and lands in your Citizens Money Market. From there, $47,126 moves to operating to rebuild your 2-month expense coverage. No action needed from you — everything is on track.`);
     if (paras.length === 0)
-      paras.push("We wanted to check in and share a few items we've been working through on your behalf.");
-    return [
-      "Hi Sarah and Michael,",
-      "",
-      "Hope you're both doing well. I wanted to reach out with a few things on our end that I think are worth a conversation.",
-      "",
-      ...paras.flatMap((p) => [p, ""]),
-      "None of this requires any immediate action on your part — I just want to make sure you have the full picture so we can decide together what makes the most sense. Happy to set up a quick call whenever works for you.",
-      "",
-      "As always, please don't hesitate to reach out with any questions.",
-      "",
-      "Best,",
-      "Your Advisor",
-    ].join("\n");
+      paras.push("We wanted to check in and share a few items we've been monitoring on your behalf.");
+    return ["Hi Sarah and Michael,", "", "Hope you're both doing well.", "", ...paras.flatMap(p => [p, ""]), "Happy to find time for a quick call. Nothing urgent, but worth a conversation.", "", "Best,", "Your Advisor"].join("\n");
   };
 
   const buildEmailJSX = () => {
-    const BucketHeader = ({ color, label }: { color: string; label: string }) => (
-      <div className="flex items-center gap-2 mt-4 mb-1">
-        <div className="h-3.5 w-1 rounded-full flex-shrink-0" style={{ background: color }} />
-        <span className="text-[9px] font-black uppercase tracking-widest" style={{ color }}>{label}</span>
-        <div className="flex-1 h-px" style={{ background: color + "33" }} />
+    const SectionHead = ({ color, label }: { color: string; label: string }) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "16px 0 6px" }}>
+        <div style={{ width: 3, height: 14, borderRadius: 2, background: color, flexShrink: 0 }} />
+        <span style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.12em", color }}>{label}</span>
+        <div style={{ flex: 1, height: 1, background: `${color}33` }} />
       </div>
     );
-    const blocks: React.ReactNode[] = [];
-    blocks.push(
-      <p key="greeting" className="font-serif">Hi Sarah and Michael,</p>,
-      <p key="opener" className="font-serif">Hope you're both doing well. I wanted to reach out with a few things on our end that I think are worth a conversation.</p>,
+    return (
+      <div style={{ fontSize: 12, lineHeight: 1.75, fontFamily: FONT }}>
+        <p>Hi Sarah and Michael,</p>
+        <p style={{ marginTop: 10 }}>Hope you're both doing well.</p>
+        {checked.has("liquidity") && (
+          <>
+            <SectionHead color={accentColor.liquidity} label="Idle Cash" />
+            <p>Your December bonus has created a surplus of <strong>{fmt(excessLiquidity)}</strong> above what you need for the year. It's been sitting at 0.8% for <strong>{daysIdle} days</strong> — earning {fmt(annualReturnCurrent)}/yr when it could be generating closer to <strong>{fmt(annualReturnOptimized)}/yr</strong> after tax. We'd like to put this to work — everything is modeled and ready to move.</p>
+          </>
+        )}
+        {checked.has("invest") && (
+          <>
+            <SectionHead color={accentColor.invest} label="Portfolio" />
+            <p>The portfolio has no fixed income, is overweight in two single names, and lacks diversified growth exposure. We've mapped three sleeves — small cap, tactical growth, and commodities — funded entirely from the excess cash. Together they add an estimated <strong>$20,625/yr</strong> and bring the portfolio to a more balanced construction.</p>
+          </>
+        )}
+        {checked.has("rates") && (
+          <>
+            <SectionHead color={accentColor.rates} label="Rate Lock" />
+            <p>The Fed is expected to cut on <strong>May 7</strong>. You have <strong>{fmt(rateVulnerableCash)}</strong> in floating-rate accounts that will reprice immediately. Moving to a 6-month T-bill now locks 5.200% through October. <strong>Window closes May 5.</strong></p>
+          </>
+        )}
+        {checked.has("cashflow") && (
+          <>
+            <SectionHead color={accentColor.cashflow} label="Cash Movements" />
+            <p>A <strong>$135,000 Treasury bill</strong> matures March 31 and lands in your Citizens Money Market. From there, <strong>$47,126 moves to operating</strong> to rebuild two months of expense coverage. Nothing needed from you — all on track.</p>
+          </>
+        )}
+        <p style={{ marginTop: 16 }}>Happy to find time for a quick call. Nothing urgent, but worth a conversation.</p>
+        <p style={{ marginTop: 10 }}>Best,<br />Your Advisor</p>
+      </div>
     );
-    if (checked.has("liquidity"))
-      blocks.push(
-        <p key="liq" className="font-serif">Congrats on a great end of year! Your December bonus has come in and created a meaningful liquidity surplus. We calculate you are holding up to {fmt(cashExcess)} in excess liquidity given your cash flow forecast for the next 12 months. The opportunity cost of leaving it in cash is real and could be up to $10,000 or more of after tax annual returns.</p>
-      );
-    if (checked.has("rebalance"))
-      blocks.push(
-        <div key="reb" className="space-y-1">
-          <p className="font-serif font-semibold">Deploying liquidity:</p>
-          <p className="font-serif">We suggest deploying this liquidity in the following ways to continue to rebalance your investment portfolio:</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li className="font-serif">Increase large cap exposure by adding $310,000 into our CIO's flagship sector rotation fund which has beat the S&P 500 by 3% the last 10 years.</li>
-            <li className="font-serif">Increase small cap exposure by adding $190,000 into a small cap mutual fund which has returned 8% the last 10 years.</li>
-          </ol>
-        </div>
-      );
-    if (checked.has("yield"))
-      blocks.push(
-        <p key="yld" className="font-serif">On the fixed-income side, the Fed is expected to cut rates by another 50 bps. We have {fmt(_excessNotTreasuries)} of excess cash sitting outside of treasuries that we can lock in at today's rates before that cut happens. Acting now preserves roughly {fmt(_fedLockInSavings)} per year in yield — at no added risk. We think this window is time-sensitive.</p>
-      );
-    if (checked.has("cashflow"))
-      blocks.push(
-        <div key="cf">
-          <p className="font-serif">I also wanted to give you a heads-up on some account movements we will be making on your behalf over the next month:</p>
-          <BucketHeader color="#1d4ed8" label="Operating Cash" />
-          <ul className="list-none pl-3 space-y-0.5">
-            <li className="font-serif text-[12px]">• In March, $47,126 will move from your Reserve Money Market into your Operating Checking Account to cover the Q1 tax payment and spring tuition — this rebuilds your two-month expense buffer.</li>
-          </ul>
-          <BucketHeader color="#d97706" label="Reserve Cash" />
-          <ul className="list-none pl-3 space-y-0.5">
-            <li className="font-serif text-[12px]">• Your 3-Month Treasury Bill matures on March 31st — those $41,877 in proceeds will stay in your Reserve Money Market as a liquidity buffer, keeping it ready to fund operations through the spring.</li>
-          </ul>
-          <BucketHeader color="#16a34a" label="Capital Build" />
-          <ul className="list-none pl-3 space-y-0.5">
-            <li className="font-serif text-[12px]">• Your Build Account is holding flat at approximately $194,000, earning around 4.75% passively. No changes are planned — this account remains earmarked as long-term savings toward the home upgrade when you are ready to move forward.</li>
-          </ul>
-        </div>
-      );
-    if (blocks.length === 2)
-      blocks.push(<p key="fallback" className="font-serif">We wanted to check in and share a few items we've been working through on your behalf.</p>);
-    blocks.push(
-      <p key="close1" className="font-serif">Happy to set up a quick call whenever works for you.</p>,
-      <p key="close2" className="font-serif">As always, please don't hesitate to reach out with any questions.</p>,
-      <p key="sig1" className="font-serif">Best,</p>,
-      <p key="sig2" className="font-serif">Your Advisor</p>,
-    );
-    return <div className="space-y-3 leading-7">{blocks}</div>;
   };
 
-  // ── Card header helper ──
-  const CardCheckHeader = ({
-    badge,
-    badgeBg,
-    badgeText,
-    badgeBorder,
-    priority,
-    priorityBg,
-    priorityText,
-    priorityBorder,
-    title,
-    body,
-  }: {
-    badge: string;
-    badgeBg: string;
-    badgeText: string;
-    badgeBorder: string;
-    priority: string;
-    priorityBg: string;
-    priorityText: string;
-    priorityBorder: string;
-    title: React.ReactNode;
-    body?: React.ReactNode;
-  }) => (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: badgeBg, color: badgeText, border: `1px solid ${badgeBorder}` }}>
-          {badge}
-        </span>
-        <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: priorityBg, color: priorityText, border: `1px solid ${priorityBorder}`, whiteSpace: "nowrap" as const }}>
-          {priority}
-        </span>
-      </div>
-      <div style={{ fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif', fontSize: 20, fontWeight: 400, color: "#181816", lineHeight: 1.2, letterSpacing: "-0.01em", marginBottom: body ? 8 : 0 }}>
-        {title}
-      </div>
-      {body && (
-        <div style={{ fontSize: 12, fontWeight: 400, color: "#3a3a35", lineHeight: 1.6, marginTop: 6 }}>
-          {body}
-        </div>
-      )}
-    </div>
-  );
-
-  // ── Decision strip ──
-  const DStrip = ({
-    cardKey,
-    approveLabel = "Approve",
-    approveColor = "#1e4d30",
-    nowLabel,
-    nowSubtext,
-    nowSublabel,
-    afterLabel,
-    afterSubtext,
-    afterSublabel,
-    urgencyText,
-    urgencyColor,
-    onApprove,
-  }: {
-    cardKey: string;
-    approveLabel?: string;
-    approveColor?: string;
-    nowLabel?: string;
-    nowSubtext?: string;
-    nowSublabel?: string;
-    afterLabel?: string;
-    afterSubtext?: string;
-    afterSublabel?: string;
-    urgencyText?: string;
-    urgencyColor?: string;
-    onApprove?: () => void;
-  }) => (
-    <div style={{ borderTop: `1px solid ${approveColor}28`, background: `${approveColor}0d`, display: "flex", flexDirection: "column" as const }}>
-      {/* NOW → AFTER GURU boxes */}
-      {nowLabel && afterLabel && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr", alignItems: "center", padding: "10px 16px", borderBottom: `1px solid ${approveColor}18` }}>
-          <div>
-            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: approveColor, opacity: 0.55, marginBottom: 3 }}>{nowSublabel ?? "NOW"}</div>
-            <div style={{ fontSize: 16, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#3a3a35", lineHeight: 1 }}>{nowLabel}</div>
-            {nowSubtext && <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 3 }}>{nowSubtext}</div>}
-          </div>
-          <div style={{ textAlign: "center" as const, fontSize: 14, color: `${approveColor}60` }}>→</div>
-          <div style={{ paddingLeft: 10, borderLeft: `1px solid ${approveColor}22` }}>
-            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: approveColor, marginBottom: 3 }}>{afterSublabel ?? "AFTER GURU"}</div>
-            <div style={{ fontSize: 16, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: approveColor, lineHeight: 1 }}>{afterLabel}</div>
-            {afterSubtext && <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 3 }}>{afterSubtext}</div>}
-          </div>
-        </div>
-      )}
-      {/* Controls row */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer", background: checked.has(cardKey) ? `${approveColor}18` : "rgba(255,255,255,0.75)", border: "1px solid", borderColor: checked.has(cardKey) ? `${approveColor}50` : `${approveColor}28`, borderRadius: 8, padding: "5px 11px 5px 9px", flexShrink: 0 }}>
-            <input
-              type="checkbox"
-              checked={checked.has(cardKey)}
-              onChange={() => toggle(cardKey)}
-              style={{ width: 16, height: 16, cursor: "pointer", accentColor: approveColor, flexShrink: 0 }}
-            />
-            <span style={{ fontSize: 12, fontWeight: 600, color: approveColor, userSelect: "none" as const, whiteSpace: "nowrap" as const }}>
-              Include in email
-            </span>
-          </label>
-          {urgencyText && (
-            <span style={{ fontSize: 9, fontWeight: 600, color: urgencyColor ?? approveColor, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" as const }}>
-              <span style={{ width: 5, height: 5, borderRadius: "50%", background: urgencyColor ?? approveColor, display: "inline-block", flexShrink: 0 }} />
-              {urgencyText}
-            </span>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <button style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 500, padding: "7px 15px", borderRadius: 8, border: `1px solid ${approveColor}30`, background: "rgba(255,255,255,0.6)", color: approveColor, cursor: "pointer" }}>
-            Defer
-          </button>
-          <button
-            style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 700, padding: "7px 20px", borderRadius: 8, border: "none", color: "#fff", cursor: "pointer", background: approveColor, letterSpacing: "0.03em", boxShadow: `0 2px 8px ${approveColor}50` }}
-            onClick={onApprove}
-          >
-            {approveLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // ── GURU Recommended Action strip (inside card body) ──
-  const ActionStrip = ({
-    action,
-    urgencyText,
-    urgencyColor,
-    nowLabel,
-    nowSubtext,
-    nowSublabel,
-    afterLabel,
-    afterSubtext,
-    afterSublabel,
-    accentColor,
-  }: {
-    action: string;
-    urgencyText: string;
-    urgencyColor: string;
-    nowLabel: string;
-    nowSubtext?: string;
-    nowSublabel?: string;
-    afterLabel: string;
-    afterSubtext?: string;
-    afterSublabel?: string;
-    accentColor: string;
-  }) => (
-    <div style={{ borderRadius: 8, border: "1px solid #e6e5e0", overflow: "hidden" }}>
-      <div style={{ padding: "9px 12px", background: "#f8f8f6", borderBottom: "1px solid #e6e5e0", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-        <div>
-          <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 3 }}>GURU Recommended Action</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{action}</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, paddingTop: 2 }}>
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: urgencyColor, flexShrink: 0 }} />
-          <span style={{ fontSize: 9, fontWeight: 600, color: urgencyColor, whiteSpace: "nowrap" as const }}>{urgencyText}</span>
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 1fr", alignItems: "center", background: "#fff" }}>
-        <div style={{ padding: "10px 12px" }}>
-          <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 4 }}>{nowSublabel ?? "NOW"}</div>
-          <div style={{ fontSize: 15, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#3a3a35", lineHeight: 1 }}>{nowLabel}</div>
-          {nowSubtext && <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 3 }}>{nowSubtext}</div>}
-        </div>
-        <div style={{ textAlign: "center" as const, fontSize: 14, color: "#9c9c93" }}>→</div>
-        <div style={{ padding: "10px 12px", borderLeft: `1px solid ${accentColor}25`, background: `${accentColor}06` }}>
-          <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: accentColor, marginBottom: 4 }}>{afterSublabel ?? "AFTER GURU"}</div>
-          <div style={{ fontSize: 15, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: accentColor, lineHeight: 1 }}>{afterLabel}</div>
-          {afterSubtext && <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 3 }}>{afterSubtext}</div>}
-        </div>
-      </div>
-    </div>
-  );
-
+  // ── RENDER ───────────────────────────────────────────────────────────────────
   return (
-    <div style={{ background: "#f5f4f0", minHeight: "100vh", padding: "24px 32px 48px" }}>
+    <div style={{ fontFamily: FONT, background: BG, minHeight: "100vh", paddingBottom: 100 }}>
+      <style>{`@keyframes alertDot { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
 
-      {/* ── Good morning greeting banner ── */}
-      <div style={{ padding: "4px 0 20px" }}>
-        {/* Top row: pill tags left + date right */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, padding: "4px 11px", borderRadius: 20, background: "#e8edf7", color: "#1a2e4a", border: "1px solid #c5d0e8" }}>ADVISOR BRIEF</span>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, padding: "4px 11px", borderRadius: 20, background: "#f0efeb", color: "#6b6860", border: "1px solid #dedad5" }}>DAILY UPDATE</span>
+      {/* Page header */}
+      <div style={{ padding: "24px 32px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: "rgba(0,0,0,0.38)", marginBottom: 6, letterSpacing: "-0.01em", lineHeight: 1.2, whiteSpace: "nowrap" }}>
+            Good morning, Tara
           </div>
+          <div style={{ fontFamily: SERIF, fontSize: 38, fontWeight: 400, letterSpacing: "-0.025em", color: "#1a2a4a", lineHeight: 1.12, marginBottom: 10 }}>
+            Kesslers have idle cash, three portfolio gaps, and rate exposure — all addressable today
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#1e9955", display: "inline-block", animation: "alertDot 2s ease-in-out infinite", flexShrink: 0 }} />
+            <span style={{ fontFamily: FONT, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#1e9955" }}>
+              GURU Analysis Complete · Ready to Execute
+            </span>
+          </div>
+        </div>
+        {/* Right side — date */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, paddingTop: 4 }}>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 10, color: "#b0aca4", letterSpacing: "0.05em", textTransform: "uppercase" as const }}>{format(DEMO_NOW, "EEEE")}</div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: "#4a4740", letterSpacing: "-0.01em" }}>{format(DEMO_NOW, "MMMM d, yyyy")}</div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)" }}>Today</div>
+            <div style={{ fontSize: 12, fontWeight: 400, color: "#4a4740", letterSpacing: "-0.01em", marginTop: 2 }}>{format(DEMO_NOW, "EEEE, MMMM d, yyyy")}</div>
           </div>
         </div>
-        {/* Title */}
-        <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 30, fontWeight: 400, color: "#1a1917", letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: 10 }}>
-          Good morning, Tara
+      </div>
+
+      {/* ── Situation Overview ── */}
+      <div style={{ margin: "16px 32px 0", background: "#FFFFFF", border: "1px solid rgba(0,0,0,0.08)", display: "grid", gridTemplateColumns: "120px 1fr" }}>
+        <div style={{ padding: 16, borderRight: "1px solid rgba(0,0,0,0.08)", fontSize: 10, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)" }}>
+          Situation overview
         </div>
-        {/* Body text — full width */}
-        <div style={{ fontSize: 13, color: "#6b6860", lineHeight: 1.65 }}>
-          Four items require your attention to reach out to the Kesslers. GURU can execute once approved. For 47 days, they have been sitting on excess liquidity — perfect time to discuss deployment along with cash management opportunities / updates.
+        <div style={{ padding: "14px 18px", fontSize: 13, fontWeight: 400, color: "rgba(0,0,0,0.55)", lineHeight: 1.7 }}>
+          The Kesslers' liquidity profile has increased significantly since year-end — and the window to get in front of it is closing.{" "}
+          <strong style={{ color: "#1a1917", fontWeight: 600 }}>{fmt(excessLiquidity)}</strong> in bonus cash has been sitting at 0.8% for{" "}
+          <strong style={{ color: "#1a1917", fontWeight: 600 }}>{daysIdle} days</strong>, the portfolio remains poorly diversified and that cash could be deployed to build the right exposures, and{" "}
+          <strong style={{ color: "#1a1917", fontWeight: 600 }}>{fmt(rateVulnerableCash)}</strong> in floating-rate cash reprices the moment the Fed acts on{" "}
+          <strong style={{ color: "#1a1917", fontWeight: 600 }}>May 7</strong>. We've modeled the three moves that close these gaps — together they add an estimated{" "}
+          <strong style={{ color: accentColor.liquidity, fontWeight: 600 }}>+{fmt(annualReturnPickup)}/yr</strong> in additional after-tax income. Capital that's already here, just not working. Rate lock deadline:{" "}
+          <strong style={{ color: accentColor.rates, fontWeight: 600 }}>May 5</strong>.
         </div>
       </div>
 
-      {/* ── Page sub-header ── */}
-      <div style={{ marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" as const }}>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#fdecea", color: "#be2a2c", border: "1px solid #f5a8a8" }}>1 urgent</span>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#e5f3ee", color: "#0d6b50", border: "1px solid #b4d9ce" }}>2 deploy</span>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#edf1fb", color: "#1b3f8a", border: "1px solid #b4c5f5" }}>1 cash update</span>
-          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 11px", borderRadius: 20, background: "#fcf1e6", color: "#a55b00", border: "1px solid #f0ce97" }}>1 act before May 7</span>
-          <span style={{ fontSize: 11, color: "#9c9c93", marginLeft: 4 }}>· <span style={{ fontFamily: "monospace" }}>{fmt(totalAssets, true)}</span> net worth</span>
+      {/* ── Stats strip — flush below situation overview ── */}
+      <div style={{ margin: "0 32px", background: "#FFFFFF", border: "1px solid rgba(0,0,0,0.08)", borderTop: "none", display: "flex", alignItems: "stretch", padding: "0 16px" }}>
+        {/* NET WORTH — first */}
+        <div style={{ padding: "14px 20px 14px 0", marginTop: 10, marginBottom: 10, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Net Worth</div>
+          <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#1a2a4a", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{fmt(netWorthTotal)}</div>
         </div>
-        <button
-          onClick={() => setShowEmail(true)}
-          disabled={checked.size === 0}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "13px 28px", borderRadius: 10, fontSize: 14, fontWeight: 700, border: checked.size > 0 ? "none" : "1px solid #d0ccc7", cursor: checked.size > 0 ? "pointer" : "not-allowed", background: checked.size > 0 ? "#1a2e4a" : "#ececec", color: checked.size > 0 ? "#ffffff" : "#b0aca4", letterSpacing: "0.02em", whiteSpace: "nowrap" as const, boxShadow: checked.size > 0 ? "0 3px 12px rgba(26,46,74,0.25)" : "none" }}
-        >
-          <Mail style={{ width: 17, height: 17 }} />
-          Compose Email{checked.size > 0 ? ` (${checked.size})` : ""}
-        </button>
+        {/* BONUS CASH SITTING IDLE */}
+        <div style={{ padding: "14px 20px 14px 20px", marginTop: 10, marginBottom: 10, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Bonus Cash Sitting Idle</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+            <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#c47c2b", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{fmt(excessLiquidity)}</div>
+            <div style={{ fontSize: 12, color: "rgba(0,0,0,0.38)" }}>for {daysIdle} days</div>
+          </div>
+        </div>
+        {/* POTENTIAL AFTER-TAX INCOME INCREASE FROM OPTIMIZATION */}
+        <div style={{ padding: "14px 20px 14px 20px", marginTop: 10, marginBottom: 10, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Potential After-Tax Income Increase</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+            <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#2e7a52", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>+{fmt(annualReturnPickup)}</div>
+            <div style={{ fontSize: 12, color: "rgba(0,0,0,0.38)" }}>per year after tax</div>
+          </div>
+        </div>
+        {/* RATE LOCK WINDOW CLOSES */}
+        <div style={{ padding: "14px 20px 14px 20px", marginTop: 10, marginBottom: 10, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Rate Lock Window Closes</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+            <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#9b2020", lineHeight: 1 }}>May 5</div>
+            <div style={{ fontSize: 12, color: "#9b2020", fontWeight: 500 }}>{daysUntilFed} days</div>
+          </div>
+        </div>
+        {/* APRIL CASH FLOWS */}
+        <div style={{ padding: "14px 20px 14px 20px", marginTop: 10, marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>April Cash Flows</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
+            <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#1a2a4a", lineHeight: 1 }}>On track</div>
+            <div style={{ fontSize: 12, color: "#2e7a52", fontWeight: 600 }}>✓</div>
+          </div>
+        </div>
       </div>
-      {/* ── Cards ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 36, alignItems: "stretch" }}>
 
-        {/* ── Card 1: Year-End Bonus / Deployable Surplus ── */}
-        {(() => {
-          // GURU coverage-month methodology: Op Cash 2-mo ($41,878) + Reserve 12-mo ($216,792) = $258,670 floor
-          // Balances match seeded DB: Chase $25,050 + Citizens Checking $107,000 = $132,050 Op Cash
-          //   Citizens MM $225,000 + CapitalOne $15,000 + Fidelity Sweep $186,586 = $426,586 Reserve
-          const demoAccts = [
-            { name: "Op Cash  (Chase + Citizens Checking)", num: "Checking", balance: 132050, floor: 41878  },
-            { name: "Reserve  (Citizens MM + CapitalOne + Fidelity Sweep)", num: "Savings/MM", balance: 426586, floor: 216792 },
-          ];
-          const totalHarvest = demoAccts.reduce((s, a) => s + (a.balance - a.floor), 0); // = $299,966
-          const monthlyLoss = Math.round(totalHarvest * 0.0096 / 12 * 10) * 10; // ~$4,800/mo at blended loss
-          return (
-          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ height: 3, background: "#1e4d30" }} />
-            <div style={{ padding: "12px 16px 10px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-              <CardCheckHeader
-                badge="Liquidity"
-                badgeBg="#e8f4f0"
-                badgeText="#1e4d30"
-                badgeBorder="#b4d9ce"
-                priority="High Priority"
-                priorityBg="#fdecea"
-                priorityText="#be2a2c"
-                priorityBorder="#f5a8a8"
-                title="Year-End Bonus Has Created Deployable Surplus"
-                body={`The January bonus pushed balances above the 3-month reserve floor on all three accounts. ${fmt(totalHarvest, true)} is sitting idle at a blended yield of 0.8% — earning ${fmt(Math.round(totalHarvest * 0.008))} a year when it should be earning ${fmt(Math.round(totalHarvest * 0.051))}.`}
-              />
+      {/* ── Card Grid ── */}
+      <div style={{ padding: "12px 32px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
 
-              {/* Large amount — inline label */}
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <div style={{ fontSize: 28, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#1e4d30", lineHeight: 1, letterSpacing: "-0.025em" }}>{fmt(totalHarvest, true)}</div>
-                <div style={{ fontSize: 16, fontWeight: 300, color: "#1e4d30", lineHeight: 1 }}>excess identified</div>
-              </div>
-
-              {/* Account table */}
-              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 7 }}>Where the excess cash is sitting</div>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <tbody>
-                    {demoAccts.map((a) => (
-                      <tr key={a.num} style={{ borderBottom: "1px solid #f0ede8" }}>
-                        <td style={{ padding: "7px 0", fontSize: 11, color: "#181816" }}>
-                          {a.name} <span style={{ color: "#9c9c93" }}>·· {a.num}</span>
-                        </td>
-                        <td style={{ padding: "7px 6px", fontSize: 10, color: "#9c9c93", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
-                          balance {fmt(a.balance)} · floor {fmt(a.floor)}
-                        </td>
-                        <td style={{ padding: "7px 0", fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1e4d30", textAlign: "right" as const, whiteSpace: "nowrap" as const }}>
-                          {fmt(a.balance - a.floor)}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr>
-                      <td colSpan={2} style={{ padding: "7px 0", fontSize: 11, fontWeight: 700, color: "#181816", borderTop: "1px solid #d4d4cf" }}>Total excess</td>
-                      <td style={{ padding: "7px 0", fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1e4d30", textAlign: "right" as const, borderTop: "1px solid #d4d4cf" }}>{fmt(totalHarvest)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Talking Points */}
-              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 7 }}>Talking Points</div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 13, color: "#1e4d30", lineHeight: 1.7, background: "rgba(30,77,48,0.06)", border: "1px solid rgba(30,77,48,0.18)", borderLeft: "3px solid #1e4d30", borderRadius: 6, padding: "10px 14px" }}>
-                  Sweeping the excess into Capital Build and Investments captures an additional {fmt(Math.round(totalHarvest * 0.051) - Math.round(totalHarvest * 0.008))} per year. Reserve Cash remains intact across all three accounts — this is pure yield pickup with no liquidity cost.
-                </div>
-              </div>
-
+          {/* ─────────────── CARD 1: Excess Liquidity ─────────────── */}
+          <div style={cardStyle}>
+            {/* Top stripe — 3px horizontal, spec §7 */}
+            <div style={{ height: 3, background: accentColor.liquidity, flexShrink: 0 }} />
+            {/* Header band */}
+            <div style={{ padding: "16px 16px 14px", borderBottom: `1px solid rgba(0,0,0,0.08)`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase", color: accentColor.liquidity }}>Liquidity</span>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: "#9B2020", padding: "3px 10px", border: "1px solid rgba(155,32,32,0.3)" }}>High priority</span>
             </div>
-            <DStrip
-              cardKey="liquidity"
-              approveLabel="Approve"
-              approveColor="#1e4d30"
-              nowLabel={fmt(totalHarvest)}
-              nowSubtext="3 bank accounts · idle"
-              afterLabel={fmt(totalHarvest)}
-              afterSubtext="Capital Build & Investments"
-              afterSublabel="AFTER GURU"
-              urgencyText={`Urgent · ${fmt(monthlyLoss)}/mo cost of inaction`}
-              urgencyColor="#be2a2c"
-              onApprove={() => onNavigate("guru")}
-            />
+            {/* Headline section */}
+            <div style={headStyle}>
+              <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: "#1a2a4a", lineHeight: 1.3, letterSpacing: "-0.01em", minHeight: 52 }}>
+                Bonus cash has been sitting idle for {daysIdle} days — time to put it to work
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 400, color: "rgba(0,0,0,0.55)", lineHeight: 1.55, marginTop: 8 }}>
+                Since the January bonus landed, coverage went from 6 to{" "}
+                <span style={{ color: "#1E4F9C", textDecoration: "underline", cursor: "pointer" }}>{coverageMonths.toFixed(1)} months</span>.{" "}
+                The excess is yielding{" "}
+                <span style={{ color: "#1E4F9C", textDecoration: "underline", cursor: "pointer" }}>0.8%</span>{" "}
+                — well below what it could be earning deployed elsewhere.
+              </div>
+            </div>
+            {/* KPI strip — dominant first, supporting navy */}
+            {statStrip([
+              { label: "Excess Liquidity",  value: bigNum(fmt(excessLiquidity), accentColor.liquidity),    sub: `${daysIdle} days idle · 0.8% avg yield` },
+              { label: "Potential After-Tax Income Increase", value: bigNum(`+${fmt(annualReturnPickup)}`, accentColor.liquidity, "/yr"), sub: "if deployed today" },
+              { label: "Cash Coverage",     value: suppNum(coverageMonths.toFixed(1), " months"),           sub: "of monthly expenses" },
+            ])}
+            {/* Body */}
+            <div style={{ padding: "0 16px 14px", flex: 1 }}>
+              {/* Section header */}
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", padding: "10px 0 5px", borderBottom: `1px solid rgba(0,0,0,0.04)`, marginBottom: 0 }}>
+                GURU's Estimate of Kesslers 12 Month Cash Liquidity Need
+              </div>
+              {/* Row 1: Cash for next 12 months of net outflows */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "9px 0 9px 14px", borderBottom: `1px solid rgba(0,0,0,0.04)` }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "#1a2a4a", lineHeight: 1.3 }}>Cash for next 12 months of net outflows</div>
+                  <div style={{ fontSize: 11, color: "rgba(0,0,0,0.38)", marginTop: 2, lineHeight: 1.4 }}>Cumulative outflow through November</div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 300, color: "#1a2a4a", flexShrink: 0, marginLeft: 16, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(troughDepth)}</div>
+              </div>
+              {/* Row 2: Operating cash on hand */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "9px 0 9px 14px", borderBottom: `1px solid rgba(0,0,0,0.04)` }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "#1a2a4a", lineHeight: 1.3 }}>Operating cash on hand — 2 months</div>
+                  <div style={{ fontSize: 11, color: "rgba(0,0,0,0.38)", marginTop: 2, lineHeight: 1.4 }}>Always 2 months of forward expenses</div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 300, color: "#1a2a4a", flexShrink: 0, marginLeft: 16, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(operatingTarget)}</div>
+              </div>
+              {/* Row 3: Capital preservation */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "9px 0 9px 14px", borderBottom: `1px solid rgba(0,0,0,0.04)` }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "#1a2a4a", lineHeight: 1.3 }}>Capital preservation — home purchase</div>
+                  <div style={{ fontSize: 11, color: "rgba(0,0,0,0.38)", marginTop: 2, lineHeight: 1.4 }}>Down payment reserve — June 2027</div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 300, color: "#1a2a4a", flexShrink: 0, marginLeft: 16, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(goalSavings)}</div>
+              </div>
+              {/* Subtotal: Total liquidity needed */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderTop: `1px solid rgba(0,0,0,0.08)`, borderBottom: `1px solid rgba(0,0,0,0.04)` }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#1a2a4a" }}>Total liquidity needed</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#1a2a4a", flexShrink: 0, marginLeft: 16, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(liquidityNeededTable)}</div>
+              </div>
+              {/* Total liquid assets (indented) */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0 9px 14px", borderBottom: `1px solid rgba(0,0,0,0.04)` }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "rgba(0,0,0,0.55)" }}>Total liquid assets</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "rgba(0,0,0,0.55)", flexShrink: 0, marginLeft: 16, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(totalLiquid)}</div>
+              </div>
+              {/* Total row: Deployable excess */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 0 4px", borderTop: `1px solid rgba(0,0,0,0.08)` }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: accentColor.liquidity }}>Deployable excess</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: accentColor.liquidity, flexShrink: 0, marginLeft: 16, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(deployableExcess)}</div>
+              </div>
+            </div>
+            {talkingPoints("liquidity",
+              `The Kesslers now have ${coverageMonths.toFixed(1)} months of cash expense coverage — more than double what they need. The full liquid portfolio currently generates ${fmt(annualReturnCurrent)}/yr after tax. Optimized across all accounts, it generates ${fmt(annualReturnOptimized)}/yr — a pickup of ${fmt(annualReturnPickup)}/yr.`,
+              [
+                `<strong>Coverage floor is 6 months</strong> — the Kesslers are well above it. Everything above that floor is investable.`,
+                `The liquid portfolio earns <strong>${fmt(annualReturnCurrent)}/yr</strong> today. At best-product yields for each bucket, it earns <strong>${fmt(annualReturnOptimized)}/yr</strong> — a <strong>+${fmt(annualReturnPickup)}/yr</strong> pickup.`,
+                `The ${fmt(excessLiquidity)} in excess has been idle for <strong>${daysIdle} days</strong>. Every month it stays in cash costs them roughly ${fmt(monthlyOpportunityCost)}.`,
+                `No new money needed — this is capital that's already here, just not working.`,
+              ]
+            )}
+            {cardFooter("liquidity", accentColor.liquidity, "Deploy →", "May 5 deadline", () => onNavigate("allocation"))}
           </div>
-          );
-        })()}
 
-        {/* ── Card 2: Rebalance Portfolio ── */}
-        {(() => {
-          const totalDeploy = 299966; // matches GURU excess liquidity ($299,926 allocation tool)
-          const positions = [
-            { name: "Cresset Short Duration Bond Fund", amount: 179980, detail: "Anchors fixed income sleeve · target yield 5.4% · low duration risk ahead of potential Fed cut" },
-            { name: "Small Cap Mutual Fund", amount: 119986, detail: "Increases exposure to high-growth segment · target yield 8.4% · consistent with moderate-aggressive profile" },
-          ];
-          return (
-          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ height: 3, background: "#1a3a6b" }} />
-            <div style={{ padding: "12px 16px 10px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-              <CardCheckHeader
-                badge="Investments"
-                badgeBg="#e8eef8"
-                badgeText="#1a3a6b"
-                badgeBorder="#b4c5e8"
-                priority="Medium Priority"
-                priorityBg="#e8eef8"
-                priorityText="#1a3a6b"
-                priorityBorder="#b4c5e8"
-                title="Rebalance Portfolio with the Harvested Surplus"
-                body="Three positions put the harvested surplus to work within the moderate risk profile: the CIO Sector Rotation Fund, a Small Cap Mutual Fund, and the Cresset Short Duration Bond Fund."
-              />
-
-              {/* Ideas checklist */}
+          {/* ─────────────── CARD 2: Portfolio / Rebalance ─────────────── */}
+          <div style={cardStyle}>
+            {/* Top stripe */}
+            <div style={{ height: 3, background: accentColor.invest, flexShrink: 0 }} />
+            {/* Header band */}
+            <div style={{ padding: "16px 16px 14px", borderBottom: `1px solid rgba(0,0,0,0.08)`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase", color: accentColor.invest }}>Investments</span>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: accentColor.invest, padding: "3px 10px", border: `1px solid ${accentColor.invest}50` }}>Portfolio action</span>
+            </div>
+            {/* Headline section */}
+            <div style={headStyle}>
+              <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: "#1a2a4a", lineHeight: 1.3, letterSpacing: "-0.01em", minHeight: 52 }}>
+                Excess liquidity can fund three new sleeves to address underweight exposures
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 400, color: "rgba(0,0,0,0.55)", lineHeight: 1.55, marginTop: 8 }}>
+                The Kesslers' portfolio has no commodities or inflation hedge and is underweight diversified growth and small cap. We can build all three positions through harvested excess cash.
+              </div>
+            </div>
+            {/* KPI strip */}
+            {statStrip([
+              { label: "Diversification Added",       value: bigNum(`~${diversificationPct}%`, accentColor.invest), sub: "broader exposure across 3 sleeves" },
+              { label: "Cash Deployed",               value: suppNum(fmt(excessLiquidity)),                         sub: "from liquidity excess" },
+              { label: "5-Year Weighted Avg Return",  value: suppNum("6.9%"),                                       sub: "across the three sleeves" },
+            ])}
+            {/* Body */}
+            <div style={{ padding: "14px 16px", flex: 1 }}>
+              {sectionLabel("Sleeves added — funded by redeployed cash")}
               <div>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 8 }}>Ideas to Explore</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                  {positions.map((p, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: i < positions.length - 1 ? "1px solid #f0ede8" : "none" }}>
-                      <div style={{ width: 14, height: 14, borderRadius: 3, flexShrink: 0, marginTop: 2, border: "1.5px solid #d4d4cf", background: "#fff" }} />
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{p.name} <span style={{ fontVariantNumeric: "tabular-nums" }}>— {fmt(p.amount)}</span></div>
-                        <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 2, lineHeight: 1.5 }}>{p.detail}</div>
-                      </div>
+                {/* DFA US Small Cap Value */}
+                <div style={{ padding: "10px 0", borderBottom: `1px solid ${BORDER}`, opacity: fundChecked.has("dfa") ? 1 : 0.45, transition: "opacity 0.15s" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flex: 1, minWidth: 0 }}>
+                      <input type="checkbox" checked={fundChecked.has("dfa")} onChange={() => toggleFund("dfa")} style={{ marginTop: 2, width: 13, height: 13, accentColor: accentColor.invest, cursor: "pointer", flexShrink: 0 }} />
+                      <div style={{ fontSize: 13, fontWeight: 500, color: "#1A1915" }}>DFA US Small Cap Value</div>
                     </div>
-                  ))}
+                    <div style={{ fontSize: 13, fontWeight: 400, color: "#1A1915", flexShrink: 0, marginLeft: 8 }}>$95,000</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#9A9890", marginTop: 2, paddingLeft: 21 }}>5-yr historical <strong style={{ color: "#4a6e3a" }}>8.4%</strong> · Added exposure <strong style={{ color: "#4a6e3a" }}>~4.3%</strong></div>
+                  <div style={{ fontSize: 12, color: "#7a7870", marginTop: 3, lineHeight: 1.55, paddingLeft: 21 }}>Rules-based small-cap strategy — 800+ holdings, value-tilted, low turnover. Captures the small-cap premium across full market cycles.</div>
+                </div>
+                {/* Cresset Tactical Allocation */}
+                <div style={{ padding: "10px 0", borderBottom: `1px solid ${BORDER}`, opacity: fundChecked.has("cresset") ? 1 : 0.45, transition: "opacity 0.15s" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flex: 1, minWidth: 0 }}>
+                      <input type="checkbox" checked={fundChecked.has("cresset")} onChange={() => toggleFund("cresset")} style={{ marginTop: 2, width: 13, height: 13, accentColor: accentColor.invest, cursor: "pointer", flexShrink: 0 }} />
+                      <div style={{ fontSize: 13, fontWeight: 500, color: "#1A1915" }}>Cresset Tactical Allocation</div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 400, color: "#1A1915", flexShrink: 0, marginLeft: 8 }}>$145,000</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#9A9890", marginTop: 2, paddingLeft: 21 }}>5-yr historical <strong style={{ color: "#4a6e3a" }}>6.2%</strong> · Added exposure <strong style={{ color: "#4a6e3a" }}>~4.4%</strong></div>
+                  <div style={{ fontSize: 12, color: "#7a7870", marginTop: 3, lineHeight: 1.55, paddingLeft: 21 }}>Actively managed, rotating across sectors based on macro signals and earnings trends. Track record across multiple rate environments.</div>
+                </div>
+                {/* PIMCO Commodity Real Return */}
+                <div style={{ padding: "10px 0", opacity: fundChecked.has("pimco") ? 1 : 0.45, transition: "opacity 0.15s" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flex: 1, minWidth: 0 }}>
+                      <input type="checkbox" checked={fundChecked.has("pimco")} onChange={() => toggleFund("pimco")} style={{ marginTop: 2, width: 13, height: 13, accentColor: accentColor.invest, cursor: "pointer", flexShrink: 0 }} />
+                      <div style={{ fontSize: 13, fontWeight: 500, color: "#1A1915" }}>PIMCO Commodity Real Return</div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 400, color: "#1A1915", flexShrink: 0, marginLeft: 8 }}>{fmt(excessLiquidity - 240000)}</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "#9A9890", marginTop: 2, paddingLeft: 21 }}>5-yr historical <strong style={{ color: "#4a6e3a" }}>5.0%</strong> · Added exposure <strong style={{ color: "#4a6e3a" }}>~2.3%</strong></div>
+                  <div style={{ fontSize: 12, color: "#7a7870", marginTop: 3, lineHeight: 1.55, paddingLeft: 21 }}>Commodity futures and inflation-linked instruments managed by PIMCO for positive real returns above rising price environments.</div>
                 </div>
               </div>
-
-              {/* Talking Points */}
-              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 7 }}>Talking Points</div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 13, color: "#1a3a6b", lineHeight: 1.7, background: "rgba(26,58,107,0.06)", border: "1px solid rgba(26,58,107,0.18)", borderLeft: "3px solid #1a3a6b", borderRadius: 6, padding: "10px 14px" }}>
-                The sector rotation fund reduces correlation to the broad market, the small cap sleeve adds high-growth exposure, and short-duration fixed income anchors the position ahead of any rate movement. Each fills a gap in the current allocation.
-                </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 0 0", borderTop: `1px solid rgba(0,0,0,0.08)`, marginTop: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: accentColor.invest }}>Total invested from redeployed cash</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: accentColor.invest, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(excessLiquidity)}</span>
               </div>
             </div>
-            <DStrip cardKey="rebalance" approveLabel="Open GURU Allocation →" approveColor="#1a3a6b" onApprove={() => onNavigate("guru")} />
+            {talkingPoints("invest",
+              "The portfolio has three structural gaps that the excess cash closes cleanly: no fixed income, concentrated single-name risk, and no diversified growth exposure.",
+              [
+                `<strong>No fixed income</strong> — adding PIMCO and DFA creates yield and ballast without adding duration risk.`,
+                `<strong>Concentrated single names</strong> — Meta and Bank of America represent meaningful concentration. New sleeves dilute that without requiring a tax event.`,
+                `<strong>Diversified growth</strong> — Cresset Tactical brings systematic exposure to small cap and international factors the portfolio currently lacks.`,
+                `All three sleeves are funded entirely from the excess cash. No liquidations required.`,
+              ]
+            )}
+            {cardFooter("invest", accentColor.invest, "Approve allocation →", undefined, () => onNavigate("investments"))}
           </div>
-          );
-        })()}
 
-        {/* ── Card 3: Lock In Rates / Fed Cut ── */}
-        {(() => {
-          const floatingAccts = [
-            { name: "Citizens Private Bank Money Market", num: "1482", amount: 225000 },
-            { name: "Fidelity Government MMF", num: "4976", amount: 875000 },
-          ];
-          const totalExposed = floatingAccts.reduce((s, a) => s + a.amount, 0);
-          const daysToMay7 = Math.ceil((new Date(2026, 4, 7).getTime() - DEMO_NOW.getTime()) / 86400000);
-          return (
-          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ height: 3, background: "#a07820" }} />
-            <div style={{ padding: "12px 16px 10px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-              <CardCheckHeader
-                badge="Interest Rates"
-                badgeBg="#fdf4e3"
-                badgeText="#a07820"
-                badgeBorder="#e8cc88"
-                priority="Act Before May 7"
-                priorityBg="#fdf4e3"
-                priorityText="#a07820"
-                priorityBorder="#e8cc88"
-                title="Lock In Rates Before the Fed Cuts — Money Markets Will Float Down"
-                body={`The Fed is expected to cut on May 7. Money market funds reprice immediately — the Kesslers hold ${fmt(totalExposed)} across two floating MM positions. A 25bp cut costs ${fmt(Math.round(totalExposed * 0.0025))} per year. The window to lock in 5.2% closes when the cut lands.`}
-              />
-
-              {/* Large amount — inline label */}
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                <div style={{ fontSize: 28, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#a07820", lineHeight: 1, letterSpacing: "-0.025em" }}>{fmt(totalExposed)}</div>
-                <div style={{ fontSize: 16, fontWeight: 300, color: "#a07820", lineHeight: 1 }}>exposed to rate cut repricing</div>
-              </div>
-
-              {/* Account table */}
-              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <tbody>
-                    {floatingAccts.map((a) => (
-                      <tr key={a.num} style={{ borderBottom: "1px solid #f0ede8" }}>
-                        <td style={{ padding: "7px 0", fontSize: 11, color: "#181816" }}>
-                          {a.name} <span style={{ color: "#9c9c93" }}>·· {a.num}</span>
-                        </td>
-                        <td style={{ padding: "7px 6px", fontSize: 10, color: "#9c9c93", textAlign: "right" as const }}>floating · reprices at cut</td>
-                        <td style={{ padding: "7px 0", fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#a07820", textAlign: "right" as const }}>{fmt(a.amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Talking Points */}
-              <div style={{ borderTop: "1px solid #e6e5e0", paddingTop: 10 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", marginBottom: 7 }}>Talking Points</div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 13, color: "#7a5a10", lineHeight: 1.7, background: "rgba(160,120,32,0.06)", border: "1px solid rgba(160,120,32,0.18)", borderLeft: "3px solid #a07820", borderRadius: 6, padding: "10px 14px" }}>
-                  Rotating into 6-month T-bills before May 7 locks in 5.2% through October — regardless of what the Fed does. The position remains semi-liquid and rolls back into the MM or extends further depending on the rate path in Q4.
-                </div>
-              </div>
-
+          {/* ─────────────── CARD 3: Fed / T-Bills ─────────────── */}
+          <div style={cardStyle}>
+            {/* Top stripe */}
+            <div style={{ height: 3, background: accentColor.rates, flexShrink: 0 }} />
+            {/* Header band */}
+            <div style={{ padding: "16px 16px 14px", borderBottom: `1px solid rgba(0,0,0,0.08)`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase", color: accentColor.rates }}>Interest rates</span>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: accentColor.rates, padding: "3px 10px", border: `1px solid ${accentColor.rates}50` }}>Act before May 5</span>
             </div>
-            <DStrip
-              cardKey="yield"
-              approveLabel="Approve"
-              approveColor="#a07820"
-              nowLabel={fmt(totalExposed)}
-              nowSubtext="Money market funds"
-              nowSublabel="NOW · FLOATING"
-              afterLabel={fmt(totalExposed)}
-              afterSubtext="6-mo T-bills · matures Oct"
-              afterSublabel="AFTER GURU · LOCKED"
-              urgencyText={`Act before May 7 · ${daysToMay7} days`}
-              urgencyColor="#a07820"
-              onApprove={() => onNavigate("guru")}
-            />
-          </div>
-          );
-        })()}
-
-        {/* ── Card 4: Account Cash Movements ── */}
-        {(() => {
-          return (
-            <div
-              style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}
-              data-testid="advisor-brief-money-flow-card"
-            >
-              <div style={{ height: 3, background: "#1d4ed8" }} />
-              {/* Card header */}
-              <div style={{ padding: "12px 16px 10px" }}>
-                <CardCheckHeader
-                  badge="Cash Movement"
-                  badgeBg="#e8eef8"
-                  badgeText="#1d4ed8"
-                  badgeBorder="#b4c5e8"
-                  priority="Monthly Update"
-                  priorityBg="#f0f0eb"
-                  priorityText="#68685f"
-                  priorityBorder="#d4d4cf"
-                  title="March Money Movement — Where Every Dollar Sits"
-                  body="March ran net positive — $42,500 in, $24,260 out, $18,240 surplus routed to Reserve. The cash architecture is working as modelled. One item is open: a $85,000 wire to Fidelity due March 20."
-                />
+            {/* Headline section */}
+            <div style={headStyle}>
+              <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: "#1a2a4a", lineHeight: 1.3, letterSpacing: "-0.01em", minHeight: 52 }}>
+                Move to T-bills to lock in rate before Fed cuts — {daysUntilFed} days before Fed meeting
               </div>
-              {/* ── Bucket tables ── */}
-              <div style={{ padding: "16px 20px 20px", background: "#fafaf8" }}>
+              <div style={{ fontSize: 13, fontWeight: 400, color: "rgba(0,0,0,0.55)", lineHeight: 1.55, marginTop: 8 }}>
+                The Fed is expected to cut on May 7. Money market funds will reprice immediately. Moving into short-term government bonds locks the current yield for six months.
+              </div>
+            </div>
+            {/* KPI strip — rate-vulnerable cash dominant, rest navy */}
+            {statStrip([
+              { label: "Rate-Vulnerable Cash",      value: bigNum(fmt(rateVulnerableCash), accentColor.rates),    sub: `${daysUntilFed} days until Fed` },
+              { label: "After-Tax Income at Risk",  value: suppNum(`${fmt(incomeAtRisk)}/yr`),                    sub: "lost if nothing moves" },
+              { label: "T-Bill Rate Available",     value: suppNum("5.200%"),                                     sub: "6-month · locked through Oct '26" },
+            ])}
+            {/* Body — three-column positions table, spec §9 */}
+            <div style={{ flex: 1 }}>
+              {/* Column header row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 80px", background: "rgba(0,0,0,0.02)", borderBottom: `1px solid rgba(0,0,0,0.06)` }}>
+                <div style={{ padding: "7px 16px", fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)" }}>Position</div>
+                <div style={{ padding: "7px 0", fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", textAlign: "right" }}>Current yield</div>
+                <div style={{ padding: "7px 16px 7px 0", fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", textAlign: "right" }}>Balance</div>
+              </div>
+              {/* Position rows */}
+              {([
+                { name: "Citizens Private Bank Money Market",  sub: "Floating rate · reprices at Fed decision", yield: "3.65%", bal: fmt(citizensMM) },
+                { name: "CapitalOne 360 Performance Savings",  sub: "Floating rate · reprices at Fed decision", yield: "3.78%", bal: fmt(capitalOne) },
+                { name: "Fidelity Cash Sweep / SPAXX",         sub: "Brokerage money market · daily repricing", yield: "2.50%", bal: fmt(fidelityMMF) },
+              ] as const).map((row, i, arr) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 90px 80px", padding: "10px 0 10px 22px", borderBottom: i < arr.length - 1 ? `1px solid rgba(0,0,0,0.04)` : "none", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 400, color: "#1a2a4a", lineHeight: 1.3 }}>{row.name}</div>
+                    <div style={{ fontSize: 11, color: "rgba(0,0,0,0.38)", marginTop: 2 }}>{row.sub}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 400, color: "#c47c2b", textAlign: "right", paddingTop: 1, fontVariantNumeric: "tabular-nums" }}>{row.yield}</div>
+                  <div style={{ fontSize: 13, fontWeight: 300, color: "#1a2a4a", textAlign: "right", paddingRight: 16, paddingTop: 1, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{row.bal}</div>
+                </div>
+              ))}
+              {/* Total row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 16px 10px 16px", borderTop: `1px solid rgba(0,0,0,0.08)` }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: accentColor.rates }}>Total rate-vulnerable cash</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: accentColor.rates, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(citizensMM + capitalOne + fidelityMMF)}</span>
+              </div>
+            </div>
+            {talkingPoints("rates",
+              `The Fed is widely expected to cut 50bps in the next year. ${fmt(rateVulnerableCash)} in floating-rate accounts will reprice the day the decision is announced. A 6-month T-bill at 5.200% locks today's yield through October and protects against that drop.`,
+              [
+                `<strong>Floating-rate exposure</strong> — all money markets and savings accounts reprice immediately at the Fed decision. No delay.`,
+                `At 50bps cut, the Kesslers lose <strong>${fmt(incomeAtRisk)}/yr</strong> pre-tax in income on this cash — avoidable if they move before May 5.`,
+                `A 6-month T-bill at <strong>5.200%</strong> locks the current rate through October '26. After that, they can reassess the rate environment.`,
+                `This is a low-risk, time-sensitive move. The only cost is acting before the deadline.`,
+              ]
+            )}
+            {cardFooter("rates", accentColor.rates, "Lock rate →", "Window closes May 5", () => onNavigate("guru"))}
+          </div>
+
+          {/* ─────────────── CARD 4: Money Movement (spans 2 cols) ─────────────── */}
+          <div style={{ ...cardStyle, gridColumn: "1 / span 2" }}>
+            {/* Top stripe */}
+            <div style={{ height: 3, background: accentColor.cashflow, flexShrink: 0 }} />
+            {/* Header band */}
+            <div style={{ padding: "16px 16px 14px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase", color: accentColor.cashflow }}>Money movement</span>
+              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", padding: "3px 10px", border: `1px solid rgba(0,0,0,0.12)` }}>April 2026</span>
+            </div>
+            {/* Head */}
+            <div style={headStyle}>
+              <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 400, color: "#1a2a4a", lineHeight: 1.3, letterSpacing: "-0.01em" }}>
+                {format(addMonths(DEMO_NOW, 1), "MMMM")} Money Movement — Where Every Dollar Goes
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 400, color: "rgba(0,0,0,0.55)", lineHeight: 1.55, marginTop: 8 }}>
+                The three-bucket structure is flowing as designed. $46,739 autodrew from Reserve into Operating this month to maintain 2-month expense coverage. Two tax payments and a tuition installment are due in the next 40 days.
+              </div>
+            </div>
+            {/* Two-column body */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", flex: 1 }}>
+              {/* LEFT: Automatic transfers / flow diagram */}
+              <div style={{ padding: "16px 20px 20px", background: "#fafaf8", borderRight: `1px solid ${BORDER}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 14 }}>Automatic transfers — {format(addMonths(DEMO_NOW, 1), "MMMM")}</div>
+                <style>{`
+                  @keyframes flowUp{0%{transform:translateY(6px);opacity:0}60%{opacity:1}100%{transform:translateY(-6px);opacity:0}}
+                  .cf-arrow-dot{animation:flowUp 1.8s linear infinite;}
+                  .cf-arrow-dot-slow{animation:flowUp 2.4s linear infinite 0.4s;}
+                `}</style>
                 <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
-                  {/* ── OPERATING row ── */}
-                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-ops">
-                    <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#1e3a5f" }}>
-                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>OPERATING</span>
-                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 20, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$90,879</span>
+                  {/* OPERATING row */}
+                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }}>
+                    <div style={{ width: 100, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "16px 8px", background: "#1e3a5f" }}>
+                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8, fontFamily: FONT }}>OPERATING</span>
+                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 18, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1, fontFamily: FONT }}>$90,879</span>
                     </div>
                     <div style={{ flex: 1, border: "1px solid rgba(30,58,95,0.18)", borderRadius: 8, overflow: "hidden" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(30,58,95,0.03)" }} data-testid="flow-row-ops-jan">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "rgba(30,58,95,0.03)" }}>
                         <div style={{ minWidth: 0, marginRight: 8 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a5f", lineHeight: 1.3 }}>CIT Money Market Bank Account</div>
-                          <div style={{ fontSize: 10, color: "#4a6a9a", marginTop: 2 }}>Primary operating · Jan ending</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a5f", lineHeight: 1.3, fontFamily: FONT }}>CIT Money Market Bank Account</div>
+                          <div style={{ fontSize: 11, color: "#4a6a9a", marginTop: 2, fontFamily: FONT }}>Primary operating · Apr ending</div>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#1e3a5f", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$90,879</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#1e3a5f", fontVariantNumeric: "tabular-nums", flexShrink: 0, fontFamily: FONT }}>$90,879</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* ── Arrow connector: JPMorgan → CIT ── */}
-                  <div style={{ display: "flex", alignItems: "center", minHeight: 40, paddingLeft: 124 }}>
-                    <div className="group" style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, cursor: "default", marginLeft: 20 }}>
-                      <svg width="12" height="40" style={{ flexShrink: 0, overflow: "visible" }}>
-                        <path d="M 6,38 L 6,2" stroke="#1e3a5f" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
+                  {/* Arrow: JPMorgan → CIT */}
+                  <div style={{ display: "flex", alignItems: "center", minHeight: 36, paddingLeft: 112 }}>
+                    <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, cursor: "default", marginLeft: 18 }}>
+                      <svg width="12" height="36" style={{ flexShrink: 0, overflow: "visible" }}>
+                        <path d="M 6,34 L 6,2" stroke="#1e3a5f" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
                         <polygon points="0,-4 4,3 -4,3" fill="#1e3a5f" opacity="0.85">
-                          <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 6,38 L 6,2" />
+                          <animateMotion dur="1.9s" repeatCount="indefinite" calcMode="linear" path="M 6,34 L 6,2" />
                         </polygon>
                       </svg>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#1e3a5f", background: "#eef2f8", border: "1px solid #c5d4e8", padding: "4px 12px", borderRadius: 20, whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#1e3a5f", background: "#eef2f8", border: "1px solid #c5d4e8", padding: "3px 10px", borderRadius: 20, fontFamily: FONT, whiteSpace: "nowrap" }}>
                         ↑ $46,739 · JPMorgan → CIT
                       </span>
-                      <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
-                        <div style={{ background: "#1a1a18", color: "#fff", fontSize: 9, fontWeight: 500, borderRadius: 8, padding: "8px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", lineHeight: 1.6, maxWidth: 260 }}>
-                          Autodraw from JPMorgan 100% Treasuries MMF into CIT operating account — building 2 months of forward cash expenses
-                        </div>
-                        <div style={{ width: 8, height: 8, background: "#1a1a18", transform: "rotate(45deg)", marginLeft: 16, marginTop: -4, flexShrink: 0 }} />
-                      </div>
                     </div>
                   </div>
 
-                  {/* ── RESERVE row ── */}
-                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-reserve">
-                    <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#7c4a0a" }}>
-                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>RESERVE</span>
-                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 20, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$129,385</span>
+                  {/* RESERVE row */}
+                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }}>
+                    <div style={{ width: 100, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "16px 8px", background: "#7c4a0a" }}>
+                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8, fontFamily: FONT }}>RESERVE</span>
+                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 18, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1, fontFamily: FONT }}>{fmt(capitalBuild)}</span>
                     </div>
                     <div style={{ flex: 1, border: "1px solid rgba(124,74,10,0.2)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(124,74,10,0.03)", borderBottom: "1px solid rgba(124,74,10,0.1)" }} data-testid="flow-row-reserve-jpm">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "rgba(124,74,10,0.03)", borderBottom: "1px solid rgba(124,74,10,0.1)" }}>
                         <div style={{ minWidth: 0, marginRight: 8 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#7c4a0a", lineHeight: 1.3 }}>JPMorgan 100% Treasuries Money Market</div>
-                          <div style={{ fontSize: 10, color: "#a06020", marginTop: 2 }}>Autodraw to Operating</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#7c4a0a", lineHeight: 1.3, fontFamily: FONT }}>JPMorgan 100% Treasuries MMF</div>
+                          <div style={{ fontSize: 11, color: "#a06020", marginTop: 2, fontFamily: FONT }}>Autodraw to Operating</div>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#7c4a0a", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$27,927</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#7c4a0a", fontVariantNumeric: "tabular-nums", flexShrink: 0, fontFamily: FONT }}>$27,927</span>
                       </div>
-                      {/* Inner flow connector: T-Bill → JPMorgan */}
-                      <div className="group" style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, padding: "3px 16px", cursor: "default" }}>
-                        <svg width="12" height="28" style={{ flexShrink: 0, overflow: "visible" }}>
-                          <path d="M 6,26 L 6,2" stroke="#7c4a0a" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 14px" }}>
+                        <svg width="12" height="26" style={{ flexShrink: 0, overflow: "visible" }}>
+                          <path d="M 6,24 L 6,2" stroke="#7c4a0a" strokeWidth="1.5" strokeDasharray="4,2.5" fill="none" />
                           <polygon points="0,-4 4,3 -4,3" fill="#a06020" opacity="0.85">
-                            <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 6,26 L 6,2" />
+                            <animateMotion dur="1.5s" repeatCount="indefinite" calcMode="linear" path="M 6,24 L 6,2" />
                           </polygon>
                         </svg>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "#7c4a0a", background: "#fdf5e6", border: "1px solid #e8c87a", padding: "3px 10px", borderRadius: 20, whiteSpace: "nowrap" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#7c4a0a", background: "#fdf5e6", border: "1px solid #e8c87a", padding: "2px 8px", borderRadius: 20, fontFamily: FONT, whiteSpace: "nowrap" }}>
                           ↑ $7,478 · T-Bill → JPMorgan
                         </span>
-                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
-                          <div style={{ background: "#1a1a18", color: "#fff", fontSize: 9, fontWeight: 500, borderRadius: 8, padding: "8px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", lineHeight: 1.6, maxWidth: 260 }}>
-                            1-month T-Bill maturing in January — proceeds roll directly into JPMorgan 100% Treasuries MMF
-                          </div>
-                          <div style={{ width: 8, height: 8, background: "#1a1a18", transform: "rotate(45deg)", marginLeft: 16, marginTop: -4, flexShrink: 0 }} />
-                        </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(124,74,10,0.03)", borderTop: "1px solid rgba(124,74,10,0.1)" }} data-testid="flow-row-reserve-tbill">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "rgba(124,74,10,0.03)", borderTop: "1px solid rgba(124,74,10,0.1)" }}>
                         <div style={{ minWidth: 0, marginRight: 8 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#7c4a0a", lineHeight: 1.3 }}>T-Bill Ladder</div>
-                          <div style={{ fontSize: 10, color: "#a06020", marginTop: 2 }}>3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#7c4a0a", lineHeight: 1.3, fontFamily: FONT }}>T-Bill Ladder</div>
+                          <div style={{ fontSize: 11, color: "#a06020", marginTop: 2, fontFamily: FONT }}>3-Mo / 6-Mo / 9-Mo · +$7,478 Maturing</div>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#7c4a0a", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$101,458</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#7c4a0a", fontVariantNumeric: "tabular-nums", flexShrink: 0, fontFamily: FONT }}>$101,458</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* ── Gap ── */}
-                  <div style={{ height: 10 }} />
+                  <div style={{ height: 8 }} />
 
-                  {/* ── BUILD row ── */}
-                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }} data-testid="flow-col-build">
-                    <div style={{ width: 112, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "18px 8px", background: "#155234" }}>
-                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8 }}>BUILD</span>
-                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 20, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>$226,545</span>
+                  {/* BUILD row */}
+                  <div style={{ display: "flex", alignItems: "stretch", gap: 12 }}>
+                    <div style={{ width: 100, flexShrink: 0, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 5, padding: "16px 8px", background: "#155234" }}>
+                      <span style={{ fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.65)", fontSize: 8, fontFamily: FONT }}>BUILD</span>
+                      <span style={{ fontWeight: 300, color: "#ffffff", fontSize: 18, letterSpacing: "-0.025em", fontVariantNumeric: "tabular-nums", lineHeight: 1, fontFamily: FONT }}>$226,545</span>
                     </div>
-                    <div style={{ flex: 1, border: "1px solid rgba(21,82,52,0.18)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }} data-testid="flow-col-build-inner">
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(21,82,52,0.03)", borderBottom: "1px solid rgba(21,82,52,0.1)" }} data-testid="flow-row-build-munis">
+                    <div style={{ flex: 1, border: "1px solid rgba(21,82,52,0.18)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "rgba(21,82,52,0.03)", borderBottom: "1px solid rgba(21,82,52,0.1)" }}>
                         <div style={{ minWidth: 0, marginRight: 8 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#155234", lineHeight: 1.3 }}>2028 Municipal Bonds</div>
-                          <div style={{ fontSize: 10, color: "#2a7a52", marginTop: 2 }}>Tax-advantaged income</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#155234", lineHeight: 1.3, fontFamily: FONT }}>2028 Municipal Bonds</div>
+                          <div style={{ fontSize: 11, color: "#2a7a52", marginTop: 2, fontFamily: FONT }}>Tax-advantaged income</div>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#155234", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$32,161</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#155234", fontVariantNumeric: "tabular-nums", flexShrink: 0, fontFamily: FONT }}>$32,161</span>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(21,82,52,0.03)" }} data-testid="flow-row-build-tbill">
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "rgba(21,82,52,0.03)" }}>
                         <div style={{ minWidth: 0, marginRight: 8 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#155234", lineHeight: 1.3 }}>S&amp;P Low Volatility Index</div>
-                          <div style={{ fontSize: 10, color: "#2a7a52", marginTop: 2 }}>Short-duration ladder</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#155234", lineHeight: 1.3, fontFamily: FONT }}>S&amp;P Low Volatility Index</div>
+                          <div style={{ fontSize: 11, color: "#2a7a52", marginTop: 2, fontFamily: FONT }}>Short-duration ladder</div>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "#155234", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>$194,384</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#155234", fontVariantNumeric: "tabular-nums", flexShrink: 0, fontFamily: FONT }}>$194,384</span>
                       </div>
                     </div>
                   </div>
 
                 </div>
               </div>
-              {/* Quote */}
-              <div style={{ padding: "0 20px 14px", fontFamily: '"Playfair Display", Georgia, serif', fontSize: 12, fontStyle: "italic", color: "#68685f", lineHeight: 1.7 }}>
-                "The Fidelity wire is routine margin settlement — it does not affect the liquidity harvest or deployment plan above. Once initiated, March is closed and the household is on track with the 12-month cash flow forecast."
-              </div>
-              <DStrip cardKey="cashflow" approveLabel="Initiate Wire" approveColor="#1d4ed8" onApprove={() => onNavigate("moneymovement")} />
-            </div>
-          );
-        })()}
 
-        {/* ── Approve Autobill Pay ── */}
-        {(() => {
-          const upcoming = OBLIGATIONS
-            .filter((o) => o.due >= DEMO_NOW)
-            .sort((a, b) => a.due.getTime() - b.due.getTime());
-          const totalPending = upcoming.filter((o) => !scheduled.has(o.id)).reduce((s, o) => s + o.amount, 0);
-          const urgentCount = upcoming.filter((o) => Math.ceil((o.due.getTime() - DEMO_NOW.getTime()) / 86400000) <= 45).length;
-          const scheduledCount = upcoming.filter((o) => scheduled.has(o.id)).length;
-          const activeObl = OBLIGATIONS.find((o) => o.id === wireModalId);
-
-          const fieldStyle: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid #e6e5e0", background: "#fff", padding: "9px 12px", fontSize: 12, color: "#181816", outline: "none", fontFamily: "inherit" };
-          const labelStyle: React.CSSProperties = { fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9c9c93", display: "block", marginBottom: 5 };
-
-          return (
-          <div style={{ background: "#ffffff", border: "1px solid #e6e5e0", borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ height: 4, background: "#1a2e4a" }} />
-
-            {/* Header */}
-            <div style={{ padding: "16px 20px 14px", borderBottom: "1px solid #e6e5e0", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: "#e8eef5", color: "#1a2e4a", border: "1px solid #c5d4e8" }}>Payments</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 4, textTransform: "uppercase" as const, letterSpacing: "0.07em", background: "#fdecea", color: "#be2a2c", border: "1px solid #f5a8a8" }}>Urgent</span>
-                </div>
-                <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 20, fontWeight: 400, color: "#181816", marginBottom: 2 }}>Approve Autobill Pay</div>
-                <div style={{ fontSize: 12, fontWeight: 300, color: "#68685f" }}>Schedule payments directly from your connected accounts</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                <div style={{ textAlign: "right" as const }}>
-                  <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#be2a2c", lineHeight: 1 }}>{fmt(totalPending)}</div>
-                  <div style={{ fontSize: 9, color: "#9c9c93", marginTop: 2 }}>total pending</div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 5, background: "#e8eef5", border: "1px solid #c5d4e8", borderRadius: 20, padding: "4px 10px" }}>
-                  <Lock style={{ width: 11, height: 11, color: "#1a2e4a" }} />
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#1a2e4a", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>GURU Payments Active</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Summary stat strip */}
-            <div style={{ padding: "8px 24px", borderBottom: "1px solid #e6e5e0", background: "#fafaf8", display: "flex", alignItems: "center", gap: 18 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#9c9c93" }} />
-                <span style={{ fontSize: 11, color: "#68685f", fontWeight: 500 }}>{upcoming.length} total upcoming</span>
-              </div>
-              {urgentCount > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#e53e3e" }} />
-                  <span style={{ fontSize: 11, color: "#be2a2c", fontWeight: 600 }}>{urgentCount} due within 45 days</span>
-                </div>
-              )}
-              {scheduledCount > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#0d6b50" }} />
-                  <span style={{ fontSize: 11, color: "#0d6b50", fontWeight: 600 }}>{scheduledCount} scheduled</span>
-                </div>
-              )}
-            </div>
-
-            {/* Table */}
-            <div style={{ overflowX: "auto" as const }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: "#181816" }}>
-                    {["Due Date","Description","Payee","Amount","Action"].map((h, i) => (
-                      <th key={h} style={{ padding: "9px 14px", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", textAlign: i >= 3 ? "right" : "left", whiteSpace: "nowrap" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {upcoming.map((obl, rowIdx) => {
-                    const daysUntil = Math.ceil((obl.due.getTime() - DEMO_NOW.getTime()) / 86400000);
-                    const isUrgent = daysUntil <= 45;
-                    const isScheduled = scheduled.has(obl.id);
-                    const rowBg = isScheduled ? "#fafaf8" : "#fff";
-                    return (
-                      <tr key={obl.id} style={{ background: rowBg, borderBottom: "1px solid #f0ede8", opacity: isScheduled ? 0.65 : 1 }}>
-                        <td style={{ padding: "11px 14px", whiteSpace: "nowrap" as const }}>
-                          <div style={{ fontWeight: 600, color: "#181816", fontSize: 12 }}>{format(obl.due, "MMM d, yyyy")}</div>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: isUrgent ? "#be2a2c" : "#9c9c93", marginTop: 1 }}>
-                            {isUrgent ? `${daysUntil}d — urgent` : `in ${daysUntil}d`}
-                          </div>
-                        </td>
-                        <td style={{ padding: "11px 14px" }}>
-                          <div style={{ fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{obl.label}</div>
-                          <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 2 }}>From: {obl.from}</div>
-                        </td>
-                        <td style={{ padding: "11px 14px", color: "#68685f", fontSize: 12 }}>{obl.payee}</td>
-                        <td style={{ padding: "11px 14px", textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 700, color: "#be2a2c", whiteSpace: "nowrap" as const }}>{fmt(obl.amount)}</td>
-                        <td style={{ padding: "11px 14px", textAlign: "right" }}>
-                          {isScheduled ? (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#e5f3ee", border: "1px solid #b4d9ce", borderRadius: 20, padding: "4px 10px", fontSize: 9, fontWeight: 700, color: "#0d6b50" }}>
-                              <CheckSquare style={{ width: 11, height: 11 }} /> Scheduled
-                            </span>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setWireFromAccount((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.from }));
-                                const pd = new Date(obl.due); pd.setDate(pd.getDate() - 2);
-                                setWireScheduleDate((s) => ({ ...s, [obl.id]: s[obl.id] ?? pd.toISOString().slice(0, 10) }));
-                                setWireMemo((s) => ({ ...s, [obl.id]: s[obl.id] ?? obl.label }));
-                                setWireModalId(obl.id);
-                              }}
-                              style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#1a2e4a", color: "#fff", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}
-                            >
-                              <Send style={{ width: 11, height: 11 }} /> Setup {obl.method}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* DStrip footer */}
-            <DStrip cardKey="payments" approveColor="#1a2e4a" approveLabel="Approve All Payments →" onApprove={() => { upcoming.filter(o => !scheduled.has(o.id)).forEach(o => setScheduled(s => new Set([...s, o.id]))); }} />
-
-            {/* Wire / ACH Setup Modal */}
-            <Dialog open={wireModalId !== null} onOpenChange={(open) => { if (!open) setWireModalId(null); }}>
-              <DialogContent style={{ maxWidth: 460, background: "#fff", border: "1px solid #e6e5e0", borderRadius: 14, padding: 0, overflow: "hidden" }}>
-                {activeObl && (
-                  <>
-                    {/* Modal header bar */}
-                    <div style={{ height: 3, background: "#1a2e4a" }} />
-                    <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e6e5e0" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-                        <Send style={{ width: 14, height: 14, color: "#1a2e4a" }} />
-                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#1a2e4a" }}>Setup {activeObl.method} Payment</span>
-                      </div>
-                      <div style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 20, fontWeight: 400, color: "#181816" }}>{activeObl.label}</div>
-                    </div>
-
-                    <div style={{ padding: "16px 24px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-                      {/* Payment summary card */}
-                      <div style={{ background: "#fafaf8", border: "1px solid #e6e5e0", borderRadius: 9, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: "#181816", lineHeight: 1.3 }}>{activeObl.payee}</div>
-                          <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 2 }}>Due {format(activeObl.due, "MMM d, yyyy")}</div>
+              {/* RIGHT: Scheduled payments */}
+              <div style={{ padding: "16px 20px 20px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 14 }}>Scheduled payments</div>
+                {([
+                  {
+                    label: "Dalton — Spring Tuition",
+                    amount: 15000, dueDate: "Apr 1", daysOut: 21, method: "Wire" as const, category: "education" as const, urgent: true,
+                    from: { name: "CIT Bank Operating", last4: "7842" },
+                    to:   { name: "The Dalton School", bank: "JPMorgan Chase", last4: "3391" },
+                  },
+                  {
+                    label: "Federal Estimated Tax — Q1 2026",
+                    amount: 30000, dueDate: "Apr 15", daysOut: 35, method: "ACH" as const, category: "tax" as const, urgent: true,
+                    from: { name: "CIT Bank Operating", last4: "7842" },
+                    to:   { name: "IRS / EFTPS", bank: "IRS ACH Debit", last4: null },
+                  },
+                  {
+                    label: "NYC Property Tax — 2nd Installment",
+                    amount: 17500, dueDate: "Jul 15", daysOut: 95, method: "Wire" as const, category: "tax" as const, urgent: false,
+                    from: { name: "CIT Bank Operating", last4: "7842" },
+                    to:   { name: "NYC Dept of Finance", bank: "Citibank N.A.", last4: "2280" },
+                  },
+                  {
+                    label: "Federal Estimated Tax — Q3 2026",
+                    amount: 30000, dueDate: "Sep 15", daysOut: 157, method: "ACH" as const, category: "tax" as const, urgent: false,
+                    from: { name: "CIT Bank Operating", last4: "7842" },
+                    to:   { name: "IRS / EFTPS", bank: "IRS ACH Debit", last4: null },
+                  },
+                ] as const).map((pmt, i) => (
+                  <div key={i} style={{ padding: "12px 0", borderBottom: `1px solid rgba(0,0,0,0.06)` }}>
+                    {/* Top row: category + due date + amount */}
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 5 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: pmt.category === "tax" ? "#7c4a0a" : accentColor.invest, background: pmt.category === "tax" ? "rgba(124,74,10,0.08)" : "rgba(30,79,156,0.07)", padding: "2px 7px", borderRadius: 3 }}>{pmt.category}</span>
+                          {pmt.urgent
+                            ? <span style={{ fontSize: 10, fontWeight: 600, color: "#9b2020" }}>Due {pmt.dueDate} · {pmt.daysOut} days</span>
+                            : <span style={{ fontSize: 10, color: "rgba(0,0,0,0.38)" }}>Due {pmt.dueDate}</span>}
                         </div>
-                        <div style={{ fontSize: 22, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "#be2a2c" }}>{fmt(activeObl.amount)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: "#1a2a4a", lineHeight: 1.3 }}>{pmt.label}</div>
                       </div>
-
-                      {/* From account */}
-                      <div>
-                        <label style={labelStyle}>From Account</label>
-                        <select value={wireFromAccount[activeObl.id] ?? activeObl.from} onChange={(e) => setWireFromAccount((s) => ({ ...s, [activeObl.id]: e.target.value }))} style={fieldStyle}>
-                          <option>Citizens Private Banking Checking</option>
-                          <option>Chase Total Checking</option>
-                          <option>Citizens Private Bank Money Market</option>
-                          <option>CapitalOne 360 Savings</option>
-                        </select>
-                      </div>
-
-                      {/* Process date */}
-                      <div>
-                        <label style={labelStyle}>Process Date</label>
-                        <input type="date" value={wireScheduleDate[activeObl.id] ?? ""} onChange={(e) => setWireScheduleDate((s) => ({ ...s, [activeObl.id]: e.target.value }))} style={fieldStyle} />
-                        <div style={{ fontSize: 10, color: "#9c9c93", marginTop: 4 }}>Defaults to 2 business days before due date</div>
-                      </div>
-
-                      {/* Memo */}
-                      <div>
-                        <label style={labelStyle}>Memo / Reference</label>
-                        <input type="text" value={wireMemo[activeObl.id] ?? activeObl.label} onChange={(e) => setWireMemo((s) => ({ ...s, [activeObl.id]: e.target.value }))} style={fieldStyle} />
-                      </div>
-
-                      {/* Payment details block */}
-                      <div style={{ background: "#fafaf8", border: "1px solid #e6e5e0", borderRadius: 9, padding: "12px 16px" }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#9c9c93", marginBottom: 8 }}>Payment Details</div>
-                        {[
-                          { label: "Routing Number", val: activeObl.routing, mono: true },
-                          { label: "Account / Ref",  val: activeObl.acct,    mono: true },
-                          { label: "Method",         val: activeObl.method,  mono: false },
-                        ].map(({ label, val, mono }) => (
-                          <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, marginBottom: 5 }}>
-                            <span style={{ color: "#9c9c93" }}>{label}</span>
-                            <span style={{ fontWeight: 600, color: "#181816", fontFamily: mono ? "monospace" : "inherit" }}>{val}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Actions */}
-                      <div style={{ display: "flex", gap: 8, paddingTop: 2 }}>
-                        <button onClick={() => setWireModalId(null)} style={{ flex: 1, borderRadius: 8, border: "1px solid #e6e5e0", background: "#fff", color: "#3a3a35", padding: "10px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                          Cancel
-                        </button>
-                        <button onClick={() => { setScheduled((s) => new Set([...s, activeObl.id])); setWireModalId(null); }} style={{ flex: 1, borderRadius: 8, border: "none", background: "#181816", color: "#fff", padding: "10px 16px", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                          <CheckSquare style={{ width: 13, height: 13 }} /> Schedule Payment
-                        </button>
+                      <div style={{ flexShrink: 0, textAlign: "right", paddingLeft: 12 }}>
+                        <div style={{ fontSize: 14, fontWeight: 300, color: "#1a2a4a", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(pmt.amount)}</div>
+                        <div style={{ fontSize: 10, fontWeight: 600, color: pmt.method === "Wire" ? "#1E4F9C" : "#2e7a52", marginTop: 2, letterSpacing: "0.04em" }}>{pmt.method}</div>
                       </div>
                     </div>
-                  </>
-                )}
-              </DialogContent>
-            </Dialog>
+                    {/* Account routing detail */}
+                    <div style={{ display: "grid", gridTemplateColumns: "14px 1fr", gap: "3px 8px", alignItems: "start", marginTop: 6 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(0,0,0,0.30)", letterSpacing: "0.06em", paddingTop: 1 }}>FR</span>
+                      <span style={{ fontSize: 11, color: "rgba(0,0,0,0.50)" }}>{pmt.from.name}<span style={{ color: "rgba(0,0,0,0.30)" }}> ····{pmt.from.last4}</span></span>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(0,0,0,0.30)", letterSpacing: "0.06em", paddingTop: 1 }}>TO</span>
+                      <span style={{ fontSize: 11, color: "rgba(0,0,0,0.50)" }}>
+                        {pmt.to.name}
+                        {pmt.to.last4 ? <span style={{ color: "rgba(0,0,0,0.30)" }}> · {pmt.to.bank} ····{pmt.to.last4}</span>
+                                       : <span style={{ color: "rgba(0,0,0,0.30)" }}> · {pmt.to.bank}</span>}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {/* Total upcoming */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "12px 0 0", borderTop: `1px solid rgba(0,0,0,0.08)`, marginTop: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2a4a" }}>Total upcoming obligations</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1a2a4a", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>{fmt(15000 + 30000 + 17500 + 30000)}</span>
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(0,0,0,0.38)", marginTop: 4 }}>All covered by current liquid assets · no action needed</div>
+              </div>
+
+            </div>{/* end two-column body */}
+            {cardFooter("cashflow", accentColor.cashflow, "View detail →", undefined, () => onNavigate("cashflow"))}
+            {talkingPoints("cashflow",
+              "The three-bucket structure is running automatically. Two tax payments and a tuition installment total $75,000 over the next 35 days — all covered by existing operating cash.",
+              [
+                `<strong>$46,739</strong> autodrew from JPMorgan Treasuries MMF into the CIT bank account this month — keeping 2 months of forward cash expense coverage.`,
+                `<strong>$15,000 tuition</strong> wires Apr 1 and <strong>$30,000 federal estimated tax</strong> ACHs Apr 15 — both covered by current operating cash of $90,879.`,
+                `<strong>$7,478</strong> in a maturing T-Bill rolled directly into JPMorgan MMF — keeps the Reserve layer funded without any action from the Kesslers.`,
+                `Every transfer is pre-authorized. You'll receive a confirmation as each movement settles.`,
+              ]
+            )}
           </div>
+        </div>{/* end 3-col grid */}
+      </div>{/* end card grid padding container */}
 
-          );
-        })()}
-
-      </div>
-
-      {/* ── Page footer ── */}
-      <div style={{ marginTop: 32, padding: "14px 24px", background: "#fff", border: "1px solid #e6e5e0", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, color: "#9c9c93" }}>
-          Prepared by GURU · Updated {format(DEMO_NOW, "h:mm aa")} · 2 items resolved this week
-        </span>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            onClick={() => setShowEmail(true)}
-            style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 500, padding: "8px 18px", borderRadius: 8, border: "1px solid #d4d4cf", background: "#fff", color: "#3a3a35", cursor: "pointer" }}
-          >
-            Draft client email
-          </button>
-          <button
-            style={{ fontFamily: "inherit", fontSize: 12, fontWeight: 600, padding: "8px 22px", borderRadius: 8, border: "none", background: "#181816", color: "#fff", cursor: "pointer" }}
-          >
-            Approve all urgent →
-          </button>
-        </div>
+      {/* ── FAB Compose Button ── */}
+      <div style={{ position: "fixed", bottom: 28, right: 32, zIndex: 50, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+        {checked.size === 0 && (
+          <div style={{ background: "#1A1915", color: "#9A9890", fontSize: 10, fontWeight: 500, padding: "5px 12px", borderRadius: 20, letterSpacing: "0.04em" }}>
+            Check cards above to include in email
+          </div>
+        )}
+        <button
+          onClick={() => setShowEmail(true)}
+          style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: checked.size > 0 ? "14px 28px" : "14px 24px",
+            borderRadius: 50, border: "none", cursor: "pointer", fontFamily: FONT,
+            background: checked.size > 0 ? "#1a2e4a" : "#3a3830",
+            color: "#ffffff", fontSize: 14, fontWeight: 700, letterSpacing: "0.02em",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+          }}
+        >
+          <Mail style={{ width: 17, height: 17 }} />
+          Compose email
+          {checked.size > 0 && (
+            <span style={{ background: "#e85d5d", color: "#fff", fontSize: 10, fontWeight: 800, width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {checked.size}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* ── Email Modal ── */}
       <Dialog open={showEmail} onOpenChange={setShowEmail}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Mail className="w-4 h-4 text-indigo-600" />
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Mail className="w-4 h-4" style={{ color: "#1a2e4a" }} />
               Client Email — Sarah &amp; Michael Kessler
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 min-h-0 flex-1 overflow-hidden">
-            <div className="flex items-center gap-3 text-[11px] text-muted-foreground border border-border rounded-lg px-4 py-2.5 bg-muted/30 flex-shrink-0">
-              <div><span className="font-semibold">To:</span> Sarah &amp; Michael Kessler &lt;kessler.family@privatebank.com&gt;</div>
-              <div className="ml-auto"><span className="font-semibold">Subject:</span> A few things worth discussing — your portfolio update</div>
+            <div style={{ fontSize: 11, color: "#6b6860", border: "1px solid #e6e5e0", borderRadius: 8, padding: "10px 14px", background: "#fafaf8", flexShrink: 0, display: "flex", gap: 16 }}>
+              <span><strong>To:</strong> Sarah &amp; Michael Kessler &lt;kessler.family@privatebank.com&gt;</span>
+              <span style={{ marginLeft: "auto" }}><strong>Subject:</strong> A few items worth a conversation — your portfolio update</span>
             </div>
-            <div className="rounded-xl border border-border bg-background px-5 py-4 text-[12px] text-foreground overflow-y-auto flex-1">
+            <div style={{ borderRadius: 10, border: "1px solid #e6e5e0", background: "#fff", padding: "20px 22px", overflowY: "auto", flex: 1 }}>
               {buildEmailJSX()}
             </div>
-            <div className="flex items-center gap-3 justify-end flex-shrink-0 pt-1">
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4, flexShrink: 0 }}>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(buildEmail());
-                  setEmailCopied(true);
-                  setTimeout(() => setEmailCopied(false), 2000);
-                }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted text-[11px] font-semibold transition-colors"
+                onClick={() => { navigator.clipboard.writeText(buildEmailText()); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 16px", borderRadius: 8, border: "1px solid #e6e5e0", background: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", color: "#3a3830", fontFamily: FONT }}
               >
-                <Copy className="w-3.5 h-3.5" />
-                {emailCopied ? "Copied!" : "Copy to clipboard"}
+                <Copy style={{ width: 13, height: 13 }} />
+                {copied ? "Copied!" : "Copy to clipboard"}
               </button>
               <button
                 onClick={() => setShowEmail(false)}
-                className="flex items-center gap-2 px-4 py-2 rounded text-white text-[11px] font-semibold transition-colors" style={{ background: "hsl(222,45%,14%)" }}
+                style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 20px", borderRadius: 8, border: "none", background: "#1a2e4a", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: FONT }}
               >
-                <Check className="w-3.5 h-3.5" />
-                Done
+                <Check style={{ width: 13, height: 13 }} /> Done
               </button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
+
 
 // ─── Book of Business View ─────────────────────────────────────────────────────
 export function BookOfBusinessView() {
@@ -7958,22 +9440,21 @@ function GuruLandingView({
   ];
   const maxBal = Math.max(...bucketList.map((b) => b.bal));
 
-  // ── GURU targets — coverage-month methodology matching allocation tool ──
-  // Op Cash:  2 months × $20,939/mo  = $41,878 target
-  // Reserve: 12 months × $18,066/mo  = $216,792 target
-  // Capital Build: full tactical bucket (no excess — treasuries are working capital)
-  const GURU_OP_RATE_ALLOC  = 20939;
-  const GURU_RES_RATE_ALLOC = 18066;
-  const opTarget  = Math.round(2  * GURU_OP_RATE_ALLOC);   // $41,878
-  const resTarget = Math.round(12 * GURU_RES_RATE_ALLOC);  // $216,792
-  const bldTarget = tactical; // no excess from Build bucket
-  const opExcess  = Math.max(0, reserve     - opTarget);   // $90,172
-  const resExcess = Math.max(0, yieldBucket - resTarget);  // $209,794
+  // ── GURU targets — live via computeLiquidityTargets(), anchored to Dec 31 2025 ──
+  // operatingTarget = rolling 2-month cash expenses (Jan+Feb 2026)
+  // reserveTarget   = monthlyRate × 6
+  const {
+    operatingExcess: opExcess,
+    reserveExcess:   resExcess,
+    operatingTarget: opTarget,
+    reserveTarget:   resTarget,
+    excessLiquidity,
+    coverageMonths: liquidityCoverageMonths,
+  } = computeLiquidityTargets(assets, cashFlows);
   const bldExcess = 0; // Capital Build is fully deployed — no excess
-
-  // ── Shared computed values used by both Landing and Bucket Briefing pages ──
-  const excessLiquidity = opExcess + resExcess + bldExcess;
-  const annualPickup    = Math.max(Math.round(excessLiquidity * 0.0432), 500);
+  const bldTarget = tactical; // Capital Build target = full tactical bucket
+  // Single source of truth — same computation as AdvisorBriefView
+  const { annualPickup } = computeReturnOptimization(assets, cashFlows);
   const capitalBuild    = Math.round(excessLiquidity * 0.40);
   const investments     = Math.round(excessLiquidity * 0.60);
 
@@ -8139,13 +9620,7 @@ function GuruLandingView({
           <div style={{ flex:1, overflowY:"auto", position:"relative", zIndex:1 }}>
           <div style={{ padding: workflowStarted ? "28px 28px 36px" : "48px 48px 60px", margin: workflowStarted ? 0 : "0 auto", width:"100%", maxWidth: workflowStarted ? "none" : 900, display:"flex", flexDirection:"column" }}>
 
-            {/* ── Eyebrow ── */}
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom: workflowStarted ? 10 : 48, paddingBottom: workflowStarted ? 10 : 0, borderBottom: workflowStarted ? "1px solid rgba(255,255,255,0.08)" : "none", animation:"glrFadeIn 0.5s ease" }}>
-              <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.2s infinite", flexShrink:0 }} />
-              <span style={{ fontSize: workflowStarted ? 10 : 11, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.75)" }}>GURU Intelligence</span>
-              {!workflowStarted && <span style={{ fontSize:11, color:"rgba(255,255,255,0.22)", marginLeft:4 }}>· 1 signal detected · 4h ago</span>}
-              {workflowStarted && <span style={{ fontSize:10, color:"rgba(255,255,255,0.28)", marginLeft:"auto" }}>4h ago</span>}
-            </div>
+            {/* Eyebrow removed */}
 
             {/* ── Thinking state ── */}
             {isThinking && !workflowStarted ? (
@@ -8160,14 +9635,14 @@ function GuruLandingView({
             ) : (
               <>
                 {/* ── Headline ── */}
-                <div style={{ animation:"glrFadeIn 0.6s ease", marginBottom: workflowStarted ? 12 : 0 }}>
+                <div style={{ animation:"glrFadeIn 0.6s ease", marginBottom: workflowStarted ? 12 : 0, marginTop: workflowStarted ? 0 : 8 }}>
                   {workflowStarted ? (
                     <>
                       <div style={{ fontFamily:'"Playfair Display", Georgia, serif', fontSize:34, fontWeight:400, color:"rgba(255,255,255,0.93)", lineHeight:1.18, letterSpacing:"-0.02em", marginBottom:10 }}>
                         Idle capital,<br/><span style={{ color:"rgba(94,204,138,0.90)" }}>ready to work.</span>
                       </div>
                       <div style={{ fontSize:12, lineHeight:1.65, color:"rgba(255,255,255,0.44)", marginBottom:14 }}>
-                        A year-end bonus pushed coverage to 18 months.{" "}
+                        A year-end bonus pushed coverage to {liquidityCoverageMonths.toFixed(0)} months.{" "}
                         <span style={{ color:"rgba(94,204,138,0.85)", fontWeight:500 }}>{fmt(excessLiquidity)} is deployable</span>{" "}
                         with no liquidity risk.
                       </div>
@@ -8183,7 +9658,7 @@ function GuruLandingView({
                         Idle capital,<br/><span style={{ color:"rgba(94,204,138,0.90)" }}>ready to work.</span>
                       </div>
                       <div style={{ fontSize:15, lineHeight:1.75, color:"rgba(255,255,255,0.42)", maxWidth:620, marginBottom:52 }}>
-                        A year-end bonus pushed coverage to 18 months — 6 months above target.{" "}
+                        A year-end bonus pushed coverage to {liquidityCoverageMonths.toFixed(0)} months — {Math.max(0, Math.round(liquidityCoverageMonths - 12))} months above target.{" "}
                         <span style={{ color:"rgba(94,204,138,0.85)", fontWeight:500 }}>{fmt(excessLiquidity)} is fully deployable</span>{" "}
                         with no liquidity risk. Every day it sits idle costs the Kesslers ${Math.round(annualPickup / 365)}.
                       </div>
@@ -8199,7 +9674,7 @@ function GuruLandingView({
                       { lbl:"Excess Liquidity", num:fmt(excessLiquidity), sub:"idle · 0.30%", green:true,  br:true,  bb:true  },
                       { lbl:"Annual Pickup",    num:`+${fmt(annualPickup)}`, sub:"after-tax / yr", green:true,  br:false, bb:true  },
                       { lbl:"Days Idle",        num:"47 days",            sub:"since bonus",   green:false, br:true,  bb:false },
-                      { lbl:"Cash Runway",      num:"18 months",          sub:"vs. 12-mo target", green:false, br:false, bb:false },
+                      { lbl:"Cash Runway",      num:`${liquidityCoverageMonths.toFixed(1)} mo`, sub:"vs. 12-mo target", green:false, br:false, bb:false },
                     ].map(cell => (
                       <div key={cell.lbl} style={{ padding:"8px 9px", borderRight: cell.br ? "1px solid rgba(255,255,255,0.10)" : "none", borderBottom: cell.bb ? "1px solid rgba(255,255,255,0.10)" : "none" }}>
                         <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.10em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.30)", marginBottom:4, lineHeight:1.4 }}>{cell.lbl}</div>
@@ -8215,7 +9690,7 @@ function GuruLandingView({
                       { lbl:"Potential Excess Liquidity",        num:fmt(excessLiquidity),    unit:"",     sub:"idle · 0.30% today",    green:true  },
                       { lbl:"Potential After-Tax Annual Return", num:`+${fmt(annualPickup)}`, unit:"/yr",  sub:"estimated · after-tax",  green:true  },
                       { lbl:"Days Sitting Idle",                 num:"47",                    unit:"days", sub:"since bonus landed",     green:false },
-                      { lbl:"Cash Runway",                       num:"18",                    unit:"mo",   sub:"vs. 12-month target",    green:false },
+                      { lbl:"Cash Runway",                       num:liquidityCoverageMonths.toFixed(1), unit:"mo", sub:"vs. 12-month target", green:false },
                     ].map(cell => (
                       <div key={cell.lbl} className="glr-stat-card" style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, padding: showActionTable ? "14px 16px" : "22px 20px" }}>
                         <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.28)", marginBottom: showActionTable ? 8 : 12, lineHeight:1.4 }}>{cell.lbl}</div>
@@ -8229,17 +9704,9 @@ function GuruLandingView({
                   </div>
                 )}
 
-                {/* ── Recommendations table (full-screen) or compact Bloomberg table (workflow) ── */}
-                {(showActionTable || workflowStarted) && (
+                {/* ── Compact Bloomberg table (workflow only) ── */}
+                {workflowStarted && (
                   <div style={{ animation: workflowStarted ? "none" : "glrSlideUp 0.40s cubic-bezier(0.22,1,0.36,1)" }}>
-                    {/* Full-screen section header */}
-                    {!workflowStarted && (
-                      <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:16 }}>
-                        <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", animation:"glrPulse 2.5s infinite" }} />
-                        <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.80)" }}>GURU's Recommended Actions</span>
-                        <div style={{ flex:1, height:1, background:"rgba(94,204,138,0.15)" }} />
-                      </div>
-                    )}
                     {/* Compact label in workflow sidebar */}
                     {workflowStarted && (
                       <div style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(94,204,138,0.55)", marginBottom:8 }}>Recommended Transfers</div>
@@ -8300,12 +9767,12 @@ function GuruLandingView({
                   </div>
                 )}
 
-                {/* ── Stage 0 CTA (no table yet) ── */}
-                {!showActionTable && !workflowStarted && (
+                {/* ── Stage 0 CTA ── */}
+                {!workflowStarted && (
                   <div style={{ animation:"glrFadeIn 0.8s ease" }}>
                     <button
                       className="glr-recs-btn"
-                      onClick={() => setShowActionTable(true)}
+                      onClick={() => setWorkflowStarted(true)}
                       style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"14px 28px", border:"1px solid rgba(94,204,138,0.40)", background:"rgba(94,204,138,0.08)", cursor:"pointer", fontFamily:"inherit" }}
                     >
                       <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 6px rgba(94,204,138,0.8)", display:"inline-block", flexShrink:0, animation:"glrPulse 2.5s infinite" }} />
@@ -8320,26 +9787,7 @@ function GuruLandingView({
           </div>{/* end padding wrapper */}
           </div>{/* end scrollable content area */}
 
-          {/* ── Sticky bottom CTA ── */}
-          {showActionTable && !workflowStarted && (
-            <div style={{ position:"relative", zIndex:2, flexShrink:0, borderTop:"1px solid rgba(94,204,138,0.22)", background:"linear-gradient(180deg,rgba(9,24,50,0.97) 0%,rgba(4,14,28,0.99) 100%)", backdropFilter:"blur(12px)", padding:"14px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:24 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:"#5ecc8a", boxShadow:"0 0 10px rgba(94,204,138,0.9)", display:"inline-block", flexShrink:0, animation:"glrPulse 2.2s infinite" }} />
-                <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:"rgba(255,255,255,0.82)", letterSpacing:"0.01em" }}>GURU has pre-filled all 3 steps</div>
-                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.36)", marginTop:2 }}>Nothing moves until you approve in Step 3</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setWorkflowStarted(true)}
-                style={{ padding:"13px 32px", background:"#5ecc8a", border:"none", cursor:"pointer", fontSize:12, fontWeight:700, letterSpacing:"0.09em", textTransform:"uppercase" as const, color:"hsl(222,45%,10%)", fontFamily:"inherit", whiteSpace:"nowrap" as const, boxShadow:"0 0 24px rgba(94,204,138,0.35)", transition:"box-shadow 0.15s, transform 0.12s", flexShrink:0 }}
-                onMouseEnter={e => { (e.target as HTMLElement).style.boxShadow="0 0 36px rgba(94,204,138,0.55)"; (e.target as HTMLElement).style.transform="translateY(-1px)"; }}
-                onMouseLeave={e => { (e.target as HTMLElement).style.boxShadow="0 0 24px rgba(94,204,138,0.35)"; (e.target as HTMLElement).style.transform="translateY(0)"; }}
-              >
-                Begin Rebalance &amp; Asset Allocation →
-              </button>
-            </div>
-          )}
+          {/* Sticky bottom CTA removed — CTA goes directly to workflow */}
         </div>
 
         {/* ══════════════════════ RIGHT: Process Overview ══════════════════════ */}
@@ -9100,6 +10548,50 @@ function assetBucketKey(a: Asset): "reserve" | "yield_" | "tactical" | "growth" 
     return d.includes("rsu") || d.includes("unvested") || d.includes("carry") ? "alts" : "growth";
   return "alts"; // alternative, real_estate
 }
+// ─── Liquidity bucket yield lookup (current holdings, pre-tax + after-tax) ────
+// Used by both LiquidityWaterfallView and CashFlowForecastWaterfallView so interest
+// income ties between tabs. Tax rates: bank deposits 47% (fed 35% + NY 8% + NYC 4%),
+// Treasuries & government-only MMFs 35% federal only (state/city exempt).
+const LIQUID_YIELD_MAP: Array<{ test: (d: string) => boolean; pretax: number; keepRate: number }> = [
+  { test: d => d.includes("capital one") || d.includes("360 performance"),                       pretax: 3.78, keepRate: 0.53 },
+  { test: d => d.includes("citizens") && d.includes("money market"),                             pretax: 3.65, keepRate: 0.53 },
+  { test: d => d.includes("fidelity") && (d.includes("money market") || d.includes("spaxx") || d.includes("cash sweep")), pretax: 2.50, keepRate: 0.65 },
+  { test: d => d.includes("treasur") || d.includes("t-bill"),                                    pretax: 3.95, keepRate: 0.65 },
+  { test: d => d.includes("checking"),                                                            pretax: 0.01, keepRate: 0.53 },
+];
+function liquidAssetYields(bucketAssets: Asset[]): { pretax: number; at: number } {
+  let wPre = 0, wAt = 0, vSum = 0;
+  for (const a of bucketAssets) {
+    const d = (a.description ?? "").toLowerCase();
+    const v = Number(a.value);
+    if (v <= 0) continue;
+    const match = LIQUID_YIELD_MAP.find(m => m.test(d));
+    if (match) { wPre += v * match.pretax; wAt += v * match.pretax * match.keepRate; vSum += v; }
+  }
+  if (vSum === 0) return { pretax: 0, at: 0 };
+  return { pretax: wPre / vSum / 100, at: wAt / vSum / 100 };
+}
+// Compute 12 monthly After-Tax interest amounts for all three liquid buckets combined.
+// Returns array of length 12 (Jan–Dec). Used to feed both Asset Forecast and CF Forecast tabs.
+function computeMonthlyBucketInterest(assets: Asset[], cashFlows: CashFlow[]): number[] {
+  const { operatingCash, liquidityReserve, capitalBuild } = computeLiquidityTargets(assets, cashFlows);
+  const opYields  = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "reserve"));
+  const rsvYields = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "yield_"));
+  const bldYields = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "tactical"));
+
+  const forecast = buildForecast(cashFlows);
+  let opsBal = operatingCash;
+  return Array.from({ length: 12 }, (_, i) => {
+    const { inflow, outflow } = forecast[i];
+    const opsEnd = opsBal + inflow - outflow;
+    const opsAtInt = Math.max(0, opsEnd) * (opYields.at / 12);
+    opsBal = opsEnd;
+    const rsvAtInt = liquidityReserve * (rsvYields.at / 12);
+    const bldAtInt = i === 11 ? capitalBuild * bldYields.at : 0; // 1-year T-bill pays at maturity (December only)
+    return opsAtInt + rsvAtInt + bldAtInt;
+  });
+}
+
 function isRetirementAsset(a: Asset): boolean {
   const d = (a.description ?? "").toLowerCase();
   return d.includes("401") || d.includes("roth") || d.includes(" ira") || d.includes("retirement");
@@ -9481,7 +10973,7 @@ function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBala
   const cols = "1fr 95px minmax(0, 1fr)";
   const rowSt: React.CSSProperties = {
     display: "grid", gridTemplateColumns: cols, gap: "0 6px",
-    padding: "5px 14px", borderBottom: "1px solid rgba(0,0,0,0.045)", alignItems: "center", minHeight: 28,
+    padding: "5px 14px", borderBottom: "0.5px solid rgba(0,0,0,0.06)", alignItems: "center", minHeight: 28,
   };
   const flagColors: Record<string, string> = {
     ok:    "#1A6640",
@@ -9494,38 +10986,33 @@ function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBala
       {flag ? (
         <div style={{ display: "flex", alignItems: "center", gap: 5, paddingLeft: 2, minHeight: 14 }}>
           <div style={{ width: 5, height: 5, background: flagColors[flag.type], opacity: 0.85, flexShrink: 0 }} />
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: flagColors[flag.type] }}>{flag.label}</span>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: flagColors[flag.type] }}>{flag.label}</span>
         </div>
       ) : (
         <div style={{ minHeight: 14 }} />
       )}
-      <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" as const, flex: 1 }}>
-      <div style={{ height: 3, background: color, opacity: 0.9 }} />
-      {/* Header — vertical stack: name → balance → tagline → forecast
-          minHeight locks the separator to the same horizontal line across all cards */}
-      <div style={{ padding: "16px 16px 14px", minHeight: 120 }}>
-        {/* Bucket name */}
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color, opacity: 0.85 }}>{name}</div>
-        </div>
-        {/* Balance row — current balance left, forecast right on same line */}
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
-          <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "#1a1a1a", lineHeight: 1 }}>{fmt(balance)}</div>
+      <div style={{ background: "#FFFFFF", border: "0.5px solid rgba(0,0,0,0.07)", overflow: "hidden", display: "flex", flexDirection: "column" as const, flex: 1 }}>
+      <div style={{ height: 4, background: color }} />
+      {/* Card header — label + balance + description, separated from stats */}
+      <div style={{ padding: "16px 18px 12px", borderBottom: "0.5px solid rgba(0,0,0,0.07)" }}>
+        {/* Bucket label */}
+        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase" as const, color, marginBottom: 8 }}>{name}</div>
+        {/* Balance row — current balance left, forecast right */}
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+          <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1 }}>{fmt(balance)}</div>
           {nextBalance !== undefined && nextMonth && (
             <div style={{ display: "flex", alignItems: "baseline", gap: 4, flexShrink: 0 }}>
-              <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.28)" }}>{nextMonth}</span>
-              <span style={{ fontSize: 13, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: nextBalance >= balance ? "#1A6640" : "#9b2020", lineHeight: 1 }}>{fmt(nextBalance)}</span>
-              <span style={{ fontSize: 9, color: nextBalance >= balance ? "#1A6640" : "#9b2020", lineHeight: 1 }}>{nextBalance >= balance ? "▲" : "▼"}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.28)" }}>{nextMonth}</span>
+              <span style={{ fontSize: 13, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: nextBalance >= balance ? "#195830" : "#9b2020", lineHeight: 1 }}>{fmt(nextBalance)}</span>
+              <span style={{ fontSize: 10, color: nextBalance >= balance ? "#195830" : "#9b2020", lineHeight: 1 }}>{nextBalance >= balance ? "▲" : "▼"}</span>
             </div>
           )}
         </div>
-        {/* Tagline */}
-        <div style={{ fontSize: 10.5, color: "rgba(0,0,0,0.48)", lineHeight: 1.45 }}>{tagline}</div>
+        {/* Description */}
+        <div style={{ fontSize: 10, color: "rgba(0,0,0,0.35)", lineHeight: 1.5 }}>{tagline}</div>
       </div>
       {/* Stats table — always visible */}
-      <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)", flex: 1 }}>
-        {/* Separator bar — color tint, no text labels */}
-        <div style={{ height: 3, background: color, opacity: 0.12 }} />
+      <div style={{ flex: 1 }}>
         {stats.map((s, i) => {
           const isExcess = s.label === "Excess";
           return (
@@ -9541,28 +11028,26 @@ function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBala
             }}>
               <span style={{ fontSize: 11, fontWeight: isExcess ? 600 : 500, color: isExcess ? "rgba(154,123,60,0.90)" : "#2a2820", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.label}</span>
               <span style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: isExcess ? "rgba(154,123,60,0.90)" : "rgba(0,0,0,0.70)", whiteSpace: "nowrap", textAlign: "right" }}>{s.value}</span>
-              <span style={{ fontSize: 8.5, color: "rgba(0,0,0,0.38)", textAlign: "right", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note ?? ""}</span>
+              <span style={{ fontSize: 10, color: "rgba(0,0,0,0.38)", textAlign: "right", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note ?? ""}</span>
             </div>
           );
         })}
       </div>
-      {/* GURU Insights section — always open */}
+      {/* bc-result — GURU Insights footer */}
       {bullets && bullets.length > 0 && (
-        <div style={{ borderTop: "2px solid rgba(71,113,174,0.20)", background: "rgba(58,111,171,0.055)" }}>
+        <div style={{ borderTop: "0.5px solid rgba(0,0,0,0.07)", background: "hsl(220,5%,97%)", padding: "10px 18px", display: "flex", flexDirection: "column" as const, gap: 4 }}>
           {/* Section label */}
-          <div style={{ padding: "8px 14px 4px", display: "flex", alignItems: "center", gap: 5 }}>
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(71,113,174,0.70)", flexShrink: 0 }} />
-            <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(71,113,174,0.80)" }}>GURU Insights</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+            <div style={{ width: 4, height: 4, borderRadius: "50%", background: color, opacity: 0.55, flexShrink: 0 }} />
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.35)" }}>GURU Insights</span>
           </div>
           {/* Bullets */}
-          <div style={{ padding: "2px 14px 10px" }}>
-            {bullets.map((b, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, padding: "5px 0", borderBottom: i < bullets.length - 1 ? "1px solid rgba(71,113,174,0.10)" : "none" }}>
-                <span style={{ fontSize: 9, color: "rgba(71,113,174,0.55)", flexShrink: 0, marginTop: 2 }}>—</span>
-                <span style={{ fontSize: 10.5, color: "rgba(0,0,0,0.62)", lineHeight: 1.55 }}>{b}</span>
-              </div>
-            ))}
-          </div>
+          {bullets.map((b, i) => (
+            <div key={i} style={{ display: "flex", gap: 8 }}>
+              <span style={{ fontSize: 10, color: "rgba(0,0,0,0.25)", flexShrink: 0, marginTop: 2 }}>—</span>
+              <span style={{ fontSize: 10, color: "rgba(0,0,0,0.50)", lineHeight: 1.5 }}>{b}</span>
+            </div>
+          ))}
         </div>
       )}
       </div>{/* end card */}
@@ -9625,6 +11110,32 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
     return avg.toFixed(2) + "%";
   }
 
+  // ── After-Tax yield helpers (Panel 1 liquid table) ────────────────────────
+  // Tax rates: bank deposits 47% combined (fed 35% + NY 8% + NYC 4%),
+  // Treasuries / government-only MMFs 35% federal only (state/city exempt).
+  function calcAtYield(a: Asset): string {
+    const meta = acctMeta(a.description ?? "");
+    const raw = meta.yield_;
+    if (!raw || raw === "—" || raw.startsWith("+") || raw.includes("IRR") || raw.includes("net")) return "—";
+    const pct = parseYieldPct(raw);
+    if (pct === null || pct <= 0.001) return "—";
+    const d = (a.description ?? "").toLowerCase();
+    const isTreasury = d.includes("treasur") || d.includes("t-bill") ||
+                       (d.includes("fidelity") && (d.includes("government") || d.includes("money market")));
+    const keepRate = isTreasury ? 0.65 : 0.53;
+    return `${(pct * keepRate).toFixed(2)}%`;
+  }
+  function calcWtdAtYield(items: Asset[]): string {
+    let wSum = 0, vSum = 0;
+    for (const a of items) {
+      const v = Number(a.value);
+      const y = parseYieldPct(calcAtYield(a));
+      if (y !== null && v > 0) { wSum += v * y; vSum += v; }
+    }
+    if (vSum === 0) return "";
+    return (wSum / vSum).toFixed(2) + "%";
+  }
+
   // Bucket assets
   const opCash    = assets.filter(a => assetBucketKey(a) === "reserve");
   const resCash   = assets.filter(a => assetBucketKey(a) === "yield_");
@@ -9673,6 +11184,11 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
   const rsuTotal           = rsuAlts.reduce((s, a) => s + Number(a.value), 0);
   const otherAltsTotal     = pureAltsTotal + carryTotal + rsuTotal;
 
+  // ── Single source of truth: Investments = public equities + retirement + crypto ──
+  // Crypto is not in the growth bucket key but is treated as part of the investments total
+  // everywhere (bucket card, detail ledger panel 2, asset overview). Do NOT recompute inline.
+  const investmentsTotal = growTotal + cryptoTotal;
+
   const totalAssetsZillow = opTotal + resTotal + capTotal + growTotal + reTotalZillow + otherAltsTotal;
 
   const mortgages = liabilities.filter(l => l.type === "mortgage");
@@ -9710,7 +11226,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
   }
 
   // ── GURU liquidity-spectrum bucket colors ────────────────────────────────
-  const BC = { op: "#22c55e", res: "#84cc16", cap: "#eab308", inv: "#f97316", alts: "#dc2626", liab: "#9b2020", liabP: "#50287a" };
+  const BC = { op: "#1E4F9C", res: "#835800", cap: "#195830", inv: "#4A3FA0", alts: "#5C5C6E", liab: "#9b2020", liabP: "#50287a" };
 
   // ── Grid columns — 5-col layout keeps account+inst on left, balance+detail on right
   // Col 3 (1fr) is a silent spacer so numbers hug the right margin regardless of screen width
@@ -9855,8 +11371,8 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
   const reAssetsZillow = reAssets.map(a => ({ ...a, value: String(zillowVal(a)) }));
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#ECEAE4" }}>
-      <div style={{ padding: "36px clamp(16px, 3.5vw, 48px) 80px" }}>
+    <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "hsl(220,5%,93%)" }}>
+      <div style={{ padding: "36px 48px 80px" }}>
 
         {/* ── HERO BAR — Option C: 50% left title · 2×2 right grid ── */}
         {/* ALIGNMENT RULE: numbers in the same row share the same top baseline.
@@ -9880,7 +11396,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
 
             {/* Date bar */}
             <div style={{ gridColumn: "1 / -1", padding: "4px 18px", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)", letterSpacing: "0.03em" }}>As of April 6, 2026</div>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)", letterSpacing: "0.03em" }}>As of {format(DEMO_NOW, "MMMM d, yyyy")}</div>
             </div>
 
             {/* TOP LEFT: Net Worth — 26px, primary stat */}
@@ -9948,10 +11464,10 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             return { label, net, opNext: opTotal + net, resNext: resTotal, capNext: capTotal };
           })();
           return (
-            <div style={{ marginBottom: 32, overflowX: "auto", paddingBottom: 4 }}>
+            <div style={{ marginBottom: 32 }}>
 
-              {/* ── Bucket Cards — 5 buckets, fixed 300px each, horizontal scroll if needed ── */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 300px)", gap: 12, gridTemplateRows: "auto auto", minWidth: "max-content" }}>
+              {/* ── Bucket Cards — all 5 on one row ── */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
                 <BSBucketCard
                   color={GURU_BUCKETS.reserve.color} border={`${GURU_BUCKETS.reserve.color}40`}
                   name="Operating Cash"
@@ -10019,11 +11535,12 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
                     "Cresset managed portfolio provides broad diversification but has not kept pace with recent equity benchmarks.",
                     "Retirement accounts are tax-advantaged but illiquid before age 59½ — factor into near-term planning.",
                   ]}
-                  balance={growthEqAmt + growthRetAmt}
+                  balance={investmentsTotal}
                   stats={[
                     { label: "Equities",        value: fmt(growthEqAmt),  note: "" },
-                    { label: "Fixed Income",    value: "—",               note: "" },
                     { label: "Retirement",      value: fmt(growthRetAmt), note: "401k + Roth" },
+                    { label: "Digital Assets",  value: fmt(cryptoTotal),  note: "BTC / ETH" },
+                    { label: "Fixed Income",    value: "—",               note: "" },
                     { label: "Risk Tolerance",  value: "Very High",       note: "" },
                   ]} />
                 <BSBucketCard
@@ -10042,7 +11559,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
                     { label: "RSUs",           value: fmt(rsuTotal),      note: "unvested" },
                   ]} />
                 {/* Additional Sources of Liquidity notation — spans the 3 liquidity bucket columns */}
-                <div style={{ gridColumn: "1 / 4", display: "flex", alignItems: "center", gap: 0, border: "1px solid rgba(58,111,171,0.18)", borderRadius: 6, overflow: "hidden", background: "rgba(58,111,171,0.025)" }}>
+                <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 0, border: "0.5px solid rgba(0,0,0,0.07)", overflow: "hidden", background: "#FFFFFF" }}>
                   <div style={{ padding: "7px 14px", borderRight: "1px solid rgba(58,111,171,0.12)", flexShrink: 0 }}>
                     <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(58,111,171,0.65)" }}>Additional Sources of Liquidity</span>
                   </div>
@@ -10080,7 +11597,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             res:   { c: GURU_BUCKETS.yield.color,    bg: `${GURU_BUCKETS.yield.color}0e`,    subtotalBg: `${GURU_BUCKETS.yield.color}28`    },
             cap:   { c: GURU_BUCKETS.tactical.color, bg: `${GURU_BUCKETS.tactical.color}0e`, subtotalBg: `${GURU_BUCKETS.tactical.color}28` },
             inv:   { c: GURU_BUCKETS.growth.color,   bg: `${GURU_BUCKETS.growth.color}0e`,   subtotalBg: `${GURU_BUCKETS.growth.color}28`   },
-            alts:  { c: "#6B6050",                   bg: "rgba(107,96,80,0.055)",             subtotalBg: "rgba(107,96,80,0.12)"             },
+            alts:  { c: "#5C5C6E",                   bg: "rgba(92,92,110,0.055)",             subtotalBg: "rgba(92,92,110,0.12)"             },
             liab:  { c: "#9b2020", bg: "rgba(155,32,32,0.055)",  subtotalBg: "rgba(155,32,32,0.09)"  },
             liabP: { c: "#50287a", bg: "rgba(80,40,122,0.055)",  subtotalBg: "rgba(80,40,122,0.09)"  },
           };
@@ -10273,23 +11790,35 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
           );
 
           // ── Compact 3-panel row components ──
-          // Grid: Account (flex) | Balance (82px) | Next Mo. (76px) | Yield (58px) | Notes (100px flex)
-          const C3  = "minmax(200px,1fr) 82px 76px 72px minmax(0,100px)"; // 5-col — Panel 1 (has next month)
-          const C3B = "minmax(200px,1fr) 82px 72px minmax(0,100px)";    // 4-col — Panels 2 & 3
+          // Panel 1 (Liquid Assets) — 6-col: Account | Balance | Next Mo. | Pre-Tax Yield | After-Tax Yield | Notes
+          // Panels 2 & 3 — 4-col via g={C3B}: Account | Balance | Yield/Return | Notes
+          const C3L = "minmax(200px,1fr) 82px 76px 62px 58px minmax(0,88px)"; // 6-col default (Panel 1)
+          const C3B = "minmax(200px,1fr) 82px 72px minmax(0,100px)";           // 4-col (Panels 2 & 3)
           const c3th = (right?: boolean): React.CSSProperties => ({
             fontSize: 9, fontWeight: 700, letterSpacing: "0.09em",
             textTransform: "uppercase" as const, color: "rgba(0,0,0,0.30)",
             textAlign: right ? "right" : "left",
           });
           // ── Column headers
-          const C3Header = ({ showNext = false, col3Label = "Pre-Tax / 1yr Ret.", col4Label = "Notes", g }: { showNext?: boolean; col3Label?: string; col4Label?: string; g?: string }) => (
-            <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "4px 0 4px 0", minHeight: 30, alignItems: "end", borderBottom: "1px solid #E8E6E0", background: "#F7F6F4" }}>
-              <div style={{ ...c3th(), paddingLeft: 12 }}>Account</div>
-              <div style={c3th(true)}>Balance</div>
-              {!g && <div style={{ ...c3th(true), color: showNext ? "rgba(0,0,0,0.30)" : "transparent" }}>Next Mo.</div>}
-              <div style={{ ...c3th(true), paddingRight: 0 }}>{col3Label}</div>
-              <div style={{ ...c3th(true), paddingRight: 8 }}>{col4Label}</div>
-            </div>
+          const C3Header = ({ showNext = false, g }: { showNext?: boolean; g?: string }) => (
+            <>
+              {/* Parent "Yield / Return" label row — spans Pre-Tax + After-Tax cols */}
+              {!g && (
+                <div style={{ display: "grid", gridTemplateColumns: C3L, background: "#F3F2EF", borderBottom: "0.5px solid #E8E6E0" }}>
+                  <div /><div /><div />
+                  <div style={{ gridColumn: "4 / 6", textAlign: "center", fontSize: 7.5, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#9B9890", padding: "3px 8px" }}>Yield / Return</div>
+                  <div />
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3L, padding: "4px 0 4px 0", minHeight: 28, alignItems: "end", borderBottom: "1px solid #E8E6E0", background: "#F7F6F4" }}>
+                <div style={{ ...c3th(), paddingLeft: 12 }}>Account</div>
+                <div style={c3th(true)}>Balance</div>
+                {!g && <div style={{ ...c3th(true), color: showNext ? "rgba(0,0,0,0.30)" : "transparent" }}>Next Mo.</div>}
+                {!g && <div style={{ ...c3th(true) }}>Pre-Tax</div>}
+                <div style={{ ...c3th(true), paddingRight: 0 }}>{!g ? "After-Tax" : "Yield / Return"}</div>
+                <div style={{ ...c3th(true), paddingRight: 8 }}>Notes</div>
+              </div>
+            </>
           );
           // ── Section divider (Equities, Retirement, etc.)
           const C3SubLabel = ({ text }: { text: string }) => (
@@ -10303,8 +11832,9 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             const isAdvisor   = instMode && meta.insight?.toLowerCase().includes("advisor");
             const isSingle    = instMode && meta.insight?.toLowerCase().includes("single");
             const hasFlag     = !!noteText;
+            const atY = !g ? calcAtYield(a) : null;
             return (
-              <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 0", minHeight: 30, background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3L, padding: "5px 0", minHeight: 30, background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
                 <div style={{ minWidth: 0, paddingLeft: 20 }}>
                   <div style={{ fontSize: 10.5, color: "#1A1915", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {displayName}{meta.last4 && <span style={{ fontSize: 8.5, color: "#B0AEA8", marginLeft: 4 }}>{meta.last4}</span>}
@@ -10312,7 +11842,8 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
                 </div>
                 <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#1A1915" }}>{fmt(Number(a.value))}</div>
                 {!g && <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.32)" }}>{nextVal !== undefined ? fmt(nextVal) : ""}</div>}
-                <div style={{ fontSize: 10, textAlign: "right", color: meta.yield_ && meta.yield_ !== "—" ? "#2a6e3f" : "#9B9890", fontVariantNumeric: "tabular-nums" }}>{meta.yield_}</div>
+                {!g && <div style={{ fontSize: 10, textAlign: "right", color: meta.yield_ && meta.yield_ !== "—" ? "#4a7a5a" : "#9B9890", fontVariantNumeric: "tabular-nums" }}>{meta.yield_}</div>}
+                <div style={{ fontSize: 10, textAlign: "right", color: atY && atY !== "—" ? "#2a6e3f" : "#9B9890", fontVariantNumeric: "tabular-nums" }}>{!g ? atY : meta.yield_}</div>
                 <div style={{ paddingLeft: 6, paddingRight: 8, textAlign: "right" }}>
                   {hasFlag && <span style={{ fontSize: 9, fontWeight: 600, lineHeight: 1.3, display: "block", textAlign: "right",
                     color: isAdvisor ? "#1a5c8f"
@@ -10327,20 +11858,24 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             );
           };
           // ── Bucket subtotal — LARGER than account rows, full-width, prominent
-          const C3Total = ({ tc, label, total, nextTotal, note, wtdYield: wty, g }: { tc: { c: string; bg: string; subtotalBg?: string }; label: string; total: number; nextTotal?: number; note?: string; wtdYield?: string; g?: string }) => (
-            <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 0", borderTop: "1px solid #E8E6E0", borderBottom: "1px solid #E8E6E0", background: (tc as any).subtotalBg ?? "#F7F6F4", marginBottom: 2 }}>
-              <div style={{ paddingLeft: 12, fontSize: 10.5, fontWeight: 700, color: tc.c, letterSpacing: "0.03em", textTransform: "uppercase" as const, display: "flex", alignItems: "baseline", gap: 6 }}>
-                {label}
-                {note && <span style={{ fontSize: 8.5, fontWeight: 400, color: "#9B9890", textTransform: "none" as const, letterSpacing: 0 }}>{note}</span>}
+          const C3Total = ({ tc, label, total, nextTotal, note, wtdYield: wty, wtdAtYield: waty, items, g }: { tc: { c: string; bg: string; subtotalBg?: string }; label: string; total: number; nextTotal?: number; note?: string; wtdYield?: string; wtdAtYield?: string; items?: Asset[]; g?: string }) => {
+            const atY = !g && items ? calcWtdAtYield(items) : (waty ?? "");
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3L, padding: "5px 0", borderTop: "1px solid #E8E6E0", borderBottom: "1px solid #E8E6E0", background: (tc as any).subtotalBg ?? "#F7F6F4", marginBottom: 2 }}>
+                <div style={{ paddingLeft: 12, fontSize: 10.5, fontWeight: 700, color: tc.c, letterSpacing: "0.03em", textTransform: "uppercase" as const, display: "flex", alignItems: "baseline", gap: 6 }}>
+                  {label}
+                  {note && <span style={{ fontSize: 8.5, fontWeight: 400, color: "#9B9890", textTransform: "none" as const, letterSpacing: 0 }}>{note}</span>}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1915", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(total)}</div>
+                {!g && <div style={{ fontSize: 11, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.32)" }}>
+                  {nextTotal !== undefined ? fmt(nextTotal) : ""}
+                </div>}
+                {!g && <div style={{ fontSize: 9.5, textAlign: "right", color: wty ? "#4a7a5a" : "transparent", fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>{wty ?? ""}</div>}
+                <div style={{ fontSize: 9.5, textAlign: "right", color: (!g ? atY : wty) ? "#2a6e3f" : "transparent", fontVariantNumeric: "tabular-nums", fontWeight: 500, paddingRight: 2 }}>{!g ? atY : (wty ?? "")}</div>
+                <div />
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1915", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmt(total)}</div>
-              {!g && <div style={{ fontSize: 11, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.32)" }}>
-                {nextTotal !== undefined ? fmt(nextTotal) : ""}
-              </div>}
-              <div style={{ fontSize: 9.5, textAlign: "right", color: wty ? "#2a6e3f" : "transparent", fontVariantNumeric: "tabular-nums", fontWeight: 500, paddingRight: 2 }}>{wty ?? ""}</div>
-              <div />
-            </div>
-          );
+            );
+          };
           // ── Liability row — slightly more indented (under obligations divider)
           const C3LiabRow = ({ l, g }: { l: Liability; g?: string }) => {
             const rate = Number(l.interestRate);
@@ -10348,7 +11883,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             const isCommit = d.includes("commitment") || d.includes("unfunded");
             const meta = acctMeta(l.description ?? "");
             return (
-              <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 0", minHeight: 30, background: "rgba(155,32,32,0.028)", borderBottom: "1px solid rgba(155,32,32,0.06)", alignItems: "center" }}>
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3L, padding: "5px 0", minHeight: 30, background: "rgba(155,32,32,0.028)", borderBottom: "1px solid rgba(155,32,32,0.06)", alignItems: "center" }}>
                 <div style={{ minWidth: 0, paddingLeft: 20 }}>
                   <div style={{ fontSize: 10.5, color: "#9b2020", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {meta.name}{meta.last4 && <span style={{ fontSize: 8.5, color: "#B0AEA8", marginLeft: 4 }}>{meta.last4}</span>}
@@ -10356,6 +11891,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
                 </div>
                 <div style={{ fontSize: 11.5, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "#9b2020" }}>−{fmt(Number(l.value))}</div>
                 {!g && <div />}{/* next month — empty for liabilities */}
+                {!g && <div />}{/* After-Tax yield — empty for liabilities */}
                 <div style={{ textAlign: "right" }}>
                   {!isCommit && <span style={{ fontSize: 10, color: "#9B9890", fontVariantNumeric: "tabular-nums" }}>{rate.toFixed(2)}%</span>}
                 </div>
@@ -10365,10 +11901,12 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
           };
           // ── Liability subtotal
           const C3LiabTotal = ({ label, total, g }: { label: string; total: number; g?: string }) => (
-            <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 0", borderTop: "1.5px solid rgba(155,32,32,0.2)", borderBottom: "2px solid rgba(155,32,32,0.18)", background: "rgba(155,32,32,0.018)", marginBottom: 2 }}>
+            <div style={{ display: "grid", gridTemplateColumns: g ?? C3L, padding: "5px 0", borderTop: "1.5px solid rgba(155,32,32,0.2)", borderBottom: "2px solid rgba(155,32,32,0.18)", background: "rgba(155,32,32,0.018)", marginBottom: 2 }}>
               <div style={{ paddingLeft: 12, fontSize: 10.5, fontWeight: 700, color: "#9b2020", letterSpacing: "0.03em", textTransform: "uppercase" as const }}>{label}</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#9b2020", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>−{fmt(total)}</div>
-              {!g && <div />}<div /><div />
+              {!g && <div />}{/* next month */}
+              {!g && <div />}{/* after-tax yield */}
+              <div /><div />
             </div>
           );
           // ── Obligations section divider
@@ -10380,17 +11918,18 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
           // ── Two-row panel footer — Total Assets + Net position, both grid-aligned
           const C3NetRow = ({ grossLabel, gross, netLabel, net, nextNet, g }: { grossLabel: string; gross: number; netLabel: string; net: number; nextNet?: number; g?: string }) => (
             <div style={{ borderTop: "2px solid #D8D6D0", background: "#F7F6F4", marginBottom: 0 }}>
-              <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "5px 12px 3px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3L, padding: "5px 12px 3px" }}>
                 <span style={{ fontSize: 10.5, fontWeight: 700, color: "#1A1915", letterSpacing: "0.03em", textTransform: "uppercase" as const }}>{grossLabel}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#1A1915", textAlign: "right" }}>{fmt(gross)}</span>
-                {!g ? <><div /><div /><div /></> : <><div /><div /></>}
+                {!g ? <><div /><div /><div /><div /></> : <><div /><div /></>}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: g ?? C3, padding: "3px 12px 7px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: g ?? C3L, padding: "3px 12px 7px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
                 <span style={{ fontSize: 10.5, fontWeight: 700, color: "#2A2820", letterSpacing: "0.03em", textTransform: "uppercase" as const }}>{netLabel}</span>
                 <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: net < 0 ? "#9b2020" : "#1A1915", textAlign: "right" }}>{fmt(net)}</span>
                 {!g && <span style={{ fontSize: 11, fontWeight: 600, fontVariantNumeric: "tabular-nums", color: "rgba(0,0,0,0.32)", textAlign: "right" }}>
                   {nextNet !== undefined ? fmt(nextNet) : ""}
                 </span>}
+                {!g && <div />}
                 <div /><div />
               </div>
             </div>
@@ -10421,7 +11960,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             const reProfit = zv * reYieldBasePct;
             const navReturnPct = propNav > 0 ? `+${((reProfit / propNav) * 100).toFixed(1)}%` : "—";
             const mortMeta = propMort ? acctMeta(propMort.description ?? "") : null;
-            const gc = g ?? C3;
+            const gc = g ?? C3L;
             return (
               <React.Fragment>
                 {/* Property row — address inline to the right of name */}
@@ -10473,7 +12012,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             const d        = (a.description ?? "").toLowerCase();
             const fundName = d.includes("viii") ? "Carlyle VIII" : d.includes("ix") ? "Carlyle IX" : meta.name;
             const fundNav  = fundVal - Math.round(profTotal * share);
-            const gc = g ?? C3;
+            const gc = g ?? C3L;
             return (
               <React.Fragment>
                 {/* Fund row — white, no tint */}
@@ -10526,8 +12065,8 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
           const growthRetAmt   = growthRetirement.reduce((s, a) => s + Number(a.value), 0);
           const liquidGross    = opTotal + resTotal + capTotal;
           const netLiquid      = liquidGross - consTotal;
-          // Panel 2: Investments = growth buckets + crypto (moved from alts)
-          const lt2Net         = growTotal + cryptoTotal;
+          // Panel 2: Investments = investmentsTotal (single source of truth — see definition above)
+          const lt2Net         = investmentsTotal;
           // Panel 3: Other Assets = real estate (net of mortgages) + PE (net of pro-rata loans) + alt investments + carry + RSUs
           const otherAssetsNet = reTotalZillow - mortTotal + (peAssetsTotal - profTotal) + altInvestsTotal + carryTotal + rsuTotal;
           const netLongTerm    = lt2Net + otherAssetsNet;
@@ -10548,18 +12087,18 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
           return (
             <div style={{ marginBottom: 32, overflowX: "auto", paddingBottom: 4 }}>
               {/* ══ THREE-PANEL LEDGER ══ */}
-              <div style={{ display: "grid", gridTemplateColumns: "minmax(530px,1.25fr) minmax(454px,1fr) minmax(454px,1fr)", gap: 14, alignItems: "start", minWidth: 1452 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(590px,1.35fr) minmax(454px,1fr) minmax(454px,1fr)", gap: 14, alignItems: "start", minWidth: 1510 }}>
 
                 {/* ── PANEL 1: LIQUID ASSETS ── */}
                 <div style={{ border: "1px solid #D8D6D0", borderRadius: 8, overflow: "hidden", background: "#fff" }}>
                   <C3Band title="Liquid Assets" netLabel="Net Liquid" net={netLiquid} tc={TC.res} />
-                  <C3Header showNext col3Label="Rate" col4Label="Notes" />
+                  <C3Header showNext />
                   {opCash.map((a, i) => <C3Row key={i} a={a} tc={TC.op} nextVal={nextMonthForecast && opTotal > 0 ? Math.round(Number(a.value) + nextMonthForecast.net * (Number(a.value) / opTotal)) : undefined} />)}
-                  <C3Total tc={TC.op} label="Operating Cash" total={opTotal} nextTotal={nextMonthForecast ? opTotal + nextMonthForecast.net : undefined} wtdYield={calcWtdYield(opCash)} />
+                  <C3Total tc={TC.op} label="Operating Cash" total={opTotal} nextTotal={nextMonthForecast ? opTotal + nextMonthForecast.net : undefined} wtdYield={calcWtdYield(opCash)} items={opCash} />
                   {resCash.map((a, i) => <C3Row key={i} a={a} tc={TC.res} nextVal={nextMonthForecast ? Number(a.value) : undefined} />)}
-                  <C3Total tc={TC.res} label="Liquidity Reserve" total={resTotal} nextTotal={nextMonthForecast ? resTotal : undefined} wtdYield={calcWtdYield(resCash)} />
+                  <C3Total tc={TC.res} label="Liquidity Reserve" total={resTotal} nextTotal={nextMonthForecast ? resTotal : undefined} wtdYield={calcWtdYield(resCash)} items={resCash} />
                   {capBuild.map((a, i) => <C3Row key={i} a={a} tc={TC.cap} nextVal={nextMonthForecast ? Number(a.value) : undefined} />)}
-                  <C3Total tc={TC.cap} label="Capital Build" total={capTotal} nextTotal={nextMonthForecast ? capTotal : undefined} wtdYield={calcWtdYield(capBuild)} />
+                  <C3Total tc={TC.cap} label="Capital Build" total={capTotal} nextTotal={nextMonthForecast ? capTotal : undefined} wtdYield={calcWtdYield(capBuild)} items={capBuild} />
                   <C3ObligDiv label="Unsecured Obligations" />
                   {consumer.map((l, i) => <C3LiabRow key={i} l={l} />)}
                   <C3LiabTotal label="Credit Cards & Loans" total={consTotal} />
@@ -10702,14 +12241,18 @@ type ActiveView =
   | "financials"
   | "guru"
   | "guru_v1"
-  | "moneymovement";
+  | "moneymovement"
+  | "financialmodel"
+  | "guruintelligence";
 
 export default function ClientDashboard() {
   const { id } = useParams<{ id: string }>();
   const clientId = Number(id);
-  const [activeView, setActiveView] = useState<ActiveView>("assetoverview");
+  const [activeView, setActiveView] = useState<ActiveView>("financialmodel");
   const [guruLanding, setGuruLanding] = useState(true);
   const [financialsTab, setFinancialsTab] = useState<"balancesheet" | "cashflow">("balancesheet");
+  const [financialModelTab, setFinancialModelTab] = useState<"balancesheet" | "cashflow">("balancesheet");
+  const [guruIntelTab, setGuruIntelTab] = useState<"networth" | "cashflow" | "moneymovement" | "incomeoptimization" | "liquiditymodel" | "cfforecast">("networth");
   const [opsCashMonths, setOpsCashMonths] = useState(2);
   const [cfModalOpen, setCfModalOpen] = useState(false);
 
@@ -10878,7 +12421,7 @@ export default function ClientDashboard() {
     return hit ? { amount: Number(hit.amount), date: new Date(hit.date), desc: hit.description } : null;
   };
 
-  const _buckleyPayment  = _findPayment(["buckley", "tuition", "school"]);
+  const _daltonPayment  = _findPayment(["dalton", "tuition", "school"]);
   const _lakewoodPayment = _findPayment(["sarasota property", "hoa"]);
   const _warrenPayment   = _findPayment(["nyc property", "tribeca", "property tax"]);
 
@@ -11027,204 +12570,419 @@ export default function ClientDashboard() {
     </nav>
   );
 
-  const TAB_BASE: React.CSSProperties = {
-    fontFamily: "Inter, system-ui, sans-serif",
-    fontSize: 13,
-    fontWeight: 400,
-    color: "rgba(0,0,0,0.45)",
-    padding: "0 2px",
-    paddingBottom: 10,
-    cursor: "pointer",
-    border: "none",
-    background: "none",
-    borderBottom: "2px solid transparent",
-    transition: "color 0.12s, border-color 0.12s",
-    whiteSpace: "nowrap" as const,
-    lineHeight: 1,
-    userSelect: "none" as const,
+  // ── Chrome type constants ───────────────────────────────────────────────────
+  const DM = "'DM Sans', system-ui, sans-serif";
+  const PF = "'Playfair Display', Georgia, serif";
+  const CHROME: React.CSSProperties = {
+    fontFamily: DM, fontWeight: 400, fontSize: 10,
+    letterSpacing: "0.13em", textTransform: "uppercase" as const,
   };
-  const TAB_ACTIVE: React.CSSProperties = {
-    ...TAB_BASE,
-    fontWeight: 600,
-    color: "hsl(222,45%,12%)",
-    borderBottomColor: "hsl(222,45%,12%)",
-  };
+  const NAVY = "hsl(222,45%,12%)";
+
+  // ── Nav tab active check ────────────────────────────────────────────────────
+  const topNavActive = (view: ActiveView) => activeView === view;
+
+  // ── Inline tab hover helper (onMouseEnter/Leave) ────────────────────────────
+  const tabHover = (isActive: boolean) => ({
+    onMouseEnter: (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.50)";
+    },
+    onMouseLeave: (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.30)";
+    },
+  });
 
   const topNav = (
-    <div style={{
-      background: "#f0ede8",
-      borderBottom: "1px solid rgba(0,0,0,0.10)",
-      padding: "0 32px",
-      display: "flex",
-      alignItems: "flex-end",
-      gap: 28,
-      height: 46,
-      flexShrink: 0,
-    }}>
-      {/* GURU wordmark — click to go back to Clients */}
-      <Link href="/">
-        <span style={{
-          fontFamily: "Inter, system-ui, sans-serif",
-          fontSize: 15,
-          fontWeight: 700,
-          letterSpacing: "0.10em",
-          color: "hsl(222,45%,12%)",
-          paddingBottom: 12,
-          marginRight: 12,
-          flexShrink: 0,
-          cursor: "pointer",
-          textDecoration: "none",
-          display: "inline-block",
-        }}>
-          GURU
-        </span>
-      </Link>
+    <div style={{ flexShrink: 0 }}>
+      {/* ── Pulsing-dot keyframes ── */}
+      <style>{`
+        @keyframes guru-pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+        @keyframes guru-live-pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+        @keyframes guru-scan { 0%,100%{opacity:0.7} 50%{opacity:1} }
+      `}</style>
 
-      {/* Tabs — left group */}
-      {([
-        { label: "Balance Sheet",  view: "balancesheet"  as ActiveView },
-        { label: "Asset Overview", view: "assetoverview" as ActiveView },
-        { label: "Advisor Brief",  view: "advisorbrief"  as ActiveView },
-        { label: "Allocation",     view: "guru"          as ActiveView },
-        { label: "Allocation v1",  view: "guru_v1"       as ActiveView },
-        { label: "Investments",    view: "investments"   as ActiveView },
-      ] as Array<{ label: string; view: ActiveView; sub?: "cashflow" | "balancesheet" }>).map(tab => (
-        <button
-          key={tab.label}
-          style={navActive(tab.view, tab.sub) ? TAB_ACTIVE : TAB_BASE}
-          onClick={() => {
-            if (tab.sub) { setActiveView(tab.view); setFinancialsTab(tab.sub); }
-            else setActiveView(tab.view);
-          }}
-          onMouseEnter={e => { if (!navActive(tab.view, tab.sub)) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.75)"; }}
-          onMouseLeave={e => { if (!navActive(tab.view, tab.sub)) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.45)"; }}
-        >
-          {tab.label}
-        </button>
-      ))}
-
-      {/* Separator: GURU INTELLIGENCE */}
-      <div style={{ display:"flex", alignItems:"center", gap:6, paddingBottom:12, flexShrink:0 }}>
-        <div style={{ width:1, height:14, background:"rgba(0,0,0,0.15)", flexShrink:0 }} />
-        <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", color:"rgba(0,0,0,0.28)", whiteSpace:"nowrap" }}>GURU Intelligence</span>
-        <div style={{ width:1, height:14, background:"rgba(0,0,0,0.15)", flexShrink:0 }} />
+      {/* ── GURU AI STATUS BAR ── */}
+      <div style={{
+        background: "#0c1828",
+        height: 28,
+        padding: "0 40px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        flexShrink: 0,
+      }}>
+        {/* Left cluster */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.50)", animation: "guru-scan 3s ease infinite" }}>▶ GURU AI</span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.15)", margin: "0 10px" }}>·</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.35)" }}>SCAN ACTIVE</span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.12)", margin: "0 10px" }}>|</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#44e08a", animation: "guru-live-pulse 2s ease infinite", flexShrink: 0 }} />
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#44e08a" }}>LIVE</span>
+          </div>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.12)", margin: "0 10px" }}>|</span>
+          <span style={{ fontSize: 9, fontWeight: 400, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.28)" }}>6 ACCOUNTS SYNCED · DEC 29, 2025 · 9:42 AM</span>
+        </div>
+        {/* Centre badges */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#ffc83c", border: "1px solid rgba(255,200,60,0.35)", padding: "1px 8px", borderRadius: 2 }}>2 ACTIONS PENDING</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(68,224,138,0.80)", border: "1px solid rgba(68,224,138,0.25)", padding: "1px 8px", borderRadius: 2 }}>1 OPPORTUNITY</span>
+        </div>
+        {/* Right */}
+        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.18)" }}>GURU AI · DETECTION SYSTEM</span>
       </div>
 
-      {/* Tabs — right group */}
-      {([
-        { label: "Net Worth",      view: "financials"   as ActiveView, sub: "balancesheet" as "balancesheet" },
-        { label: "Cash Flow",      view: "financials"   as ActiveView, sub: "cashflow"     as "cashflow" },
-        { label: "Money Movement", view: "moneymovement" as ActiveView },
-      ] as Array<{ label: string; view: ActiveView; sub?: "cashflow" | "balancesheet" }>).map(tab => (
-        <button
-          key={tab.label}
-          style={navActive(tab.view, tab.sub) ? TAB_ACTIVE : TAB_BASE}
-          onClick={() => {
-            if (tab.sub) { setActiveView(tab.view); setFinancialsTab(tab.sub); }
-            else setActiveView(tab.view);
-          }}
-          onMouseEnter={e => { if (!navActive(tab.view, tab.sub)) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.75)"; }}
-          onMouseLeave={e => { if (!navActive(tab.view, tab.sub)) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.45)"; }}
-        >
-          {tab.label}
-        </button>
-      ))}
+      {/* ── IDENTITY BAR ── */}
+      {(()=>{
+        const isGI = activeView === "guruintelligence";
+        const GI_BG = "hsl(218,12%,24%)";
+        return (
+          <div style={{
+            background: isGI ? GI_BG : "#fff",
+            height: 36,
+            padding: "0 40px",
+            borderBottom: isGI ? "none" : "0.5px solid rgba(0,0,0,0.08)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}>
+            {/* Left: client name */}
+            <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.50)" : "rgba(0,0,0,0.45)" }}>Kessler Family</span>
+            {/* Right: date */}
+            {activeView === "advisorbrief" ? (
+              <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.30)" : "rgba(0,0,0,0.28)" }}>Tara Williams · March 6, 2026</span>
+            ) : (
+              <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.30)" : "rgba(0,0,0,0.28)" }}>December 29, 2025</span>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── NAV BAR ── */}
+      {(()=>{
+        const isGI = activeView === "guruintelligence";
+        const GI_BG = "hsl(218,12%,24%)";
+        return (
+          <div style={{
+            background: isGI ? GI_BG : "#fff",
+            height: 44,
+            padding: "0 40px",
+            borderBottom: "none",
+            display: "flex",
+            alignItems: "stretch",
+          }}>
+            {/* GURU wordmark */}
+            <Link href="/" style={{ display: "flex", alignSelf: "stretch" }}>
+              <div style={{
+                display: "flex", alignItems: "center",
+                borderRight: `0.5px solid ${isGI ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)"}`,
+                paddingRight: 28, marginRight: 4,
+                cursor: "pointer",
+              }}>
+                <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.85)" : NAVY }}>GURU</span>
+              </div>
+            </Link>
+
+            {/* Primary tabs */}
+            {([
+              { label: "Financial model", view: "financialmodel" as ActiveView, onClick: () => setActiveView("financialmodel") },
+              { label: "Allocation",      view: "guru"           as ActiveView, onClick: () => setActiveView("guru") },
+              { label: "Investments",     view: "investments"    as ActiveView, onClick: () => setActiveView("investments") },
+              { label: "Advisor brief",   view: "advisorbrief"   as ActiveView, onClick: () => setActiveView("advisorbrief") },
+            ]).map(tab => {
+              const isActive = topNavActive(tab.view);
+              const activeColor  = isGI ? "#FFFFFF" : NAVY;
+              const inactiveColor = isGI ? "rgba(255,255,255,0.30)" : "rgba(0,0,0,0.30)";
+              return (
+                <button
+                  key={tab.label}
+                  onClick={tab.onClick}
+                  {...tabHover(isActive)}
+                  style={{
+                    ...CHROME,
+                    color: isActive ? activeColor : inactiveColor,
+                    padding: "0 16px",
+                    border: "none",
+                    borderBottom: isActive ? `2px solid ${activeColor}` : "2px solid transparent",
+                    background: "none",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap" as const,
+                    lineHeight: 1,
+                    userSelect: "none" as const,
+                    alignSelf: "stretch",
+                    display: "flex",
+                    alignItems: "center",
+                    transition: "color 0.12s, border-color 0.12s",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+
+            {/* Separator before GURU intelligence */}
+            <div style={{ width: "0.5px", background: isGI ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)", margin: "11px 6px", flexShrink: 0 }} />
+
+            {/* GURU intelligence tab */}
+            {(() => {
+              const isActive = topNavActive("guruintelligence");
+              const GI_BLUE = "#4A9FD4";
+              const activeColor = isGI ? "#FFFFFF" : GI_BLUE;
+              return (
+                <button
+                  onClick={() => setActiveView("guruintelligence")}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = isGI ? "#FFFFFF" : GI_BLUE; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = isActive ? activeColor : (isGI ? "rgba(255,255,255,0.50)" : GI_BLUE); }}
+                  style={{
+                    ...CHROME,
+                    color: isActive ? activeColor : (isGI ? "rgba(255,255,255,0.50)" : GI_BLUE),
+                    padding: "0 16px",
+                    border: "none",
+                    borderBottom: isActive ? `2px solid ${activeColor}` : "2px solid transparent",
+                    background: "none",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap" as const,
+                    lineHeight: 1,
+                    userSelect: "none" as const,
+                    alignSelf: "stretch",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    transition: "color 0.12s, border-color 0.12s",
+                  }}
+                >
+                  <div style={{
+                    width: 5, height: 5, borderRadius: "50%",
+                    background: isActive ? activeColor : (isGI ? "rgba(255,255,255,0.50)" : GI_BLUE),
+                    animation: "guru-pulse 2.5s ease infinite",
+                    flexShrink: 0,
+                  }} />
+                  GURU intelligence
+                </button>
+              );
+            })()}
+          </div>
+        );
+      })()}
+
+      {/* ── FINANCIAL MODEL subtab row — white (advisor layer) ── */}
+      {activeView === "financialmodel" && (
+        <div style={{
+          background: "#fff",
+          borderBottom: "1px solid rgba(0,0,0,0.10)",
+          padding: "0 40px",
+          display: "flex",
+          alignItems: "stretch",
+        }}>
+          {([
+            { label: "Balance sheet", key: "balancesheet" },
+            { label: "Cash flow",     key: "cashflow" },
+          ] as const).map(t => {
+            const isA = financialModelTab === t.key;
+            return (
+              <button key={t.key}
+                onClick={() => setFinancialModelTab(t.key)}
+                onMouseEnter={e => { if (!isA) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.50)"; }}
+                onMouseLeave={e => { if (!isA) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.30)"; }}
+                style={{ ...CHROME, color: isA ? NAVY : "rgba(0,0,0,0.30)", border: "none", borderBottom: isA ? `2px solid ${NAVY}` : "2px solid transparent", background: "none", cursor: "pointer", padding: "0 16px", height: 34, whiteSpace: "nowrap" as const, lineHeight: 1, userSelect: "none" as const, transition: "color 0.12s, border-color 0.12s", alignSelf: "stretch", display: "flex", alignItems: "center" }}
+              >{t.label}</button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── GURU INTELLIGENCE subtab row — flat chrome surface ── */}
+      {activeView === "guruintelligence" && (
+        <div style={{
+          background: "hsl(218,12%,24%)",
+          borderBottom: "none",
+          padding: "0 40px",
+          display: "flex",
+          alignItems: "stretch",
+        }}>
+          {([
+            { label: "Detection System",    key: "cashflow" },
+            { label: "Balance Sheet Today", key: "networth" },
+            { label: "Money movement",      key: "moneymovement" },
+            { label: "Asset forecast",      key: "liquiditymodel" },
+            { label: "Cash flow forecast",  key: "cfforecast" },
+          ] as const).map(t => {
+            const isA = guruIntelTab === t.key;
+            return (
+              <button key={t.key}
+                onClick={() => setGuruIntelTab(t.key as typeof guruIntelTab)}
+                onMouseEnter={e => { if (!isA) (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.60)"; }}
+                onMouseLeave={e => { if (!isA) (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.30)"; }}
+                style={{ ...CHROME, color: isA ? "#fff" : "rgba(255,255,255,0.30)", border: "none", borderBottom: isA ? "2px solid #FFFFFF" : "2px solid transparent", background: "none", cursor: "pointer", padding: "0 16px", height: 34, whiteSpace: "nowrap" as const, lineHeight: 1, userSelect: "none" as const, transition: "color 0.12s, border-color 0.12s", alignSelf: "stretch", display: "flex", alignItems: "center" }}
+              >{t.label}</button>
+            );
+          })}
+          {/* Hidden internal tab — thin separator + dimmed */}
+          <div style={{ width: "0.5px", background: "rgba(255,255,255,0.08)", margin: "8px 10px", flexShrink: 0 }} />
+          {(() => {
+            const isA = guruIntelTab === "incomeoptimization";
+            return (
+              <button
+                onClick={() => setGuruIntelTab("incomeoptimization")}
+                onMouseEnter={e => { if (!isA) (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.55)"; }}
+                onMouseLeave={e => { if (!isA) (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.30)"; }}
+                style={{ ...CHROME, color: isA ? "#fff" : "rgba(255,255,255,0.30)", border: "none", borderBottom: isA ? "2px solid #FFFFFF" : "2px solid transparent", background: "none", cursor: "pointer", padding: "0 14px", height: 34, whiteSpace: "nowrap" as const, lineHeight: 1, userSelect: "none" as const, transition: "color 0.12s, border-color 0.12s", alignSelf: "stretch", display: "flex", alignItems: "center", gap: 5 }}
+              >
+                <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", opacity: 0.6 }}>◆</span>
+                Reallocation Calculator
+              </button>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Page header component ────────────────────────────────────────────────────
+  const PageHeader = ({ eyebrow, headline, subtitle }: { eyebrow: string; headline: string; subtitle: string }) => (
+    <div style={{ padding: "32px 40px 0", flexShrink: 0 }}>
+      <div style={{ ...CHROME, color: "rgba(0,0,0,0.32)", marginBottom: 12 }}>{eyebrow}</div>
+      <div style={{ fontFamily: PF, fontWeight: 400, fontSize: 28, color: NAVY, letterSpacing: "-0.02em", lineHeight: 1.2, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{headline}</div>
+      <div style={{ fontFamily: DM, fontWeight: 400, fontSize: 13, color: "rgba(0,0,0,0.45)", lineHeight: 1.65, marginTop: 8 }}>{subtitle}</div>
     </div>
   );
 
   return (
     <Layout topNav={topNav}>
-      {/* ── Investments View ────────────────────────────────────────────────────── */}
-      {activeView === "investments" && (
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#f5f4f0" }}>
-          <div style={{ padding: "24px 32px 48px", maxWidth: 900, margin: "0 auto" }}>
-            {/* Page header */}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 24 }}>
-              <h1 style={{ fontSize: 22, fontWeight: 300, color: "#1a2e4a", letterSpacing: "-0.01em", margin: 0, lineHeight: 1 }}>Investment Portfolio</h1>
-              <span style={{ fontSize: 11, color: "rgba(0,0,0,0.40)", letterSpacing: "0.04em" }}>Kessler Family · {format(DEMO_NOW, "MMMM d, yyyy")}</span>
+
+      {/* ── FINANCIAL MODEL VIEW ───────────────────────────────────────────────── */}
+      {activeView === "financialmodel" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "#ECEAE4" }}>
+          {financialModelTab === "balancesheet" && (
+            <BalanceSheetView assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
+          )}
+          {financialModelTab === "cashflow" && (
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+              <CashFlowAdvisorView assets={assets} cashFlows={cashFlows} />
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ── ALLOCATION VIEW ────────────────────────────────────────────────────── */}
+      {activeView === "guru" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "hsl(220,5%,93%)" }}>
+          <GuruLandingView assets={assets} cashFlows={cashFlows} onStartReview={() => {}} skipLanding={false} />
+        </div>
+      )}
+
+      {/* ── INVESTMENTS VIEW ───────────────────────────────────────────────────── */}
+      {activeView === "investments" && (
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "hsl(220,5%,93%)" }}>
+          <div style={{ padding: "24px 40px 80px", maxWidth: 900 }}>
             <BrokeragePanel assets={assets} />
           </div>
         </div>
       )}
-      {/* ── Advisor Brief View ───────────────────────────────────────────────── */}
+
+      {/* ── ADVISOR BRIEF VIEW ─────────────────────────────────────────────────── */}
       {activeView === "advisorbrief" && (
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-          <AdvisorBriefView
-            assets={assets}
-            cashFlows={cashFlows}
-            liabilities={liabilities}
-            onNavigate={(v) => setActiveView(v as ActiveView)}
-          />
+          <AdvisorBriefView assets={assets} cashFlows={cashFlows} liabilities={liabilities} onNavigate={(v) => setActiveView(v as ActiveView)} />
         </div>
       )}
-      {/* ── Balance Sheet ──────────────────────────────────────────────────────── */}
-      {activeView === "balancesheet" && (
-        <BalanceSheetView assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
-      )}
-      {/* ── Asset Overview ─────────────────────────────────────────────────────── */}
-      {activeView === "assetoverview" && (
-        <AssetOverviewView assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
-      )}
-      {/* ── Client Financials & Forecast ───────────────────────────────────────── */}
-      {activeView === "financials" && (
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-          {financialsTab === "balancesheet" && (
-            <DetailsView
-              assets={assets}
-              liabilities={liabilities}
-              cashFlows={cashFlows}
-              clientId={clientId}
-            />
+
+      {/* ── GURU INTELLIGENCE VIEW ─────────────────────────────────────────────── */}
+      {activeView === "guruintelligence" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "#141c2b" }}>
+
+          {/* ── Bloomberg-style ticker strip ── */}
+          <div style={{ background: "rgba(10,18,32,0.7)", borderBottom: "1px solid rgba(42,74,110,0.35)", padding: "0 40px", height: 27, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, overflow: "hidden", position: "relative" }}>
+            <div style={{ width: "35%", height: "100%", position: "absolute", left: "-20%", background: "linear-gradient(90deg,transparent,rgba(180,210,255,0.04),transparent)", pointerEvents: "none" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
+              <span style={{ fontFamily: DM, fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(180,210,255,0.75)" }}>▶ GURU AI · Scan active</span>
+              <div style={{ width: 1, height: 10, background: "rgba(255,255,255,0.1)", flexShrink: 0 }} />
+              <span style={{ fontFamily: DM, fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "1px 7px", borderRadius: 2, background: "rgba(94,204,138,0.10)", border: "1px solid rgba(94,204,138,0.25)", color: "hsl(152,55%,60%)" }}>● LIVE</span>
+              <span style={{ fontFamily: DM, fontSize: 9, fontWeight: 400, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.28)" }}>6 accounts synced · {format(DEMO_NOW, "MMM d, yyyy")} · 9:42 AM</span>
+              <div style={{ width: 1, height: 10, background: "rgba(255,255,255,0.1)", flexShrink: 0 }} />
+              <span style={{ fontFamily: DM, fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "1px 7px", borderRadius: 2, background: "rgba(255,200,60,0.08)", border: "1px solid rgba(255,200,60,0.22)", color: "rgba(255,200,60,0.8)" }}>2 actions pending</span>
+              <span style={{ fontFamily: DM, fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "1px 7px", borderRadius: 2, background: "rgba(91,143,204,0.08)", border: "1px solid rgba(91,143,204,0.22)", color: "rgba(180,210,255,0.7)" }}>1 opportunity</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
+              <span style={{ fontFamily: DM, fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "1px 7px", borderRadius: 2, background: "rgba(180,210,255,0.06)", border: "1px solid rgba(180,210,255,0.15)", color: "rgba(180,210,255,0.5)" }}>Demo: {format(DEMO_NOW, "MMMM d, yyyy")}</span>
+              <span style={{ fontFamily: DM, fontSize: 9, color: "rgba(255,255,255,0.22)", letterSpacing: "0.05em", textTransform: "uppercase" as const }}>GURU AI · Detection System</span>
+            </div>
+          </div>
+
+          {guruIntelTab === "networth" && (
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0, marginTop: 24 }}>
+              <DetailsView assets={assets} liabilities={liabilities} cashFlows={cashFlows} clientId={clientId} />
+            </div>
           )}
-          {financialsTab === "cashflow" && (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", height: "calc(100vh - 56px)", marginTop: "-20px" }}>
+          {guruIntelTab === "cashflow" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", marginTop: 24 }}>
+              <iframe src="/cashflow-layout-mockup.html" style={{ flex: 1, width: "100%", height: "100%", border: "none", display: "block" }} title="Cash Flow" />
+            </div>
+          )}
+          {guruIntelTab === "moneymovement" && (
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0, marginTop: 24 }}>
+              <div style={{ padding: "0 40px 80px" }}>
+                <MoneyMovementView assets={assets} cashFlows={cashFlows} opsCashMonths={opsCashMonths} clientName={client.name} pendingTransfers={pendingTransfers} bucketProductSelections={bucketProductSelections} />
+              </div>
+            </div>
+          )}
+          {guruIntelTab === "incomeoptimization" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", marginTop: 0 }}>
               <iframe
-                src="/cashflow-layout-mockup.html"
+                src="/income-optimization.html"
                 style={{ flex: 1, width: "100%", height: "100%", border: "none", display: "block" }}
-                title="Cashflow Layout"
+                title="Income Optimization"
               />
+            </div>
+          )}
+          {guruIntelTab === "liquiditymodel" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", marginTop: 24 }}>
+              <LiquidityWaterfallView assets={assets} cashFlows={cashFlows} />
+            </div>
+          )}
+          {guruIntelTab === "cfforecast" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", marginTop: 24 }}>
+              <CashFlowForecastWaterfallView assets={assets} cashFlows={cashFlows} />
             </div>
           )}
         </div>
       )}
-      {/* ── GURU Asset Allocation View ─────────────────────────────────────────── */}
-      {activeView === "guru" && (
-        <GuruLandingView
-          assets={assets}
-          cashFlows={cashFlows}
-          onStartReview={() => {}}
-          skipLanding={false}
-        />
+
+      {/* ── Legacy views (kept for backward compat) ─────────────────────────────── */}
+      {activeView === "balancesheet" && (
+        <BalanceSheetView assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
       )}
-      {/* ── Allocation v1 — original live-calc landing (GURU Intel hero bar → rebalancer) ── */}
-      {activeView === "guru_v1" && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <iframe
-            src="/alloc-v1-original.html"
-            title="Allocation v1"
-            style={{ flex: 1, width: "100%", border: "none", display: "block", minHeight: 0 }}
-          />
+      {activeView === "assetoverview" && (
+        <AssetOverviewView assets={assets} liabilities={liabilities} cashFlows={cashFlows} />
+      )}
+      {activeView === "financials" && (
+        <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+          {financialsTab === "balancesheet" && (
+            <DetailsView assets={assets} liabilities={liabilities} cashFlows={cashFlows} clientId={clientId} />
+          )}
+          {financialsTab === "cashflow" && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", height: "calc(100vh - 56px)", marginTop: "-20px" }}>
+              <iframe src="/cashflow-layout-mockup.html" style={{ flex: 1, width: "100%", height: "100%", border: "none", display: "block" }} title="Cashflow Layout" />
+            </div>
+          )}
         </div>
       )}
-      {/* ── Money Movement View ─────────────────────────────────────────────────── */}
+      {activeView === "guru_v1" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <iframe src="/alloc-v1-original.html" title="Allocation v1" style={{ flex: 1, width: "100%", border: "none", display: "block", minHeight: 0 }} />
+        </div>
+      )}
       {activeView === "moneymovement" && (
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "#f5f4f0" }}>
-          {/* ── Page header — matches allocation tab style ── */}
           <div style={{ padding: "18px 24px 14px", display: "flex", alignItems: "baseline", gap: 12 }}>
             <h1 style={{ fontSize: 22, fontWeight: 300, color: "#1a2e4a", letterSpacing: "-0.01em", margin: 0, lineHeight: 1 }}>Money Movement</h1>
             <span style={{ fontSize: 11, color: "rgba(0,0,0,0.40)", letterSpacing: "0.04em" }}>Kessler Family · {format(DEMO_NOW, "MMMM d, yyyy")}</span>
           </div>
           <div style={{ padding: "0 24px 48px" }}>
-          <MoneyMovementView
-            assets={assets}
-            cashFlows={cashFlows}
-            opsCashMonths={opsCashMonths}
-            clientName={client.name}
-            pendingTransfers={pendingTransfers}
-            bucketProductSelections={bucketProductSelections}
-          />
-          </div>{/* end padding wrapper */}
+            <MoneyMovementView assets={assets} cashFlows={cashFlows} opsCashMonths={opsCashMonths} clientName={client.name} pendingTransfers={pendingTransfers} bucketProductSelections={bucketProductSelections} />
+          </div>
         </div>
       )}
 

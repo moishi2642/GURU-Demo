@@ -1,0 +1,11 @@
+# GURU Demo — Session Instructions
+
+Read these files at the start of every session before touching any code:
+
+1. `docs/CONTEXT.md` — product context, UI rules, file map, standing rules
+2. `docs/GURU_PRODUCT.md` — 5-bucket framework definitions, brand language
+3. `docs/GURU_METRICS.md` — all KPI definitions, formulas, and Kessler reference values.
+   Read carefully when doing any work touching liquidity, cash flow, or bucket calculations.
+4. `docs/ADVISOR_BRIEF_RULES.md` — **master design rules for the AdvisorBriefView component**.
+   Read before touching any advisor brief code. Covers fonts, spacing, colors, stat bar order,
+   card structure, font size table, and rules that must never change.
