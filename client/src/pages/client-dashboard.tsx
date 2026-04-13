@@ -8616,7 +8616,7 @@ function AdvisorBriefView({
         </div>
       </div>
 
-      {/* ── Situation Overview ── */}
+      {/* ── Situation Overview + Stats strip — hidden for now, preserved below ──
       <div style={{ margin: "0 32px", background: "#FFFFFF", border: "1px solid rgba(0,0,0,0.08)", display: "grid", gridTemplateColumns: "120px 1fr" }}>
         <div style={{ padding: 16, borderRight: "1px solid rgba(0,0,0,0.08)", fontSize: 10, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)" }}>
           Situation overview
@@ -8632,46 +8632,15 @@ function AdvisorBriefView({
         </div>
       </div>
 
-      {/* ── Stats strip — flush below situation overview ── */}
+      Stats strip:
       <div style={{ margin: "0 32px", background: "#FFFFFF", border: "1px solid rgba(0,0,0,0.08)", borderTop: "none", display: "flex", alignItems: "stretch", padding: "0 16px" }}>
-        {/* NET WORTH — first */}
-        <div style={{ padding: "14px 20px 14px 0", marginTop: 10, marginBottom: 10, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Net Worth</div>
-          <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#1a2a4a", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{fmt(netWorthTotal)}</div>
-        </div>
-        {/* BONUS CASH SITTING IDLE */}
-        <div style={{ padding: "14px 20px 14px 20px", marginTop: 10, marginBottom: 10, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Bonus Cash Sitting Idle</div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-            <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#c47c2b", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{fmt(excessLiquidity)}</div>
-            <div style={{ fontSize: 12, color: "rgba(0,0,0,0.38)" }}>for {daysIdle} days</div>
-          </div>
-        </div>
-        {/* POTENTIAL AFTER-TAX INCOME INCREASE FROM OPTIMIZATION */}
-        <div style={{ padding: "14px 20px 14px 20px", marginTop: 10, marginBottom: 10, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Potential After-Tax Income Increase</div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-            <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#2e7a52", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>+{fmt(annualReturnPickup)}</div>
-            <div style={{ fontSize: 12, color: "rgba(0,0,0,0.38)" }}>per year after tax</div>
-          </div>
-        </div>
-        {/* RATE LOCK WINDOW CLOSES */}
-        <div style={{ padding: "14px 20px 14px 20px", marginTop: 10, marginBottom: 10, borderRight: "1px solid rgba(0,0,0,0.08)" }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Rate Lock Window Closes</div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-            <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#9b2020", lineHeight: 1 }}>May 5</div>
-            <div style={{ fontSize: 12, color: "#9b2020", fontWeight: 500 }}>{daysUntilFed} days</div>
-          </div>
-        </div>
-        {/* APRIL CASH FLOWS */}
-        <div style={{ padding: "14px 20px 14px 20px", marginTop: 10, marginBottom: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>April Cash Flows</div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-            <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, letterSpacing: "-0.02em", color: "#1a2a4a", lineHeight: 1 }}>On track</div>
-            <div style={{ fontSize: 12, color: "#2e7a52", fontWeight: 600 }}>✓</div>
-          </div>
-        </div>
+        NET WORTH: {fmt(netWorthTotal)}
+        BONUS CASH SITTING IDLE: {fmt(excessLiquidity)} for {daysIdle} days
+        POTENTIAL AFTER-TAX INCOME INCREASE: +{fmt(annualReturnPickup)}/yr
+        RATE LOCK WINDOW CLOSES: May 5 · {daysUntilFed} days
+        APRIL CASH FLOWS: On track ✓
       </div>
+      ── End hidden section ── */}
 
       {/* ── Card Grid ── */}
       <div style={{ padding: "12px 32px" }}>
@@ -11382,24 +11351,30 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
     <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "hsl(220,5%,93%)" }}>
       <div style={{ padding: "36px 48px 80px" }}>
 
-        {/* ── HERO BAR — Option C: 50% left title · 2×2 right grid ── */}
+        {/* ── PAGE HEADER — standard format matching Advisor Brief ── */}
+        <style>{`@keyframes bsPhBlink { 0%,100%{opacity:1} 50%{opacity:0.15} }`}</style>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+          {/* Left — editorial */}
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.35)", marginBottom: 6 }}>Financial Model</div>
+            <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 36, fontWeight: 400, color: "hsl(222,45%,12%)", lineHeight: 1.1, letterSpacing: "-0.025em" }}>Sarah &amp; Michael Kessler</div>
+          </div>
+          {/* Right — GURU system status (matches Advisor Brief) */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0, paddingTop: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3a9e6a", display: "inline-block", flexShrink: 0, animation: "bsPhBlink 1.8s ease infinite" }} />
+              <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap" }}>GURU System Update</span>
+            </div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap", paddingLeft: 13 }}>All accounts refreshed</div>
+            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 400, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap", paddingLeft: 13, marginTop: 1 }}>Updated {format(DEMO_NOW, "yyyy-MM-dd")} · 09:42:17</div>
+          </div>
+        </div>
+
+        {/* ── 2×2 KPI GRID ── */}
         {/* ALIGNMENT RULE: numbers in the same row share the same top baseline.
             Any cell with extra content above its number (e.g. GURU eyebrow) must
             have an invisible spacer of equal height in its paired cell. */}
-        <div style={{ display: "grid", gridTemplateColumns: "50% 1fr", alignItems: "stretch", marginBottom: 32, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-
-          {/* ── Left: identity strip ── */}
-          <div style={{ padding: "16px 40px 16px 0", borderRight: "1px solid rgba(0,0,0,0.08)", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.35)", marginBottom: 6 }}>Financial Model</div>
-            <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 34, fontWeight: 400, color: "hsl(222,45%,12%)", lineHeight: 1.18, letterSpacing: "-0.02em", marginBottom: 10 }}>Sarah &amp; Michael Kessler</div>
-            <div style={{ width: 24, height: 1, background: "rgba(0,0,0,0.12)", marginBottom: 10 }} />
-            <div style={{ fontSize: 9, fontWeight: 400, color: "rgba(0,0,0,0.48)", letterSpacing: "0.005em", lineHeight: 1.55 }}>
-              A complete view of every account, asset, and obligation — monitored continuously by{" "}
-              <span style={{ color: "rgba(71,113,174,0.78)", fontWeight: 500 }}>GURU</span>.
-            </div>
-          </div>
-
-          {/* ── Right: 2×2 stat grid — target total height ≤160px ── */}
+        <div style={{ marginBottom: 32, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto 1fr 1fr" }}>
 
             {/* Date bar */}
@@ -11442,6 +11417,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
               <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)" }}>{liabilities.length} obligations · {((totalLiab / totalAssetsZillow) * 100).toFixed(1)}% debt-to-asset</div>
             </div>
 
+          </div>
           </div>
         </div>
 
@@ -12274,20 +12250,21 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   const { annualPickup, currentAnnualIncome, proformaAnnualIncome, accounts: optAccounts } =
     computeReturnOptimization(assets, cashFlows);
 
-  const { cumulativeByMonth, troughIdx } = computeCumulativeNCF(cashFlows);
-  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const troughMonth = MONTH_NAMES[troughIdx] ?? "Nov";
-
-  // ── Annual cash flow totals (live from cashFlows) ──────────────────────────
-  const yr2026 = (cf: CashFlow) => new Date(cf.date as string).getFullYear() === 2026;
-  const annualInflows  = cashFlows.filter(cf => cf.type === "inflow"  && yr2026(cf)).reduce((s, cf) => s + Number(cf.amount), 0);
-  const annualOutflows = cashFlows.filter(cf => cf.type === "outflow" && yr2026(cf)).reduce((s, cf) => s + Number(cf.amount), 0);
+  // ── Cash flow model — same source as CashFlowForecastView ─────────────────
+  const forecastData   = buildForecast(cashFlows);
+  const annualInflows  = forecastData.reduce((s, d) => s + d.inflow,  0);
+  const annualOutflows = forecastData.reduce((s, d) => s + d.outflow, 0);
   const annualNetCF    = annualInflows - annualOutflows;
   const monthlyBurn    = Math.round(annualOutflows / 12);
   const coverageRatio  = annualOutflows > 0 ? Math.round((annualInflows / annualOutflows) * 100) : 0;
   const cashRunway     = monthlyBurn > 0 ? (totalLiquid / monthlyBurn).toFixed(1) : "—";
-  const sortedNet      = [...cumulativeByMonth.map((v, i) => i === 0 ? v : v - cumulativeByMonth[i-1])].sort((a, b) => a - b);
-  const medianMonthly  = sortedNet[Math.floor(sortedNet.length / 2)] ?? 0;
+
+  // netByMonth & cumulative — from the same CF_PL_ROWS model used by the forecast tab
+  const { cumulativeByMonth, troughIdx, netByMonth } = computeCumulativeNCF(cashFlows);
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const troughMonth  = MONTH_NAMES[troughIdx] ?? "Nov";
+  const sortedNet    = [...netByMonth].sort((a, b) => a - b);
+  const medianMonthly = sortedNet[Math.floor(sortedNet.length / 2)] ?? 0;
 
   // ── Account groupings (mirror computeLiquidityTargets classification) ──────
   const opAccts  = assets.filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"));
@@ -12589,11 +12566,61 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
           <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(91,143,204,0.5)", padding: "2px 8px", border: "1px solid rgba(91,143,204,0.18)", borderRadius: 3 }}>Jan – Dec 2026</span>
         </div>
 
-        {/* ── Forecast: KPIs (left) + Upcoming payments (right) ── */}
+        {/* ── Forecast: KPIs+Payments (left) + Charts+Walk (right) ── */}
+        {(() => {
+          // ── SVG chart helpers ──────────────────────────────────────────────
+          const W = 400, H = 178, PX = 32, PY = 18;
+          const plotW = W - 2 * PX, plotH = H - 2 * PY;
+          const mnms  = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+
+          // Chart 1: Cumulative CF
+          const cumMin   = Math.min(0, ...cumulativeByMonth);
+          const cumMax   = Math.max(0, ...cumulativeByMonth);
+          const cumRange = (cumMax - cumMin) || 1;
+          const cx = (i: number) => PX + (i / 11) * plotW;
+          const cy = (v: number) => PY + (1 - (v - cumMin) / cumRange) * plotH;
+          const cumPath = cumulativeByMonth.map((v, i) => `${i === 0 ? "M" : "L"}${cx(i).toFixed(1)},${cy(v).toFixed(1)}`).join(" ");
+          const cumFill = cumulativeByMonth.map((v, i) => `${i === 0 ? "M" : "L"}${cx(i).toFixed(1)},${cy(v).toFixed(1)}`).join(" ")
+            + ` L${cx(11).toFixed(1)},${cy(0).toFixed(1)} L${cx(0).toFixed(1)},${cy(0).toFixed(1)} Z`;
+          const cumZeroY = cy(0);
+
+          // Chart 2: Liquidity Runway
+          const runwayVals = cumulativeByMonth.map(cum => totalLiquid + cum);
+          const runMin     = Math.min(liquidityReserve * 0.8, ...runwayVals);
+          const runMax     = Math.max(...runwayVals) * 1.06;
+          const runRange   = (runMax - runMin) || 1;
+          const rx = (i: number) => PX + (i / 11) * plotW;
+          const ry = (v: number) => PY + (1 - (v - runMin) / runRange) * plotH;
+          const runPath    = runwayVals.map((v, i) => `${i === 0 ? "M" : "L"}${rx(i).toFixed(1)},${ry(v).toFixed(1)}`).join(" ");
+          const runFill    = runwayVals.map((v, i) => `${i === 0 ? "M" : "L"}${rx(i).toFixed(1)},${ry(v).toFixed(1)}`).join(" ")
+            + ` L${rx(11).toFixed(1)},${ry(runMin).toFixed(1)} L${rx(0).toFixed(1)},${ry(runMin).toFixed(1)} Z`;
+          const floorY     = ry(liquidityReserve);
+
+          // Quarterly Cash Balance Walk
+          const qDefs = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+          const quarters = qDefs.map((months, qi) => {
+            const qIn  = months.reduce((s, mi) => s + (forecastData[mi]?.inflow  ?? 0), 0);
+            const qOut = months.reduce((s, mi) => s + (forecastData[mi]?.outflow ?? 0), 0);
+            const startBal = qi === 0 ? totalLiquid : totalLiquid + (cumulativeByMonth[qDefs[qi-1][2]] ?? 0);
+            const endBal   = totalLiquid + (cumulativeByMonth[months[2]] ?? 0);
+            const isWarn   = qi === 1 && endBal < startBal; // Q2 often has big outflows
+            return { qIn, qOut, startBal, endBal, isWarn };
+          });
+
+          const tdS = (extra?: React.CSSProperties): React.CSSProperties => ({
+            padding: "6px 10px", fontSize: 11, textAlign: "right", fontVariantNumeric: "tabular-nums",
+            color: "rgba(255,255,255,0.72)", borderLeft: "1px solid rgba(91,143,204,0.18)", ...extra,
+          });
+          const qLabels = ["Q1","Q2","Q3","Q4"];
+          const qColors = ["rgba(255,255,255,0.92)","rgba(255,200,60,0.9)","rgba(255,255,255,0.92)","rgba(255,255,255,0.92)"];
+
+          return (
         <div style={{ display: "grid", gridTemplateColumns: "480px 1fr", gap: 12, alignItems: "start" }}>
 
-          {/* LEFT: Annual hero + KPI metrics */}
+          {/* LEFT: Annual hero + KPI + Upcoming payments */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+            {/* Annual Net CF hero */}
             <div style={{ background: "linear-gradient(135deg,#1a2d47 0%,#162540 100%)", border: "1px solid rgba(91,143,204,0.25)", borderRadius: 8, padding: "14px 18px", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,rgba(91,143,204,0.8),rgba(91,143,204,0.2),transparent)" }} />
               <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(91,143,204,0.55)", marginBottom: 4 }}>Annual Net Cash Flow</div>
@@ -12610,15 +12637,17 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                 </div>
               </div>
             </div>
+
+            {/* KPI table */}
             <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
               {([
-                { label: "Annual Income (Pre-Tax)",   sub: "Gross earned income + distributions",    val: fmtD(annualInflows),                                            color: "rgba(255,255,255,0.82)", indent: false },
-                { label: "Total Annual Expenses",      sub: "Core living + taxes + one-time",         val: `(${fmtD(annualOutflows)})`,                                   color: "rgba(255,255,255,0.82)", indent: false },
-                { label: "Coverage Ratio",             sub: "Annual net income ÷ expenses",           val: `${coverageRatio}%`,                                            color: coverageRatio >= 100 ? GREEN : "#ff6464", indent: true },
-                { label: "Monthly Burn Rate",          sub: "Average monthly outflows",               val: fmtD(monthlyBurn),                                             color: "#ff6464", indent: false },
-                { label: "Cash Runway",                sub: "Total liquidity ÷ monthly burn",         val: `${cashRunway} months`,                                        color: "rgba(255,255,255,0.65)", indent: true },
-                { label: "Cash Flow Trough",           sub: "Cumulative low point",                   val: `(${fmtD(troughDepth)})`, sub2: troughMonth.toUpperCase(),     color: AMBER, indent: false },
-                { label: "Median Monthly Cash Flow",   sub: "50th percentile, monthly",               val: medianMonthly >= 0 ? fmtD(medianMonthly) : `(${fmtD(Math.abs(medianMonthly))})`, color: AMBER, indent: false },
+                { label: "Annual Income (Pre-Tax)",   sub: "Gross earned income + distributions",    val: fmtD(annualInflows),   color: "rgba(255,255,255,0.82)", indent: false },
+                { label: "Total Annual Expenses",     sub: "Core living + taxes + one-time",         val: `(${fmtD(annualOutflows)})`, color: "rgba(255,255,255,0.82)", indent: false },
+                { label: "Coverage Ratio",            sub: "Annual income ÷ expenses",               val: `${coverageRatio}%`,   color: coverageRatio >= 100 ? GREEN : "#ff6464", indent: true },
+                { label: "Monthly Burn Rate",         sub: "Average monthly outflows",               val: fmtD(monthlyBurn),     color: "#ff6464", indent: false },
+                { label: "Cash Runway",               sub: "Total liquidity ÷ monthly burn",         val: `${cashRunway} months`, color: "rgba(255,255,255,0.65)", indent: true },
+                { label: "Cash Flow Trough",          sub: "Cumulative low point",                   val: `(${fmtD(troughDepth)})`, sub2: troughMonth.toUpperCase(), color: AMBER, indent: false },
+                { label: "Median Monthly Cash Flow",  sub: "50th percentile, monthly",               val: medianMonthly >= 0 ? fmtD(medianMonthly) : `(${fmtD(Math.abs(medianMonthly))})`, color: AMBER, indent: false },
               ] as const).map((row, i, arr) => (
                 <div key={row.label} style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", padding: `10px ${row.indent ? 28 : 14}px`, borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: row.indent ? "rgba(91,143,204,0.04)" : "transparent" }}>
                   <div>
@@ -12632,44 +12661,230 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* RIGHT: Upcoming large payments (live from cashFlows) */}
-          <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
-            <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(255,200,60,0.22)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <div style={{ width: 3, height: 18, borderRadius: 2, background: "rgba(255,200,60,0.75)", flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Upcoming Large Payments</span>
-              </div>
-              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(255,200,60,0.55)", border: "1px solid rgba(255,200,60,0.2)", borderRadius: 3, padding: "2px 7px" }}>{upcomingPayments.length} scheduled</span>
-            </div>
-            {upcomingPayments.map((pmt, i) => {
-              const d = new Date(pmt.date as string);
-              const daysAway = Math.round((d.getTime() - DEMO_NOW.getTime()) / 86400000);
-              const urgent = daysAway <= 20;
-              return (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < upcomingPayments.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none", background: urgent ? "rgba(255,200,60,0.04)" : "transparent" }}>
-                  <div style={{ flexShrink: 0, width: 36, textAlign: "center" as const }}>
-                    <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "rgba(255,200,60,0.8)" }}>{format(d, "MMM")}</div>
-                    <div style={{ fontSize: 18, fontWeight: 300, lineHeight: 1.1, color: "rgba(255,200,60,0.9)" }}>{format(d, "d")}</div>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{pmt.description}</div>
-                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", marginTop: 3 }}>CIT Bank Operating ****7842 · {pmt.category ?? "outflow"}</div>
-                  </div>
-                  <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
-                    <div style={{ fontSize: 16, fontWeight: 300, color: "rgba(255,200,60,0.9)", fontVariantNumeric: "tabular-nums" as const }}>{fmtD(Number(pmt.amount))}</div>
-                    <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(255,200,60,0.65)", marginTop: 2 }}>{daysAway > 0 ? `${daysAway} DAYS` : "DUE TODAY"}</div>
-                  </div>
+            {/* Upcoming large payments */}
+            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(255,200,60,0.22)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <div style={{ width: 3, height: 18, borderRadius: 2, background: "rgba(255,200,60,0.75)", flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Upcoming Large Payments</span>
                 </div>
-              );
-            })}
-            {upcomingPayments.length === 0 && (
-              <div style={{ padding: "20px 16px", fontSize: 12, color: "rgba(255,255,255,0.38)", textAlign: "center" as const }}>No large payments scheduled</div>
-            )}
+                <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(255,200,60,0.55)", border: "1px solid rgba(255,200,60,0.2)", borderRadius: 3, padding: "2px 7px" }}>{upcomingPayments.length} scheduled</span>
+              </div>
+              {upcomingPayments.map((pmt, i) => {
+                const d = new Date(pmt.date as string);
+                const daysAway = Math.round((d.getTime() - DEMO_NOW.getTime()) / 86400000);
+                const urgent = daysAway <= 20;
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < upcomingPayments.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none", background: urgent ? "rgba(255,200,60,0.04)" : "transparent" }}>
+                    <div style={{ flexShrink: 0, width: 36, textAlign: "center" as const }}>
+                      <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: `rgba(255,200,60,${urgent ? 0.8 : 0.5})` }}>{format(d, "MMM")}</div>
+                      <div style={{ fontSize: 18, fontWeight: 300, lineHeight: 1.1, color: `rgba(255,200,60,${urgent ? 0.9 : 0.6})` }}>{format(d, "d")}</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: `rgba(255,255,255,${urgent ? 0.85 : 0.6})`, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{pmt.description}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", marginTop: 3 }}>{pmt.category ?? "outflow"}</div>
+                    </div>
+                    <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
+                      <div style={{ fontSize: 16, fontWeight: 300, color: `rgba(255,200,60,${urgent ? 0.9 : 0.7})`, fontVariantNumeric: "tabular-nums" as const }}>{fmtD(Number(pmt.amount))}</div>
+                      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: urgent ? "rgba(255,200,60,0.65)" : "rgba(255,255,255,0.25)", marginTop: 2 }}>{daysAway > 0 ? `${daysAway} DAYS` : "DUE TODAY"}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              {upcomingPayments.length === 0 && <div style={{ padding: "20px 16px", fontSize: 12, color: "rgba(255,255,255,0.38)", textAlign: "center" as const }}>No large payments scheduled</div>}
+            </div>
+
           </div>
 
+          {/* RIGHT: Two charts + Quarterly Cash Balance Walk */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+            {/* Chart 1: Cumulative Cash Flow */}
+            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ padding: "8px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Cumulative Cash Flow</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: GREEN, display: "inline-block" }} /><span style={{ fontSize: 9, color: DIM }}>Net CF</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 14, borderTop: `2px dashed ${AMBER}` }} /><span style={{ fontSize: 9, color: DIM }}>{troughMonth} trough</span></div>
+                </div>
+              </div>
+              <div style={{ padding: "8px 0 4px" }}>
+                <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+                  {/* Zero baseline */}
+                  <line x1={PX} y1={cumZeroY} x2={W - PX} y2={cumZeroY} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+                  {/* Fill area */}
+                  <path d={cumFill} fill="rgba(94,204,138,0.1)" />
+                  {/* Line */}
+                  <path d={cumPath} fill="none" stroke={GREEN} strokeWidth={2} strokeLinejoin="round" />
+                  {/* Trough vertical marker */}
+                  <line x1={cx(troughIdx)} y1={PY} x2={cx(troughIdx)} y2={H - PY} stroke={AMBER} strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+                  {/* Data points */}
+                  {cumulativeByMonth.map((v, i) => (
+                    <circle key={i} cx={cx(i)} cy={cy(v)} r={3} fill={v >= 0 ? GREEN : AMBER} opacity={0.85} />
+                  ))}
+                  {/* X-axis labels */}
+                  {mnms.map((m, i) => (
+                    <text key={i} x={cx(i)} y={H - 2} textAnchor="middle" fill={i === troughIdx ? AMBER : "rgba(255,255,255,0.3)"} fontSize={9} fontFamily="Inter,system-ui">{m}</text>
+                  ))}
+                  {/* Y-axis: min, 0, max */}
+                  {[cumMin, 0, cumMax].map((v, i) => (
+                    <text key={i} x={PX - 4} y={cy(v) + 4} textAnchor="end" fill="rgba(255,255,255,0.28)" fontSize={8} fontFamily="Inter,system-ui">{v >= 0 ? `$${Math.round(v/1000)}k` : `(${Math.round(Math.abs(v)/1000)}k)`}</text>
+                  ))}
+                </svg>
+              </div>
+            </div>
+
+            {/* Chart 2: Liquidity Runway */}
+            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ padding: "8px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Liquidity Runway</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: BLUE, display: "inline-block" }} /><span style={{ fontSize: 9, color: DIM }}>Cash balance</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 14, borderTop: `2px dashed rgba(94,204,138,0.6)` }} /><span style={{ fontSize: 9, color: DIM }}>Reserve floor</span></div>
+                </div>
+              </div>
+              <div style={{ padding: "8px 0 4px" }}>
+                <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+                  {/* Floor dashed line */}
+                  <line x1={PX} y1={floorY} x2={W - PX} y2={floorY} stroke="rgba(94,204,138,0.5)" strokeWidth={1.5} strokeDasharray="6 4" />
+                  {/* Fill */}
+                  <path d={runFill} fill="rgba(91,143,204,0.08)" />
+                  {/* Line */}
+                  <path d={runPath} fill="none" stroke={BLUE} strokeWidth={2} strokeLinejoin="round" />
+                  {/* Data points */}
+                  {runwayVals.map((v, i) => (
+                    <circle key={i} cx={rx(i)} cy={ry(v)} r={3} fill={v < liquidityReserve ? "#ff6464" : BLUE} opacity={0.85} />
+                  ))}
+                  {/* X-axis labels */}
+                  {mnms.map((m, i) => (
+                    <text key={i} x={rx(i)} y={H - 2} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize={9} fontFamily="Inter,system-ui">{m}</text>
+                  ))}
+                  {/* Y-axis */}
+                  {[runMin, liquidityReserve, runMax].map((v, i) => (
+                    <text key={i} x={PX - 4} y={ry(v) + 4} textAnchor="end" fill={i === 1 ? "rgba(94,204,138,0.55)" : "rgba(255,255,255,0.28)"} fontSize={8} fontFamily="Inter,system-ui">{`$${Math.round(v/1000)}k`}</text>
+                  ))}
+                </svg>
+                <div style={{ padding: "4px 14px 8px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ display: "inline-block", width: 16, flexShrink: 0, borderTop: "1.5px dashed rgba(94,204,138,0.5)" }} />
+                  <span style={{ fontSize: 10, color: DIM }}><strong style={{ color: "rgba(94,204,138,0.7)" }}>Reserve floor {fmtD(liquidityReserve)}</strong> — 12 months core expenses. Balance above is deployable.</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quarterly Cash Balance Walk */}
+            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
+              <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 9 }}>
+                <div style={{ width: 3, height: 18, borderRadius: 2, background: BLUE, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Cash Balance Walk</span>
+              </div>
+              <div style={{ overflowX: "auto" as const }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" as const, fontSize: 11 }}>
+                  <thead>
+                    <tr style={{ background: "rgba(91,143,204,0.13)", borderBottom: "1px solid rgba(91,143,204,0.22)" }}>
+                      <th style={{ textAlign: "left" as const, padding: "7px 14px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)", width: 140 }}></th>
+                      {qLabels.map((q, qi) => (
+                        <th key={q} style={tdS({ padding: "7px 14px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: qColors[qi], fontSize: 11, textAlign: "right" as const })}>{q}{quarters[qi].isWarn ? " ⚠" : ""}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: "Start Balance",   fn: (q: typeof quarters[0]) => fmtD(q.startBal), color: "rgba(255,255,255,0.72)" },
+                      { label: "Cash Inflow",     fn: (q: typeof quarters[0]) => fmtD(q.qIn),     color: GREEN },
+                      { label: "Total Expenses",  fn: (q: typeof quarters[0]) => `(${fmtD(q.qOut)})`, color: "#ff6464" },
+                      { label: "End Balance",     fn: (q: typeof quarters[0]) => fmtD(q.endBal),  color: "rgba(255,255,255,0.88)", bold: true },
+                    ].map((row, ri, rows) => (
+                      <tr key={row.label} style={{ borderBottom: ri < rows.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: row.bold ? "rgba(255,255,255,0.03)" : "transparent" }}>
+                        <td style={{ padding: "7px 14px", fontSize: 11, fontWeight: row.bold ? 700 : 400, color: "rgba(255,255,255,0.55)", borderTop: row.bold ? "1px solid rgba(255,255,255,0.12)" : "none" }}>{row.label}</td>
+                        {quarters.map((q, qi) => (
+                          <td key={qi} style={tdS({ color: row.bold ? qColors[qi] : row.color, fontWeight: row.bold ? 700 : 300, borderTop: row.bold ? "1px solid rgba(255,255,255,0.12)" : "none" })}>{row.fn(q)}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
         </div>
+          );
+        })()}
+
+        {/* ── Section: Monthly Summary Model ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, padding: "8px 0 2px" }}>
+          <div style={{ width: 4, height: 26, background: "linear-gradient(to bottom,rgba(91,143,204,1),rgba(91,143,204,0.15))", borderRadius: 2, flexShrink: 0, boxShadow: "0 0 8px rgba(91,143,204,0.35)" }} />
+          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.82)", whiteSpace: "nowrap" }}>Monthly Summary Model</span>
+          <div style={{ flex: 1, height: 2, background: "linear-gradient(to right,rgba(91,143,204,0.35),rgba(91,143,204,0.08) 50%,transparent)", borderRadius: 1 }} />
+          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(91,143,204,0.5)", padding: "2px 8px", border: "1px solid rgba(91,143,204,0.18)", borderRadius: 3 }}>Jan – Dec 2026</span>
+        </div>
+        <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" as const, fontSize: 11, minWidth: 860 }}>
+            <thead>
+              <tr style={{ background: "rgba(91,143,204,0.13)", borderBottom: "1px solid rgba(91,143,204,0.22)" }}>
+                <th style={{ textAlign: "left" as const, padding: "8px 14px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)", width: 150 }}></th>
+                {forecastData.map((d, i) => (
+                  <th key={i} style={{ padding: "8px 8px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", textAlign: "right" as const, borderLeft: "1px solid rgba(91,143,204,0.2)", color: i === troughIdx ? AMBER : "rgba(255,255,255,0.75)", whiteSpace: "nowrap" as const }}>
+                    {d.month}{i === troughIdx ? " ▼" : ""}
+                  </th>
+                ))}
+                <th style={{ padding: "8px 12px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", textAlign: "right" as const, borderLeft: "1px solid rgba(91,143,204,0.3)", background: "rgba(91,143,204,0.14)", color: "rgba(180,215,255,0.85)", whiteSpace: "nowrap" as const }}>Full Year</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Income section header */}
+              <tr style={{ background: "rgba(94,204,138,0.04)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <td colSpan={14} style={{ padding: "5px 14px", fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(94,204,138,0.55)" }}>Income</td>
+              </tr>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <td style={{ padding: "7px 14px 7px 20px", fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Total Cash Inflows</td>
+                {forecastData.map((d, i) => (
+                  <td key={i} style={{ padding: "7px 8px", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(255,255,255,0.04)", color: GREEN, fontWeight: 300 }}>
+                    {d.inflow > 0 ? fmtD(d.inflow) : <span style={{ color: "rgba(255,255,255,0.25)" }}>—</span>}
+                  </td>
+                ))}
+                <td style={{ padding: "7px 12px", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(91,143,204,0.2)", background: "rgba(91,143,204,0.06)", color: GREEN, fontWeight: 600 }}>{fmtD(annualInflows)}</td>
+              </tr>
+              {/* Expenses section header */}
+              <tr style={{ background: "rgba(255,100,100,0.04)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <td colSpan={14} style={{ padding: "5px 14px", fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,100,100,0.5)" }}>Expenses</td>
+              </tr>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <td style={{ padding: "7px 14px 7px 20px", fontSize: 11, color: "rgba(255,255,255,0.55)" }}>Total Cash Expenses</td>
+                {forecastData.map((d, i) => (
+                  <td key={i} style={{ padding: "7px 8px", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.72)", fontWeight: 300 }}>
+                    {d.outflow > 0 ? `(${fmtD(d.outflow)})` : <span style={{ color: "rgba(255,255,255,0.25)" }}>—</span>}
+                  </td>
+                ))}
+                <td style={{ padding: "7px 12px", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(91,143,204,0.2)", background: "rgba(91,143,204,0.06)", color: "rgba(255,255,255,0.82)", fontWeight: 600 }}>{`(${fmtD(annualOutflows)})`}</td>
+              </tr>
+              {/* Net */}
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)", borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.02)" }}>
+                <td style={{ padding: "8px 14px", fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: "rgba(255,255,255,0.85)" }}>Total Net Cash Flow</td>
+                {forecastData.map((d, i) => (
+                  <td key={i} style={{ padding: "8px 8px", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(255,255,255,0.07)", fontWeight: 600, color: d.net >= 0 ? GREEN : "#ff6464" }}>
+                    {d.net >= 0 ? fmtD(d.net) : `(${fmtD(Math.abs(d.net))})`}
+                  </td>
+                ))}
+                <td style={{ padding: "8px 12px", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(91,143,204,0.2)", background: "rgba(91,143,204,0.06)", fontWeight: 700, color: annualNetCF >= 0 ? GREEN : "#ff6464" }}>{annualNetCF >= 0 ? fmtD(annualNetCF) : `(${fmtD(Math.abs(annualNetCF))})`}</td>
+              </tr>
+              {/* Cumulative */}
+              <tr>
+                <td style={{ padding: "8px 14px", fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: AMBER }}>Cumulative Net Cash Flow</td>
+                {cumulativeByMonth.map((v, i) => (
+                  <td key={i} style={{ padding: "8px 8px", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(255,255,255,0.07)", fontWeight: 600, color: v >= 0 ? "rgba(255,255,255,0.72)" : AMBER }}>
+                    {v >= 0 ? fmtD(v) : `(${fmtD(Math.abs(v))})`}
+                  </td>
+                ))}
+                <td style={{ padding: "8px 12px", textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(91,143,204,0.2)", background: "rgba(91,143,204,0.06)", fontWeight: 700, color: "rgba(180,215,255,0.85)" }}>
+                  Dec: {fmtD(cumulativeByMonth[11] ?? 0)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </div>
   );
