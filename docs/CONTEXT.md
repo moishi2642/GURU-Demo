@@ -7,7 +7,9 @@
 
 ## What GURU Is
 
-GURU is a **wealth advisor tool** — not a consumer app. The user is a professional advisor (like a CFO or private wealth manager) managing high-net-worth client portfolios. The end client never touches this interface directly.
+GURU is a 24/7 capital allocation and financial decisioning system for the personal balance sheet built for financial advisors — not a consumer app. It is powered by a data aggregation system that sees across the entire financial life, building individualized cash flow forecasts from the data. This is then used to deliver prompts and strategic decisions to the advisor. GURU makes decisions easy and execution fast and seamless so advisors can grow AUM from existing clients but also scale their business. Money movement is key to GURU — data aggregation, AI-powered decisions, and automatic money movement. Getting money to work hard and sitting at the right place at the right time.
+
+The user is a wealth manager at an RIA managing high-net-worth client portfolios. The end client likely has $1–$50mm of assets. The end client never touches this interface directly but may experience it through the advisor. The user should really never hear the name GURU.
 
 **Never simplify this product down to consumer level. Simplicity in GURU means clarity of dense information, not reduction of information.**
 

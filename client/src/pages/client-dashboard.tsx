@@ -8589,22 +8589,18 @@ function AdvisorBriefView({
           <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: "rgba(0,0,0,0.38)", marginBottom: 6, letterSpacing: "-0.01em", lineHeight: 1.2, whiteSpace: "nowrap" }}>
             Good morning, Tara
           </div>
-          <div style={{ fontFamily: SERIF, fontSize: 38, fontWeight: 400, letterSpacing: "-0.025em", color: "#1a2a4a", lineHeight: 1.12, marginBottom: 10 }}>
-            Kesslers have idle cash, three portfolio gaps, and rate exposure — all addressable today
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#1e9955", display: "inline-block", animation: "alertDot 2s ease-in-out infinite", flexShrink: 0 }} />
-            <span style={{ fontFamily: FONT, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#1e9955" }}>
-              GURU Analysis Complete · Ready to Execute
-            </span>
+          <div style={{ fontFamily: SERIF, fontSize: 38, fontWeight: 400, letterSpacing: "-0.025em", color: "#1a2a4a", lineHeight: 1.12 }}>
+            Three capital allocation decisions for the Kesslers
           </div>
         </div>
-        {/* Right side — date */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0, paddingTop: 4 }}>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(0,0,0,0.38)" }}>Today</div>
-            <div style={{ fontSize: 12, fontWeight: 400, color: "#4a4740", letterSpacing: "-0.01em", marginTop: 2 }}>{format(DEMO_NOW, "EEEE, MMMM d, yyyy")}</div>
+        {/* Right side — status + time */}
+        <div style={{ display: "flex", alignItems: "center", gap: 20, flexShrink: 0, paddingTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#1e9955", display: "inline-block", animation: "alertDot 2s ease-in-out infinite", flexShrink: 0 }} />
+            <span style={{ fontFamily: FONT, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#1a2a4a" }}>GURU Analysis Complete</span>
           </div>
+          <span style={{ fontFamily: FONT, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#1a2a4a" }}>Ready to Execute</span>
+          <span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 400, color: "rgba(0,0,0,0.38)", letterSpacing: "0.02em" }}>9:42 AM</span>
         </div>
       </div>
 
