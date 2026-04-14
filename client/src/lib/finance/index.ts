@@ -18,3 +18,6 @@ export * from "./returns";
 
 // Balance sheet grouping & categorization (Model Tab: Balance Sheet)
 export * from "./balancesheet";
+
+// Monthly running balance simulation (Model Tab: Account Balance Waterfall)
+export * from "./balances";

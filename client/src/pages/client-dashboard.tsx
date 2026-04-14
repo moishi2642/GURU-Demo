@@ -1,9 +1,30 @@
-import React, { useState, useEffect, useRef, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { computeMonthlyBalances } from "@/lib/finance";
 import { createPortal } from "react-dom";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { useClientDashboard } from "@/hooks/use-clients";
+import { ClientConfigContext, useClientConfig, type ClientConfig } from "@/lib/dashboard/context";
+import { fmt, fmtK } from "@/lib/dashboard/formatters";
+import {
+  DEMO_NOW,
+  HERO_COLORS,
+  FLAG_META,
+  BOB_CLIENTS,
+  PANEL_CLS,
+  INTEL_PANEL_CLS,
+  GREEN,
+  RED,
+  BLUE,
+  INTEL_GREEN,
+  INTEL_GREEN_DIM,
+  INTEL_GRID,
+  GURU_BUCKETS,
+  type GuroBucket,
+  type FlagKey,
+  type BobClient,
+} from "@/lib/dashboard/constants";
 import {
   AddAssetModal,
   AddLiabilityModal,
@@ -93,30 +114,6 @@ import { ResponsiveSankey } from "@nivo/sankey";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
 import type { Account, Asset, Liability, CashFlow, Strategy, ClientTaxProfile, AssetReturn, CfCategoryRule } from "@shared/schema";
 
-// ─── Client Config Context ─────────────────────────────────────────────────────
-// Provides DB-sourced config to every view without prop drilling.
-// Think of this as the "Inputs Tab" being available everywhere in the model.
-//
-// taxProfile      — client tax rates (replaces BANK_TAX / TREAS_TAX / LTCG_TAX constants)
-// assetReturns    — performance labels per holding (replaces ASSET_RETURNS array)
-// cfCategoryRules — P&L row structure (replaces CF_PL_ROWS constant)
-
-interface ClientConfig {
-  taxProfile:      ClientTaxProfile | null;
-  assetReturns:    AssetReturn[];
-  cfCategoryRules: CfCategoryRule[];
-}
-
-const ClientConfigContext = createContext<ClientConfig>({
-  taxProfile:      null,
-  assetReturns:    [],
-  cfCategoryRules: [],
-});
-
-/** Hook — use inside any view to access DB-sourced config */
-function useClientConfig(): ClientConfig {
-  return useContext(ClientConfigContext);
-}
 
 // ─── Count-up animation ───────────────────────────────────────────────────────
 function useCountUp(target: number, duration = 1600) {
@@ -358,123 +355,6 @@ function CashFlowTicker({ cashFlows }: { cashFlows: CashFlow[] }) {
   );
 }
 
-// ─── Demo date: simulate "today = December 31, 2025" ──────────────────────────
-// SINGLE SOURCE OF TRUTH for all tab date displays.
-// This constant is visible / referenced from the GURU Intelligence tab header.
-// All other tabs derive their "today" from this value.
-const DEMO_NOW = new Date(2025, 11, 31); // December 31, 2025
-
-// ─── Institutional color palette — private wealth / Goldman aesthetic ─────────
-// Deep, desaturated. Navy, warm gold, forest, slate. No orange, no purple.
-const HERO_COLORS: Record<string, { bg: string; accent: string; dot: string }> = {
-  "Operating Cash": { bg: "#162843", accent: "#7aa7d4", dot: "#5a85b8" }, // deep navy
-  Reserve:          { bg: "#3a2710", accent: "#c9a84c", dot: "#b8943f" }, // deep warm gold
-  Build:            { bg: "#0e3320", accent: "#5ab88a", dot: "#3da870" }, // deep forest
-  Grow:             { bg: "#1e2d40", accent: "#7da3c8", dot: "#5585ae" }, // deep slate
-  "Real Estate":        { bg: "#2a2a2a", accent: "#a3a3a3", dot: "#888888" },
-  "Alternative Assets": { bg: "#2a2a2a", accent: "#a3a3a3", dot: "#888888" },
-  "529 Plans":          { bg: "#2a2a2a", accent: "#a3a3a3", dot: "#888888" },
-};
-
-// ─── Book of Business — flag metadata & client data ───────────────────────────
-type FlagKey = "excess_cash" | "cash_deficit" | "product_needed" | "follow_up" | "autobill_approval" | "money_movement";
-// ─── Institutional flag colors — border-only badges, no filled backgrounds ─────
-const FLAG_META: Record<FlagKey, { label: string; short: string; color: string; bg: string; text: string; border: string }> = {
-  excess_cash:       { label: "Excess Cash",      short: "Excess Cash",  color: "#b45309", bg: "bg-transparent", text: "text-[#92400e]",  border: "border-[#b45309]/40" },
-  cash_deficit:      { label: "Cash Deficit",      short: "Deficit",      color: "#b91c1c", bg: "bg-transparent", text: "text-[#991b1b]",  border: "border-[#b91c1c]/40" },
-  product_needed:    { label: "Product Selection", short: "Product",      color: "#1a4f9c", bg: "bg-transparent", text: "text-[#1a4f9c]",  border: "border-[#1a4f9c]/40" },
-  follow_up:         { label: "Follow Up",         short: "Follow Up",    color: "#1a5c35", bg: "bg-transparent", text: "text-[#1a5c35]",  border: "border-[#1a5c35]/40" },
-  autobill_approval: { label: "Autobill Approval", short: "Autobill",     color: "#1a5f52", bg: "bg-transparent", text: "text-[#1a5f52]",  border: "border-[#1a5f52]/40" },
-  money_movement:    { label: "Money Movement",    short: "Movement",     color: "#233554", bg: "bg-transparent", text: "text-[#233554]",  border: "border-[#233554]/40" },
-};
-interface BobClient { id: number; name: string; initials: string; aum: number; totalAssets: number; liquidCash: number; cashPct: number; flags: FlagKey[]; advisor: string; lastContact: string; }
-const BOB_CLIENTS: BobClient[] = (() => {
-  const LN = ["Adams","Allen","Anderson","Baker","Barnes","Bell","Bennett","Brooks","Brown","Campbell","Carter","Clark","Collins","Cook","Cooper","Cox","Davis","Evans","Fisher","Foster","Garcia","Gonzalez","Gray","Green","Hall","Harris","Harrison","Hayes","Hill","Howard","Hughes","Jackson","James","Jenkins","Johnson","Jones","Kelly","King","Lee","Lewis","Long","Martin","Martinez","Mason","Miller","Mitchell","Moore","Morgan","Morris","Murphy","Nelson","Parker","Patterson","Perry","Peterson","Phillips","Powell","Price","Reed","Richardson","Rivera","Roberts","Robinson","Rogers","Ross","Russell","Sanders","Scott","Shaw","Simpson","Smith","Stewart","Sullivan","Taylor","Thomas","Thompson","Torres","Turner","Walker","Ward","Watson","White","Williams","Wilson","Wood","Wright","Young"];
-  const FN = ["James","Mary","Robert","Patricia","John","Jennifer","Michael","Linda","William","Barbara","David","Susan","Richard","Jessica","Joseph","Karen","Charles","Sarah","Thomas","Lisa","Daniel","Nancy","Anthony","Betty","Donald","Margaret","Mark","Sandra","Paul","Ashley","Steven","Dorothy","Andrew","Kimberly","Kenneth","Emily","Joshua","Donna","Kevin","Michelle"];
-  const ADV = ["Sarah Chen","Marcus Webb","Priya Patel","James Harlow","Emma Laurent"];
-  const FS: FlagKey[][] = [["excess_cash"],["excess_cash","product_needed"],["cash_deficit"],["cash_deficit","follow_up"],["product_needed"],["product_needed","follow_up"],["follow_up"],["autobill_approval"],["autobill_approval","money_movement"],["money_movement"],["money_movement","excess_cash"],[],[],["excess_cash","autobill_approval"],["cash_deficit","money_movement"],["follow_up","autobill_approval"]];
-  const AUML = [750_000,1_500_000,3_200_000,7_800_000,14_500_000,28_000_000,42_000_000];
-  const CTACT = ["Today","Yesterday","2d ago","1 wk ago","2 wk ago","1 mo ago","3 mo ago"];
-  return Array.from({length:100},(_,i)=>{
-    const flags = FS[i % FS.length];
-    const aum = Math.round(AUML[i % AUML.length] * (1 + (i * 0.17) % 0.85));
-    const totalAssets = Math.round(aum * (1.18 + (i * 0.041) % 0.32));
-    const cpct = flags.includes("excess_cash") ? 12+(i%18) : flags.includes("cash_deficit") ? 0.4+(i%2)*0.8 : 2.5+(i%7);
-    return { id:i+1, name:`${LN[i%LN.length]}, ${FN[i%FN.length]}`, initials:`${FN[i%FN.length][0]}${LN[i%LN.length][0]}`, aum, totalAssets, liquidCash:Math.round(aum*cpct/100), cashPct:Math.round(cpct*10)/10, flags, advisor:ADV[i%ADV.length], lastContact:CTACT[i%CTACT.length] };
-  });
-})();
-
-// ─── Formatting Helpers ────────────────────────────────────────────────────────
-const fmt = (v: number, compact = false) => {
-  if (compact && Math.abs(v) >= 1_000_000)
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      notation: "compact",
-      maximumFractionDigits: 1,
-    }).format(v);
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(v);
-};
-const fmtK = (v: number) => {
-  if (Math.abs(v) >= 1000)
-    return `${v < 0 ? "-" : ""}$${(Math.abs(v) / 1000).toFixed(0)}k`;
-  return fmt(v);
-};
-
-const PANEL_CLS =
-  "bg-white overflow-hidden [border:0.5px_solid_rgba(0,0,0,0.07)]";
-
-// Intelligence-layer panels — dark forest green analytical canvas
-const INTEL_PANEL_CLS =
-  "guru-intelligence border shadow-sm rounded-xl overflow-hidden";
-
-// ─── Color constants (updated to institutional palette) ────────────────────────
-const GREEN = "hsl(160, 60%, 38%)";
-const RED   = "hsl(0, 72%, 50%)";
-const BLUE  = "hsl(216, 82%, 43%)";
-// Intelligence-layer chart colors
-const INTEL_GREEN      = "hsl(152, 52%, 44%)";   // positive / growth line
-const INTEL_GREEN_DIM  = "hsl(152, 40%, 32%)";   // area fill
-const INTEL_GRID       = "hsl(152, 22%, 18%)";   // chart grid lines
-
-// ─── GURU Method: 5 Strategic Bucket Definitions ─────────────────────────────
-const GURU_BUCKETS = {
-  reserve: {
-    label: "Operating Cash",
-    short: "Checking — instantly available transaction accounts",
-    color: "#1E4F9C",
-    tagCls: "bg-transparent border border-[#1E4F9C]/35 text-[#1E4F9C]",
-  },
-  yield: {
-    label: "Liquidity Reserve",
-    short: "Savings & money market — penalty-free, higher-yielding",
-    color: "#835800",
-    tagCls: "bg-transparent border border-[#835800]/35 text-[#835800]",
-  },
-  tactical: {
-    label: "Capital Build",
-    short: "Treasuries & fixed income — 1–3 year horizon",
-    color: "#195830",
-    tagCls: "bg-transparent border border-[#195830]/35 text-[#195830]",
-  },
-  growth: {
-    label: "Investments",
-    short: "Long-horizon investments — equities, compounding wealth",
-    color: "#4A3FA0",
-    tagCls: "bg-transparent border border-[#4A3FA0]/35 text-[#4A3FA0]",
-  },
-  alternatives: {
-    label: "Alternatives",
-    short: "Real estate, private equity, RSUs — strategic illiquid assets",
-    color: "#5C5C6E",
-    tagCls: "bg-transparent border border-slate-400/40 text-slate-600",
-  },
-} as const;
-type GuroBucket = keyof typeof GURU_BUCKETS;
 
 // ─── Computations ─────────────────────────────────────────────────────────────
 function buildMonthMap(cashFlows: CashFlow[]) {
@@ -2504,6 +2384,32 @@ function lookupBsSubtitle(
   return null;
 }
 
+/**
+ * DB-first subtitle resolver.
+ *
+ * Priority:
+ *   1. Account number from the `accounts` table (e.g. "Acct ****7842")
+ *   2. Hardcoded map fallback — used only for real estate addresses and assets
+ *      with no linked account record.
+ *
+ * This replaces the pure-hardcode approach in BS_ASSET_SUBTITLES for all
+ * financial accounts. Property addresses are intentionally kept in the fallback
+ * map because they are not stored in the accounts table.
+ */
+function resolveSubtitle(
+  asset: Asset,
+  accountById: Record<number, Account>,
+  fallbackMap: Array<[string[], string]>,
+): string | null {
+  // DB-first: use accountNumber from the linked account record
+  if (asset.accountId != null) {
+    const acct = accountById[asset.accountId];
+    if (acct?.accountNumber) return `Acct ${acct.accountNumber}`;
+  }
+  // Fallback: hardcoded map (property addresses + any unlinked assets)
+  return lookupBsSubtitle(asset.description, fallbackMap);
+}
+
 function assetComment(a: Asset, groupTotal?: number): AssetComment | null {
   const desc = (a.description ?? "").toLowerCase();
   const val = Number(a.value);
@@ -2676,7 +2582,7 @@ function buildAssetGroups(assets: Asset[], accounts: Account[] = [], dbAssetRetu
         const grossRet = lookupReturn(d);
         return {
           label: holdingLabel(d),
-          subtitle: lookupBsSubtitle(d, BS_ASSET_SUBTITLES),
+          subtitle: resolveSubtitle(a, accountById, BS_ASSET_SUBTITLES),
           value: Number(a.value),
           rate: extractRate(d),
           ret: grossRet,
@@ -2808,7 +2714,7 @@ function buildAssetGroups(assets: Asset[], accounts: Account[] = [], dbAssetRetu
     const grossRet = lookupReturn(a.description);
     return {
       label: (a.description ?? "").split("(")[0].trim(),
-      subtitle: lookupBsSubtitle(a.description, BS_ASSET_SUBTITLES),
+      subtitle: resolveSubtitle(a, accountById, BS_ASSET_SUBTITLES),
       value: Number(a.value),
       rate: extractRate(a.description),
       ret: grossRet,
@@ -6122,17 +6028,27 @@ function MoneyMovementView({
   // ── All values sourced from updated Cash Flow Model (2-month Ops Cash target) ─
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // BASELINE ACCOUNT BALANCES — Prototype_Model_v4.xlsx  (Jan–Dec)
+  // BASELINE ACCOUNT BALANCES — DB-driven via computeMonthlyBalances (Jan–Dec)
   // AS-IS state before advisor makes any GURU Allocation changes.
   // Sub-account arrays feed both the individual rows AND the bucket totals.
   // ══════════════════════════════════════════════════════════════════════════════
 
-  // ── OPERATING CASH sub-accounts ──────────────────────────────────────────────
-  // Citizens is floored at $0; any shortfall is absorbed by Chase so the total stays identical.
-  const CHASE_BAL          = [25050,18814,18814,18814,18814,18814,18814,13046,10920, 8794, 2668,38439];
-  const CITIZENS_CHECK_BAL = [87374,91485,89360,42234,36109,32983,11357,    0,    0,    0,    0,11319];
-  const IMM_BAL            = CHASE_BAL.map((v, i) => v + CITIZENS_CHECK_BAL[i]);
-  // Jan→Dec: 112424, 110299, 108173, 61048, 54922, 51797, 30171, 13045, 10920, 8794, 2668, 49759
+  const {
+    primaryOpsBal:   CHASE_BAL,
+    secondaryOpsBal: CITIZENS_CHECK_BAL,
+    opsBal:          IMM_BAL,
+    primaryRsvBal:   CITIZENS_MM_BAL,
+    secondaryRsvBal: CAPONE_BAL,
+    rsvBal:          ST_BAL,
+    bldBal:          MT_BAL,
+    growBal:         GROW_BAL,
+    netWorthBal:     NET_WORTH,
+    rsvInterest:     _rsvIntComputed,
+    bldInterest:     _bldIntComputed,
+  } = computeMonthlyBalances(assets, cashFlows, new Date().getUTCFullYear(), minOps);
+
+  // TREASURIES_BAL is an alias for the Build (MT) bucket
+  const TREASURIES_BAL = MT_BAL;
 
   // ── Ops Cash flow details (for hover tooltips) — LIVE from DB via computeLiveMonthlyCF ──
   // liveNetExp = gross outflows minus rental income, matching Excel "Cash Expenses" structure
@@ -6142,31 +6058,17 @@ function MoneyMovementView({
   const FROM_ST_TO_IMM = [0,0,0,0,0,0,0,0,0,0,0,0]; // no auto-draw in baseline
   const IMM_INT        = [0,0,0,0,0,0,0,0,0,0,0,0];
 
-  // ── RESERVE sub-accounts ─────────────────────────────────────────────────────
-  const CITIZENS_MM_BAL = [225000,225388,225776,226165,226555,226945,227336,227728,228120,228512,228906,369271];
-  const CAPONE_BAL      = [15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000];
-  const ST_BAL          = CITIZENS_MM_BAL.map((v, i) => v + CAPONE_BAL[i]);
-  // Jan→Dec: 240000, 240388, 240776, 241165, 241555, 241945, 242336, 242728, 243120, 243512, 243906, 384271
-
   // ── Reserve flow details (for hover tooltips) ──────────────────────────────
   const INCOME_TO_ST = [0,0,0,0,0,0,0,0,0,0,0,0];
   const FROM_ST_OUT  = [0,0,0,0,0,0,0,0,0,0,0,0];
-  const ST_INT       = [0,388,388,389,390,390,391,392,392,392,394,394];
-
-  // ── BUILD sub-accounts ───────────────────────────────────────────────────────
-  const TREASURIES_BAL = [135000,135289,135578,135868,136159,136450,136742,137035,137328,137622,137916,138211];
-  const MT_BAL         = TREASURIES_BAL;
+  // Reserve interest per month derived from DB asset balances and inferred rate
+  const ST_INT       = _rsvIntComputed;
 
   // ── Build flow details (for hover tooltips) ──────────────────────────────
   const INCOME_TO_MT = [0,0,0,0,0,0,0,0,0,0,0,0];
   const FROM_MT_OUT  = [0,0,0,0,0,0,0,0,0,0,0,0];
-  const MT_INT       = [0,289,289,290,291,291,292,293,293,294,294,295];
-
-  // ── GROW (Long-Term) ─────────────────────────────────────────────────────────
-  const GROW_BAL = [2618683,2633959,2649323,2664778,2680322,2695958,2711684,2727502,2743413,2759416,2775512,2791703];
-
-  // ── TOTAL NET WORTH ──────────────────────────────────────────────────────────
-  const NET_WORTH = IMM_BAL.map((v, i) => v + ST_BAL[i] + MT_BAL[i] + GROW_BAL[i]);
+  // Build interest per month derived from DB asset balances and inferred rate
+  const MT_INT       = _bldIntComputed;
 
   // ══════════════════════════════════════════════════════════════════════════════
   // GURU PENDING CHANGES — adjust baseline arrays when advisor has made changes
@@ -6269,7 +6171,9 @@ function MoneyMovementView({
   // ── Effective Citizens MM (Reserve) ──────────────────────────────────────────
   // With simulation: balance reflects monthly draws to cover Ops shortfalls.
   // Without simulation: simple interest compounding on the post-transfer opening.
-  const _rsvOpeningBase = 225000 + _rsvNetIn;
+  // Opening balance = primary RSV asset value (largest non-checking cash account)
+  const _primaryRsvStart = [...rsvAccts].sort((a, b) => Number(b.value) - Number(a.value))[0];
+  const _rsvOpeningBase = (_primaryRsvStart ? Number(_primaryRsvStart.value) : rsvTotal) + _rsvNetIn;
   const EFF_CITIZENS_MM: number[] = (() => {
     if (_sim) return _sim.effMM;
     if (!hasChanges && _rsvATYield === null) return CITIZENS_MM_BAL;
@@ -6287,7 +6191,8 @@ function MoneyMovementView({
   const EFF_ST = EFF_CITIZENS_MM.map((v, i) => v + EFF_CAPONE[i]);
 
   // ── Effective Treasuries (Build) ──────────────────────────────────────────────
-  const _bldOpeningBase = 135000 + _bldNetIn;
+  // Opening balance = total Build (fixed income treasury) asset value from DB
+  const _bldOpeningBase = bldTotal + _bldNetIn;
   const EFF_TREASURIES: number[] = (() => {
     if (!hasChanges && _bldATYield === null) return TREASURIES_BAL;
     const result: number[] = [];
@@ -6314,11 +6219,25 @@ function MoneyMovementView({
   // Monthly draws from Citizens MM → Operating Cash (shows in flow tooltips)
   const EFF_FROM_ST_TO_IMM: number[] = _sim ? _sim.draws : FROM_ST_TO_IMM;
 
-  // ── Starting balances (prior month end; first month uses model opening) ──────
-  const OPS_START  = [132050, ...EFF_IMM.slice(0, 11)];
-  const RSV_START  = [240000, ...EFF_ST.slice(0, 11)];
-  const BLD_START  = [135000, ...EFF_MT.slice(0, 11)];
-  const GROW_START = [2603496,...EFF_GROW.slice(0, 11)];
+  // ── Starting balances (prior month end; first month uses DB-derived opening) ──
+  // OPS_START[0] = pre-January ops (Jan end balance minus Jan net inflow)
+  const _opsStart   = opsAccts.reduce((s, a) => s + Number(a.value), 0);
+  const _growStart  = assets.filter(a =>
+    a.type === "equity" || (
+      a.type !== "cash" && a.type !== "fixed_income" &&
+      a.type !== "real_estate" && a.type !== "alternative" &&
+      !/401|ira|roth/i.test(a.description ?? "")
+    )
+  ).reduce((s, a) => s + Number(a.value), 0);
+  // Pre-Jan ops: subtract Jan net (salary+rental - outflows) from assets starting balance
+  const _janCFs  = cashFlows.filter(cf => { const d = new Date(cf.date as string); return d.getUTCFullYear() === new Date().getUTCFullYear() && d.getUTCMonth() === 0; });
+  const _janIn   = _janCFs.filter(cf => cf.type === "inflow" && ((cf.description ?? "").toLowerCase().includes("salary") || (cf.description ?? "").toLowerCase().includes("rental") || cf.category === "salary")).reduce((s, cf) => s + Number(cf.amount), 0);
+  const _janOut  = _janCFs.filter(cf => cf.type === "outflow").reduce((s, cf) => s + Number(cf.amount), 0);
+  const _preJanOps = Math.round(_opsStart - (_janIn - _janOut));
+  const OPS_START  = [_preJanOps, ...EFF_IMM.slice(0, 11)];
+  const RSV_START  = [rsvTotal,   ...EFF_ST.slice(0, 11)];
+  const BLD_START  = [bldTotal,   ...EFF_MT.slice(0, 11)];
+  const GROW_START = [_growStart, ...EFF_GROW.slice(0, 11)];
 
   // ── Per-month special/irregular expenses (total = base $20,939 + specials) ────
   type SpecialItem = { label: string; amount: number };
@@ -12608,7 +12527,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   cashFlows: CashFlow[];
   onNavigate: (v: string) => void;
 }) {
-  const { taxProfile } = useClientConfig();
+  const { taxProfile, cfCategoryRules } = useClientConfig();
   const INTER = "Inter, system-ui, sans-serif";
   const DS_BG   = "#141c2b";
   const DS_CARD = "#1e2838";
@@ -12642,7 +12561,9 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   const forecastData = buildForecast(cashFlows);
 
   // ── Cumulative & trough — computeCumulativeNCF is the master for monthly data
-  const { cumulativeByMonth, troughIdx } = computeCumulativeNCF(cashFlows);
+  // Pass DB-driven rules if available; falls back to CF_PL_ROWS constant internally.
+  const _plRows = cfCategoryRules.length > 0 ? cfRulesToPLRows(cfCategoryRules) : undefined;
+  const { cumulativeByMonth, troughIdx } = computeCumulativeNCF(cashFlows, _plRows);
   const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const troughMonth  = MONTH_NAMES[troughIdx] ?? "Nov";
 
