@@ -94,7 +94,10 @@ export function computeLiquidityTargets(
   const by1 = bm === 11 ? bonusDate.getFullYear() + 1 : bonusDate.getFullYear();
   const bm2 = (bm1 + 1) % 12;
   const by2 = bm1 === 11 ? by1 + 1 : by1;
-  const operatingTarget = monthOutflows(by1, bm1 + 1) + monthOutflows(by2, bm2 + 1) || 63574;
+  // Operating target: 2-month outflow window starting from the month after bonus lands.
+  // Falls back to the reserve floor if cash flow data hasn't loaded yet (not a Kessler hardcode).
+  const _opRaw = monthOutflows(by1, bm1 + 1) + monthOutflows(by2, bm2 + 1);
+  const operatingTarget = _opRaw > 0 ? _opRaw : operatingFloorAtTrough;
 
   // ── Goal Savings ──────────────────────────────────────────────────────────
   // TODO: derive from event planning: max(0, eventAmount − projectedNCFtoEventDate)
