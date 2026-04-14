@@ -10,14 +10,23 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-// Cash flow calculations (Model Tab: Cash Flow)
+// Forecast & net-worth timeline builders
+export * from "./forecast";
+
+// Asset bucket classification (cashBuckets, assetBucketKey)
+export * from "./buckets";
+
+// Cash-flow P&L engine (CF_PL_ROWS, CF_MONTHS, PLRowDef, computeCumulativeNCF, etc.)
 export * from "./cashflow";
 
-// Asset performance & yield calculations (Model Tab: Returns)
+// Liquidity target calculations (computeLiquidityTargets)
+export * from "./liquidity";
+
+// After-tax yield & return optimization (computeReturnOptimization, liquidAssetYields, etc.)
 export * from "./returns";
 
-// Balance sheet grouping & categorization (Model Tab: Balance Sheet)
+// Balance sheet grouping & categorization
 export * from "./balancesheet";
 
-// Monthly running balance simulation (Model Tab: Account Balance Waterfall)
+// Monthly running balance simulation (computeMonthlyBalances)
 export * from "./balances";
