@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GURU Intelligence · LQ-7 · Asset Forecast — Mockup (NW-1 Design Language)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg:          #141c2b;
+    --bs-base:     #0f1e33;
+    --bs-alt:      #122038;
+    --bs-grphdr:   #162843;
+    --bs-sectot:   #1a2d47;
+    --bs-grandtot: #0d1b2e;
+    --bs-border:   #1e3352;
+    --bs-border-sec: #2a4a6e;
+    --bs-green-dim: hsl(152,45%,42%);
+    --bs-green-med: hsl(152,52%,55%);
+    --bs-text:     hsl(0,0%,88%);       /* subaccounts + subtotals — always legible */
+    --bs-text-sub: rgba(255,255,255,0.82); /* subaccount rows */
+    --gi-green:    #44e08a;
+    --green:       #5ecc8a;
+    --amber:       #ffc83c;
+    --op-color:    #1E4F9C;
+    --res-color:   #835800;
+    --cap-color:   #195830;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    --ui:   'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--bs-text);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .gi-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .gi-header-top { display: flex; align-items: baseline; gap: 16; margin-bottom: 5px; }
+  .gi-label {
+    font-family: var(--ui); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--gi-green);
+  }
+  .gi-sublabel {
+    font-family: var(--mono); font-size: 10px;
+    color: rgba(255,255,255,0.28); letter-spacing: 0.06em;
+  }
+  .gi-desc {
+    font-family: var(--ui); font-size: 13px;
+    color: rgba(255,255,255,0.50); line-height: 1.6;
+  }
+
+  .kpi-strip {
+    display: flex; gap: 12;
+    padding: 14px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .kpi-card {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    padding: 10px 14px;
+  }
+  .kpi-card-label {
+    font-family: var(--ui); font-size: 9px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.38); margin-bottom: 6px;
+  }
+  .kpi-card-value {
+    font-family: var(--mono); font-size: 17px; font-weight: 400;
+    font-variant-numeric: tabular-nums; line-height: 1;
+    color: rgba(255,255,255,0.92); margin-bottom: 6px;
+  }
+  .kpi-card-sub {
+    font-family: var(--ui); font-size: 9px;
+    color: rgba(255,255,255,0.35); line-height: 1.4;
+  }
+
+  .kpi-liq { flex: 1.4; }
+  .kpi-liq-header {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px;
+  }
+  .kpi-liq-total {
+    font-family: var(--mono); font-size: 14px; font-weight: 400;
+    color: var(--green); font-variant-numeric: tabular-nums;
+  }
+  .kpi-liq-blended { font-family: var(--ui); font-size: 9px; color: rgba(255,255,255,0.28); }
+  .kpi-bucket-row {
+    display: flex; align-items: center; gap: 10;
+    padding: 4px 0; border-top: 0.5px solid rgba(255,255,255,0.06);
+  }
+  .kpi-bucket-bar { width: 3px; height: 28px; flex-shrink: 0; }
+  .kpi-bucket-label {
+    font-family: var(--ui); font-size: 9px; font-weight: 700;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    color: rgba(255,255,255,0.45); margin-bottom: 1px;
+  }
+  .kpi-bucket-yields { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.35); }
+  .kpi-bucket-yields .at { color: var(--green); }
+  .kpi-bucket-val {
+    font-family: var(--mono); font-size: 14px; font-weight: 400;
+    color: rgba(255,255,255,0.85); font-variant-numeric: tabular-nums; flex-shrink: 0;
+  }
+
+  .wf-container { padding: 16px 20px 40px; }
+  .wf-outer {
+    border: 1px solid var(--bs-border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .wf-scroll { overflow-x: auto; }
+  .wf-table {
+    border-collapse: collapse; width: 100%; min-width: 1280px;
+    font-family: var(--mono); font-size: 10.5px;
+  }
+
+  .wf-table thead tr {
+    background: var(--bs-grandtot);
+    border-bottom: 1px solid var(--bs-border-sec);
+  }
+  .wf-table thead th {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 800;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: hsl(210,35%,65%); padding: 7px 8px;
+    text-align: right; border-left: 1px solid var(--bs-border);
+    min-width: 78px;
+  }
+  .wf-table thead th:first-child {
+    text-align: left; padding-left: 12px;
+    position: sticky; left: 0; z-index: 3;
+    background: var(--bs-grandtot);
+    border-left: none; border-right: 1px solid var(--bs-border-sec);
+    min-width: 240px;
+  }
+  .wf-table thead th.ann { border-left: 2px solid var(--bs-border-sec); min-width: 96px; }
+
+  .wf-table td {
+    font-family: var(--mono); font-size: 10.5px;
+    padding: 5px 8px; text-align: right;
+    color: var(--bs-text-sub);
+    border-bottom: 1px solid var(--bs-border);
+    border-left: 1px solid var(--bs-border);
+    font-variant-numeric: tabular-nums;
+  }
+  .wf-table td:first-child {
+    text-align: left; padding-left: 28px;
+    color: var(--bs-text-sub);
+    position: sticky; left: 0; z-index: 2;
+    border-left: none; border-right: 1px solid var(--bs-border-sec);
+    min-width: 240px;
+  }
+  .wf-table td.ann {
+    border-left: 2px solid var(--bs-border-sec); font-weight: 500;
+  }
+
+  .wf-table .row-base td         { background: var(--bs-base); }
+  .wf-table .row-alt td          { background: var(--bs-alt); }
+  .wf-table .row-base td:first-child { background: var(--bs-base); }
+  .wf-table .row-alt td:first-child  { background: var(--bs-alt); }
+
+  /* Section headers — all caps, thick colored top stripe, no pills or yields */
+  .wf-table .sec-header td {
+    background: var(--bs-grphdr);
+    font-weight: 800; letter-spacing: 0.12em; font-size: 12px;
+    text-transform: uppercase;
+    color: #fff;
+    border-bottom: 1px solid var(--bs-border-sec);
+    padding: 12px 14px !important; text-align: left !important;
+  }
+  .wf-table .sec-header.ops td    { border-top: 4px solid var(--op-color); }
+  .wf-table .sec-header.res td    { border-top: 4px solid var(--res-color); }
+  .wf-table .sec-header.cap td    { border-top: 4px solid var(--cap-color); }
+  .wf-table .sec-header td:first-child { background: var(--bs-grphdr); }
+  .sec-header .bucket-pill {
+    display: inline-block; font-size: 8px; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 1px 6px; border-radius: 10px; margin-left: 10px;
+    vertical-align: middle;
+  }
+  .sec-header .sec-yields {
+    margin-left: 14px; font-weight: 400; font-size: 9px;
+    color: rgba(255,255,255,0.55); letter-spacing: 0; text-transform: none;
+  }
+
+  /* Beginning Balance — section total background, NO green border/text */
+  .wf-table .row-beginning td {
+    background: var(--bs-sectot); font-weight: 800; letter-spacing: 0.06em;
+    color: var(--bs-text);
+    border-top: 2px solid var(--bs-border-sec); border-bottom: 2px solid var(--bs-border-sec);
+  }
+  .wf-table .row-beginning td:first-child {
+    background: var(--bs-sectot); padding-left: 12px !important;
+    color: var(--bs-text);
+  }
+  .wf-table .row-ending td {
+    background: var(--bs-sectot); font-weight: 800; letter-spacing: 0.06em;
+    color: var(--bs-text);
+    border-top: 2px solid var(--bs-border-sec); border-bottom: 2px solid var(--bs-border-sec);
+  }
+  .wf-table .row-ending td:first-child {
+    background: var(--bs-sectot); padding-left: 12px !important;
+    border-left: 3px solid var(--bs-green-dim); color: var(--bs-green-med);
+  }
+
+  /* Subtotals — same white as subaccounts but heavier weight + elevated bg */
+  .wf-table .row-subtotal td {
+    background: rgba(255,255,255,0.04); font-weight: 700;
+    color: var(--bs-text);
+  }
+  .wf-table .row-subtotal td:first-child {
+    background: rgba(255,255,255,0.04); padding-left: 14px !important;
+    color: var(--bs-text);
+  }
+
+  /* Yield rows — same size as subaccounts, italic to distinguish */
+  .wf-table .row-yield td {
+    background: var(--bs-base); font-style: italic;
+    color: var(--bs-text-sub);
+  }
+  .wf-table .row-yield td:first-child { background: var(--bs-base); padding-left: 28px !important; color: var(--bs-text-sub); }
+  .wf-table .row-yield.green td       { color: var(--bs-text-sub); }
+  .wf-table .row-yield.green td:first-child { color: var(--bs-text-sub); }
+
+  /* After-tax interest — section total background, NO green border/text */
+  .wf-table .row-interest td {
+    background: var(--bs-sectot); font-weight: 800; letter-spacing: 0.06em;
+    color: var(--bs-text);
+    border-top: 2px solid var(--bs-border-sec); border-bottom: 2px solid var(--bs-border-sec);
+  }
+  .wf-table .row-interest td:first-child {
+    background: var(--bs-sectot); padding-left: 12px !important;
+    color: var(--bs-text);
+  }
+
+  /* Parenthetical expenses — same subaccount white, not dimmed */
+  .paren { color: var(--bs-text-sub) !important; }
+
+  /* Section separators — generous spacing between buckets */
+  .wf-table .row-sep td {
+    background: var(--bg); height: 18px;
+    border-bottom: none; border-left-color: transparent;
+  }
+  .wf-table .row-sep td:first-child { background: var(--bg); border-right-color: transparent; }
+
+  .wf-table .grand-total td {
+    background: var(--bs-grandtot); font-weight: 800; font-size: 12px;
+    border-top: 3px solid var(--bs-border-sec); border-bottom: none;
+    padding: 10px 8px;
+  }
+  .wf-table .grand-total td:first-child {
+    background: var(--bs-grandtot); color: var(--bs-green-med);
+    border-left: 4px solid var(--gi-green);
+    padding-left: 12px !important; letter-spacing: 0.10em; text-transform: uppercase;
+    font-size: 12px;
+  }
+  .wf-table .grand-total td:not(:first-child) { color: var(--bs-green-med); }
+
+  .footnote {
+    font-family: var(--ui); font-size: 10px;
+    color: rgba(255,255,255,0.25); line-height: 1.7;
+    margin-top: 14px; padding: 0 20px 30px;
+  }
+  .footnote strong { color: rgba(255,255,255,0.40); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ═══ GURU Intelligence Header ═══ -->
+<div class="gi-header">
+  <div class="gi-header-top">
+    <div class="gi-label">GURU INTELLIGENCE · LQ-7</div>
+    <div class="gi-sublabel">ASSET FORECAST · FY 2026 · LIVE FROM TRANSACTION DATA</div>
+  </div>
+  <div class="gi-desc">
+    Month-by-month balance ledger for each liquidity bucket. Opening balances from live account data. Income and expenses from the 2026 cash flow schedule with After-Tax yields applied from current holdings.
+  </div>
+</div>
+
+
+<!-- ═══ Waterfall Table ═══ -->
+<div class="wf-container">
+  <div class="wf-outer">
+    <div class="wf-scroll">
+      <table class="wf-table">
+        <thead>
+          <tr>
+            <th>Account / Line Item</th>
+            <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th>
+            <th>Jul</th><th>Aug</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Dec</th>
+            <th class="ann">Annual</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- ═══ OPERATING CASH ═══ -->
+          <tr class="sec-header ops">
+            <td colspan="14">Operating Cash</td>
+          </tr>
+          <tr class="row-beginning">
+            <td>Beginning Balance</td>
+            <td>132,050</td><td>91,513</td><td>68,476</td><td>51,906</td><td>22,119</td><td>5,549</td>
+            <td>(10,471)</td><td>(25,221)</td><td>(41,441)</td><td>(55,841)</td><td>(74,061)</td><td>(131,240)</td>
+            <td class="ann">132,050</td>
+          </tr>
+          <tr class="row-alt">
+            <td>+ Cash Compensation</td>
+            <td>—</td><td>—</td><td>16,570</td><td>16,570</td><td>16,570</td><td>16,570</td>
+            <td>16,570</td><td>16,570</td><td>16,570</td><td>16,570</td><td>16,570</td><td>16,570</td>
+            <td class="ann">166,700</td>
+          </tr>
+          <tr class="row-base">
+            <td>+ Bank Interest Income</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td class="ann">—</td>
+          </tr>
+          <tr class="row-alt">
+            <td style="padding-left:40px;" class="paren">− Expenses</td>
+            <td class="paren">(40,537)</td><td class="paren">(23,037)</td><td class="paren">(33,140)</td><td class="paren">(46,357)</td><td class="paren">(33,140)</td><td class="paren">(32,590)</td>
+            <td class="paren">(31,320)</td><td class="paren">(32,790)</td><td class="paren">(30,970)</td><td class="paren">(34,790)</td><td class="paren">(73,749)</td><td class="paren">(67,179)</td>
+            <td class="ann paren">(479,599)</td>
+          </tr>
+          <tr class="row-ending">
+            <td>Ending Balance</td>
+            <td>91,513</td><td>68,476</td><td>51,906</td><td>22,119</td><td>5,549</td><td>(10,471)</td>
+            <td>(25,221)</td><td>(41,441)</td><td>(55,841)</td><td>(74,061)</td><td>(131,240)</td><td style="color:var(--amber);">(181,849)</td>
+            <td class="ann" style="color:var(--amber);">(181,849)</td>
+          </tr>
+          <tr class="row-yield">
+            <td>Pre-Tax Yield (annual)</td>
+            <td>0.80%</td><td>0.80%</td><td>0.80%</td><td>0.80%</td><td>0.80%</td><td>0.80%</td>
+            <td>0.80%</td><td>0.80%</td><td>0.80%</td><td>0.80%</td><td>0.80%</td><td>0.80%</td>
+            <td class="ann">0.80%</td>
+          </tr>
+          <tr class="row-yield green">
+            <td>After-Tax Yield (annual)</td>
+            <td>0.42%</td><td>0.42%</td><td>0.42%</td><td>0.42%</td><td>0.42%</td><td>0.42%</td>
+            <td>0.42%</td><td>0.42%</td><td>0.42%</td><td>0.42%</td><td>0.42%</td><td>0.42%</td>
+            <td class="ann">0.42%</td>
+          </tr>
+          <tr class="row-interest">
+            <td>+ After-Tax Interest Income</td>
+            <td>32</td><td>24</td><td>18</td><td>8</td><td>2</td><td>—</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td class="ann">84</td>
+          </tr>
+
+          <tr class="row-sep"><td colspan="14"></td></tr>
+
+          <!-- ═══ LIQUIDITY RESERVE ═══ -->
+          <tr class="sec-header res">
+            <td colspan="14">Liquidity Reserve</td>
+          </tr>
+          <tr class="row-beginning">
+            <td>Beginning Balance</td>
+            <td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td>
+            <td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td>
+            <td class="ann">240,000</td>
+          </tr>
+          <tr class="row-alt">
+            <td>+ Income Allocation</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td class="ann">—</td>
+          </tr>
+          <tr class="row-base">
+            <td>− Expenses</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td class="ann">—</td>
+          </tr>
+          <tr class="row-ending">
+            <td>Ending Balance</td>
+            <td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td>
+            <td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td><td>240,000</td>
+            <td class="ann">240,000</td>
+          </tr>
+          <tr class="row-yield">
+            <td>Pre-Tax Yield (annual)</td>
+            <td>3.66%</td><td>3.66%</td><td>3.66%</td><td>3.66%</td><td>3.66%</td><td>3.66%</td>
+            <td>3.66%</td><td>3.66%</td><td>3.66%</td><td>3.66%</td><td>3.66%</td><td>3.66%</td>
+            <td class="ann">3.66%</td>
+          </tr>
+          <tr class="row-yield green">
+            <td>After-Tax Yield (annual)</td>
+            <td>1.94%</td><td>1.94%</td><td>1.94%</td><td>1.94%</td><td>1.94%</td><td>1.94%</td>
+            <td>1.94%</td><td>1.94%</td><td>1.94%</td><td>1.94%</td><td>1.94%</td><td>1.94%</td>
+            <td class="ann">1.94%</td>
+          </tr>
+          <tr class="row-interest">
+            <td>+ After-Tax Interest Income</td>
+            <td>388</td><td>388</td><td>388</td><td>388</td><td>388</td><td>388</td>
+            <td>388</td><td>388</td><td>388</td><td>388</td><td>388</td><td>388</td>
+            <td class="ann">4,656</td>
+          </tr>
+
+          <tr class="row-sep"><td colspan="14"></td></tr>
+
+          <!-- ═══ CAPITAL BUILD ═══ -->
+          <tr class="sec-header cap">
+            <td colspan="14">Capital Build</td>
+          </tr>
+          <tr class="row-beginning">
+            <td>Beginning Balance</td>
+            <td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td>
+            <td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td>
+            <td class="ann">321,586</td>
+          </tr>
+          <tr class="row-alt">
+            <td>+ Income Allocation</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td class="ann">—</td>
+          </tr>
+          <tr class="row-base">
+            <td>− Expenses</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+            <td class="ann">—</td>
+          </tr>
+          <tr class="row-ending">
+            <td>Ending Balance</td>
+            <td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td>
+            <td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td><td>321,586</td>
+            <td class="ann">321,586</td>
+          </tr>
+          <tr class="row-yield">
+            <td>Pre-Tax Yield (annual)</td>
+            <td>3.11%</td><td>3.11%</td><td>3.11%</td><td>3.11%</td><td>3.11%</td><td>3.11%</td>
+            <td>3.11%</td><td>3.11%</td><td>3.11%</td><td>3.11%</td><td>3.11%</td><td>3.11%</td>
+            <td class="ann">3.11%</td>
+          </tr>
+          <tr class="row-yield green">
+            <td>After-Tax Yield (annual)</td>
+            <td>2.02%</td><td>2.02%</td><td>2.02%</td><td>2.02%</td><td>2.02%</td><td>2.02%</td>
+            <td>2.02%</td><td>2.02%</td><td>2.02%</td><td>2.02%</td><td>2.02%</td><td>2.02%</td>
+            <td class="ann">2.02%</td>
+          </tr>
+          <tr class="row-interest">
+            <td>+ After-Tax Interest Income</td>
+            <td>541</td><td>541</td><td>541</td><td>541</td><td>541</td><td>541</td>
+            <td>541</td><td>541</td><td>541</td><td>541</td><td>541</td><td>541</td>
+            <td class="ann">6,497</td>
+          </tr>
+
+          <tr class="row-sep"><td colspan="14"></td></tr>
+
+          <!-- ═══ GRAND TOTALS ═══ -->
+          <tr class="grand-total">
+            <td>Total Liquid Ending Balance</td>
+            <td>653,099</td><td>630,062</td><td>613,492</td><td>583,705</td><td>567,135</td><td>551,115</td>
+            <td>537,951</td><td>521,131</td><td>505,331</td><td>487,111</td><td>430,332</td><td>379,737</td>
+            <td class="ann">379,737</td>
+          </tr>
+          <tr class="grand-total">
+            <td>Total After-Tax Interest Income</td>
+            <td>961</td><td>953</td><td>947</td><td>937</td><td>931</td><td>929</td>
+            <td>929</td><td>929</td><td>929</td><td>929</td><td>929</td><td>929</td>
+            <td class="ann">11,237</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="footnote">
+  <strong>Assumptions</strong>
+  · Income &amp; expense flows from live 2026 cash flow schedule · Opening balances from account data as of Dec 29, 2025
+  · Liquidity Reserve &amp; Capital Build balances static — inter-bucket GURU optimizer transfers not applied in this scenario
+  · After-Tax yields applied monthly on ending balance (Operating Cash) or beginning balance (Reserve, Capital Build)
+  · Negative Operating Cash balance indicates a temporary intra-month shortfall — covered by Reserve sweep in the GURU optimized scenario
+  · Expenses shown net of rental income — investment property cash flows reported on a net basis consistent with Cash Flow Forecast
+</div>
+
+</body>
+</html>

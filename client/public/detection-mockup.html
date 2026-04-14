@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Detection System — Compact Dashboard Mockup</title>
+<style>
+  :root {
+    --bg: #0a1628;
+    --card: #111d30;
+    --border: 1px solid rgba(42,74,110,0.35);
+    --green: #5ecc8a;
+    --amber: #ffc83c;
+    --blue: #5b8fcc;
+    --muted: rgba(255,255,255,0.45);
+    --dim: rgba(255,255,255,0.28);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:rgba(255,255,255,0.88); font-family:Inter,system-ui,sans-serif; font-size:13px; }
+
+  .scan-bar { background:rgba(20,28,43,0.95); border-bottom:var(--border); padding:4px 20px; display:flex; align-items:center; justify-content:space-between; }
+  .scan-bar .left { display:flex; align-items:center; gap:12px; font-size:9px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:rgba(180,215,255,0.75); }
+  .scan-bar .right { font-size:9px; color:rgba(255,255,255,0.22); letter-spacing:0.05em; text-transform:uppercase; }
+
+  .dashboard { padding:8px 14px; display:flex; flex-direction:column; gap:7px; }
+
+  /* ── ROW 1: Detection (left) + Liquidity Position + Charts stacked (right) ── */
+  .row1 { display:grid; grid-template-columns:440px 1fr; gap:8px; align-items:start; }
+
+  /* Detection panel */
+  .detect-panel { background:linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%); border:1px solid rgba(91,143,204,0.32); border-radius:6px; overflow:hidden; position:relative; }
+  .detect-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,rgba(91,143,204,0.65),rgba(91,143,204,0.1) 60%,transparent); }
+  .detect-header { padding:6px 12px; border-bottom:1px solid rgba(91,143,204,0.28); display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.88); }
+  .detect-cards { padding:7px 8px; display:flex; flex-direction:column; gap:5px; }
+
+  .d-card { background:rgba(0,0,0,0.22); border-radius:4px; border:1px solid rgba(91,143,204,0.18); padding:6px 10px; display:flex; align-items:center; gap:8px; }
+  .d-card-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+  .d-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:4px; }
+  .d-card-title { font-size:10.5px; font-weight:700; color:rgba(180,215,255,0.95); }
+  .d-card-time { font-size:7.5px; color:rgba(255,255,255,0.22); flex-shrink:0; }
+  .d-card-sub { font-size:8.5px; color:rgba(255,255,255,0.48); line-height:1.3; }
+  .d-card-badge { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; min-width:70px; }
+  .badge { padding:2px 6px; border-radius:3px; font-size:8px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+  .badge-live { background:rgba(94,204,138,0.09); border:1px solid rgba(94,204,138,0.35); color:#5ecc8a; }
+  .badge-action { background:rgba(255,200,60,0.09); border:1px solid rgba(255,200,60,0.35); color:#ffc83c; }
+  .badge-watch { background:rgba(91,143,204,0.09); border:1px solid rgba(91,143,204,0.35); color:#5b8fcc; }
+  .badge-opp { background:rgba(94,204,138,0.08); border:1px solid rgba(94,204,138,0.35); color:#5ecc8a; }
+  .d-card-link { font-size:7.5px; font-weight:600; color:rgba(180,215,255,0.35); }
+
+  /* Hero card — tighter */
+  .hero-card { background:rgba(0,0,0,0.26); border-radius:5px; border:1px solid rgba(94,204,138,0.28); border-left:2.5px solid rgba(94,204,138,0.55); padding:8px 11px; display:flex; flex-direction:column; gap:5px; position:relative; overflow:hidden; }
+  .hero-card::after { content:''; position:absolute; top:-20px; right:-20px; width:180px; height:120px; background:radial-gradient(ellipse at center,rgba(94,204,138,0.07) 0%,transparent 70%); pointer-events:none; }
+  .hero-signal { font-size:8px; font-weight:700; letter-spacing:0.11em; text-transform:uppercase; color:rgba(94,204,138,0.88); display:flex; align-items:center; gap:5px; }
+  .hero-signal-dot { width:5px; height:5px; border-radius:50%; background:#5ecc8a; }
+  .hero-title { font-size:11px; font-weight:700; letter-spacing:0.02em; color:rgba(180,215,255,0.95); }
+  .hero-label { font-size:7.5px; font-weight:700; letter-spacing:0.09em; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:1px; }
+  .hero-val { font-size:26px; font-weight:300; line-height:1; color:var(--green); font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
+  .hero-val .unit { font-size:11px; color:rgba(94,204,138,0.68); margin-left:2px; }
+  .hero-sub { font-size:8px; color:rgba(255,255,255,0.38); margin-top:1px; }
+  .hero-row { display:flex; align-items:flex-end; }
+  .hero-col { flex:1; }
+  .hero-col + .hero-col { padding-left:12px; border-left:1px solid rgba(255,255,255,0.07); }
+  .hero-col:first-child { padding-right:12px; }
+  .hero-footer { display:flex; align-items:center; justify-content:space-between; margin-top:1px; }
+
+  /* ── Right column ── */
+  .right-col { display:flex; flex-direction:column; gap:7px; }
+
+  /* Liquidity Position — horizontal compact */
+  .liq-panel { background:var(--card); border:var(--border); border-radius:5px; overflow:hidden; }
+  .liq-header { padding:5px 10px; border-bottom:1px solid rgba(42,74,110,0.4); font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.82); display:flex; align-items:center; gap:8px; }
+  .legend-row { display:flex; align-items:center; gap:5px; font-size:9px; }
+  .legend-dot { width:7px; height:7px; border-radius:2px; flex-shrink:0; }
+  .legend-label { flex:1; color:var(--muted); }
+  .legend-val { color:rgba(255,255,255,0.72); font-variant-numeric:tabular-nums; }
+
+  /* Chart cards */
+  .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .chart-card { background:var(--card); border:var(--border); border-radius:5px; overflow:hidden; }
+  .chart-header { padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:space-between; }
+  .chart-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:rgba(255,255,255,0.82); }
+  .chart-legend { display:flex; gap:8px; font-size:8px; color:var(--muted); }
+  .chart-body { display:flex; }
+  .chart-svg { flex:1; min-width:0; }
+  .chart-svg svg { width:100%; display:block; }
+  .chart-sidebar { width:110px; flex-shrink:0; border-left:1px solid rgba(255,255,255,0.06); padding:5px 7px; display:flex; flex-direction:column; }
+  .sidebar-item { padding:4px 0; display:flex; flex-direction:column; gap:0; }
+  .sidebar-item + .sidebar-item { border-top:1px solid rgba(255,255,255,0.05); }
+  .sb-label { font-size:7px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:rgba(255,255,255,0.28); }
+  .sb-val { font-size:13px; font-weight:300; font-variant-numeric:tabular-nums; line-height:1.2; }
+  .sb-sub { font-size:7.5px; color:rgba(255,255,255,0.25); }
+
+  /* ── Below fold ── */
+  .section-divider { display:flex; align-items:center; gap:10px; padding:5px 0; margin-top:4px; }
+  .section-divider span { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.82); white-space:nowrap; }
+  .section-divider .line { flex:1; height:2px; background:linear-gradient(to right,rgba(91,143,204,0.35),transparent 60%); border-radius:1px; }
+  .placeholder { background:rgba(91,143,204,0.04); border-radius:4px; display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:9px; letter-spacing:0.05em; }
+
+  .note { font-size:10px; color:var(--amber); padding:10px; border:1px dashed rgba(255,200,60,0.3); border-radius:5px; margin-top:12px; line-height:1.6; }
+  .note b { color:rgba(255,255,255,0.9); }
+</style>
+</head>
+<body>
+
+<!-- Scan bar -->
+<div class="scan-bar">
+  <div class="left">
+    <span>▶ GURU AI · Detection System Active</span>
+    <span style="padding:1px 6px; border-radius:2px; background:rgba(94,204,138,0.09); border:1px solid rgba(94,204,138,0.35); color:#5ecc8a">● LIVE</span>
+    <span style="padding:1px 6px; border-radius:2px; background:rgba(255,200,60,0.09); border:1px solid rgba(255,200,60,0.35); color:#ffc83c">4 Active</span>
+  </div>
+  <div class="right">Jan 1, 2026 · 9:42 AM</div>
+</div>
+
+<div class="dashboard">
+
+  <!-- ════ ROW 1: Detection (left) + Right column (Liquidity + Charts) ════ -->
+  <div class="row1">
+
+    <!-- LEFT: Detection System panel -->
+    <div class="detect-panel">
+      <div class="detect-header">
+        <span style="width:3px; height:14px; border-radius:2px; background:#5ecc8a; flex-shrink:0"></span>
+        <span style="width:5px; height:5px; border-radius:50%; background:#5ecc8a"></span>
+        Detection System
+        <span style="margin-left:auto; font-size:8px; color:rgba(255,255,255,0.28)">4 Active</span>
+      </div>
+      <div class="detect-cards">
+
+        <!-- Card 1: Data Sync -->
+        <div class="d-card">
+          <div class="d-card-body">
+            <div class="d-card-top">
+              <span class="d-card-title">DATA SYNC COMPLETE</span>
+              <span class="d-card-time">Jan 1 · 9:42 AM</span>
+            </div>
+            <div class="d-card-sub">· 6 accounts refreshed · 2 new transactions</div>
+            <div class="d-card-sub">· Year-end bonus deposit detected · Citizens ···2847</div>
+          </div>
+          <div class="d-card-badge">
+            <span class="badge badge-live">● LIVE</span>
+            <span class="d-card-link">→ Sync Log</span>
+          </div>
+        </div>
+
+        <!-- Card 2: HERO — Excess Liquidity -->
+        <div class="hero-card">
+          <div style="display:flex; align-items:center; justify-content:space-between">
+            <div class="hero-signal"><span class="hero-signal-dot"></span> LIQUIDITY SIGNAL</div>
+            <span style="font-size:7.5px; color:rgba(255,255,255,0.25)">6h ago</span>
+          </div>
+          <div class="hero-title">EXCESS LIQUIDITY DETECTED</div>
+          <div class="hero-row">
+            <div class="hero-col">
+              <div class="hero-label">Excess Liquidity</div>
+              <div class="hero-val">$325,824</div>
+              <div class="hero-sub">Above requirement · <em style="font-style:normal; color:rgba(94,204,138,0.65)">deployable now</em></div>
+            </div>
+            <div class="hero-col">
+              <div class="hero-label">Potential Income Pickup</div>
+              <div class="hero-val">+$28,675<span class="unit">/yr</span></div>
+              <div class="hero-sub">Pro-forma vs. current · <em style="font-style:normal; color:rgba(94,204,138,0.65)">$9,488 → $38,163/yr</em></div>
+            </div>
+          </div>
+          <div class="hero-footer">
+            <span class="badge badge-opp">OPPORTUNITY</span>
+            <span style="font-size:8px; font-weight:600; color:rgba(180,215,255,0.45)">→ Allocation ↗</span>
+          </div>
+        </div>
+
+        <!-- Card 3: April Expense Cluster -->
+        <div class="d-card" style="border-color:rgba(255,200,60,0.25)">
+          <div class="d-card-body">
+            <div class="d-card-top">
+              <span class="d-card-title">APRIL · HIGH EXPENSE CLUSTER</span>
+              <span class="d-card-time">4d ago</span>
+            </div>
+            <div class="d-card-sub">· $72,966 flagged: tuition, federal estimated tax, property tax</div>
+            <div class="d-card-sub">· Reserve → Operating transfer required Apr 1</div>
+          </div>
+          <div class="d-card-badge">
+            <span class="badge badge-action">ACTION</span>
+            <span class="d-card-link">→ Cash Flow</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Outflow Streak -->
+        <div class="d-card">
+          <div class="d-card-body">
+            <div class="d-card-top">
+              <span class="d-card-title">OUTFLOW STREAK · THROUGH NOV</span>
+              <span class="d-card-time">12h ago</span>
+            </div>
+            <div class="d-card-sub">· Cumulative deficit peaks ($125,117) in November</div>
+            <div class="d-card-sub">· Reserve covers full trough · No action required</div>
+          </div>
+          <div class="d-card-badge">
+            <span class="badge badge-watch">WATCH</span>
+            <span class="d-card-link">→ Runway</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: Liquidity Position + Both Charts -->
+    <div class="right-col">
+
+      <!-- Liquidity Position — compact horizontal -->
+      <div class="liq-panel">
+        <div class="liq-header">
+          <span style="width:3px; height:14px; border-radius:2px; background:rgba(91,143,204,1); flex-shrink:0; box-shadow:0 0 6px rgba(91,143,204,0.35)"></span>
+          Today's Liquidity Position
+          <span style="margin-left:auto; font-size:8px; color:rgba(255,255,255,0.28)">6 accounts · Jan 1, 2026</span>
+        </div>
+        <div style="display:flex; padding:8px 12px; gap:12px; align-items:center">
+          <!-- Donut -->
+          <svg viewBox="0 0 180 180" width="100" height="100" style="flex-shrink:0">
+            <circle cx="90" cy="90" r="70" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="20"/>
+            <circle cx="90" cy="90" r="70" fill="none" stroke="#1E4F9C" stroke-width="20" stroke-dasharray="83.7 356.3" stroke-dashoffset="0" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="70" fill="none" stroke="#835800" stroke-width="20" stroke-dasharray="271 169" stroke-dashoffset="-83.7" transform="rotate(-90 90 90)"/>
+            <circle cx="90" cy="90" r="70" fill="none" stroke="#195830" stroke-width="20" stroke-dasharray="85.6 354.4" stroke-dashoffset="-354.7" transform="rotate(-90 90 90)"/>
+            <text x="90" y="85" text-anchor="middle" fill="rgba(255,255,255,0.88)" font-size="16" font-weight="300">$693,636</text>
+            <text x="90" y="100" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="8" font-weight="500" letter-spacing="1">TOTAL LIQUID</text>
+          </svg>
+          <!-- Buckets -->
+          <div style="display:flex; flex-direction:column; gap:4px; min-width:160px">
+            <div class="legend-row"><div class="legend-dot" style="background:#1E4F9C"></div><span class="legend-label">Operating Cash</span><span class="legend-val">$132,050</span><span style="font-size:8px; color:rgba(255,255,255,0.22); min-width:22px; text-align:right">19%</span></div>
+            <div class="legend-row"><div class="legend-dot" style="background:#835800"></div><span class="legend-label">Liquidity Reserve</span><span class="legend-val">$426,586</span><span style="font-size:8px; color:rgba(255,255,255,0.22); min-width:22px; text-align:right">62%</span></div>
+            <div class="legend-row"><div class="legend-dot" style="background:#195830"></div><span class="legend-label">Capital Build</span><span class="legend-val">$135,000</span><span style="font-size:8px; color:rgba(255,255,255,0.22); min-width:22px; text-align:right">19%</span></div>
+          </div>
+          <!-- KPIs -->
+          <div style="display:flex; gap:14px; margin-left:auto; border-left:1px solid rgba(255,255,255,0.07); padding-left:14px">
+            <div><div style="font-size:7px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:rgba(255,255,255,0.25); margin-bottom:1px">Coverage</div><div style="font-size:14px; font-weight:300; color:rgba(255,255,255,0.75); font-variant-numeric:tabular-nums">121%</div></div>
+            <div><div style="font-size:7px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:rgba(255,255,255,0.25); margin-bottom:1px">Runway</div><div style="font-size:14px; font-weight:300; color:rgba(255,255,255,0.75); font-variant-numeric:tabular-nums">20.3 mo</div></div>
+            <div><div style="font-size:7px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:rgba(255,255,255,0.25); margin-bottom:1px">Blended Yield</div><div style="font-size:14px; font-weight:300; color:rgba(255,255,255,0.75); font-variant-numeric:tabular-nums">3.12%</div></div>
+            <div><div style="font-size:7px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:rgba(255,255,255,0.25); margin-bottom:1px">After-Tax</div><div style="font-size:14px; font-weight:300; color:rgba(255,255,255,0.75); font-variant-numeric:tabular-nums">1.82%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two charts side by side -->
+      <div class="charts-row">
+
+        <!-- Cumulative Cash Flow chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Cumulative Cash Flow</span>
+            <div class="chart-legend">
+              <span><span style="display:inline-block; width:10px; height:2px; background:#5ecc8a; vertical-align:middle; margin-right:2px; border-radius:1px"></span>Actual</span>
+              <span><span style="display:inline-block; width:10px; border-top:1.5px dashed rgba(255,255,255,0.3); vertical-align:middle; margin-right:2px"></span>Projected</span>
+            </div>
+          </div>
+          <div class="chart-body">
+            <div class="chart-svg">
+              <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <linearGradient id="cfGreenFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(94,204,138,0.35)"/>
+                    <stop offset="100%" stop-color="rgba(94,204,138,0.02)"/>
+                  </linearGradient>
+                  <linearGradient id="cfRedFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(220,80,60,0.02)"/>
+                    <stop offset="100%" stop-color="rgba(220,80,60,0.25)"/>
+                  </linearGradient>
+                </defs>
+                <!-- Grid lines -->
+                <line x1="35" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+                <line x1="35" y1="55" x2="380" y2="55" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+                <line x1="35" y1="90" x2="380" y2="90" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/><!-- zero line -->
+                <line x1="35" y1="125" x2="380" y2="125" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+                <!-- Y labels -->
+                <text x="32" y="23" text-anchor="end" fill="rgba(255,255,255,0.22)" font-size="7">$50K</text>
+                <text x="32" y="58" text-anchor="end" fill="rgba(255,255,255,0.22)" font-size="7">$0</text>
+                <text x="32" y="93" text-anchor="end" fill="rgba(255,255,255,0.22)" font-size="7">−$50K</text>
+                <text x="32" y="128" text-anchor="end" fill="rgba(255,255,255,0.22)" font-size="7">−$125K</text>
+                <!-- X labels -->
+                <text x="64" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">J</text>
+                <text x="93" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">F</text>
+                <text x="122" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">M</text>
+                <text x="151" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">A</text>
+                <text x="180" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">M</text>
+                <text x="209" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">J</text>
+                <text x="238" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">J</text>
+                <text x="267" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">A</text>
+                <text x="296" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">S</text>
+                <text x="325" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">O</text>
+                <text x="354" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">N</text>
+                <text x="380" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">D</text>
+                <!-- TODAY line after Feb -->
+                <line x1="93" y1="14" x2="93" y2="140" stroke="rgba(91,143,204,0.4)" stroke-width="0.8" stroke-dasharray="3 2"/>
+                <text x="93" y="11" text-anchor="middle" fill="rgba(91,143,204,0.55)" font-size="6" font-weight="700">TODAY</text>
+                <!-- Green fill above zero -->
+                <path d="M35,55 L64,60 L93,58 L93,55 L35,55 Z" fill="url(#cfGreenFill)"/>
+                <!-- Red fill below zero (projected) -->
+                <path d="M93,58 C110,62 125,70 151,78 C170,84 190,90 209,96 C225,102 240,108 267,114 C285,118 305,124 325,130 C340,134 350,138 354,140 L380,100 L380,55 L354,55 L325,55 L296,55 L267,55 L238,55 L209,55 L180,55 L151,55 L122,55 L93,55 Z" fill="url(#cfRedFill)"/>
+                <!-- Solid green line (actual: Jan-Feb) -->
+                <path d="M35,55 L64,60 L93,58" fill="none" stroke="#5ecc8a" stroke-width="2" stroke-linecap="round"/>
+                <!-- Dashed projected line (Mar-Dec) — curves down to Nov trough then recovers -->
+                <path d="M93,58 C110,62 125,70 151,78 C170,84 190,90 209,96 C225,102 240,108 267,114 C285,118 305,124 325,130 C340,134 350,138 354,140 C365,135 375,115 380,100" fill="none" stroke="rgba(220,80,60,0.7)" stroke-width="1.5" stroke-dasharray="4 3" stroke-linecap="round"/>
+                <!-- Trough annotation at Nov -->
+                <line x1="354" y1="140" x2="354" y2="126" stroke="rgba(255,200,60,0.4)" stroke-width="0.8" stroke-dasharray="2 2"/>
+                <rect x="320" y="112" width="68" height="16" rx="2" fill="rgba(6,14,28,0.95)" stroke="rgba(255,200,60,0.45)" stroke-width="0.7"/>
+                <text x="354" y="121" text-anchor="middle" fill="#ffc83c" font-size="8" font-weight="700">($125,117)</text>
+                <text x="354" y="110" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="5.5" font-weight="700">NOV TROUGH</text>
+              </svg>
+            </div>
+            <div class="chart-sidebar">
+              <div class="sidebar-item">
+                <span class="sb-label">Deficit Starts</span>
+                <span class="sb-val" style="color:#ffc83c">January</span>
+                <span class="sb-sub">−$19,238 first month</span>
+              </div>
+              <div class="sidebar-item">
+                <span class="sb-label">Trough Depth</span>
+                <span class="sb-val" style="color:#ffc83c">($125,117)</span>
+                <span class="sb-sub">Cumulative low · Nov</span>
+              </div>
+              <div class="sidebar-item">
+                <span class="sb-label">Recovery</span>
+                <span class="sb-val" style="color:#5ecc8a">December</span>
+                <span class="sb-sub">Bonus + year-end surplus</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liquidity Runway bar chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Liquidity Runway</span>
+            <div class="chart-legend">
+              <span><span style="display:inline-block; width:8px; height:8px; border-radius:2px; background:rgba(91,143,204,0.65); vertical-align:middle; margin-right:2px"></span>Balance</span>
+              <span><span style="display:inline-block; width:10px; border-top:1.5px dashed rgba(94,204,138,0.5); vertical-align:middle; margin-right:2px"></span>Reserve floor</span>
+            </div>
+          </div>
+          <div class="chart-body">
+            <div class="chart-svg">
+              <svg viewBox="0 0 400 160" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(91,143,204,0.8)"/>
+                    <stop offset="100%" stop-color="rgba(40,72,130,0.35)"/>
+                  </linearGradient>
+                </defs>
+                <!-- Grid lines -->
+                <line x1="35" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+                <line x1="35" y1="55" x2="380" y2="55" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+                <line x1="35" y1="90" x2="380" y2="90" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+                <line x1="35" y1="125" x2="380" y2="125" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>
+                <!-- Y labels (scale: $800K top, $0 bottom at y=140) -->
+                <text x="32" y="23" text-anchor="end" fill="rgba(255,255,255,0.22)" font-size="7">$800K</text>
+                <text x="32" y="58" text-anchor="end" fill="rgba(255,255,255,0.22)" font-size="7">$600K</text>
+                <text x="32" y="93" text-anchor="end" fill="rgba(255,255,255,0.22)" font-size="7">$400K</text>
+                <text x="32" y="128" text-anchor="end" fill="rgba(255,255,255,0.22)" font-size="7">$200K</text>
+                <!-- X labels -->
+                <text x="55" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">J</text>
+                <text x="85" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">F</text>
+                <text x="115" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">M</text>
+                <text x="145" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">A</text>
+                <text x="175" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">M</text>
+                <text x="205" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">J</text>
+                <text x="235" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">J</text>
+                <text x="265" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">A</text>
+                <text x="295" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">S</text>
+                <text x="325" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">O</text>
+                <text x="355" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">N</text>
+                <text x="380" y="150" text-anchor="middle" fill="rgba(255,255,255,0.22)" font-size="7">D</text>
+                <!-- Reserve floor line ($232K → y≈105) -->
+                <line x1="35" y1="105" x2="385" y2="105" stroke="rgba(94,204,138,0.4)" stroke-width="1" stroke-dasharray="4 3"/>
+                <text x="385" y="103" text-anchor="end" fill="rgba(94,204,138,0.45)" font-size="6">RESERVE FLOOR</text>
+                <!-- Bars: $693K(Jan) declining to $568K(Nov) then back up $780K(Dec) -->
+                <!-- Scale: 800K=y20, 0=y140. Each $100K = 15px. -->
+                <!-- Jan $693K → y≈10 height 130 -->
+                <rect x="45" y="10" width="20" height="130" rx="2" fill="url(#barGrad)"/>
+                <!-- Feb $674K → y≈13 -->
+                <rect x="75" y="13" width="20" height="127" rx="2" fill="url(#barGrad)"/>
+                <!-- Mar $655K → y≈16 -->
+                <rect x="105" y="16" width="20" height="124" rx="2" fill="url(#barGrad)"/>
+                <!-- Apr $649K → y≈17 -->
+                <rect x="135" y="17" width="20" height="123" rx="2" fill="url(#barGrad)"/>
+                <!-- May $646K → y≈18 -->
+                <rect x="165" y="18" width="20" height="122" rx="2" fill="url(#barGrad)"/>
+                <!-- Jun $624K → y≈22 -->
+                <rect x="195" y="22" width="20" height="118" rx="2" fill="url(#barGrad)"/>
+                <!-- Jul $607K → y≈25 -->
+                <rect x="225" y="25" width="20" height="115" rx="2" fill="url(#barGrad)"/>
+                <!-- Aug $605K → y≈25 -->
+                <rect x="255" y="26" width="20" height="114" rx="2" fill="url(#barGrad)"/>
+                <!-- Sep $603K → y≈26 -->
+                <rect x="285" y="27" width="20" height="113" rx="2" fill="url(#barGrad)"/>
+                <!-- Oct $590K → y≈29 -->
+                <rect x="315" y="29" width="20" height="111" rx="2" fill="url(#barGrad)"/>
+                <!-- Nov $568K → y≈33 (LOW) — amber -->
+                <rect x="345" y="33" width="20" height="107" rx="2" fill="rgba(255,200,60,0.5)"/>
+                <!-- Dec $780K → y≈-3, clamp to 5 -->
+                <rect x="370" y="5" width="20" height="135" rx="2" fill="url(#barGrad)"/>
+                <!-- Nov low annotation -->
+                <rect x="318" y="20" width="56" height="13" rx="2" fill="rgba(6,14,28,0.95)" stroke="rgba(255,200,60,0.45)" stroke-width="0.7"/>
+                <text x="346" y="29" text-anchor="middle" fill="#ffc83c" font-size="7.5" font-weight="700">$568,519</text>
+              </svg>
+            </div>
+            <div class="chart-sidebar">
+              <div class="sidebar-item">
+                <span class="sb-label">November Low</span>
+                <span class="sb-val" style="color:#ffc83c">$568,519</span>
+                <span class="sb-sub">Balance floor</span>
+              </div>
+              <div class="sidebar-item">
+                <span class="sb-label">Reserve Floor</span>
+                <span class="sb-val" style="color:#5ecc8a">$232,812</span>
+                <span class="sb-sub">12-month target</span>
+              </div>
+              <div class="sidebar-item">
+                <span class="sb-label">Excess at Low</span>
+                <span class="sb-val" style="color:#5ecc8a">$335,707</span>
+                <span class="sb-sub">Above reserve floor</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /charts-row -->
+
+    </div><!-- /right-col -->
+
+  </div><!-- /row1 -->
+
+  <!-- ════ Below fold: Walk + Monthly Model ════ -->
+  <div class="section-divider">
+    <span style="width:3px; height:12px; border-radius:2px; background:rgba(91,143,204,0.8)"></span>
+    <span>Cash Balance Walk</span>
+    <div class="line"></div>
+  </div>
+  <div class="placeholder" style="height:80px">Walk table renders here (quarterly)</div>
+
+  <div class="section-divider">
+    <span style="width:3px; height:12px; border-radius:2px; background:rgba(91,143,204,0.8)"></span>
+    <span>Monthly Summary Model</span>
+    <div class="line"></div>
+    <span style="font-size:8px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:rgba(91,143,204,0.4); padding:2px 6px; border:1px solid rgba(91,143,204,0.15); border-radius:3px">Jan – Dec 2026</span>
+  </div>
+  <div class="placeholder" style="height:160px">Monthly model table renders here</div>
+
+  <!-- Design notes -->
+  <div class="note">
+    <b>Layout recommendation — key changes from current:</b><br>
+    1. <b>Single-row layout</b> — Detection panel (left, 440px) + right column (Liquidity Position + both charts) all in ONE row. Everything above the fold.<br>
+    2. <b>Liquidity Position</b> — horizontal bar: donut + bucket legend + KPI strip. No account table (moved to Asset Forecast). Occupies ~110px height.<br>
+    3. <b>Charts side by side</b> — both charts below liquidity position in the right column. ~160px each with real SVG chart visuals + annotation sidebars (110px).<br>
+    4. <b>Detection cards</b> — full content preserved (badges, timestamps, sub-lines, hero with dual columns). Tighter padding to fit all 4 cards.<br>
+    5. <b>Below fold</b> — Walk table + Monthly Model accessible via scrolling.<br>
+    6. <b>Result</b> — on 1080p, first viewport shows: Detection System + Liquidity Position + both charts. Full dashboard at a glance.
+  </div>
+
+</div>
+
+</body>
+</html>

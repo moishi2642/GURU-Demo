@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>Detection System — Redesign Mockup v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #141c2b;
+    color: #fff;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-width: 1920px;
+    overflow-x: auto;
+  }
+
+  /* ─── Design Tokens (from GI_TABLE_RULES.md + Asset Forecast) ─── */
+  :root {
+    --bg: #141c2b;
+    --card: #0f1e33;
+    --card-alt: #122038;
+    --sect-hdr: #162843;
+    --sect-tot: #1a2d47;
+    --grand-tot: #0d1b2e;
+    --border: #1e3352;
+    --border-sec: #2a4a6e;
+    --gi-green: #44e08a;
+    --green-dim: hsl(152,45%,42%);
+    --green-med: hsl(152,52%,55%);
+    --blue: #5b8fcc;
+    --amber: #ffc83c;
+    --op-col: #1E4F9C;
+    --res-col: #835800;
+    --cap-col: #195830;
+    --text: hsl(0,0%,88%);
+    --text-sub: rgba(255,255,255,0.82);
+    --text-dim: rgba(255,255,255,0.38);
+    --text-muted: rgba(255,255,255,0.50);
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    --ui: 'Inter', system-ui, sans-serif;
+  }
+
+  /* ─── Animations ─── */
+  @keyframes scan { 0%{left:-60%} 100%{left:130%} }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.25;transform:scale(0.5)} }
+  @keyframes dot-glow { 0%,100%{box-shadow:0 0 8px rgba(68,224,138,0.4)} 50%{box-shadow:0 0 14px rgba(68,224,138,0.7)} }
+  @keyframes ds-glow-blu { 0%,100%{box-shadow:0 0 0 rgba(91,143,204,0)} 50%{box-shadow:0 0 8px rgba(91,143,204,0.08)} }
+  @keyframes ds-glow-grn { 0%,100%{box-shadow:0 0 0 rgba(94,204,138,0)} 50%{box-shadow:0 0 10px rgba(94,204,138,0.1)} }
+
+  /* ─── Scan Bar ─── */
+  .scan-bar {
+    position: relative;
+    background: rgba(20,28,43,0.95);
+    border-bottom: 1px solid rgba(42,74,110,0.35);
+    padding: 5px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+  .scan-bar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -60%;
+    width: 35%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(180,210,255,0.06), transparent);
+    animation: scan 3.5s linear infinite;
+  }
+
+  .badge {
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 1px 7px; border-radius: 2px;
+  }
+  .badge-live { background: rgba(68,224,138,0.09); border: 1px solid rgba(68,224,138,0.35); color: var(--gi-green); }
+  .badge-active { background: rgba(255,200,60,0.09); border: 1px solid rgba(255,200,60,0.35); color: var(--amber); }
+
+  /* ─── Layout ─── */
+  .body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ─── GI Header (Asset Forecast style) ─── */
+  .gi-header {
+    margin-bottom: 4px;
+  }
+  .gi-header-row {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 6px;
+  }
+  .gi-header-label {
+    font-family: var(--ui);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gi-green);
+  }
+  .gi-header-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.06em;
+  }
+  .gi-header-desc {
+    font-family: var(--ui);
+    font-size: 13px; font-weight: 400;
+    color: rgba(255,255,255,0.50);
+    line-height: 1.6;
+  }
+
+  /* ─── Top Row: 3-column grid ─── */
+  .top-row {
+    display: grid;
+    grid-template-columns: 480px 320px 1fr;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  /* ─── Detection System Card (BLUE branding — unchanged from app) ─── */
+  .detect-card {
+    background: linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%);
+    border: 1px solid rgba(91,143,204,0.32);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .detect-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, rgba(91,143,204,0.65), rgba(91,143,204,0.1) 60%, transparent);
+  }
+  .detect-header {
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(91,143,204,0.28);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .detect-header-left {
+    display: flex; align-items: center; gap: 9px;
+  }
+  .detect-header-left .accent-bar {
+    width: 3px; height: 18px; border-radius: 2px; background: var(--gi-green); flex-shrink: 0;
+  }
+  .detect-header-left .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--gi-green);
+    animation: dot-glow 2s ease-in-out infinite;
+  }
+  .detect-header-left h2 {
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.10em;
+    color: rgba(255,255,255,0.88);
+  }
+  .detect-signals {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 10px; flex: 1;
+  }
+
+  /* ─── Signal Cards (inside Detection — keep blue styling) ─── */
+  .signal {
+    background: rgba(0,0,0,0.22);
+    border-radius: 5px;
+    border: 1px solid rgba(91,143,204,0.18);
+    padding: 9px 12px;
+    display: flex; align-items: center; gap: 10px;
+    animation: ds-glow-blu 3.2s ease-in-out infinite;
+  }
+  .signal-hero {
+    background: rgba(0,0,0,0.26);
+    border-radius: 6px;
+    border: 1px solid rgba(94,204,138,0.28);
+    border-left: 2.5px solid rgba(94,204,138,0.55);
+    padding: 11px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    position: relative; overflow: hidden;
+    animation: ds-glow-grn 3.2s ease-in-out infinite;
+    animation-delay: 0.8s;
+    cursor: pointer;
+  }
+  .signal-hero::after {
+    content: '';
+    position: absolute; top: -20px; right: -20px;
+    width: 180px; height: 120px;
+    background: radial-gradient(ellipse at center, rgba(94,204,138,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .signal-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .signal-title {
+    font-size: 11.5px; font-weight: 700;
+    color: rgba(180,215,255,0.95);
+  }
+  .signal-detail {
+    font-size: 9px; color: rgba(255,255,255,0.52);
+    line-height: 1.5;
+  }
+  .signal-meta {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    flex-shrink: 0; min-width: 90px;
+  }
+  .signal-badge {
+    padding: 2px 7px; border-radius: 3px;
+    font-size: 8.5px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .signal-badge-opp { background: rgba(94,204,138,0.09); border: 1px solid rgba(94,204,138,0.35); color: var(--gi-green); }
+  .signal-badge-action { background: rgba(255,200,60,0.08); border: 1px solid rgba(255,200,60,0.35); color: var(--amber); }
+  .signal-badge-watch { background: rgba(91,143,204,0.08); border: 1px solid rgba(91,143,204,0.35); color: var(--blue); }
+  .signal-link { font-size: 8px; font-weight: 600; color: rgba(180,215,255,0.38); }
+
+  /* ─── KPI Column (center — Asset Forecast summary card style) ─── */
+  .kpi-col {
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .section-label {
+    font-family: var(--ui);
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .kpi-hero {
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 16px;
+  }
+  .kpi-hero-label {
+    font-family: var(--ui);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.38); margin-bottom: 6px;
+  }
+  .kpi-hero-value {
+    font-family: var(--mono);
+    font-size: 32px; font-weight: 300;
+    line-height: 1; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 8px;
+  }
+  .kpi-hero-footer {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .kpi-hero-badge {
+    font-size: 9px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .kpi-hero-sub { text-align: right; }
+  .kpi-hero-sub-label {
+    font-size: 8px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: rgba(255,255,255,0.35);
+  }
+  .kpi-hero-sub-val {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 300;
+    color: rgba(255,255,255,0.42);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* KPI Table (Asset Forecast card style) */
+  .kpi-table {
+    background: none;
+    border: none;
+    flex: 1;
+    display: flex; flex-direction: column;
+  }
+  .kpi-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .kpi-row.highlight {
+    background: rgba(68,224,138,0.04);
+    border-top: 1px solid rgba(68,224,138,0.12);
+    border-bottom: 1px solid rgba(68,224,138,0.12);
+  }
+  .kpi-row:last-child { border-bottom: none; }
+  .kpi-row-label {
+    font-family: var(--ui);
+    font-size: 12px; font-weight: 600;
+    color: var(--text-sub);
+  }
+  .kpi-row-sub {
+    font-family: var(--ui);
+    font-size: 10px; color: rgba(255,255,255,0.38); margin-top: 1px;
+  }
+  .kpi-row-val {
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    text-align: right;
+  }
+  .kpi-row-val.big {
+    font-size: 16px;
+  }
+  .kpi-row-val-sub {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--amber); margin-top: 1px;
+    text-align: right;
+  }
+
+  /* ─── Liquidity Position Card (Asset Forecast style) ─── */
+  .liq-card {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-top: 2px solid var(--blue);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .liq-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .liq-header .date {
+    font-family: var(--ui);
+    font-size: 9px; color: rgba(255,255,255,0.3);
+    letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .liq-body {
+    display: flex; flex: 1; min-height: 0;
+  }
+
+  /* Donut + legend (wider for bigger pie) */
+  .liq-donut-col {
+    width: 260px; flex-shrink: 0;
+    padding: 16px 20px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+  .liq-donut-col h3 {
+    font-family: var(--ui);
+    font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.38); align-self: flex-start;
+  }
+  .liq-legend {
+    display: flex; flex-direction: column; gap: 7px; width: 100%;
+  }
+  .liq-legend-item {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .liq-legend-dot {
+    width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+  }
+  .liq-legend-label {
+    font-family: var(--ui);
+    font-size: 11px; color: var(--text-sub); flex: 1;
+  }
+  .liq-legend-val {
+    font-family: var(--mono);
+    font-size: 11px; color: rgba(255,255,255,0.82);
+    font-variant-numeric: tabular-nums;
+  }
+  .liq-legend-pct {
+    font-family: var(--mono);
+    font-size: 9px; color: var(--text-dim);
+    min-width: 28px; text-align: right;
+  }
+  .liq-yield-strip {
+    width: 100%;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 10px;
+    display: flex; gap: 16px;
+  }
+  .liq-yield-item { flex: 1; }
+  .liq-yield-label {
+    font-family: var(--ui);
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.09em; color: rgba(255,255,255,0.38); margin-bottom: 4px;
+  }
+  .liq-yield-val {
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 400; color: rgba(255,255,255,0.82);
+  }
+
+  /* Account table (narrower, GI four-tier rows) */
+  .liq-acct-table {
+    flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+  }
+  .liq-acct-table table {
+    width: 100%; border-collapse: collapse;
+  }
+  .liq-acct-table thead tr {
+    background: var(--grand-tot);
+    border-bottom: 1px solid var(--border-sec);
+  }
+  .liq-acct-table th {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: hsl(210,35%,65%); padding: 7px 10px;
+  }
+  .liq-acct-table th:first-child { text-align: left; padding-left: 14px; }
+  .liq-acct-table th:not(:first-child) { text-align: right; border-left: 1px solid var(--border); }
+
+  /* Bucket header rows (GI Tier 1 — Section Headers) */
+  .bucket-hdr td {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 10px 14px;
+    color: #fff;
+    background: var(--sect-hdr);
+  }
+  .bucket-hdr.op { border-top: 4px solid var(--op-col); }
+  .bucket-hdr.res { border-top: 4px solid var(--res-col); }
+  .bucket-hdr.cap { border-top: 4px solid var(--cap-col); }
+
+  /* Account rows (GI Tier 2 — Subaccount) */
+  .acct-row td {
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 400;
+    color: var(--text-sub); padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .acct-row td:first-child {
+    font-family: var(--ui);
+    font-size: 10.5px;
+    padding-left: 28px;
+  }
+  .acct-row td:not(:first-child) { text-align: right; border-left: 1px solid var(--border); }
+  .acct-row:nth-child(odd) td { background: var(--card); }
+  .acct-row:nth-child(even) td { background: var(--card-alt); }
+
+  /* Section total rows (GI Tier 3) */
+  .total-row td {
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 800;
+    color: var(--text); padding: 8px 10px;
+    background: var(--sect-tot);
+    border-top: 2px solid var(--border-sec);
+    border-bottom: 2px solid var(--border-sec);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+  }
+  .total-row td:first-child {
+    font-family: var(--mono);
+    padding-left: 12px;
+  }
+  .total-row td:not(:first-child) { text-align: right; border-left: 1px solid var(--border); }
+
+  /* Ending-balance style total (green label + left border) */
+  .total-row.ending td:first-child {
+    color: var(--green-med);
+    border-left: 3px solid var(--green-dim);
+  }
+
+  /* Space after total rows */
+  .row-sep td {
+    background: var(--card);
+    height: 10px;
+    border: none;
+    padding: 0;
+  }
+
+  /* Grand total (GI Tier 4) */
+  .grand-total-row td {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 800;
+    color: var(--green-med);
+    padding: 10px 10px;
+    background: var(--grand-tot);
+    border-top: 3px solid var(--border-sec);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+  }
+  .grand-total-row td:first-child {
+    border-left: 4px solid var(--gi-green);
+    padding-left: 12px;
+  }
+  .grand-total-row td:not(:first-child) { text-align: right; border-left: 1px solid var(--border); }
+
+  /* ─── Section Break (Asset Forecast GI style) ─── */
+  .section-break {
+    display: flex; align-items: baseline; gap: 16px;
+    margin-top: 8px; margin-bottom: 4px;
+  }
+  .section-break-label {
+    font-family: var(--ui);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gi-green);
+  }
+  .section-break-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.06em;
+  }
+  .section-break-line {
+    flex: 1; height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  /* ─── Charts Row ─── */
+  .charts-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  .chart-card {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .chart-header {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chart-header h3 {
+    font-family: var(--ui);
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text);
+  }
+  .chart-legend {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .chart-legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--ui);
+    font-size: 10px; color: var(--text-muted);
+  }
+  .chart-body {
+    padding: 10px 14px 8px;
+    height: 170px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.15);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+
+  /* ─── Walk Table (Asset Forecast style) ─── */
+  .walk-card {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+  }
+  .walk-header {
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .walk-header h3 {
+    font-family: var(--ui);
+    font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text);
+  }
+  .walk-card table {
+    width: 100%; border-collapse: collapse;
+  }
+  .walk-card thead tr {
+    background: var(--grand-tot);
+    border-bottom: 1px solid var(--border-sec);
+  }
+  .walk-card th {
+    font-family: var(--mono);
+    font-size: 10px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: hsl(210,35%,65%);
+    padding: 7px 14px; text-align: right;
+  }
+  .walk-card th:first-child { text-align: left; }
+  .walk-card td {
+    font-family: var(--mono);
+    font-size: 10.5px; font-weight: 400;
+    padding: 7px 14px; text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-sub);
+    border-bottom: 1px solid var(--border);
+  }
+  .walk-card td:first-child {
+    font-family: var(--mono);
+    text-align: left; font-weight: 400;
+  }
+  .walk-card tr.end-bal td {
+    font-weight: 800;
+    color: var(--text);
+    background: var(--sect-tot);
+    border-top: 2px solid var(--border-sec);
+    border-bottom: 2px solid var(--border-sec);
+  }
+
+  /* ─── Upcoming Payments (Asset Forecast card style) ─── */
+  .payments-card {
+    background: rgba(255,255,255,0.04);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-top: 2px solid var(--amber);
+    overflow: hidden;
+  }
+  .payments-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .payments-header-left {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .payments-header-left h3 {
+    font-family: var(--ui);
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--amber);
+  }
+  .payments-count {
+    font-family: var(--mono);
+    font-size: 9px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,200,60,0.55);
+    border: 1px solid rgba(255,200,60,0.2);
+    padding: 2px 7px;
+  }
+  .payments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  .payment-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-right: 1px solid rgba(255,255,255,0.04);
+  }
+  .payment-item.urgent { background: rgba(255,200,60,0.03); }
+  .payment-date {
+    flex-shrink: 0; width: 34px; text-align: center;
+  }
+  .payment-date-month {
+    font-family: var(--ui);
+    font-size: 8px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .payment-date-day {
+    font-family: var(--mono);
+    font-size: 16px; font-weight: 300; line-height: 1.1;
+  }
+  .payment-info { flex: 1; min-width: 0; }
+  .payment-desc {
+    font-family: var(--ui);
+    font-size: 11px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .payment-cat {
+    font-family: var(--ui);
+    font-size: 9px; color: rgba(255,255,255,0.38); margin-top: 2px;
+  }
+  .payment-amount { text-align: right; flex-shrink: 0; }
+  .payment-amount-val {
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 300;
+    font-variant-numeric: tabular-nums;
+  }
+  .payment-amount-days {
+    font-family: var(--mono);
+    font-size: 7px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-top: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SCAN BAR                                                               -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="scan-bar">
+  <div style="display:flex;align-items:center;gap:16px;position:relative">
+    <span style="font-size:9px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(180,210,255,0.75)">&#9654; GURU AI · Detection System Active</span>
+    <div style="width:1px;height:10px;background:rgba(255,255,255,0.1)"></div>
+    <span class="badge badge-live">● LIVE</span>
+    <span class="badge badge-active">4 Active</span>
+  </div>
+  <span style="font-size:9px;color:rgba(255,255,255,0.22);letter-spacing:0.05em;text-transform:uppercase;position:relative">Mar 15, 2026 · 9:42 AM</span>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SCROLLABLE BODY                                                        -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<div class="body">
+
+  <!-- ══ GI HEADER (Asset Forecast style) ══ -->
+  <div class="gi-header">
+    <div class="gi-header-row">
+      <div class="gi-header-label">GURU INTELLIGENCE · DS-1</div>
+      <div class="gi-header-sub">DETECTION &amp; CASH FLOW ANALYSIS · MAR 2026 · LIVE FROM TRANSACTION DATA</div>
+    </div>
+    <div class="gi-header-desc">
+      Active monitoring of liquidity signals, cash flow patterns, and upcoming obligations across all connected accounts.
+    </div>
+  </div>
+
+  <!-- ══ TOP ROW ══ -->
+  <div class="top-row">
+
+    <!-- ── Detection System (BLUE branding — matches current app exactly) ── -->
+    <div class="detect-card">
+      <div class="detect-header">
+        <div class="detect-header-left">
+          <div class="accent-bar"></div>
+          <div class="dot"></div>
+          <h2>Detection System</h2>
+        </div>
+        <span style="font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.28)">4 Active</span>
+      </div>
+      <div class="detect-signals">
+        <!-- Data Sync -->
+        <div class="signal">
+          <div class="signal-content">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:1px">
+              <span class="signal-title">DATA SYNC COMPLETE</span>
+              <span style="font-size:8px;color:rgba(255,255,255,0.25);flex-shrink:0">Mar 15 · 9:42 AM</span>
+            </div>
+            <span class="signal-detail">· 6 accounts refreshed · 2 new transactions</span>
+            <span class="signal-detail">· Year-end bonus deposit detected · Citizens ···2847</span>
+          </div>
+          <div class="signal-meta">
+            <span class="signal-badge signal-badge-opp">● LIVE</span>
+            <span class="signal-link">→ Sync Log</span>
+          </div>
+        </div>
+
+        <!-- HERO: Excess Liquidity -->
+        <div class="signal-hero">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:6px;font-size:9px;font-weight:700;letter-spacing:0.11em;text-transform:uppercase;color:rgba(68,224,138,0.88)">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--gi-green);display:inline-block;animation:pulse 2s infinite"></span>
+              LIQUIDITY SIGNAL
+            </div>
+            <span style="font-size:8px;color:rgba(255,255,255,0.28)">6h ago</span>
+          </div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.02em;color:rgba(180,215,255,0.95)">EXCESS LIQUIDITY DETECTED</div>
+          <div style="display:flex;align-items:flex-end">
+            <div style="flex:1;padding-right:16px;border-right:1px solid rgba(255,255,255,0.07)">
+              <div style="font-size:8px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:2px">Excess Liquidity</div>
+              <div style="font-family:var(--mono);font-size:30px;font-weight:300;line-height:1;color:var(--gi-green);font-variant-numeric:tabular-nums">$221,006</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:2px">Above requirement · <em style="font-style:normal;color:rgba(68,224,138,0.65)">deployable now</em></div>
+            </div>
+            <div style="flex:1;padding-left:16px">
+              <div style="font-size:8px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:2px">Potential Income Pickup</div>
+              <div style="font-family:var(--mono);font-size:30px;font-weight:300;line-height:1;color:var(--gi-green);font-variant-numeric:tabular-nums">+$9,447<span style="font-size:12px;color:rgba(68,224,138,0.68);margin-left:2px">/yr</span></div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:2px">Pro-forma vs. current · <em style="font-style:normal;color:rgba(68,224,138,0.65)">$18,252 → $27,699/yr</em></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">
+            <span class="signal-badge signal-badge-opp">OPPORTUNITY</span>
+            <span class="signal-link">→ Allocation ↗</span>
+          </div>
+        </div>
+
+        <!-- April cluster -->
+        <div class="signal">
+          <div class="signal-content">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:1px">
+              <span class="signal-title">APRIL · HIGH EXPENSE CLUSTER</span>
+              <span style="font-size:8px;color:rgba(255,255,255,0.25);flex-shrink:0">4d ago</span>
+            </div>
+            <span class="signal-detail">· $147,560 flagged: tuition, federal estimated tax, property tax</span>
+            <span class="signal-detail">· Reserve → Operating transfer required Apr 15</span>
+          </div>
+          <div class="signal-meta">
+            <span class="signal-badge signal-badge-action">ACTION</span>
+            <span class="signal-link">→ Cash Flow</span>
+          </div>
+        </div>
+
+        <!-- Outflow streak -->
+        <div class="signal">
+          <div class="signal-content">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:4px;margin-bottom:1px">
+              <span class="signal-title">OUTFLOW STREAK · THROUGH NOV</span>
+              <span style="font-size:8px;color:rgba(255,255,255,0.25);flex-shrink:0">12h ago</span>
+            </div>
+            <span class="signal-detail">· Cumulative deficit peaks ($129,385) in Nov</span>
+            <span class="signal-detail">· Reserve covers full trough · No action required</span>
+          </div>
+          <div class="signal-meta">
+            <span class="signal-badge signal-badge-watch">WATCH</span>
+            <span class="signal-link">→ Runway</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Cash Flow KPIs (Asset Forecast summary card style) ── -->
+    <div class="kpi-col">
+      <div style="background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.08);border-top:2px solid var(--gi-green);display:flex;flex-direction:column;flex:1">
+        <div class="section-label">Cash Flow KPIs</div>
+      <div class="kpi-hero">
+        <div class="kpi-hero-label">Annual Net Cash Flow</div>
+        <div class="kpi-hero-value" style="color:var(--gi-green)">+$74,694</div>
+        <div class="kpi-hero-footer">
+          <span class="kpi-hero-badge" style="background:rgba(68,224,138,0.12);border:1px solid rgba(68,224,138,0.4);color:var(--gi-green)">▲ Cash positive</span>
+          <div class="kpi-hero-sub">
+            <div class="kpi-hero-sub-label">Income / Expenses</div>
+            <div class="kpi-hero-sub-val">$958,940 / $884,246</div>
+          </div>
+        </div>
+      </div>
+      <div class="kpi-table">
+        <div class="kpi-row">
+          <div><div class="kpi-row-label">Annual Income (Pre-Tax)</div><div class="kpi-row-sub">Gross earned income + distributions</div></div>
+          <div class="kpi-row-val" style="color:var(--text-sub)">$958,940</div>
+        </div>
+        <div class="kpi-row">
+          <div><div class="kpi-row-label">Total Annual Expenses</div><div class="kpi-row-sub">Core living + taxes + one-time</div></div>
+          <div class="kpi-row-val" style="color:var(--text-sub)">($884,246)</div>
+        </div>
+        <div class="kpi-row highlight">
+          <div><div class="kpi-row-label">Coverage Ratio</div><div class="kpi-row-sub">Annual income ÷ expenses</div></div>
+          <div class="kpi-row-val big" style="color:var(--gi-green)">108%</div>
+        </div>
+        <div class="kpi-row">
+          <div><div class="kpi-row-label">Monthly Burn Rate</div><div class="kpi-row-sub">Average monthly outflows</div></div>
+          <div class="kpi-row-val" style="color:#ff6464">$73,687</div>
+        </div>
+        <div class="kpi-row highlight">
+          <div><div class="kpi-row-label">Cash Runway</div><div class="kpi-row-sub">Total liquidity ÷ monthly burn</div></div>
+          <div class="kpi-row-val big" style="color:rgba(255,255,255,0.65)">8.0 months</div>
+        </div>
+        <div class="kpi-row">
+          <div><div class="kpi-row-label">Cash Flow Trough</div><div class="kpi-row-sub">Cumulative low point</div></div>
+          <div style="text-align:right"><div class="kpi-row-val" style="color:var(--amber)">($129,385)</div><div class="kpi-row-val-sub">NOV</div></div>
+        </div>
+        <div class="kpi-row">
+          <div><div class="kpi-row-label">Median Monthly Cash Flow</div><div class="kpi-row-sub">50th percentile, monthly</div></div>
+          <div class="kpi-row-val" style="color:var(--amber)">($15,296)</div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- ── Liquidity Position (Asset Forecast card style, bigger pie, full bucket names) ── -->
+    <div class="liq-card">
+      <div class="section-label">Today's Liquidity Position</div>
+      <div class="liq-header">
+        <div class="date" style="width:100%">6 accounts · Mar 15, 2026</div>
+      </div>
+      <div class="liq-body">
+        <!-- Donut Column (bigger) -->
+        <div class="liq-donut-col">
+          <h3>Cash &amp; Treasuries</h3>
+          <!-- Bigger donut: 180×180 rendered size -->
+          <svg viewBox="0 0 200 200" width="180" height="180">
+            <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="22"/>
+            <circle cx="100" cy="100" r="72" fill="none" stroke="#1E4F9C" stroke-width="22"
+              stroke-dasharray="33.5 419" stroke-dashoffset="0" transform="rotate(-90 100 100)"/>
+            <circle cx="100" cy="100" r="72" fill="none" stroke="#835800" stroke-width="22"
+              stroke-dasharray="163.3 289.2" stroke-dashoffset="-33.5" transform="rotate(-90 100 100)"/>
+            <circle cx="100" cy="100" r="72" fill="none" stroke="#195830" stroke-width="22"
+              stroke-dasharray="255.7 196.8" stroke-dashoffset="-196.8" transform="rotate(-90 100 100)"/>
+            <text x="100" y="96" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-size="18" font-weight="300" font-family="var(--mono)">$593,107</text>
+            <text x="100" y="113" text-anchor="middle" fill="rgba(255,255,255,0.38)" font-size="9" font-weight="700" font-family="var(--ui)" letter-spacing="1.5">TOTAL LIQUID</text>
+          </svg>
+          <div class="liq-legend">
+            <div class="liq-legend-item">
+              <div class="liq-legend-dot" style="background:#1E4F9C"></div>
+              <span class="liq-legend-label">Operating Cash</span>
+              <span class="liq-legend-val">$43,864</span>
+              <span class="liq-legend-pct">7%</span>
+            </div>
+            <div class="liq-legend-item">
+              <div class="liq-legend-dot" style="background:#835800"></div>
+              <span class="liq-legend-label">Liquidity Reserve</span>
+              <span class="liq-legend-val">$214,243</span>
+              <span class="liq-legend-pct">36%</span>
+            </div>
+            <div class="liq-legend-item">
+              <div class="liq-legend-dot" style="background:#195830"></div>
+              <span class="liq-legend-label">Capital Build</span>
+              <span class="liq-legend-val">$335,000</span>
+              <span class="liq-legend-pct">57%</span>
+            </div>
+          </div>
+          <div class="liq-yield-strip">
+            <div class="liq-yield-item">
+              <div class="liq-yield-label">Blended Yield</div>
+              <div class="liq-yield-val">3.82%</div>
+            </div>
+            <div class="liq-yield-item">
+              <div class="liq-yield-label">After-Tax</div>
+              <div class="liq-yield-val">2.31%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Table (proper GI four-tier rows, full bucket names) -->
+        <div class="liq-acct-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Balance</th>
+                <th>Yield</th>
+                <th>After-Tax</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Operating Cash -->
+              <tr class="bucket-hdr op"><td colspan="4">Operating Cash</td></tr>
+              <tr class="acct-row"><td>Chase Checking ···4891</td><td>$25,050</td><td>0.01%</td><td>&lt; 0.01%</td></tr>
+              <tr class="acct-row"><td>Citizens Checking ···2847</td><td>$18,814</td><td>0.01%</td><td>&lt; 0.01%</td></tr>
+              <tr class="total-row ending"><td>Operating Cash Total</td><td>$43,864</td><td>0.01%</td><td>&lt; 0.01%</td></tr>
+              <tr class="row-sep"><td colspan="4"></td></tr>
+
+              <!-- Liquidity Reserve -->
+              <tr class="bucket-hdr res"><td colspan="4">Liquidity Reserve</td></tr>
+              <tr class="acct-row"><td>Citizens Savings ···3102</td><td>$79,243</td><td>4.20%</td><td>2.23%</td></tr>
+              <tr class="acct-row"><td>Wealthfront Cash ···7744</td><td>$135,000</td><td>4.00%</td><td>2.12%</td></tr>
+              <tr class="total-row ending"><td>Liquidity Reserve Total</td><td>$214,243</td><td>4.07%</td><td>2.16%</td></tr>
+              <tr class="row-sep"><td colspan="4"></td></tr>
+
+              <!-- Capital Build -->
+              <tr class="bucket-hdr cap"><td colspan="4">Capital Build</td></tr>
+              <tr class="acct-row"><td>US Treasuries (Fidelity)</td><td>$200,000</td><td>4.38%</td><td>2.85%</td></tr>
+              <tr class="acct-row"><td>US Treasuries (Schwab)</td><td>$135,000</td><td>4.25%</td><td>2.76%</td></tr>
+              <tr class="total-row ending"><td>Capital Build Total</td><td>$335,000</td><td>4.33%</td><td>2.81%</td></tr>
+              <tr class="row-sep"><td colspan="4"></td></tr>
+
+              <!-- Grand Total -->
+              <tr class="grand-total-row"><td>Total Liquid Assets</td><td>$593,107</td><td>3.82%</td><td>2.31%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION BREAK (Asset Forecast GI header style) ══ -->
+  <div class="section-break">
+    <div class="section-break-label">12-Month Cash Flow Forecast</div>
+    <div class="section-break-sub">JAN – DEC 2026 · PROJECTED FROM TRANSACTION DATA</div>
+    <div class="section-break-line"></div>
+  </div>
+
+  <!-- ══ CHARTS ROW ══ -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Cumulative Net Cash Flow</h3>
+        <div class="chart-legend">
+          <div class="chart-legend-item"><span style="width:14px;height:2px;border-radius:1px;background:var(--gi-green);display:inline-block"></span> Net CF</div>
+          <div class="chart-legend-item"><span style="display:inline-block;width:14px;border-top:1.5px dashed var(--amber)"></span> Nov trough</div>
+        </div>
+      </div>
+      <div class="chart-body">[SVG Line Chart — same as current app]</div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Liquidity Runway</h3>
+        <div class="chart-legend">
+          <div class="chart-legend-item"><span style="width:10px;height:10px;border-radius:2px;background:rgba(91,143,204,0.75);display:inline-block"></span> Cash balance</div>
+          <div class="chart-legend-item"><span style="display:inline-block;width:14px;border-top:1.5px dashed rgba(94,204,138,0.6)"></span> Reserve floor</div>
+        </div>
+      </div>
+      <div class="chart-body">[SVG Bar Chart — same as current app]</div>
+    </div>
+  </div>
+
+  <!-- ══ WALK TABLE ══ -->
+  <div class="walk-card">
+    <div class="walk-header">
+      <h3>Cash Balance Walk</h3>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left;width:160px"></th>
+          <th style="color:var(--gi-green)">Q1</th>
+          <th>Q2</th>
+          <th>Q3</th>
+          <th style="color:var(--amber)">Q4 ⚠</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Start Balance</td><td style="color:rgba(255,255,255,0.72)">$593,107</td><td style="color:rgba(255,255,255,0.72)">$787,667</td><td style="color:rgba(255,255,255,0.72)">$545,523</td><td style="color:rgba(255,255,255,0.72)">$472,737</td></tr>
+        <tr><td>Cash Inflow</td><td style="color:var(--gi-green)">$422,466</td><td style="color:var(--gi-green)">$134,116</td><td style="color:var(--gi-green)">$134,116</td><td style="color:var(--gi-green)">$268,242</td></tr>
+        <tr><td>Total Expenses</td><td style="color:#ff6464">($227,906)</td><td style="color:#ff6464">($376,260)</td><td style="color:#ff6464">($206,902)</td><td style="color:#ff6464">($73,178)</td></tr>
+        <tr class="end-bal"><td>Ending Balance</td><td style="color:var(--gi-green)">$787,667</td><td>$545,523</td><td>$472,737</td><td style="color:var(--amber)">$667,801</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ UPCOMING PAYMENTS ══ -->
+  <div class="payments-card">
+    <div class="payments-header">
+      <div class="payments-header-left">
+        <h3>Upcoming Large Payments</h3>
+      </div>
+      <span class="payments-count">5 scheduled</span>
+    </div>
+    <div class="payments-grid">
+      <div class="payment-item urgent">
+        <div class="payment-date"><div class="payment-date-month" style="color:rgba(255,200,60,0.8)">Apr</div><div class="payment-date-day" style="color:rgba(255,200,60,0.9)">1</div></div>
+        <div class="payment-info"><div class="payment-desc" style="color:rgba(255,255,255,0.85)">Federal Estimated Tax Q1</div><div class="payment-cat">outflow</div></div>
+        <div class="payment-amount"><div class="payment-amount-val" style="color:rgba(255,200,60,0.9)">$37,500</div><div class="payment-amount-days" style="color:rgba(255,200,60,0.65)">17 DAYS</div></div>
+      </div>
+      <div class="payment-item urgent">
+        <div class="payment-date"><div class="payment-date-month" style="color:rgba(255,200,60,0.8)">Apr</div><div class="payment-date-day" style="color:rgba(255,200,60,0.9)">1</div></div>
+        <div class="payment-info"><div class="payment-desc" style="color:rgba(255,255,255,0.85)">Tuition — Spring Semester</div><div class="payment-cat">outflow</div></div>
+        <div class="payment-amount"><div class="payment-amount-val" style="color:rgba(255,200,60,0.9)">$32,500</div><div class="payment-amount-days" style="color:rgba(255,200,60,0.65)">17 DAYS</div></div>
+      </div>
+      <div class="payment-item">
+        <div class="payment-date"><div class="payment-date-month" style="color:rgba(255,200,60,0.5)">Apr</div><div class="payment-date-day" style="color:rgba(255,200,60,0.6)">15</div></div>
+        <div class="payment-info"><div class="payment-desc" style="color:rgba(255,255,255,0.6)">Property Tax — Q2</div><div class="payment-cat">outflow</div></div>
+        <div class="payment-amount"><div class="payment-amount-val" style="color:rgba(255,200,60,0.7)">$18,750</div><div class="payment-amount-days" style="color:rgba(255,255,255,0.25)">31 DAYS</div></div>
+      </div>
+      <div class="payment-item">
+        <div class="payment-date"><div class="payment-date-month" style="color:rgba(255,200,60,0.5)">Jun</div><div class="payment-date-day" style="color:rgba(255,200,60,0.6)">15</div></div>
+        <div class="payment-info"><div class="payment-desc" style="color:rgba(255,255,255,0.6)">Federal Estimated Tax Q2</div><div class="payment-cat">outflow</div></div>
+        <div class="payment-amount"><div class="payment-amount-val" style="color:rgba(255,200,60,0.7)">$37,500</div><div class="payment-amount-days" style="color:rgba(255,255,255,0.25)">92 DAYS</div></div>
+      </div>
+      <div class="payment-item">
+        <div class="payment-date"><div class="payment-date-month" style="color:rgba(255,200,60,0.5)">Sep</div><div class="payment-date-day" style="color:rgba(255,200,60,0.6)">1</div></div>
+        <div class="payment-info"><div class="payment-desc" style="color:rgba(255,255,255,0.6)">Tuition — Fall Semester</div><div class="payment-cat">outflow</div></div>
+        <div class="payment-amount"><div class="payment-amount-val" style="color:rgba(255,200,60,0.7)">$32,500</div><div class="payment-amount-days" style="color:rgba(255,255,255,0.25)">170 DAYS</div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /body -->
+
+</body>
+</html>
