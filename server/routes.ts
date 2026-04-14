@@ -8,7 +8,7 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { db, pool, queryWithRetry } from "./db";
 import { eq } from "drizzle-orm";
-import { cashFlows as cfTable, accounts as accountsTable, assets as assetsTable, clients as clientsTable, liabilities as liabilitiesTable, strategies as strategiesTable } from "@shared/schema";
+import { cashFlows as cfTable, accounts as accountsTable, assets as assetsTable, clients as clientsTable, liabilities as liabilitiesTable, strategies as strategiesTable, clientTaxProfiles as taxProfileTable, assetReturns as assetReturnsTable, cfCategoryRules as cfCategoryRulesTable } from "@shared/schema";
 
 const openai = process.env.AI_INTEGRATIONS_OPENAI_API_KEY
   ? new OpenAI({
@@ -42,14 +42,25 @@ export async function registerRoutes(
     const id = Number(req.params.id);
     const client = await storage.getClient(id);
     if (!client) return res.status(404).json({ message: "Client not found" });
-    const [accounts, assets, liabilities, cashFlows, strategies] = await Promise.all([
+    const [accounts, assets, liabilities, cashFlows, strategies,
+           taxProfileRows, assetReturnRows, cfCategoryRuleRows] = await Promise.all([
       storage.getAccounts(id),
       storage.getAssets(id),
       storage.getLiabilities(id),
       storage.getCashFlows(id),
       storage.getStrategies(id),
+      db.select().from(taxProfileTable).where(eq(taxProfileTable.clientId, id)),
+      db.select().from(assetReturnsTable).where(eq(assetReturnsTable.clientId, id))
+        .orderBy(assetReturnsTable.sortPriority),
+      db.select().from(cfCategoryRulesTable).where(eq(cfCategoryRulesTable.clientId, id))
+        .orderBy(cfCategoryRulesTable.sortOrder),
     ]);
-    res.json({ client, accounts, assets, liabilities, cashFlows, strategies });
+    res.json({
+      client, accounts, assets, liabilities, cashFlows, strategies,
+      taxProfile:      taxProfileRows[0] ?? null,
+      assetReturns:    assetReturnRows,
+      cfCategoryRules: cfCategoryRuleRows,
+    });
   });
 
   // ── Accounts ──────────────────────────────────────────────────────────────
@@ -419,6 +430,59 @@ async function runMigrations() {
   await queryWithRetry(
     `UPDATE clients SET onboarding_complete = true WHERE name = 'Sarah & Michael Kessler'`
   );
+
+  // ── Client Tax Profiles ────────────────────────────────────────────────────
+  // Replaces hardcoded BANK_TAX / TREAS_TAX / LTCG_TAX constants in the UI.
+  // One row per client. NYC combined rate = federal (37%) + state/local (10%).
+  await queryWithRetry(`
+    CREATE TABLE IF NOT EXISTS client_tax_profiles (
+      id                      serial   PRIMARY KEY,
+      client_id               integer  NOT NULL REFERENCES clients(id),
+      filing_status           text     NOT NULL,
+      tax_jurisdiction        text     NOT NULL,
+      federal_ordinary_rate   numeric  NOT NULL,
+      state_local_rate        numeric  NOT NULL,
+      combined_ordinary_rate  numeric  NOT NULL,
+      treasury_tax_rate       numeric  NOT NULL,
+      ltcg_rate               numeric  NOT NULL,
+      created_at              timestamp DEFAULT now()
+    )
+  `);
+
+  // ── Asset Returns ──────────────────────────────────────────────────────────
+  // Replaces the hardcoded ASSET_RETURNS array (~30 entries) in the UI.
+  // Matched by lowercase substring of asset.description, lowest sort_priority wins.
+  await queryWithRetry(`
+    CREATE TABLE IF NOT EXISTS asset_returns (
+      id             serial   PRIMARY KEY,
+      client_id      integer  REFERENCES clients(id),
+      match_pattern  text     NOT NULL,
+      return_label   text     NOT NULL,
+      return_type    text     NOT NULL,
+      sort_priority  integer  NOT NULL DEFAULT 100,
+      created_at     timestamp DEFAULT now()
+    )
+  `);
+
+  // ── Cash Flow Category Rules ───────────────────────────────────────────────
+  // Replaces the hardcoded CF_PL_ROWS constant in the UI.
+  // match_descs and sum_of are JSON arrays stored as jsonb.
+  await queryWithRetry(`
+    CREATE TABLE IF NOT EXISTS cf_category_rules (
+      id           serial   PRIMARY KEY,
+      client_id    integer  NOT NULL REFERENCES clients(id),
+      key          text     NOT NULL,
+      kind         text     NOT NULL,
+      label        text     NOT NULL,
+      match_descs  jsonb,
+      cf_type      text,
+      sum_of       jsonb,
+      accent       text,
+      sort_order   integer  NOT NULL,
+      note         text,
+      created_at   timestamp DEFAULT now()
+    )
+  `);
 }
 
 // ── Seed Data ──────────────────────────────────────────────────────────────────
@@ -488,7 +552,19 @@ async function seedDatabase() {
       || cfs.some(cf => cf.description?.includes("Phone, Cable") && new Date(cf.date).getUTCMonth() === 11)
       // Reseed if HOA amount is still old rounded integer ($819 → now $819.48 to match Excel)
       || cfs.some(cf => cf.description?.includes("Tribeca — HOA") && Number(cf.amount) === 819);
-    if (!needsMigration) return; // Kessler data is good, nothing to do
+
+    // Also reseed if the new config tables are empty (first time after refactor deploy)
+    const { rows: taxRows } = await queryWithRetry(`SELECT id FROM client_tax_profiles WHERE client_id = $1 LIMIT 1`, [kessler.id]);
+    const { rows: retRows } = await queryWithRetry(`SELECT id FROM asset_returns WHERE client_id = $1 LIMIT 1`, [kessler.id]);
+    const { rows: ruleRows } = await queryWithRetry(`SELECT id FROM cf_category_rules WHERE client_id = $1 LIMIT 1`, [kessler.id]);
+    const needsConfigSeed = taxRows.length === 0 || retRows.length === 0 || ruleRows.length === 0;
+
+    if (!needsMigration && !needsConfigSeed) return; // Kessler data is good, nothing to do
+    if (needsConfigSeed && !needsMigration) {
+      // Only config tables are missing — seed them without wiping financial data
+      console.log("[seed] Seeding Kessler config tables (tax profile, asset returns, CF rules)...");
+      // fall through to seed — the DELETE/INSERT at the end of seedDatabase handles this safely
+    }
 
     console.log("[seed] Reseeding Kessler data...");
     await db.delete(cfTable).where(eq(cfTable.clientId, kessler.id));
@@ -800,4 +876,192 @@ async function seedDatabase() {
   // Mark Kessler as onboarding complete after seeding
   await storage.setOnboardingComplete(c1.id, true);
   console.log("[seed] Kessler seeded and marked onboarding complete");
+
+  // ── Seed: Client Tax Profile ────────────────────────────────────────────────
+  // Kessler: NYC resident, married filing jointly
+  // Federal ordinary: 37% | State+local: 10% | Combined: 47%
+  // Treasury tax: 35% (federal only — US Treasuries exempt from NY state tax)
+  // Long-term capital gains: 20%
+  await queryWithRetry(`DELETE FROM client_tax_profiles WHERE client_id = $1`, [c1.id]);
+  await queryWithRetry(`
+    INSERT INTO client_tax_profiles
+      (client_id, filing_status, tax_jurisdiction,
+       federal_ordinary_rate, state_local_rate, combined_ordinary_rate,
+       treasury_tax_rate, ltcg_rate)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+  `, [c1.id, "married_filing_jointly", "NYC",
+      "0.37", "0.10", "0.47",
+      "0.35", "0.20"]);
+  console.log("[seed] Kessler tax profile seeded");
+
+  // ── Seed: Asset Returns ─────────────────────────────────────────────────────
+  // These map asset description substrings → performance/yield display labels.
+  // sort_priority: lower number = matched first (specific patterns before broad ones).
+  await queryWithRetry(`DELETE FROM asset_returns WHERE client_id = $1`, [c1.id]);
+  const returnRows: Array<[string, string, string, number]> = [
+    // [match_pattern, return_label, return_type, sort_priority]
+    // Cresset sleeves (specific first, then broad)
+    ["cresset — us large cap core",       "+16.4%",      "equity_return", 10],
+    ["cresset — international developed", "+11.2%",      "equity_return", 10],
+    ["cresset — equity income",           "+12.6%",      "equity_return", 10],
+    ["cresset",                           "+14.2%",      "equity_return", 90],
+    // Retirement accounts
+    ["roth ira",                          "+11.8%",      "equity_return", 10],
+    ["401(k)",                            "+10.4%",      "equity_return", 10],
+    ["traditional ira",                   "+10.4%",      "equity_return", 10],
+    // E*Trade / self-directed
+    ["meta platforms",                    "+28.3%",      "equity_return", 10],
+    ["small cap value index",             "+14.8%",      "equity_return", 10],
+    ["total market index",                "+9.8%",       "equity_return", 10],
+    ["goldman sachs",                     "+18.2%",      "equity_return", 10],
+    ["bank of america",                   "+8.6%",       "equity_return", 10],
+    // Cash & money market
+    ["citizens private bank money market","3.65%",       "yield",         10],
+    ["capital one",                       "3.78%",       "yield",         10],
+    ["citizens private banking checking", "0.01%",       "yield",         10],
+    ["chase",                             "0.01%",       "yield",         10],
+    ["cash sweep",                        "2.50%",       "yield",         10],
+    ["spaxx",                             "2.50%",       "yield",         10],
+    ["fidelity",                          "+10.4%",      "equity_return", 90],
+    // Fixed income
+    ["u.s. treasury bill",               "3.95%",       "yield",         10],
+    ["us treasuries",                    "3.95%",       "yield",         10],
+    // Real estate
+    ["tribeca",                           "+4.2%",       "equity_return", 10],
+    ["sarasota",                          "+6.1%",       "equity_return", 10],
+    // Private equity
+    ["carlyle partners viii (pe",         "12.4% IRR",   "irr",           10],
+    ["carlyle partners ix (pe",           "14.2% IRR",   "irr",           10],
+    ["carlyle partners viii — carry",     "22.6% est.",  "pe_carry",      10],
+    ["carlyle partners ix — carry",       "26.1% est.",  "pe_carry",      10],
+    // Crypto
+    ["coinbase",                          "+47.3%",      "equity_return", 10],
+  ];
+  for (const [pattern, label, type, priority] of returnRows) {
+    await queryWithRetry(`
+      INSERT INTO asset_returns (client_id, match_pattern, return_label, return_type, sort_priority)
+      VALUES ($1,$2,$3,$4,$5)
+    `, [c1.id, pattern, label, type, priority]);
+  }
+  console.log("[seed] Kessler asset returns seeded");
+
+  // ── Seed: Cash Flow Category Rules ─────────────────────────────────────────
+  // This is the P&L row structure for the Cash Flow Forecast view.
+  // Replaces the CF_PL_ROWS constant that was hardcoded in client-dashboard.tsx.
+  // Each row has: key, kind, label, match_descs (JSON), cf_type, sum_of (JSON),
+  //               accent, sort_order, note
+  await queryWithRetry(`DELETE FROM cf_category_rules WHERE client_id = $1`, [c1.id]);
+  const cfRules: Array<{
+    key: string; kind: string; label: string;
+    matchDescs?: string[]; cfType?: string;
+    sumOf?: string[]; accent?: string; sortOrder: number; note?: string;
+  }> = [
+    // ── INCOME ──────────────────────────────────────────────────────────────
+    { key: "section_income", kind: "section", label: "INCOME", sortOrder: 10 },
+    { key: "michael_salary",  kind: "row", label: "Michael — Net Monthly Salary",
+      matchDescs: ["Michael — Net Monthly", "Michael — Salary"], cfType: "inflow", sortOrder: 20 },
+    { key: "sarah_salary",    kind: "row", label: "Sarah — Net Monthly Salary",
+      matchDescs: ["Sarah — Net Monthly", "Sarah — Salary"], cfType: "inflow", sortOrder: 30 },
+    { key: "rental_income",   kind: "row", label: "Sarasota — Rental Income",
+      matchDescs: ["Sarasota — Rental", "Rental Income"], cfType: "inflow", sortOrder: 40 },
+    { key: "bonus_p1",        kind: "row", label: "Michael — Year-End Bonus",
+      matchDescs: ["Partner 1 Year-End", "Michael — Year-End Bonus"], cfType: "inflow", sortOrder: 50 },
+    { key: "bonus_p2",        kind: "row", label: "Sarah — Year-End Bonus",
+      matchDescs: ["Partner 2 Year-End", "Sarah — Year-End Bonus"], cfType: "inflow", sortOrder: 60 },
+    { key: "invest_dist",     kind: "row", label: "Investment Distributions & Interest",
+      matchDescs: ["Year-End Investment Distributions", "Investment Distributions"], cfType: "inflow", sortOrder: 70 },
+    { key: "total_income",    kind: "total", label: "TOTAL INCOME",
+      sumOf: ["michael_salary","sarah_salary","rental_income","bonus_p1","bonus_p2","invest_dist"],
+      accent: "blue", sortOrder: 80 },
+
+    // ── HOUSING — TRIBECA (NYC PRIMARY) ────────────────────────────────────
+    { key: "section_trib", kind: "section", label: "HOUSING — TRIBECA (NYC)", sortOrder: 100 },
+    { key: "trib_mortgage",  kind: "row", label: "Tribeca — Mortgage",
+      matchDescs: ["Tribeca — Mortgage"], cfType: "outflow", sortOrder: 110 },
+    { key: "trib_hoa",       kind: "row", label: "Tribeca — HOA & Maintenance",
+      matchDescs: ["Tribeca — HOA"], cfType: "outflow", sortOrder: 120 },
+    { key: "trib_ins",       kind: "row", label: "Tribeca — Homeowner's Insurance",
+      matchDescs: ["Tribeca — Insurance", "Tribeca — Homeowner"], cfType: "outflow", sortOrder: 130 },
+    { key: "trib_util",      kind: "row", label: "Tribeca — Cable & Utilities",
+      matchDescs: ["Tribeca — Cable", "Tribeca — Utilities"], cfType: "outflow", sortOrder: 140 },
+    { key: "nyc_tax",        kind: "row", label: "NYC Property Tax",
+      matchDescs: ["NYC Property Tax", "New York City Property Tax"], cfType: "outflow", sortOrder: 150 },
+
+    // ── HOUSING — SARASOTA (FL INVESTMENT PROPERTY) ─────────────────────────
+    { key: "section_sara", kind: "section", label: "HOUSING — SARASOTA (FL)", sortOrder: 200 },
+    { key: "sara_in",     kind: "row", label: "Sarasota — Rental Income (offset)",
+      matchDescs: ["Sarasota — Rental", "Rental Income"], cfType: "inflow", sortOrder: 210,
+      note: "Rental income nets against Sarasota expenses per Excel Row 63" },
+    { key: "sara_mgmt",   kind: "row", label: "Sarasota — Property Management",
+      matchDescs: ["Investment Property — Management", "Sarasota — Management"], cfType: "outflow", sortOrder: 220 },
+    { key: "sara_mtg",    kind: "row", label: "Sarasota — Mortgage",
+      matchDescs: ["Investment Property — Mortgage"], cfType: "outflow", sortOrder: 230 },
+    { key: "sara_maint",  kind: "row", label: "Sarasota — Maintenance",
+      matchDescs: ["Investment Property — Maintenance"], cfType: "outflow", sortOrder: 240 },
+    { key: "sara_golf",   kind: "row", label: "Golf Club Annual Dues",
+      matchDescs: ["Golf Club Annual Dues"], cfType: "outflow", sortOrder: 250 },
+    { key: "fl_tax",      kind: "row", label: "Florida Property Taxes (annual)",
+      matchDescs: ["Investment Property Taxes"], cfType: "outflow", sortOrder: 260 },
+
+    // ── FAMILY & LIFESTYLE ──────────────────────────────────────────────────
+    { key: "section_family", kind: "section", label: "FAMILY & LIFESTYLE", sortOrder: 300 },
+    { key: "childcare",  kind: "row", label: "Childcare / Nanny",
+      matchDescs: ["Childcare", "Nanny"], cfType: "outflow", sortOrder: 310 },
+    { key: "tuition",    kind: "row", label: "Private School Tuition",
+      matchDescs: ["Private School Tuition", "Dalton Tuition", "Tuition"], cfType: "outflow", sortOrder: 320 },
+    { key: "cc_pay",     kind: "row", label: "Credit Card Payments (Lifestyle)",
+      matchDescs: ["Credit Card Payments", "Lifestyle Expenses"], cfType: "outflow", sortOrder: 330 },
+    { key: "phone_util", kind: "row", label: "Phone, Cable & Utilities",
+      matchDescs: ["Phone, Cable & Utilities", "Phone, Cable"], cfType: "outflow", sortOrder: 340 },
+
+    // ── DEBT SERVICE ─────────────────────────────────────────────────────────
+    { key: "section_debt", kind: "section", label: "DEBT SERVICE", sortOrder: 400 },
+    { key: "pe_loan",    kind: "row", label: "PE Fund II Professional Loan — Monthly Service",
+      matchDescs: ["PE Fund II Professional Loan", "Professional Loan"], cfType: "outflow", sortOrder: 410 },
+    { key: "student",    kind: "row", label: "Student Loan Payments",
+      matchDescs: ["Student Loan Payments", "Student Loan"], cfType: "outflow", sortOrder: 420 },
+
+    // ── TAXES ────────────────────────────────────────────────────────────────
+    { key: "section_taxes", kind: "section", label: "TAXES", sortOrder: 500 },
+    { key: "fed_tax",    kind: "row", label: "Federal Estimated Tax Payments",
+      matchDescs: ["Federal Estimated Tax", "Estimated Tax"], cfType: "outflow", sortOrder: 510 },
+
+    // ── TRAVEL ───────────────────────────────────────────────────────────────
+    { key: "section_travel", kind: "section", label: "TRAVEL", sortOrder: 600 },
+    { key: "trav_all",   kind: "row", label: "Travel",
+      matchDescs: ["Thanksgiving Travel", "Holiday Travel", "Travel"], cfType: "outflow", sortOrder: 610 },
+
+    // ── YEAR-END ITEMS ────────────────────────────────────────────────────────
+    { key: "section_yearend", kind: "section", label: "YEAR-END", sortOrder: 700 },
+    { key: "yr_end_fees", kind: "row", label: "Year-End Fees & Subscriptions",
+      matchDescs: ["Year-End Fees", "Annual Fees"], cfType: "outflow", sortOrder: 710 },
+
+    // ── TOTALS ───────────────────────────────────────────────────────────────
+    { key: "total_expenses", kind: "total", label: "TOTAL CASH EXPENSES",
+      sumOf: ["trib_mortgage","trib_hoa","trib_ins","trib_util","nyc_tax",
+              "sara_in","sara_mgmt","sara_mtg","sara_maint","sara_golf","fl_tax",
+              "childcare","tuition","cc_pay","phone_util",
+              "pe_loan","student","fed_tax","trav_all","yr_end_fees"],
+      accent: "green", sortOrder: 800 },
+    { key: "net_cash_flow", kind: "total", label: "NET CASH FLOW",
+      sumOf: ["total_income","total_expenses"],
+      accent: "blue", sortOrder: 810 },
+  ];
+
+  for (const r of cfRules) {
+    await queryWithRetry(`
+      INSERT INTO cf_category_rules
+        (client_id, key, kind, label, match_descs, cf_type, sum_of, accent, sort_order, note)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    `, [
+      c1.id, r.key, r.kind, r.label,
+      r.matchDescs ? JSON.stringify(r.matchDescs) : null,
+      r.cfType ?? null,
+      r.sumOf ? JSON.stringify(r.sumOf) : null,
+      r.accent ?? null,
+      r.sortOrder,
+      r.note ?? null,
+    ]);
+  }
+  console.log("[seed] Kessler CF category rules seeded");
 }

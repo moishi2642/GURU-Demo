@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -91,7 +91,32 @@ import {
 import { motion } from "framer-motion";
 import { ResponsiveSankey } from "@nivo/sankey";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
-import type { Account, Asset, Liability, CashFlow, Strategy } from "@shared/schema";
+import type { Account, Asset, Liability, CashFlow, Strategy, ClientTaxProfile, AssetReturn, CfCategoryRule } from "@shared/schema";
+
+// ─── Client Config Context ─────────────────────────────────────────────────────
+// Provides DB-sourced config to every view without prop drilling.
+// Think of this as the "Inputs Tab" being available everywhere in the model.
+//
+// taxProfile      — client tax rates (replaces BANK_TAX / TREAS_TAX / LTCG_TAX constants)
+// assetReturns    — performance labels per holding (replaces ASSET_RETURNS array)
+// cfCategoryRules — P&L row structure (replaces CF_PL_ROWS constant)
+
+interface ClientConfig {
+  taxProfile:      ClientTaxProfile | null;
+  assetReturns:    AssetReturn[];
+  cfCategoryRules: CfCategoryRule[];
+}
+
+const ClientConfigContext = createContext<ClientConfig>({
+  taxProfile:      null,
+  assetReturns:    [],
+  cfCategoryRules: [],
+});
+
+/** Hook — use inside any view to access DB-sourced config */
+function useClientConfig(): ClientConfig {
+  return useContext(ClientConfigContext);
+}
 
 // ─── Count-up animation ───────────────────────────────────────────────────────
 function useCountUp(target: number, duration = 1600) {
@@ -992,12 +1017,23 @@ function parseYieldFromDesc(description: string): number | null {
   return m ? parseFloat(m[1]) / 100 : null;
 }
 
-function computeReturnOptimization(assets: Asset[], cashFlows?: CashFlow[]): {
+function computeReturnOptimization(assets: Asset[], cashFlows?: CashFlow[], taxProfile?: ClientTaxProfile | null): {
   accounts:             ReturnAccountDetail[];
   currentAnnualIncome:  number;
   proformaAnnualIncome: number;
   annualPickup:         number;
 } {
+  // Derive tax rates from DB profile if available; fall back to hardcoded constants
+  const bankTax  = taxProfile ? Number(taxProfile.combinedOrdinaryRate) : BANK_TAX;
+  const treasTax = taxProfile ? Number(taxProfile.treasuryTaxRate)      : TREAS_TAX;
+  const ltcgTax  = taxProfile ? Number(taxProfile.ltcgRate)             : LTCG_TAX;
+  const proformaAT = {
+    checking: 0.0430 * (1 - bankTax),                // CIT Money Market: 4.30% gross
+    reserve:  0.0430 * (1 - treasTax),               // JPMorgan Treasuries MMF: 4.30% gross
+    capital:  0.0650 * (1 - ltcgTax),                // S&P Low Vol Index: 6.50% gross
+    equity:   INVEST_GROSS * (1 - ltcgTax),          // Portfolio: 10% gross
+  };
+
   const accounts: ReturnAccountDetail[] = [];
 
   for (const a of assets) {
@@ -1019,29 +1055,27 @@ function computeReturnOptimization(assets: Asset[], cashFlows?: CashFlow[]): {
     if (a.type === "cash") {
       if (desc.includes("checking")) {
         bucket     = "checking";
-        grossYield = CHECKING_GROSS; // 0.01% — actual checking yield (ASSET_RETURNS)
-        taxRate    = BANK_TAX;       // 47% — NYC combined rate for bank deposit interest
+        grossYield = CHECKING_GROSS;
+        taxRate    = bankTax;
       } else {
         bucket     = "reserve";
         grossYield = parseYieldFromDesc(rawDesc) ?? CHECKING_GROSS;
-        // Treasuries-only MMFs (e.g. Fidelity SPAXX govt variant) → 35%; bank deposits → 47%
-        // Fidelity Cash Sweep is a general purpose MMF → BANK_TAX
-        taxRate    = BANK_TAX;
+        taxRate    = bankTax;
       }
     } else if (a.type === "fixed_income") {
       bucket     = "capital";
       grossYield = parseYieldFromDesc(rawDesc) ?? 0.035;
-      taxRate    = TREAS_TAX; // Treasuries: federal only (35%), state/city exempt
+      taxRate    = treasTax;
     } else if (a.type === "equity") {
       bucket     = "equity";
       grossYield = INVEST_GROSS;
-      taxRate    = LTCG_TAX;
+      taxRate    = ltcgTax;
     } else {
       continue;
     }
 
     const currentATYield  = grossYield * (1 - taxRate);
-    const proformaATYield = PROFORMA_AT[bucket];
+    const proformaATYield = proformaAT[bucket];
 
     accounts.push({
       description:      rawDesc,
@@ -1075,11 +1109,11 @@ function computeReturnOptimization(assets: Asset[], cashFlows?: CashFlow[]): {
       .reduce((s, a) => s + a.proformaATIncome, 0);
 
     proformaAnnualIncome = Math.round(
-      operatingTarget   * PROFORMA_AT.checking +  // Operating at CIT MM rate
-      liquidityReserveTarget * PROFORMA_AT.reserve + // Reserve at JPMorgan Treasuries MMF rate
-      capitalBuildBal   * PROFORMA_AT.capital +   // Capital Build at S&P Low Vol rate
-      equityProforma +                             // Existing equity unchanged
-      excessLiquidity   * PROFORMA_AT.equity       // New investments: excess deployed at 8% AT
+      operatingTarget        * proformaAT.checking +
+      liquidityReserveTarget * proformaAT.reserve  +
+      capitalBuildBal        * proformaAT.capital  +
+      equityProforma                               +
+      excessLiquidity        * proformaAT.equity
     );
   } else {
     // Legacy: apply best rate to full current balance per bucket (no redistribution)
@@ -1151,6 +1185,7 @@ function NetWorthPanel({
   cashFlows: CashFlow[];
 }) {
   const [view, setView] = useState<"assets" | "liabilities">("assets");
+  const { taxProfile } = useClientConfig();
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
   const totalLiab = liabilities.reduce((s, l) => s + Number(l.value), 0);
   const netWorth = totalAssets - totalLiab;
@@ -1201,7 +1236,7 @@ function NetWorthPanel({
     currentAnnualIncome:  nwCurrentIncome,
     proformaAnnualIncome: nwProformaIncome,
     annualPickup:         nwPickup,
-  } = computeReturnOptimization(assets, cashFlows);
+  } = computeReturnOptimization(assets, cashFlows, taxProfile);
 
   // Home equity & HELOC
   const reAssets   = assets.filter(a => a.type === "real_estate");
@@ -2548,7 +2583,7 @@ function wavgAtYieldFromItems(items: Array<{ value: number; atYield: string | nu
   return equityVal > covered / 2 ? `+${avg.toFixed(3)}%` : `${avg.toFixed(3)}%`;
 }
 
-function buildAssetGroups(assets: Asset[], accounts: Account[] = []): BsSection[] {
+function buildAssetGroups(assets: Asset[], accounts: Account[] = [], dbAssetReturns: AssetReturn[] = []): BsSection[] {
   const isRetirement = (a: Asset) => {
     const d = (a.description ?? "").toLowerCase();
     return d.includes("401") || d.includes("ira") || d.includes("roth");
@@ -2665,41 +2700,34 @@ function buildAssetGroups(assets: Asset[], accounts: Account[] = []): BsSection[
     (a.description ?? "").toLowerCase().includes("coinbase") ||
     (a.accountId != null && (accountById[a.accountId]?.institutionName ?? "").toLowerCase().includes("coinbase"));
 
-  // ── Return lookup table ───────────────────────────────────────────────────
-  const ASSET_RETURNS: Array<[string, string]> = [
-    ["cresset — us large cap core",       "+16.400%"],
-    ["cresset — international developed", "+11.200%"],
-    ["cresset — equity income",           "+12.600%"],
-    ["cresset",        "+14.200%"],
-    ["roth ira",       "+11.800%"],
-    ["401(k)",         "+10.400%"],
-    ["traditional ira","+10.400%"],
-    ["meta platforms", "+28.300%"],
-    ["small cap value","+14.800%"],
-    ["vti",            "+9.800%"],
-    ["total market",   "+9.800%"],
-    ["goldman sachs",  "+18.200%"],
-    ["bank of america","+8.600%"],
-    ["citizens private bank money market", "3.650%"],
-    ["capitalon",      "3.780%"],
-    ["citizens private banking checking",  "0.010%"],
-    ["chase total",    "0.010%"],
-    ["cash sweep",     "2.500%"],
-    ["spaxx",          "2.500%"],
-    ["fidelity",       "+10.400%"],
-    ["u.s. treasury bill", "3.950%"],
-    ["us treasuries",      "3.950%"],
-    ["tribeca",        "+4.200%"],
-    ["sarasota",       "+6.100%"],
-    ["carlyle partners viii (pe",      "12.4% IRR"],
-    ["carlyle partners ix (pe",        "14.2% IRR"],
-    ["carlyle partners viii — carry",  "22.6% est."],
-    ["carlyle partners ix — carry",    "26.1% est."],
-    ["coinbase",       "+47.300%"],
-  ];
+  // ── Return lookup — DB-first, falls back to empty (no match) ────────────────
+  // dbAssetReturns comes from the asset_returns table, already sorted by sort_priority.
+  // This replaces the hardcoded ASSET_RETURNS array.
   const lookupReturn = (desc: string | null): string | null => {
     const d = (desc ?? "").toLowerCase();
-    for (const [key, val] of ASSET_RETURNS) { if (d.includes(key)) return val; }
+    if (dbAssetReturns.length > 0) {
+      for (const row of dbAssetReturns) {
+        if (d.includes(row.matchPattern.toLowerCase())) return row.returnLabel;
+      }
+      return null;
+    }
+    // Fallback: static table used only when DB has not seeded asset_returns yet
+    const FALLBACK: Array<[string, string]> = [
+      ["cresset — us large cap core","+16.4%"],["cresset — international developed","+11.2%"],
+      ["cresset — equity income","+12.6%"],["cresset","+14.2%"],
+      ["roth ira","+11.8%"],["401(k)","+10.4%"],["traditional ira","+10.4%"],
+      ["meta platforms","+28.3%"],["small cap value","+14.8%"],
+      ["total market","+9.8%"],["goldman sachs","+18.2%"],["bank of america","+8.6%"],
+      ["citizens private bank money market","3.65%"],["capital one","3.78%"],
+      ["citizens private banking checking","0.01%"],["chase","0.01%"],
+      ["cash sweep","2.50%"],["spaxx","2.50%"],["fidelity","+10.4%"],
+      ["u.s. treasury bill","3.95%"],["us treasuries","3.95%"],
+      ["tribeca","+4.2%"],["sarasota","+6.1%"],
+      ["carlyle partners viii (pe","12.4% IRR"],["carlyle partners ix (pe","14.2% IRR"],
+      ["carlyle partners viii — carry","22.6% est."],["carlyle partners ix — carry","26.1% est."],
+      ["coinbase","+47.3%"],
+    ];
+    for (const [key, val] of FALLBACK) { if (d.includes(key)) return val; }
     return null;
   };
 
@@ -3511,6 +3539,7 @@ function CashFlowForecastView({
   autoFullScreen?: boolean;
   onCloseFullScreen?: () => void;
 }) {
+  const { taxProfile } = useClientConfig();
   // ── Canonical liquidity values — single source of truth for all KPIs ────────
   const {
     operatingCash:          cfOperatingCash,
@@ -4012,7 +4041,7 @@ function CashFlowForecastView({
                     currentAnnualIncome:  cfCurrentIncome,
                     proformaAnnualIncome: cfProformaIncome,
                     annualPickup:         potentialInc,
-                  } = computeReturnOptimization(assets, cashFlows);
+                  } = computeReturnOptimization(assets, cashFlows, taxProfile);
                   const liqIsActive   = alertHighlight === "liq";
                   return (
                     <div
@@ -7484,6 +7513,7 @@ function GuruAllocationView({
   const [step1Done, setStep1Done] = useState(false);
   const [step2Done, setStep2Done] = useState(false);
   const [step3Analyzing, setStep3Analyzing] = useState(false);
+  const { taxProfile, assetReturns: dbAssetReturns } = useClientConfig();
   const [step3Visible, setStep3Visible] = useState(false);
   const [opMonthsLocal, setOpMonthsLocal] = useState(opsCashMonths);
   const [resMonthsLocal, setResMonthsLocal] = useState(12);
@@ -7524,7 +7554,7 @@ function GuruAllocationView({
     currentAnnualIncome:  atCurrentT,
     proformaAnnualIncome: atProformaT,
     annualPickup:         returnPickupT,
-  } = computeReturnOptimization(assets, cashFlows);
+  } = computeReturnOptimization(assets, cashFlows, taxProfile);
   const excessProdsT = [
     { name: "Cresset Short Duration", risk: "Low risk", grossYield: "6.10%", atYield: "5.40%", annualIncome: Math.round(totalExcessT * 0.054), liquidity: "Daily liquidity · small NAV movement", rec: true },
     { name: "JPMorgan 100% Treasuries MMF", risk: "Zero risk", grossYield: "4.30%", atYield: "2.80%", annualIncome: Math.round(totalExcessT * 0.028), liquidity: "Same-day liquidity · stable NAV", rec: false },
@@ -7937,7 +7967,7 @@ function DetailsView({
   const dvCapBuild = assets.filter(a => assetBucketKey(a) === "tactical").reduce((s, a) => s + Number(a.value), 0);
   const dvTotalLiquid = dvOpCash + dvResCash + dvCapBuild;
 
-  const assetGroups = buildAssetGroups(assets, accounts);
+  const assetGroups = buildAssetGroups(assets, accounts, dbAssetReturns);
   const liabGroups = buildLiabilityGroups(liabilities);
 
   const totalAssetRate = (() => {
@@ -8096,6 +8126,7 @@ function DetailsView({
 
 // ─── Cash Flow Advisor View ───────────────────────────────────────────────────
 function CashFlowAdvisorView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const { taxProfile } = useClientConfig();
   const FONT  = "'Inter', system-ui, sans-serif";
   const SERIF = "'Playfair Display', Georgia, serif";
   const BG    = "hsl(220,5%,93%)";
@@ -8564,7 +8595,7 @@ function AdvisorBriefView({
     currentAnnualIncome:  annualReturnCurrent,
     proformaAnnualIncome: annualReturnOptimized,
     annualPickup:         annualReturnPickup,
-  } = computeReturnOptimization(assets, cashFlows);
+  } = computeReturnOptimization(assets, cashFlows, taxProfile);
   const monthlyOpportunityCost = Math.round(annualReturnPickup / 12);
 
   // Days idle since bonus landed — hardcoded for demo
@@ -9608,6 +9639,7 @@ function GuruLandingView({
   onStartReview: () => void;
   skipLanding?: boolean;
 }) {
+  const { taxProfile } = useClientConfig();
   const [showLanding, setShowLanding] = useState(!skipLanding);
   const [showBucketBriefing, setShowBucketBriefing] = useState(false);
   const [showReviewPanel, setShowReviewPanel] = useState(false);
@@ -9688,7 +9720,7 @@ function GuruLandingView({
   const bldExcess = 0; // Capital Build is fully deployed — no excess
   const bldTarget = tactical; // Capital Build target = full tactical bucket
   // Single source of truth — same computation as AdvisorBriefView
-  const { annualPickup } = computeReturnOptimization(assets, cashFlows);
+  const { annualPickup } = computeReturnOptimization(assets, cashFlows, taxProfile);
   const capitalBuild    = Math.round(excessLiquidity * 0.40);
   const investments     = Math.round(excessLiquidity * 0.60);
 
@@ -11292,6 +11324,8 @@ function BSBucketCard({ color, border, name, tagline, bullets, balance, nextBala
 function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Asset[]; liabilities: Liability[]; cashFlows?: CashFlow[] }) {
   const [expandedRE, setExpandedRE] = React.useState<Set<number>>(new Set());
 
+  const { taxProfile, assetReturns: dbAssetReturns } = useClientConfig();
+
   // ── Account metadata lookup (full names, institutions, account sub-labels) ──
   function acctMeta(desc: string): { name: string; inst: string; last4: string; insight: string; yield_: string; comment: string; collateral: string } {
     const d = (desc ?? "").toLowerCase();
@@ -12539,6 +12573,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   cashFlows: CashFlow[];
   onNavigate: (v: string) => void;
 }) {
+  const { taxProfile } = useClientConfig();
   const INTER = "Inter, system-ui, sans-serif";
   const DS_BG   = "#141c2b";
   const DS_CARD = "#1e2838";
@@ -12561,7 +12596,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   } = computeLiquidityTargets(assets, cashFlows);
 
   const { annualPickup, currentAnnualIncome, proformaAnnualIncome, accounts: optAccounts } =
-    computeReturnOptimization(assets, cashFlows);
+    computeReturnOptimization(assets, cashFlows, taxProfile);
 
   // ── Cash flow KPIs — single source of truth via computeCashFlowKPIs ─────────
   const { annualInflows, annualOutflows, annualNetCF, monthlyBurn,
@@ -13272,7 +13307,16 @@ export default function ClientDashboard() {
     );
   }
 
-  const { client, accounts = [] as Account[], assets, liabilities, cashFlows } = data;
+  const {
+    client,
+    accounts      = [] as Account[],
+    assets,
+    liabilities,
+    cashFlows,
+    taxProfile    = null,
+    assetReturns  = [],
+    cfCategoryRules = [],
+  } = data;
 
   // ── Onboarding gate: onboarding not complete → show upload flow ──────────────
   if (!client.onboardingComplete) {
@@ -13809,6 +13853,7 @@ export default function ClientDashboard() {
   );
 
   return (
+    <ClientConfigContext.Provider value={{ taxProfile, assetReturns, cfCategoryRules }}>
     <Layout topNav={topNav}>
 
       {/* ── FINANCIAL MODEL VIEW ───────────────────────────────────────────────── */}
@@ -13958,5 +14003,6 @@ export default function ClientDashboard() {
         </div>
       )}
     </Layout>
+    </ClientConfigContext.Provider>
   );
 }

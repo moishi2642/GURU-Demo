@@ -10,7 +10,10 @@ import {
   assets,
   liabilities,
   cashFlows,
-  strategies
+  strategies,
+  clientTaxProfiles,
+  assetReturns,
+  cfCategoryRules,
 } from './schema';
 
 export const errorSchemas = {
@@ -30,12 +33,15 @@ export const errorSchemas = {
 // accounts — the institution-level account containers (one per brokerage/bank account)
 // assets   — the individual holdings within those accounts (linked via accountId)
 const dashboardResponseSchema = z.object({
-  client:      z.custom<typeof clients.$inferSelect>(),
-  accounts:    z.array(z.custom<typeof accounts.$inferSelect>()),
-  assets:      z.array(z.custom<typeof assets.$inferSelect>()),
-  liabilities: z.array(z.custom<typeof liabilities.$inferSelect>()),
-  cashFlows:   z.array(z.custom<typeof cashFlows.$inferSelect>()),
-  strategies:  z.array(z.custom<typeof strategies.$inferSelect>()),
+  client:          z.custom<typeof clients.$inferSelect>(),
+  accounts:        z.array(z.custom<typeof accounts.$inferSelect>()),
+  assets:          z.array(z.custom<typeof assets.$inferSelect>()),
+  liabilities:     z.array(z.custom<typeof liabilities.$inferSelect>()),
+  cashFlows:       z.array(z.custom<typeof cashFlows.$inferSelect>()),
+  strategies:      z.array(z.custom<typeof strategies.$inferSelect>()),
+  taxProfile:      z.custom<typeof clientTaxProfiles.$inferSelect>().nullable(),
+  assetReturns:    z.array(z.custom<typeof assetReturns.$inferSelect>()),
+  cfCategoryRules: z.array(z.custom<typeof cfCategoryRules.$inferSelect>()),
 });
 
 export const api = {

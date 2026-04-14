@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -95,14 +95,99 @@ export const strategies = pgTable("strategies", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ─── Client Tax Profile ───────────────────────────────────────────────────────
+// Stores the client's tax situation so yield and return calculations are
+// client-specific rather than hardcoded constants.
+//
+// This replaces the hardcoded BANK_TAX, TREAS_TAX, LTCG_TAX constants
+// and the PROFORMA_AT object in client-dashboard.tsx.
+//
+// combinedOrdinaryRate   = federalOrdinaryRate + stateLocalRate  (e.g. 0.47 for NYC)
+// treasuryTaxRate        = federalOrdinaryRate only — US Treasuries are exempt
+//                          from state/local income tax
+// ltcgRate               = long-term capital gains rate (federal)
+
+export const clientTaxProfiles = pgTable("client_tax_profiles", {
+  id:                    serial("id").primaryKey(),
+  clientId:              integer("client_id").notNull().references(() => clients.id),
+  filingStatus:          text("filing_status").notNull(),        // "married_filing_jointly" | "single" | "head_of_household"
+  taxJurisdiction:       text("tax_jurisdiction").notNull(),     // "NYC" | "CA" | "TX" | etc.
+  federalOrdinaryRate:   numeric("federal_ordinary_rate").notNull(), // e.g. "0.37"
+  stateLocalRate:        numeric("state_local_rate").notNull(),      // e.g. "0.10"
+  combinedOrdinaryRate:  numeric("combined_ordinary_rate").notNull(),// e.g. "0.47"
+  treasuryTaxRate:       numeric("treasury_tax_rate").notNull(),     // e.g. "0.35" (federal only)
+  ltcgRate:              numeric("ltcg_rate").notNull(),             // e.g. "0.20"
+  createdAt:             timestamp("created_at").defaultNow(),
+});
+
+// ─── Asset Returns ────────────────────────────────────────────────────────────
+// Maps asset descriptions to their performance/yield labels for display.
+// Replaces the hardcoded ASSET_RETURNS array in client-dashboard.tsx.
+//
+// matchPattern   — lowercase substring to match against asset.description
+//                  (e.g. "cresset — us large cap" matches that holding)
+// returnLabel    — display string shown in the UI (e.g. "+16.4%", "3.65% yield")
+// returnType     — drives how the label is colored/formatted:
+//                  "equity_return" | "yield" | "irr" | "pe_carry"
+// sortPriority   — lower number = try to match first (handles overlapping patterns,
+//                  e.g. "cresset — us large cap core" before "cresset")
+
+export const assetReturns = pgTable("asset_returns", {
+  id:            serial("id").primaryKey(),
+  clientId:      integer("client_id").references(() => clients.id), // null = global default
+  matchPattern:  text("match_pattern").notNull(),
+  returnLabel:   text("return_label").notNull(),
+  returnType:    text("return_type").notNull(),   // "equity_return" | "yield" | "irr" | "pe_carry"
+  sortPriority:  integer("sort_priority").notNull().default(100),
+  createdAt:     timestamp("created_at").defaultNow(),
+});
+
+// ─── Cash Flow Category Rules ─────────────────────────────────────────────────
+// Defines the P&L row structure for the Cash Flow Forecast view, per client.
+// Replaces the hardcoded CF_PL_ROWS constant in client-dashboard.tsx.
+//
+// Each row in this table is one line in the P&L — either a data row (matches
+// actual transactions from cash_flows) or a calculated row (subtotal / total).
+//
+// key        — unique identifier for this row within a client's P&L
+// kind       — "row"      : a single line item matched from cash_flows
+//              "subtotal" : sum of a group, shown inline
+//              "total"    : bold summary row (e.g. TOTAL CASH EXPENSES)
+//              "section"  : header label with no value
+//              "blank"    : visual spacer row
+// matchDescs — JSON array of description substrings to match in cash_flows
+//              (only used when kind = "row")
+// cfType     — "inflow" | "outflow" | null (null = match either)
+// sumOf      — JSON array of row keys to add together (used for totals/subtotals)
+// accent     — visual highlight: "green" | "blue" | null
+// sortOrder  — controls display sequence
+
+export const cfCategoryRules = pgTable("cf_category_rules", {
+  id:          serial("id").primaryKey(),
+  clientId:    integer("client_id").notNull().references(() => clients.id),
+  key:         text("key").notNull(),
+  kind:        text("kind").notNull(),          // "row" | "subtotal" | "total" | "section" | "blank"
+  label:       text("label").notNull(),
+  matchDescs:  jsonb("match_descs"),            // string[] — description substrings to match
+  cfType:      text("cf_type"),                 // "inflow" | "outflow" | null
+  sumOf:       jsonb("sum_of"),                 // string[] — keys to sum for totals
+  accent:      text("accent"),                  // "green" | "blue" | null
+  sortOrder:   integer("sort_order").notNull(),
+  note:        text("note"),
+  createdAt:   timestamp("created_at").defaultNow(),
+});
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const clientsRelations = relations(clients, ({ many }) => ({
-  accounts:   many(accounts),
-  assets:     many(assets),
-  liabilities: many(liabilities),
-  cashFlows:  many(cashFlows),
-  strategies: many(strategies),
+  accounts:        many(accounts),
+  assets:          many(assets),
+  liabilities:     many(liabilities),
+  cashFlows:       many(cashFlows),
+  strategies:      many(strategies),
+  taxProfile:      many(clientTaxProfiles),
+  assetReturns:    many(assetReturns),
+  cfCategoryRules: many(cfCategoryRules),
 }));
 
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
@@ -127,29 +212,50 @@ export const strategiesRelations = relations(strategies, ({ one }) => ({
   client: one(clients, { fields: [strategies.clientId], references: [clients.id] }),
 }));
 
+export const clientTaxProfilesRelations = relations(clientTaxProfiles, ({ one }) => ({
+  client: one(clients, { fields: [clientTaxProfiles.clientId], references: [clients.id] }),
+}));
+
+export const assetReturnsRelations = relations(assetReturns, ({ one }) => ({
+  client: one(clients, { fields: [assetReturns.clientId], references: [clients.id] }),
+}));
+
+export const cfCategoryRulesRelations = relations(cfCategoryRules, ({ one }) => ({
+  client: one(clients, { fields: [cfCategoryRules.clientId], references: [clients.id] }),
+}));
+
 // ─── Insert Schemas ────────────────────────────────────────────────────────────
 
-export const insertClientSchema    = createInsertSchema(clients).omit({ id: true, createdAt: true });
-export const insertAccountSchema   = createInsertSchema(accounts).omit({ id: true, createdAt: true });
-export const insertAssetSchema     = createInsertSchema(assets).omit({ id: true });
-export const insertLiabilitySchema = createInsertSchema(liabilities).omit({ id: true });
-export const insertCashFlowSchema  = createInsertSchema(cashFlows).omit({ id: true });
-export const insertStrategySchema  = createInsertSchema(strategies).omit({ id: true, createdAt: true });
+export const insertClientSchema         = createInsertSchema(clients).omit({ id: true, createdAt: true });
+export const insertAccountSchema        = createInsertSchema(accounts).omit({ id: true, createdAt: true });
+export const insertAssetSchema          = createInsertSchema(assets).omit({ id: true });
+export const insertLiabilitySchema      = createInsertSchema(liabilities).omit({ id: true });
+export const insertCashFlowSchema       = createInsertSchema(cashFlows).omit({ id: true });
+export const insertStrategySchema       = createInsertSchema(strategies).omit({ id: true, createdAt: true });
+export const insertClientTaxProfileSchema = createInsertSchema(clientTaxProfiles).omit({ id: true, createdAt: true });
+export const insertAssetReturnSchema    = createInsertSchema(assetReturns).omit({ id: true, createdAt: true });
+export const insertCfCategoryRuleSchema = createInsertSchema(cfCategoryRules).omit({ id: true, createdAt: true });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type Client        = typeof clients.$inferSelect;
-export type InsertClient  = z.infer<typeof insertClientSchema>;
-export type Account       = typeof accounts.$inferSelect;
-export type InsertAccount = z.infer<typeof insertAccountSchema>;
-export type Asset         = typeof assets.$inferSelect;
-export type InsertAsset   = z.infer<typeof insertAssetSchema>;
-export type Liability     = typeof liabilities.$inferSelect;
-export type InsertLiability = z.infer<typeof insertLiabilitySchema>;
-export type CashFlow      = typeof cashFlows.$inferSelect;
-export type InsertCashFlow = z.infer<typeof insertCashFlowSchema>;
-export type Strategy      = typeof strategies.$inferSelect;
-export type InsertStrategy = z.infer<typeof insertStrategySchema>;
+export type Client           = typeof clients.$inferSelect;
+export type InsertClient     = z.infer<typeof insertClientSchema>;
+export type Account          = typeof accounts.$inferSelect;
+export type InsertAccount    = z.infer<typeof insertAccountSchema>;
+export type Asset            = typeof assets.$inferSelect;
+export type InsertAsset      = z.infer<typeof insertAssetSchema>;
+export type Liability        = typeof liabilities.$inferSelect;
+export type InsertLiability  = z.infer<typeof insertLiabilitySchema>;
+export type CashFlow         = typeof cashFlows.$inferSelect;
+export type InsertCashFlow   = z.infer<typeof insertCashFlowSchema>;
+export type Strategy         = typeof strategies.$inferSelect;
+export type InsertStrategy   = z.infer<typeof insertStrategySchema>;
+export type ClientTaxProfile    = typeof clientTaxProfiles.$inferSelect;
+export type InsertClientTaxProfile = z.infer<typeof insertClientTaxProfileSchema>;
+export type AssetReturn         = typeof assetReturns.$inferSelect;
+export type InsertAssetReturn   = z.infer<typeof insertAssetReturnSchema>;
+export type CfCategoryRule      = typeof cfCategoryRules.$inferSelect;
+export type InsertCfCategoryRule = z.infer<typeof insertCfCategoryRuleSchema>;
 
 // ─── API Request Types ────────────────────────────────────────────────────────
 
@@ -160,12 +266,15 @@ export type CreateLiabilityRequest = InsertLiability;
 export type CreateCashFlowRequest  = InsertCashFlow;
 
 export interface ClientDashboardResponse {
-  client:      Client;
-  accounts:    Account[];   // account containers — each holds one or more assets
-  assets:      Asset[];     // individual holdings, linked to accounts via accountId
-  liabilities: Liability[];
-  cashFlows:   CashFlow[];
-  strategies:  Strategy[];
+  client:          Client;
+  accounts:        Account[];         // account containers — each holds one or more assets
+  assets:          Asset[];           // individual holdings, linked to accounts via accountId
+  liabilities:     Liability[];
+  cashFlows:       CashFlow[];
+  strategies:      Strategy[];
+  taxProfile:      ClientTaxProfile | null;   // client's tax rates (replaces hardcoded constants)
+  assetReturns:    AssetReturn[];             // performance labels per holding (replaces ASSET_RETURNS)
+  cfCategoryRules: CfCategoryRule[];          // P&L row structure (replaces CF_PL_ROWS)
 }
 
 // ─── Design System ───────────────────────────────────────────────────────────
