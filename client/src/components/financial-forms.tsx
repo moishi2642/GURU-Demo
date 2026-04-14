@@ -27,7 +27,7 @@ export function AddAssetModal({ clientId }: { clientId: number }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 h-7 rounded-md shadow-none">
+        <Button size="sm" className="gap-1.5 text-[rgba(255,255,255,0.55)] hover:text-[rgba(255,255,255,0.85)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.10)] border border-[rgba(255,255,255,0.10)] text-xs font-semibold px-3 h-7 rounded-md shadow-none">
           <Plus className="w-3 h-3" />
           Add Asset
         </Button>
@@ -90,7 +90,7 @@ export function AddLiabilityModal({ clientId }: { clientId: number }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 h-7 rounded-md shadow-none">
+        <Button size="sm" className="gap-1.5 text-[rgba(255,255,255,0.55)] hover:text-[rgba(255,255,255,0.85)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.10)] border border-[rgba(255,255,255,0.10)] text-xs font-semibold px-3 h-7 rounded-md shadow-none">
           <Plus className="w-3 h-3" />
           Add Liability
         </Button>
@@ -157,7 +157,7 @@ export function AddCashFlowModal({ clientId }: { clientId: number }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 h-7 rounded-md shadow-none">
+        <Button size="sm" className="gap-1.5 text-[rgba(255,255,255,0.55)] hover:text-[rgba(255,255,255,0.85)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.10)] border border-[rgba(255,255,255,0.10)] text-xs font-semibold px-3 h-7 rounded-md shadow-none">
           <Plus className="w-3 h-3" />
           Log Cash Flow
         </Button>

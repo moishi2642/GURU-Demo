@@ -7,141 +7,207 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-base:   #0f1e33;
-    --bg-alt:    #122038;
-    --bg-hdr:    #162843;
-    --bg-sec:    #1a2d47;
-    --bg-grand:  #0d1b2e;
-    --border:    #1e3352;
-    --border-sec:#2a4a6e;
-    --text:      hsl(0,0%,88%);
-    --muted:     hsl(210,15%,52%);
-    --green-dim: hsl(152,45%,42%);
-    --green-med: hsl(152,52%,55%);
-    --green-hi:  hsl(152,55%,60%);
-    --mono:      'JetBrains Mono', 'SF Mono', monospace;
+    /* GI Design Tokens */
+    --bs-base:      #0f1e33;
+    --bs-alt:       #122038;
+    --bs-grphdr:    #162843;
+    --bs-sectot:    #1a2d47;
+    --bs-grandtot:  #0d1b2e;
+    --bs-border:    #1e3352;
+    --bs-border-sec: #2a4a6e;
+    --bs-text:      hsl(0,0%,88%);
+    --bs-text-sub:  rgba(255,255,255,0.82);
+    --bs-green-dim: hsl(152,45%,42%);
+    --bs-green-med: hsl(152,52%,55%);
+    --gi-green:     #44e08a;
+    --amber:        #ffc83c;
+    --mono:         'JetBrains Mono', 'SF Mono', monospace;
+    /* Bucket accent colors */
+    --bucket-ops:   #1E4F9C;
+    --bucket-res:   #835800;
+    --bucket-cap:   #195830;
+    --bucket-inv:   #4A3FA0;
+    --bucket-alt:   #5C5C6E;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--mono); background: var(--bg-base); padding: 20px 24px 40px; color: var(--text); font-size: 11px; }
+  body { font-family: var(--mono); background: var(--bs-base); padding: 20px 24px 40px; color: var(--bs-text); font-size: 10.5px; }
 
-  h1 { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green-med); margin-bottom: 3px; }
-  h2 { font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 22px 0 7px; border-left: 3px solid var(--green-dim); padding-left: 8px; }
-  .subtitle { font-size: 9.5px; color: var(--muted); margin-bottom: 12px; }
+  h1 { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bs-green-med); margin-bottom: 3px; }
+  h2 { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bs-text-sub); margin: 22px 0 7px; border-left: 3px solid var(--bs-green-dim); padding-left: 8px; }
+  .subtitle { font-size: 10px; color: var(--bs-text-sub); margin-bottom: 12px; }
 
   /* Legend */
   .legend { display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 9px; color: var(--muted); }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--bs-text-sub); }
 
   /* All tables */
-  table { width: 100%; border-collapse: collapse; background: var(--bg-base); border-radius: 0; overflow: hidden; border: 1px solid var(--border); }
+  .table-wrapper { border-radius: 10px; overflow: hidden; border: 1px solid var(--bs-border); }
+  table { width: 100%; border-collapse: collapse; background: var(--bs-base); border-radius: 0; overflow: visible; border: none; }
+  table.optimization-table { min-width: 700px; }
 
-  .col-group-blank    { background: var(--bg-grand); }
-  .col-group-current  { background: #1c2e48; color: rgba(255,255,255,0.55); font-size: 8px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
-  .col-group-proforma { background: #122c22; color: rgba(255,255,255,0.55); font-size: 8px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+  .col-group-blank    { background: var(--bs-grandtot); }
+  .col-group-current  { background: #1c2e48; color: rgba(255,255,255,0.55); font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+  .col-group-proforma { background: #122c22; color: rgba(255,255,255,0.55); font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 
-  thead tr:first-child th { padding: 5px 7px; text-align: center; }
+  thead th { position: sticky; top: 30px; z-index: 10; }
+  thead tr:first-child th { padding: 7px 8px; text-align: center; }
   thead tr:last-child th {
-    padding: 5px 7px; font-size: 8px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
-    color: hsl(210,35%,65%); text-align: right; white-space: nowrap; background: var(--bg-grand);
-    border-bottom: 1px solid var(--border-sec);
+    padding: 7px 8px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.10em; text-transform: uppercase;
+    color: hsl(210,35%,65%); text-align: right; white-space: nowrap; background: var(--bs-grandtot);
+    border-bottom: 1px solid var(--bs-border-sec);
   }
   thead tr:last-child th.left   { text-align: left; }
   thead tr:last-child th.center { text-align: center; }
 
   /* Column group separators */
-  .sep-cur  { border-left: 2px solid #1c3a58 !important; }
-  .sep-pro  { border-left: 2px solid #1a4430 !important; }
-  .sep-end  { border-left: 2px solid #1c3a58 !important; }
+  .sep-yld  { border-left: 2px solid var(--bs-border-sec) !important; }
+  .sep-cur  { border-left: 2px solid var(--bs-border-sec) !important; }
+  .sep-pro  { border-left: 2px solid var(--bs-border-sec) !important; }
+  .sep-end  { border-left: 2px solid var(--bs-border-sec) !important; }
 
-  tbody tr { border-bottom: 1px solid var(--border); }
-  tbody tr:nth-child(odd)  { background: var(--bg-base); }
-  tbody tr:nth-child(even) { background: var(--bg-alt); }
+  tbody tr { border-bottom: 1px solid var(--bs-border); }
+  tbody tr:nth-child(odd)  { background: var(--bs-base); }
+  tbody tr:nth-child(even) { background: var(--bs-alt); }
   tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: var(--bg-hdr); }
+  tbody tr:hover { background: var(--bs-grphdr); }
 
-  td { padding: 4px 7px; text-align: right; color: var(--muted); white-space: nowrap; vertical-align: middle; }
-  td.left   { text-align: left; font-weight: 500; color: var(--text); }
+  td { padding: 7px 8px; text-align: right; color: var(--bs-text-sub); white-space: nowrap; vertical-align: middle; font-size: 10.5px; }
+  td.left   { text-align: left; font-weight: 500; color: var(--bs-text); }
   td.center { text-align: center; }
-  td.dim    { color: hsl(210,12%,35%); font-size: 9.5px; }
-  td.zero   { color: hsl(210,12%,28%); }
-  td.pickup { color: var(--green-hi); font-weight: 600; }
-  td.neg    { color: hsl(0,55%,58%); font-weight: 600; }
+  td.dim    { color: rgba(255,255,255,0.35); font-size: 10.5px; }
+  td.zero   { color: rgba(255,255,255,0.35); }
+  td.pickup { color: var(--gi-green); font-weight: 600; }
+  td.neg    { color: var(--amber); font-weight: 600; }
 
   tr.section-head td {
-    background: var(--bg-hdr); font-size: 8px; font-weight: 800; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--green-dim); padding: 3px 7px;
-    border-top: 1px solid var(--border-sec); border-bottom: 1px solid var(--border-sec);
+    background: var(--bs-grphdr); font-size: 12px; font-weight: 800; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #fff; padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--bs-border-sec);
+    border-top: 4px solid var(--bucket-ops);
   }
-  tr.new-product td { background: rgba(46,122,82,0.08); }
-  tr.new-product td.left { color: var(--green-hi); }
-  tr.new-product:hover td { background: rgba(46,122,82,0.14); }
+  /* Bucket-specific accent colors for section headers */
+  tr.section-head.ops td { border-top-color: var(--bucket-ops); }
+  tr.section-head.res td { border-top-color: var(--bucket-res); }
+  tr.section-head.cap td { border-top-color: var(--bucket-cap); }
+  tr.section-head.inv td { border-top-color: var(--bucket-inv); }
+  tr.section-head.alt td { border-top-color: var(--bucket-alt); }
+  tr.new-product td { }
+  tr.new-product td.left { color: var(--bs-text); }
+  tr.new-product:hover td { }
   .new-badge {
-    display: inline-block; font-size: 7px; font-weight: 800; letter-spacing: 0.08em;
-    text-transform: uppercase; padding: 1px 5px; border-radius: 3px;
-    background: rgba(94,204,138,0.15); color: var(--green-hi); margin-right: 5px;
+    display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 2px 6px; border-radius: 3px;
+    background: rgba(68,224,138,0.15); color: var(--gi-green); margin-right: 5px;
   }
 
-  .tax-47 { color: hsl(0,65%,60%); }
-  .tax-35 { color: hsl(38,80%,58%); }
-  .tax-20 { color: hsl(215,75%,65%); }
+  .tax-47 { color: hsl(0,65%,60%); font-size: 10px; }
+  .tax-35 { color: hsl(38,80%,58%); font-size: 10px; }
+  .tax-20 { color: hsl(215,75%,65%); font-size: 10px; }
 
-  .pill { display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 1px 6px; border-radius: 10px; }
+  .pill { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 6px; border-radius: 10px; }
   .pill-checking { background: rgba(91,143,204,0.15); color: hsl(215,65%,65%); }
   .pill-reserve  { background: rgba(255,200,60,0.12);  color: hsl(42,80%,60%); }
   .pill-capital  { background: rgba(180,140,80,0.15);  color: hsl(35,65%,58%); }
-  .pill-equity   { background: rgba(94,204,138,0.15);  color: var(--green-hi); }
+  .pill-equity   { background: rgba(68,224,138,0.15);  color: var(--gi-green); }
 
-  tfoot tr  { background: var(--bg-grand); border-top: 2px solid var(--border-sec); }
-  tfoot td  { padding: 7px 7px; font-weight: 700; color: var(--text); text-align: right; }
-  tfoot td.left { text-align: left; font-size: 11px; color: var(--text); }
-  tfoot td.pickup { color: var(--green-hi); font-size: 13px; }
+  tfoot tr  { background: var(--bs-grandtot); border-top: 3px solid var(--bs-border-sec); }
+  tfoot td:first-child { border-left: 4px solid var(--gi-green); }
+  tfoot td  { padding: 10px 8px; font-weight: 800; color: var(--bs-green-med); text-align: right; font-size: 12px; letter-spacing: 0.05em; }
+  tfoot td.left { text-align: left; font-size: 12px; color: var(--bs-green-med); }
+  tfoot td.pickup { color: var(--bs-green-med); font-size: 12px; }
+  tfoot td[colspan] { color: rgba(255,255,255,0.35); font-weight: 400; font-size: 10px; }
 
   tr.subtotal td {
-    background: var(--bg-sec); border-top: 1px solid var(--border-sec);
-    font-size: 9.5px; font-weight: 700; color: var(--muted); padding: 4px 7px;
+    background: var(--bs-sectot); border-top: 2px solid var(--bs-border-sec); border-bottom: 2px solid var(--bs-border-sec);
+    font-size: 10.5px; font-weight: 800; color: var(--bs-green-med); padding: 10px 8px;
   }
-  tr.subtotal td.pickup { color: var(--green-med); font-weight: 700; }
-  tr.subtotal td.neg    { color: hsl(0,55%,55%); font-weight: 700; }
-  tr.subtotal td.bal    { color: var(--text); font-weight: 700; }
+  tr.subtotal td.left { color: var(--bs-green-med); }
+  tr.subtotal td.pickup { color: var(--bs-green-med); font-weight: 800; }
+  tr.subtotal td.neg    { color: var(--bs-green-med); font-weight: 800; }
+  tr.subtotal td.bal    { color: var(--bs-green-med); font-weight: 800; }
+  /* Spacer row between sections in main table */
+  tr.spacer td { background: var(--bs-base) !important; padding: 0; height: 18px; border: none !important; }
+  tr.spacer:hover td { background: var(--bs-base) !important; }
 
-  .footnote { margin-top: 12px; font-size: 9px; color: hsl(210,12%,38%); line-height: 1.7; }
-  .footnote strong { color: var(--muted); }
+  .footnote { margin-top: 12px; font-size: 10px; color: rgba(255,255,255,0.25); line-height: 1.7; padding: 0 8px; }
+  .footnote strong { color: rgba(255,255,255,0.40); font-weight: 600; }
 
-  /* ── Targets table ── */
-  .targets-wrap { margin-bottom: 22px; }
-  .targets-table table { border-radius: 0; overflow: hidden; }
+  /* ── Targets table (CF-2 style) ── */
+  .targets-wrap { margin-bottom: 22px; border: 1px solid var(--bs-border); border-radius: 10px; overflow: hidden; display: inline-block; }
+  .targets-table table { border-radius: 10px; overflow: hidden; width: auto; max-width: 540px; }
   .targets-table thead tr th {
-    background: var(--bg-grand); color: hsl(210,35%,65%);
-    padding: 6px 10px; font-size: 8px; font-weight: 800;
+    background: var(--bs-grandtot); color: hsl(210,35%,65%);
+    padding: 7px 8px; font-size: 10.5px; font-weight: 800;
     letter-spacing: 0.10em; text-transform: uppercase; text-align: right;
-    border-bottom: 1px solid var(--border-sec);
+    border-bottom: 1px solid var(--bs-border-sec);
   }
   .targets-table thead tr th.left { text-align: left; }
-  .targets-table tbody tr { border-bottom: 1px solid var(--border); }
-  .targets-table tbody tr:nth-child(odd)  { background: var(--bg-base); }
-  .targets-table tbody tr:nth-child(even) { background: var(--bg-alt); }
+  .targets-table tbody tr { border-bottom: 1px solid var(--bs-border); }
   .targets-table tbody tr:last-child { border-bottom: none; }
-  .targets-table tbody tr:hover { background: var(--bg-hdr); }
-  .targets-table td { padding: 4px 7px; text-align: right; color: var(--muted); font-size: 10px; }
-  .targets-table td.left { text-align: left; font-weight: 500; color: var(--text); }
-  .targets-table td.formula { font-size: 9px; color: hsl(210,12%,42%); font-family: var(--mono); }
-  .targets-table td.val { font-weight: 700; color: var(--text); }
-  .targets-table td.indent { text-align: left; padding-left: 22px; color: var(--muted); font-size: 9.5px; }
-  .targets-table tr.divider td { background: var(--bg-hdr); }
-  .targets-table tr.total-row td { background: var(--bg-grand); color: var(--text); font-weight: 700; border-top: 2px solid var(--border-sec); }
-  .targets-table tr.total-row td.formula { color: var(--muted); font-size: 9px; }
-  .targets-table tr.total-row td.val { color: var(--green-hi); font-size: 13px; }
-  .targets-table tr.excess-row td { background: rgba(46,122,82,0.10); }
-  .targets-table tr.excess-row td.val { color: var(--green-hi); font-size: 13px; font-weight: 700; }
+  .targets-table tbody tr:hover { background: var(--bs-grphdr); }
+  .targets-table td { padding: 7px 8px; text-align: right; color: var(--bs-text-sub); font-size: 10.5px; }
+  .targets-table td.left { text-align: left; font-weight: 500; color: var(--bs-text); }
+  .targets-table td.formula { font-size: 10px; color: rgba(255,255,255,0.35); font-family: var(--mono); text-align: left; }
+  .targets-table td.val { font-weight: 700; color: var(--bs-text); }
+  /* Tier 1: Section headers — bucket-colored top border */
+  .targets-table tr.section-head td {
+    background: var(--bs-grphdr); font-size: 12px; font-weight: 800; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #fff; padding: 12px 14px; text-align: left;
+    border-bottom: 1px solid var(--bs-border-sec); border-top: 4px solid var(--bucket-ops);
+  }
+  .targets-table tr.section-head.ops td { border-top-color: var(--bucket-ops); }
+  .targets-table tr.section-head.res td { border-top-color: var(--bucket-res); }
+  .targets-table tr.section-head.cap td { border-top-color: var(--bucket-cap); }
+  /* Tier 2: Detail items — alternating backgrounds */
+  .targets-table tr.item { background: var(--bs-base); }
+  .targets-table tr.item.alt { background: var(--bs-alt); }
+  .targets-table tr.item td.left { padding-left: 28px; color: var(--bs-text-sub); font-weight: 400; }
+  /* Tier 3: Subtotals — below their sub-accounts, green text */
+  .targets-table tr.subtotal td {
+    background: var(--bs-sectot); border-top: 2px solid var(--bs-border-sec); border-bottom: 2px solid var(--bs-border-sec);
+    font-size: 10.5px; font-weight: 800; color: var(--bs-green-med); padding: 10px 8px;
+  }
+  .targets-table tr.subtotal td.left { text-align: left; color: var(--bs-green-med); font-weight: 800; }
+  .targets-table tr.subtotal td.formula { color: rgba(255,255,255,0.35); }
+  .targets-table tr.subtotal td.val { color: var(--bs-green-med); }
+  /* Tier 4: Grand totals */
+  .targets-table tr.total-row td { background: var(--bs-grandtot); color: var(--bs-green-med); font-weight: 800; border-top: 3px solid var(--bs-border-sec); padding: 10px 8px; font-size: 12px; }
+  .targets-table tr.total-row td:first-child { border-left: 4px solid var(--gi-green); }
+  .targets-table tr.total-row td.formula { color: rgba(255,255,255,0.35); font-size: 10px; text-align: left; }
+  .targets-table tr.total-row td.val { color: var(--bs-green-med); font-size: 12px; }
+  /* Hero rows — Excess Cash & After-Tax Income (most important on the page) */
+  .targets-table tr.hero-row td {
+    background: var(--bs-grandtot); font-weight: 800; font-size: 12px; padding: 12px 8px;
+    border-top: 3px solid var(--bs-border-sec);
+    color: var(--gi-green);
+  }
+  .targets-table tr.hero-row td:first-child { border-left: 4px solid var(--gi-green); }
+  .targets-table tr.hero-row td.left { text-align: left; color: var(--gi-green); font-size: 12px; }
+  .targets-table tr.hero-row td.formula { color: rgba(255,255,255,0.35); font-size: 10px; text-align: left; }
+  .targets-table tr.hero-row td.val { color: var(--gi-green); font-size: 14px; }
+  /* Spacer row between sections */
+  .targets-table tr.spacer td { background: var(--bs-base); padding: 0; height: 18px; border: none; }
 
-  /* ── KPI strip ── */
-  .kpi-strip { display: flex; gap: 12px; margin: 20px 0 0; flex-wrap: wrap; }
-  .kpi-box { flex: 1; min-width: 130px; background: var(--bg-alt); border-radius: 8px; padding: 12px 15px; border: 1px solid var(--border); }
-  .kpi-box.green { background: rgba(46,122,82,0.10); border: 1px solid rgba(94,204,138,0.25); }
-  .kpi-label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
-  .kpi-value { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
-  .kpi-value.green { color: var(--green-hi); }
-  .kpi-sub { font-size: 9px; color: hsl(210,12%,42%); margin-top: 3px; }
+  /* ── KPI strip (standardized — matches Balance Sheet / CF-2 cards) ── */
+  .kpi-strip { display: flex; gap: 12px; margin: 0; flex-wrap: wrap; }
+  .kpi-box { flex: 1; min-width: 130px; background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.08); border-top: 2px solid rgba(91,143,204,0.70); padding: 10px 14px; }
+  .kpi-box.green { border-top-color: rgba(68,224,138,0.70); }
+  .kpi-box.ops { border-top-color: var(--bucket-ops); }
+  .kpi-box.res { border-top-color: var(--bucket-res); }
+  .kpi-box.cap { border-top-color: var(--bucket-cap); }
+  .kpi-detail { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 0.5px solid rgba(255,255,255,0.06); }
+  .kpi-detail-item { font-family: var(--mono); font-size: 9px; color: rgba(255,255,255,0.35); }
+  .kpi-detail-item span { color: rgba(255,255,255,0.65); font-weight: 600; }
+  .kpi-label { font-family: Inter, system-ui, sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.38); margin-bottom: 6px; }
+  .kpi-value { font-family: var(--mono); font-size: 17px; font-weight: 400; font-variant-numeric: tabular-nums; line-height: 1; color: rgba(255,255,255,0.92); margin-bottom: 6px; }
+  .kpi-value.green { color: var(--gi-green); }
+  .kpi-sub { font-family: Inter, system-ui, sans-serif; font-size: 9px; color: rgba(255,255,255,0.35); line-height: 1.4; }
+
+  /* ── Side-by-side table layout ── */
+  .tables-row { display: flex; gap: 96px; align-items: flex-start; margin-top: 4px; }
+  .tables-col { flex: 0 0 auto; min-width: 0; }
+  .tables-col h2 { margin-top: 0; position: sticky; top: 0; z-index: 11; background: var(--bs-base); padding-top: 6px; padding-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -149,335 +215,354 @@
 <h1>Reallocation Calculator — Kessler Family</h1>
 <p class="subtitle">After-tax portfolio income · current vs. pro-forma (target-sized buckets, best product per bucket)</p>
 
+<!-- ══ KPI strip ══ -->
+<div class="kpi-strip" style="margin-bottom:20px">
+  <div class="kpi-box ops">
+    <div class="kpi-label">Operating Cash</div>
+    <div class="kpi-value">$132,050</div>
+    <div class="kpi-detail">
+      <div class="kpi-detail-item">Target <span>$63,574</span></div>
+      <div class="kpi-detail-item">Excess <span style="color:var(--gi-green)">$68,476</span></div>
+    </div>
+  </div>
+  <div class="kpi-box res">
+    <div class="kpi-label">Liquidity Reserve</div>
+    <div class="kpi-value">$426,586</div>
+    <div class="kpi-detail">
+      <div class="kpi-detail-item">Target <span>$169,238</span></div>
+      <div class="kpi-detail-item">Excess <span style="color:var(--gi-green)">$257,348</span></div>
+    </div>
+  </div>
+  <div class="kpi-box cap">
+    <div class="kpi-label">Capital Build</div>
+    <div class="kpi-value">$135,000</div>
+    <div class="kpi-detail">
+      <div class="kpi-detail-item">Target <span>$135,000</span></div>
+      <div class="kpi-detail-item">Excess <span>$0</span></div>
+    </div>
+  </div>
+  <div class="kpi-box green">
+    <div class="kpi-label">Total Excess Cash</div>
+    <div class="kpi-value green">$325,824</div>
+    <div class="kpi-sub">redeployed to new investments</div>
+  </div>
+  <div class="kpi-box green">
+    <div class="kpi-label">After-Tax Income Pickup</div>
+    <div class="kpi-value green">+$28,675 / yr</div>
+    <div class="kpi-sub">$137,653 pro-forma − $108,978 current</div>
+  </div>
+</div>
 
-<!-- ══════════════════════════════════════════════════
-     TARGETS CALCULATION TABLE
-     ══════════════════════════════════════════════════ -->
-<h2>Liquidity Bucket Targets</h2>
+<!-- ══ Side-by-side tables ══ -->
+<div class="tables-row">
 
+<div class="tables-col">
+<h2>Calculation for Liquidity Requirement</h2>
 <div class="targets-wrap targets-table">
 <table>
+  <colgroup>
+    <col style="width:180px">
+    <col style="width:240px">
+    <col style="width:90px">
+  </colgroup>
   <thead>
     <tr>
-      <th class="left" style="width:220px">Bucket / Component</th>
-      <th class="left" style="width:260px">Formula / Source</th>
-      <th style="width:90px">Amount</th>
-      <th style="width:90px">Target</th>
+      <th colspan="3" style="padding:7px 8px">&nbsp;</th>
+    </tr>
+    <tr>
+      <th class="left">Component</th>
+      <th class="left">Formula / Source</th>
+      <th>Value</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <td class="left" style="font-weight:700">Operating Cash Target</td>
-      <td class="formula">outflows(Jan 2026) + outflows(Feb 2026)</td>
-      <td class="dim"></td>
-      <td class="val">$63,574</td>
-    </tr>
-    <tr>
-      <td class="indent">↳ Jan 2026 outflows</td>
+    <!-- ══ TOTAL LIQUIDITY TARGET (12 MONTHS) ══ -->
+    <tr class="section-head res"><td colspan="3">Total Liquidity Target — 12 Month Cash Flow Trough</td></tr>
+    <tr class="item" style="color:rgba(255,255,255,0.45); font-style:italic">
+      <td class="left" style="color:rgba(255,255,255,0.45)">GURU Suggested Target</td>
       <td class="formula"></td>
-      <td>$40,537</td>
-      <td class="dim">—</td>
+      <td>12 months</td>
     </tr>
-    <tr>
-      <td class="indent">↳ Feb 2026 outflows</td>
-      <td class="formula"></td>
-      <td>$23,037</td>
-      <td class="dim">—</td>
-    </tr>
-    <tr class="divider"><td colspan="4" style="padding:3px 12px; font-size:8px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#bbb;">Reserve Sizing — based on cash flow trough</td></tr>
-    <tr>
-      <td class="indent">↳ Trough Depth (November 2026)</td>
+    <tr class="item">
+      <td class="left">Trough Depth (November 2026)</td>
       <td class="formula">|min(cumulative net cash flow)|</td>
       <td>$129,385</td>
-      <td class="dim">—</td>
     </tr>
-    <tr>
-      <td class="indent">↳ Operating Floor at Trough (Dec + Jan)</td>
+    <tr class="item alt">
+      <td class="left">Operating Floor at Trough (Dec + Jan)</td>
       <td class="formula">outflows(Dec 2026) + outflows(Jan 2027)</td>
       <td>$107,716</td>
-      <td class="dim">—</td>
     </tr>
-    <tr>
-      <td class="indent" style="font-weight:600; color:var(--text)">↳ Reserve Target (12-month coverage)</td>
+    <tr class="subtotal">
+      <td class="left">Total Liquidity Target for 12 Months</td>
       <td class="formula">Trough Depth + Operating Floor at Trough</td>
-      <td style="font-weight:600; color:var(--text)">$232,812</td>
-      <td class="dim">—</td>
+      <td class="val">$232,812</td>
     </tr>
-    <tr>
-      <td class="left" style="font-weight:700">Liquidity Reserve Target</td>
-      <td class="formula">Reserve Target − Operating Cash Target</td>
-      <td class="dim"></td>
+
+    <!-- ══ OPERATING CASH ══ -->
+    <tr class="spacer"><td colspan="3"></td></tr>
+    <tr class="section-head ops"><td colspan="3">Operating Cash</td></tr>
+    <tr class="item" style="color:rgba(255,255,255,0.45); font-style:italic">
+      <td class="left" style="color:rgba(255,255,255,0.45)">GURU Suggested Target</td>
+      <td class="formula"></td>
+      <td>2 months</td>
+    </tr>
+    <tr class="item">
+      <td class="left">Jan 2026 outflows</td>
+      <td class="formula"></td>
+      <td>$40,537</td>
+    </tr>
+    <tr class="item alt">
+      <td class="left">Feb 2026 outflows</td>
+      <td class="formula"></td>
+      <td>$23,037</td>
+    </tr>
+    <tr class="subtotal">
+      <td class="left">Operating Cash Target</td>
+      <td class="formula">outflows(Jan 2026) + outflows(Feb 2026)</td>
+      <td class="val">$63,574</td>
+    </tr>
+
+    <!-- ══ LIQUIDITY RESERVE ══ -->
+    <tr class="spacer"><td colspan="3"></td></tr>
+    <tr class="section-head res"><td colspan="3">Liquidity Reserve</td></tr>
+    <tr class="subtotal">
+      <td class="left">Liquidity Reserve Target</td>
+      <td class="formula">Total Liquidity Target − Operating Cash Target</td>
       <td class="val">$169,238</td>
     </tr>
-    <tr class="divider"><td colspan="4" style="padding:3px 12px; font-size:8px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#bbb;"></td></tr>
-    <tr>
-      <td class="left" style="font-weight:700">Capital Build Target</td>
+
+    <!-- ══ CAPITAL BUILD ══ -->
+    <tr class="spacer"><td colspan="3"></td></tr>
+    <tr class="section-head cap"><td colspan="3">Capital Build</td></tr>
+    <tr class="item">
+      <td class="left">US Treasuries earmarked</td>
+      <td class="formula">Goal Savings</td>
+      <td>$135,000</td>
+    </tr>
+    <tr class="subtotal">
+      <td class="left">Capital Build Target</td>
       <td class="formula">Goal Savings — US Treasuries earmarked</td>
-      <td class="dim"></td>
       <td class="val">$135,000</td>
     </tr>
+
+    <!-- ══ TOTALS ══ -->
+    <tr class="spacer"><td colspan="3"></td></tr>
     <tr class="total-row">
-      <td class="left" style="font-size:12px">Total Liquidity Requirement</td>
-      <td class="formula">Reserve Target ($232,812) + Capital Build ($135,000)</td>
-      <td></td>
+      <td class="left" style="font-size:12px">Total Liquidity Requirement for 12 Months</td>
+      <td class="formula">Operating Cash Target + Liquidity Reserve Target + Capital Build</td>
       <td class="val">$367,812</td>
     </tr>
-    <tr>
-      <td class="left" style="color:var(--muted)">Total Liquid Assets (current)</td>
-      <td class="formula">Operating ($132,050) + Reserve ($426,586) + Capital ($135,000)</td>
-      <td class="dim"></td>
-      <td style="font-weight:600; color:var(--text)">$693,636</td>
+    <tr class="item">
+      <td class="left" style="color:rgba(255,255,255,0.55)">Total Liquid Assets (current)</td>
+      <td class="formula">Operating Cash + Liquidity Reserve + Capital Build + Investments</td>
+      <td style="font-weight:600">$693,636</td>
     </tr>
-    <tr class="excess-row">
-      <td class="left" style="font-weight:700; color:var(--green-hi)">Excess Cash → New Investments</td>
-      <td class="formula" style="color:var(--green-med)">Total Liquid − Total Liquidity Requirement</td>
-      <td class="dim"></td>
+    <tr class="hero-row">
+      <td class="left">Excess Liquidity</td>
+      <td class="formula">Total Liquid − Total Liquidity Requirement</td>
       <td class="val">$325,824</td>
     </tr>
   </tbody>
 </table>
 </div>
+</div><!-- /tables-col left -->
 
-
-<!-- ══ LEGEND ══ -->
-<div class="legend">
-  <span class="legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:hsl(0,65%,52%)"></span> <span class="tax-47">47%</span> — NYC combined (fed 35% + state 8% + city 4%)</span>
-  <span class="legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:hsl(42,80%,52%)"></span> <span class="tax-35">35%</span> — federal only — US treasury securities</span>
-  <span class="legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:hsl(215,65%,58%)"></span> <span class="tax-20">20%</span> LTCG — equity / investment portfolio</span>
-</div>
-
-
-<!-- ══════════════════════════════════════════════════
-     MAIN OPTIMIZATION TABLE  (8 columns)
-     Account | Bucket | Balance | [CUR] Pre-Tax Yield | AT Income | [PRO] Balance | AT Income | Pickup
-     ══════════════════════════════════════════════════ -->
-<div style="overflow-x:auto; margin-bottom:0;">
-<table style="min-width:640px;">
+<div class="tables-col">
+<h2>Calculation for Potential After-Tax Income Increase</h2>
+<div class="table-wrapper" style="overflow-x:auto; margin-bottom:0; display:inline-block;">
+<table class="optimization-table" style="width:auto;">
   <colgroup>
-    <col style="width:200px"><!-- Account -->
-    <col style="width:64px"> <!-- Bucket -->
-    <col style="width:82px"> <!-- Balance -->
-    <col style="width:68px"> <!-- Pre-Tax Yield  | sep-cur -->
-    <col style="width:82px"> <!-- AT Income      -->
-    <col style="width:84px"> <!-- Pro-Forma Bal  | sep-pro -->
-    <col style="width:82px"> <!-- Pro-Forma AT Income -->
-    <col style="width:72px"> <!-- Pickup         | sep-end -->
+    <col style="width:210px"><!-- Account -->
+    <col style="width:58px"> <!-- Pre-Tax Yield -->
+    <col style="width:58px"> <!-- After-Tax Yield -->
+    <col style="width:74px"> <!-- Current Balance | sep-cur -->
+    <col style="width:74px"> <!-- Current After-Tax Income -->
+    <col style="width:74px"> <!-- Pro-Forma Balance | sep-pro -->
+    <col style="width:74px"> <!-- Pro-Forma After-Tax Income -->
+    <col style="width:68px"> <!-- Pickup | sep-end -->
   </colgroup>
   <thead>
     <tr>
-      <th class="col-group-blank" colspan="3" style="text-align:left">Account</th>
+      <th class="col-group-blank" style="text-align:left"></th>
+      <th class="col-group-blank sep-yld" colspan="2" style="text-align:center; font-size:10px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,255,255,0.55)">Yield</th>
       <th class="col-group-current sep-cur" colspan="2" style="text-align:center">Current State</th>
-      <th class="col-group-proforma sep-pro" colspan="2" style="text-align:center">Pro-Forma (Target · Best Product)</th>
+      <th class="col-group-proforma sep-pro" colspan="2" style="text-align:center">Pro-Forma (Best Product)</th>
       <th class="col-group-blank sep-end"></th>
     </tr>
     <tr>
       <th class="left">Account / Product</th>
-      <th class="center">Bucket</th>
-      <th>Balance</th>
-      <th class="sep-cur">Pre-Tax Yield</th>
+      <th class="sep-yld">Pre-Tax</th>
+      <th>After-Tax</th>
+      <th class="sep-cur">Balance</th>
       <th>After-Tax Income</th>
-      <th class="sep-pro">Pro-Forma Balance</th>
+      <th class="sep-pro">Balance</th>
       <th>After-Tax Income</th>
-      <th class="sep-end">Pickup / yr</th>
+      <th class="sep-end">After-Tax Income Pickup</th>
     </tr>
   </thead>
   <tbody>
 
     <!-- ══ OPERATING CASH ══ -->
-    <tr class="section-head"><td colspan="8">Operating Cash — Target $63,574</td></tr>
+    <tr class="section-head ops"><td colspan="8">OPERATING CASH</td></tr>
     <tr>
       <td class="left">Chase Total Checking</td>
-      <td class="center"><span class="pill pill-checking">Checking</span></td>
-      <td>$25,050</td>
-      <td class="sep-cur">0.01%</td><td>$1</td>
+      <td class="sep-yld">0.01%</td><td>0.01%</td>
+      <td class="sep-cur">$25,050</td><td>$1</td>
       <td class="dim sep-pro">—</td><td class="dim">—</td>
       <td class="dim sep-end">—</td>
     </tr>
     <tr>
       <td class="left">Citizens Checking (Excess)</td>
-      <td class="center"><span class="pill pill-checking">Checking</span></td>
-      <td>$107,000</td>
-      <td class="sep-cur">0.01%</td><td>$6</td>
+      <td class="sep-yld">0.01%</td><td>0.01%</td>
+      <td class="sep-cur">$107,000</td><td>$6</td>
       <td class="dim sep-pro">—</td><td class="dim">—</td>
       <td class="dim sep-end">—</td>
     </tr>
     <tr class="new-product">
       <td class="left"><span class="new-badge">NEW</span>CIT Money Market Bank Account</td>
-      <td class="center"><span class="pill pill-checking">Checking</span></td>
-      <td class="zero">$0</td>
-      <td class="sep-cur">4.30%</td><td class="zero">$0</td>
+      <td class="sep-yld">4.30%</td><td>2.28%</td>
+      <td class="zero sep-cur">$0</td><td class="zero">$0</td>
       <td class="sep-pro"><strong>$63,574</strong></td><td class="pickup"><strong>$1,449</strong></td>
       <td class="pickup sep-end">+$1,442</td>
     </tr>
     <tr class="subtotal">
-      <td class="left">Operating Cash</td><td></td>
-      <td class="bal">$132,050</td>
-      <td class="sep-cur"></td><td>$7</td>
+      <td class="left">Operating Cash</td>
+      <td class="sep-yld"></td><td></td>
+      <td class="bal sep-cur">$132,050</td><td>$7</td>
       <td class="bal sep-pro">$63,574</td><td>$1,449</td>
       <td class="pickup sep-end">+$1,442</td>
     </tr>
 
     <!-- ══ LIQUIDITY RESERVE ══ -->
-    <tr class="section-head"><td colspan="8">Liquidity Reserve — Target $169,238 · $257,348 excess → New Investments</td></tr>
+    <tr class="spacer"><td colspan="8"></td></tr>
+    <tr class="section-head res"><td colspan="8">LIQUIDITY RESERVE</td></tr>
     <tr>
       <td class="left">Citizens Private Bank Money Market</td>
-      <td class="center"><span class="pill pill-reserve">Reserve</span></td>
-      <td>$225,000</td>
-      <td class="sep-cur">3.65%</td><td>$4,351</td>
+      <td class="sep-yld">3.65%</td><td>1.93%</td>
+      <td class="sep-cur">$225,000</td><td>$4,351</td>
       <td class="dim sep-pro">—</td><td class="dim">—</td>
       <td class="dim sep-end">—</td>
     </tr>
     <tr>
       <td class="left">Capital One 360 Performance Savings</td>
-      <td class="center"><span class="pill pill-reserve">Reserve</span></td>
-      <td>$15,000</td>
-      <td class="sep-cur">3.78%</td><td>$301</td>
+      <td class="sep-yld">3.78%</td><td>2.00%</td>
+      <td class="sep-cur">$15,000</td><td>$301</td>
       <td class="dim sep-pro">—</td><td class="dim">—</td>
       <td class="dim sep-end">—</td>
     </tr>
     <tr>
       <td class="left">Fidelity Cash Sweep (Idle)</td>
-      <td class="center"><span class="pill pill-reserve">Reserve</span></td>
-      <td>$186,586</td>
-      <td class="sep-cur">2.50%</td><td>$2,474</td>
+      <td class="sep-yld">2.50%</td><td>1.33%</td>
+      <td class="sep-cur">$186,586</td><td>$2,474</td>
       <td class="dim sep-pro">—</td><td class="dim">—</td>
       <td class="dim sep-end">—</td>
     </tr>
     <tr class="new-product">
-      <td class="left"><span class="new-badge">NEW</span>JPMorgan 100% Treasuries Money Market Fund</td>
-      <td class="center"><span class="pill pill-reserve">Reserve</span></td>
-      <td class="zero">$0</td>
-      <td class="sep-cur">4.30% <span class="tax-35" style="font-size:9px">35%*</span></td><td class="zero">$0</td>
+      <td class="left"><span class="new-badge">NEW</span>JPMorgan 100% Treasuries MM Fund</td>
+      <td class="sep-yld">4.30% <span class="tax-35">35%*</span></td><td>2.80%</td>
+      <td class="zero sep-cur">$0</td><td class="zero">$0</td>
       <td class="sep-pro"><strong>$169,238</strong></td><td class="pickup"><strong>$4,739</strong></td>
       <td class="neg sep-end">−$2,387</td>
     </tr>
     <tr class="subtotal">
-      <td class="left">Liquidity Reserve</td><td></td>
-      <td class="bal">$426,586</td>
-      <td class="sep-cur"></td><td>$7,126</td>
+      <td class="left">Liquidity Reserve</td>
+      <td class="sep-yld"></td><td></td>
+      <td class="bal sep-cur">$426,586</td><td>$7,126</td>
       <td class="bal sep-pro">$169,238</td><td>$4,739</td>
       <td class="neg sep-end">−$2,387</td>
     </tr>
 
     <!-- ══ CAPITAL BUILD ══ -->
-    <tr class="section-head"><td colspan="8">Capital Build — Target $135,000</td></tr>
+    <tr class="spacer"><td colspan="8"></td></tr>
+    <tr class="section-head cap"><td colspan="8">CAPITAL BUILD</td></tr>
     <tr>
       <td class="left">US Treasuries</td>
-      <td class="center"><span class="pill pill-capital">Capital</span></td>
-      <td>$135,000</td>
-      <td class="sep-cur">3.95%</td><td>$3,467</td>
+      <td class="sep-yld">3.95%</td><td>2.57%</td>
+      <td class="sep-cur">$135,000</td><td>$3,467</td>
       <td class="dim sep-pro">—</td><td class="dim">—</td>
       <td class="dim sep-end">—</td>
     </tr>
     <tr class="new-product">
       <td class="left"><span class="new-badge">NEW</span>S&amp;P Low Volatility Index (SPLV / USMV)</td>
-      <td class="center"><span class="pill pill-capital">Capital</span></td>
-      <td class="zero">$0</td>
-      <td class="sep-cur">6.50% <span class="tax-20" style="font-size:9px">20%</span></td><td class="zero">$0</td>
+      <td class="sep-yld">6.50% <span class="tax-20">20%</span></td><td>5.20%</td>
+      <td class="zero sep-cur">$0</td><td class="zero">$0</td>
       <td class="sep-pro"><strong>$135,000</strong></td><td class="pickup"><strong>$7,020</strong></td>
       <td class="pickup sep-end">+$3,553</td>
     </tr>
     <tr class="subtotal">
-      <td class="left">Capital Build</td><td></td>
-      <td class="bal">$135,000</td>
-      <td class="sep-cur"></td><td>$3,467</td>
+      <td class="left">Capital Build</td>
+      <td class="sep-yld"></td><td></td>
+      <td class="bal sep-cur">$135,000</td><td>$3,467</td>
       <td class="bal sep-pro">$135,000</td><td>$7,020</td>
       <td class="pickup sep-end">+$3,553</td>
     </tr>
 
     <!-- ══ EQUITY ══ -->
-    <tr class="section-head"><td colspan="8">Equity / Investment Portfolio — existing positions + $325,824 excess redeployed</td></tr>
+    <tr class="spacer"><td colspan="8"></td></tr>
+    <tr class="section-head inv"><td colspan="8">INVESTMENTS — EXISTING + $325,824 EXCESS REDEPLOYED</td></tr>
     <tr>
       <td class="left">Cresset Capital</td>
-      <td class="center"><span class="pill pill-equity">Equity</span></td>
-      <td>$814,877</td>
-      <td class="sep-cur">10.00%</td><td>$65,190</td>
+      <td class="sep-yld">10.00%</td><td>8.00%</td>
+      <td class="sep-cur">$814,877</td><td>$65,190</td>
       <td class="sep-pro">$814,877</td><td>$65,190</td>
       <td class="zero sep-end">—</td>
     </tr>
     <tr>
       <td class="left">Schwab International Index ETF</td>
-      <td class="center"><span class="pill pill-equity">Equity</span></td>
-      <td>$116,538</td>
-      <td class="sep-cur">10.00%</td><td>$9,323</td>
+      <td class="sep-yld">10.00%</td><td>8.00%</td>
+      <td class="sep-cur">$116,538</td><td>$9,323</td>
       <td class="sep-pro">$116,538</td><td>$9,323</td>
       <td class="zero sep-end">—</td>
     </tr>
     <tr>
       <td class="left">E*Trade — Meta Platforms</td>
-      <td class="center"><span class="pill pill-equity">Equity</span></td>
-      <td>$238,311</td>
-      <td class="sep-cur">10.00%</td><td>$19,065</td>
+      <td class="sep-yld">10.00%</td><td>8.00%</td>
+      <td class="sep-cur">$238,311</td><td>$19,065</td>
       <td class="sep-pro">$238,311</td><td>$19,065</td>
       <td class="zero sep-end">—</td>
     </tr>
     <tr>
       <td class="left">E*Trade — Bank of America</td>
-      <td class="center"><span class="pill pill-equity">Equity</span></td>
-      <td>$60,000</td>
-      <td class="sep-cur">10.00%</td><td>$4,800</td>
+      <td class="sep-yld">10.00%</td><td>8.00%</td>
+      <td class="sep-cur">$60,000</td><td>$4,800</td>
       <td class="sep-pro">$60,000</td><td>$4,800</td>
       <td class="zero sep-end">—</td>
     </tr>
     <tr class="new-product">
       <td class="left"><span class="new-badge">NEW</span>New Investments — excess cash redeployed</td>
-      <td class="center"><span class="pill pill-equity">Equity</span></td>
-      <td class="zero">$0</td>
-      <td class="sep-cur">10.00%</td><td class="zero">$0</td>
+      <td class="sep-yld">10.00%</td><td>8.00%</td>
+      <td class="zero sep-cur">$0</td><td class="zero">$0</td>
       <td class="sep-pro"><strong>$325,824</strong></td><td class="pickup"><strong>$26,066</strong></td>
       <td class="pickup sep-end">+$26,066</td>
     </tr>
     <tr class="subtotal">
-      <td class="left">Equity</td><td></td>
-      <td class="bal">$1,229,726</td>
-      <td class="sep-cur"></td><td>$98,378</td>
+      <td class="left">Investments</td>
+      <td class="sep-yld"></td><td></td>
+      <td class="bal sep-cur">$1,229,726</td><td>$98,378</td>
       <td class="bal sep-pro">$1,555,550</td><td>$124,444</td>
       <td class="pickup sep-end">+$26,066</td>
     </tr>
 
+    <tr class="spacer"><td colspan="8"></td></tr>
   </tbody>
   <tfoot>
     <tr>
-      <td class="left" colspan="2">Total Portfolio</td>
-      <td style="color:#fff; font-weight:700">$1,923,362</td>
-      <td class="sep-cur" colspan="2" style="text-align:right; font-size:9px; color:rgba(255,255,255,0.35)">$108,978 current after-tax income</td>
-      <td class="sep-pro" style="color:#fff; font-weight:700">$1,923,362</td>
-      <td style="text-align:right; font-size:9px; color:rgba(255,255,255,0.35)">$137,653 pro-forma after-tax income</td>
-      <td class="pickup sep-end">+$28,675</td>
+      <td class="left">Potential After-Tax Annual Income Increase</td>
+      <td colspan="6"></td>
+      <td class="pickup sep-end" style="font-size:14px">+$28,675 / yr</td>
     </tr>
   </tfoot>
 </table>
 </div>
-
 <p class="footnote">
   <strong>* JPMorgan 100% Treasuries Money Market Fund:</strong> 100% US Treasury bills — state and city tax exempt; 35% federal rate applies, not 47% NYC combined.<br>
   <strong>Reserve right-sizing:</strong> The −$2,387 reflects reducing reserve to $169,238 target. Freed $257,348 + $68,476 operating excess = $325,824 redeployed to new investments at 8% after-tax.<br>
-  <strong>Capital Build yield:</strong> S&amp;P Low Volatility 6.50% gross × (1 − 20% LTCG) = 5.20% after-tax. New Investments: 10.00% × (1 − 20%) = 8.00% after-tax.
+  <strong>Capital Build yield:</strong> S&amp;P Low Volatility 6.50% gross × (1 − 20% Long-Term Capital Gains) = 5.20% after-tax. New Investments: 10.00% × (1 − 20%) = 8.00% after-tax.
 </p>
+</div><!-- /tables-col right -->
+</div><!-- /tables-row -->
 
-<!-- ══ KPI strip ══ -->
-<div class="kpi-strip">
-  <div class="kpi-box">
-    <div class="kpi-label">Total Portfolio</div>
-    <div class="kpi-value">$1,923,362</div>
-    <div class="kpi-sub">same assets, optimally allocated</div>
-  </div>
-  <div class="kpi-box">
-    <div class="kpi-label">Current After-Tax Income</div>
-    <div class="kpi-value">$108,978</div>
-    <div class="kpi-sub">all accounts at current rates</div>
-  </div>
-  <div class="kpi-box">
-    <div class="kpi-label">Pro-Forma After-Tax Income</div>
-    <div class="kpi-value">$137,653</div>
-    <div class="kpi-sub">targets + best products + new investments</div>
-  </div>
-  <div class="kpi-box green">
-    <div class="kpi-label">Annual Income Pickup</div>
-    <div class="kpi-value green">+$28,675</div>
-    <div class="kpi-sub">$137,653 − $108,978 · same asset base</div>
-  </div>
-</div>
 
 </body>
 </html>

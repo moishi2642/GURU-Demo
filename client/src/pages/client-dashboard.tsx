@@ -797,10 +797,10 @@ function computeCashFlowKPIs(
 //
 // ── Terminology ──────────────────────────────────────────────────────────────
 //
-//  RESERVE TARGET
+//  TOTAL LIQUIDITY TARGET
 //    12-month liquidity required across the two bank-deposit buckets:
 //    Operating Cash + Liquidity Reserve. Capital Build (goalSavings) is separate.
-//    reserveTarget + goalSavings = Total Liquidity Requirement (all 3 buckets).
+//    totalLiquidityTarget + goalSavings = Total Liquidity Requirement (all 3 buckets).
 //    = troughDepth + operatingFloorAtTrough
 //    NOTE: this is the combined target for both bank buckets, not either one alone.
 //    See LIQUIDITY RESERVE TARGET below for the Liquidity Reserve bucket's portion.
@@ -809,7 +809,7 @@ function computeCashFlowKPIs(
 //    The target balance for the Liquidity Reserve bucket specifically.
 //    The Operating Cash bucket already covers the 2-month operatingTarget,
 //    so the reserve bucket covers the remaining shortfall.
-//    = reserveTarget − operatingTarget
+//    = totalLiquidityTarget − operatingTarget
 //
 //  OPERATING FLOOR AT TROUGH
 //    The client's operating account requirement as it stands AT the trough,
@@ -845,8 +845,8 @@ function computeLiquidityTargets(
   operatingTarget:         number;
   operatingExcess:         number;
   liquidityReserve:        number;
-  reserveTarget:           number;          // full 12-month liquidity requirement (NOT the Liquidity Reserve bucket target)
-  liquidityReserveTarget:  number;          // Liquidity Reserve bucket target = reserveTarget − operatingTarget
+  totalLiquidityTarget:    number;          // full 12-month liquidity target = troughDepth + operatingFloorAtTrough
+  liquidityReserveTarget:  number;          // Liquidity Reserve bucket target = totalLiquidityTarget − operatingTarget
   reserveExcess:           number;          // liquidityReserve above its own bucket target
   capitalBuild:            number;
   totalLiquid:             number;
@@ -901,8 +901,8 @@ function computeLiquidityTargets(
   const operatingFloorAtTrough = monthOutflows(fwd1.year, fwd1.month)
                                + monthOutflows(fwd2.year, fwd2.month);
 
-  // ── Reserve Target = total 12-month liquidity needed ─────────────────────
-  const reserveTarget = troughDepth + operatingFloorAtTrough;
+  // ── Total Liquidity Target = total 12-month liquidity needed ─────────────
+  const totalLiquidityTarget = troughDepth + operatingFloorAtTrough;
 
   // ── Operating target (today) ──────────────────────────────────────────────
   // 2 months forward from the bonus landing date. Sizes the operating account now.
@@ -921,16 +921,16 @@ function computeLiquidityTargets(
   const goalSavings = capitalBuild;
 
   // ── Total Liquidity Requirement & Excess ─────────────────────────────────
-  const totalLiquidityReq = reserveTarget + goalSavings;
+  const totalLiquidityReq = totalLiquidityTarget + goalSavings;
   const excessLiquidity   = Math.max(0, totalLiquid - totalLiquidityReq);
 
   const operatingExcess = Math.max(0, operatingCash - operatingTarget);
 
   // ── Per-bucket targets ────────────────────────────────────────────────────
-  // The Liquidity Reserve bucket does NOT need to cover the full reserveTarget —
+  // The Liquidity Reserve bucket does NOT need to cover the full totalLiquidityTarget —
   // the Operating Cash bucket already covers the 2-month operatingTarget.
   // Liquidity Reserve target = the remainder of the 12-month requirement.
-  const liquidityReserveTarget = Math.max(0, reserveTarget - operatingTarget);
+  const liquidityReserveTarget = Math.max(0, totalLiquidityTarget - operatingTarget);
   const reserveExcess          = Math.max(0, liquidityReserve - liquidityReserveTarget);
 
   const monthlyRate    = operatingTarget / 2;
@@ -938,7 +938,7 @@ function computeLiquidityTargets(
 
   return {
     operatingCash,    operatingTarget,         operatingExcess,
-    liquidityReserve, reserveTarget,           liquidityReserveTarget,  reserveExcess,
+    liquidityReserve, totalLiquidityTarget,           liquidityReserveTarget,  reserveExcess,
     capitalBuild,     totalLiquid,
     goalSavings,      totalLiquidityReq,
     operatingFloorAtTrough, troughDepth,
@@ -1875,7 +1875,7 @@ function BrokeragePanel({ assets }: { assets: Asset[] }) {
           </span>
         ) : (
           <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
-            <ArrowUpRight className="w-3 h-3" />4.32% YTD
+            <ArrowUpRight className="w-3 h-3" />4.32% Year-to-Date
           </span>
         )}
       </div>
@@ -2096,7 +2096,7 @@ function DashboardFlowWidget({
                 </span>
                 <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
                   <div className="bg-slate-900 text-white text-[9px] font-medium rounded-lg px-3 py-2 shadow-2xl leading-relaxed max-w-[230px]">
-                    Autodraw from JPMorgan 100% Treasuries MMF into CIT operating account — building 2 months of forward cash expenses
+                    Autodraw from JPMorgan 100% Treasuries Money Market Fund into CIT operating account — building 2 months of forward cash expenses
                   </div>
                   <div className="w-2 h-2 bg-slate-900 rotate-45 ml-4 -mt-1 flex-shrink-0" />
                 </div>
@@ -2124,7 +2124,7 @@ function DashboardFlowWidget({
                 <div className="border border-amber-200 rounded-t-lg overflow-hidden">
                   <div className="flex items-center justify-between px-3 py-2.5 bg-amber-50/60">
                     <div className="min-w-0 mr-2">
-                      <p className="text-[10px] font-semibold text-amber-900 leading-tight">JPMorgan Treasuries MMF</p>
+                      <p className="text-[10px] font-semibold text-amber-900 leading-tight">JPMorgan Treasuries Money Market Fund</p>
                       <p className="text-[8px] text-amber-600 mt-0.5">Autodraw to Operating</p>
                     </div>
                     <span className="text-[10px] font-black text-amber-700 tabular-nums flex-shrink-0">$27,927</span>
@@ -2143,7 +2143,7 @@ function DashboardFlowWidget({
                   </span>
                   <div className="absolute bottom-full left-0 mb-2 hidden group-hover:flex flex-col z-50 pointer-events-none">
                     <div className="bg-slate-900 text-white text-[9px] font-medium rounded-lg px-3 py-2 shadow-2xl leading-relaxed max-w-[220px]">
-                      1-month T-Bill maturing in January — proceeds roll into JPMorgan 100% Treasuries MMF
+                      1-month T-Bill maturing in January — proceeds roll into JPMorgan 100% Treasuries Money Market Fund
                     </div>
                     <div className="w-2 h-2 bg-slate-900 rotate-45 ml-4 -mt-1 flex-shrink-0" />
                   </div>
@@ -3517,7 +3517,7 @@ function CashFlowForecastView({
     liquidityReserve:       cfLiquidityReserve,
     capitalBuild:           cfCapitalBuild,
     totalLiquid,
-    reserveTarget,
+    totalLiquidityTarget,
     liquidityReserveTarget,
     totalLiquidityReq,
     excessLiquidity,
@@ -3673,7 +3673,7 @@ function CashFlowForecastView({
 
   // Reserve floor for Liquidity Runway chart = Reserve Target from computeLiquidityTargets()
   // This is the minimum liquid balance the client must maintain at all times.
-  const RESERVE_FLOOR = reserveTarget;
+  const RESERVE_FLOOR = totalLiquidityTarget;
   const fmtQK = (v: number) => `$${Math.round(Math.abs(v)).toLocaleString()}`;
 
   // ── Balance forecast for Chart B ─────────────────────────────────────────
@@ -4167,7 +4167,7 @@ function CashFlowForecastView({
               { label:"Monthly Burn",              value:paren(heroMonthlyBurn),                                          valueColor:"rgba(255,255,255,0.82)", note:"Avg monthly outflows" },
               { label:"Median Monthly Cash Flow",  value:signedParen(medianNet),                                          valueColor:medianIsPos?"rgba(255,255,255,0.82)":CF2.red,            note:"Median monthly net" },
               { label:"Income Coverage",           value:heroCoveragePct>999?"—":`${Math.round(heroCoveragePct)}%`,       valueColor:heroCoverageOk?CF2.green:CF2.red,                        note:"Income / expenses" },
-              { label:"Months in Surplus",         value:`${surplusMonths} of 12`,                                        valueColor:surplusMonths>=8?CF2.green:surplusMonths>=5?CF2.amber:CF2.red, note:"Months with positive net CF" },
+              { label:"Months in Surplus",         value:`${surplusMonths} of 12`,                                        valueColor:surplusMonths>=8?CF2.green:surplusMonths>=5?CF2.amber:CF2.red, note:"Months with positive net cash flow" },
               { label:"Cash Flow Trough",          value:paren(heroTroughValue),                                          valueColor:CF2.amber,               note:"Cumulative low point",    valueSub:heroTroughLabel },
               { label:"Liquid Runway",             value:`${heroRunway.toFixed(1)} months`,                               valueColor:"rgba(255,255,255,0.82)", note:"Total liquid / burn rate" },
             ];
@@ -4580,7 +4580,7 @@ function CashFlowForecastView({
                 <table style={{ width:"100%", borderCollapse:"collapse" as const, borderTop:`1px solid ${CF2.divider}` }}>
                   <thead>
                     <tr style={{ background:CF2.elevated }}>
-                      {(["Account","Balance","Yield","AT Yield"] as const).map((h,i)=>(
+                      {(["Account","Balance","Yield","After-Tax Yield"] as const).map((h,i)=>(
                         <th key={h} style={{ fontFamily:CF2.INTER, fontSize:10, fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.07em", padding:"5px 10px 5px"+(i===0?" 14px":" 10px"), textAlign:(i===0?"left":"right") as "left"|"right", color:"rgba(255,255,255,0.82)", borderLeft:i>0?`1px solid ${CF2.divider}`:"none" }}>{h}</th>
                       ))}
                     </tr>
@@ -5248,7 +5248,7 @@ const MM_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","
 
 const MM_BUCKETS = [
   { key: "op",   label: "Operating Cash", color: "#2e5c8a", accent: "#a8c4e0", tag: "Checking + Savings" },
-  { key: "res",  label: "Reserve Cash",   color: "#8a6e2e", accent: "#d4b87a", tag: "JPMorgan 100% Treasury MMF" },
+  { key: "res",  label: "Reserve Cash",   color: "#8a6e2e", accent: "#d4b87a", tag: "JPMorgan 100% Treasury Money Market Fund" },
   { key: "bld",  label: "Capital Build",  color: "#2e7a52", accent: "#7ac4a0", tag: "1yr Treasuries + 2028 Munis" },
   { key: "grw",  label: "Investments",    color: "#2e4e7a", accent: "#8aace0", tag: "Growth Equity ETFs" },
 ];
@@ -5292,16 +5292,16 @@ const MM_BILLS = [
 ];
 
 const MM_GURU_ACTIONS = [
-  { month: "Jan", action: "Operating deficit $19,626 — pulled from Reserve MMF",    type: "pull",    amount: 19626 },
+  { month: "Jan", action: "Operating deficit $19,626 — pulled from Reserve Money Market Fund",    type: "pull",    amount: 19626 },
   { month: "Feb", action: "Operating surplus — no Reserve draw needed",              type: "balanced",amount: 0 },
   { month: "Mar", action: "Q1 tax + Dalton tuition — pulled $47,126 from Reserve",  type: "pull",    amount: 47126 },
-  { month: "Apr", action: "Operating deficit $6,126 — pulled from Reserve MMF",     type: "pull",    amount: 6126 },
-  { month: "May", action: "Operating deficit $3,126 — pulled from Reserve MMF",     type: "pull",    amount: 3126 },
+  { month: "Apr", action: "Operating deficit $6,126 — pulled from Reserve Money Market Fund",     type: "pull",    amount: 6126 },
+  { month: "May", action: "Operating deficit $3,126 — pulled from Reserve Money Market Fund",     type: "pull",    amount: 3126 },
   { month: "Jun", action: "Home repair expense — pulled $21,626 from Reserve",       type: "pull",    amount: 21626 },
   { month: "Jul", action: "Vacation draw — pulled $17,126 from Reserve",             type: "pull",    amount: 17126 },
-  { month: "Aug", action: "Small operating gap $2,126 — pulled from Reserve MMF",   type: "pull",    amount: 2126 },
-  { month: "Sep", action: "Small operating gap $2,126 — pulled from Reserve MMF",   type: "pull",    amount: 2126 },
-  { month: "Oct", action: "Holiday prep draw $6,126 — pulled from Reserve MMF",     type: "pull",    amount: 6126 },
+  { month: "Aug", action: "Small operating gap $2,126 — pulled from Reserve Money Market Fund",   type: "pull",    amount: 2126 },
+  { month: "Sep", action: "Small operating gap $2,126 — pulled from Reserve Money Market Fund",   type: "pull",    amount: 2126 },
+  { month: "Oct", action: "Holiday prep draw $6,126 — pulled from Reserve Money Market Fund",     type: "pull",    amount: 6126 },
   { month: "Nov", action: "Reserve depleted — used Build ladder: $26,245 + $3,334", type: "pull",    amount: 29579 },
   { month: "Dec", action: "Income surplus — Reserve fully replenished to $129,389", type: "replenish",amount: 129389 },
 ];
@@ -5355,6 +5355,7 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
   let opsBal = operatingCash;
   const rsvBal = liquidityReserve;
   const bldBal = capitalBuild;
+  let bldCumAccrued = 0; // T-bill interest accrues monthly, cash paid only in December
 
   const data = MO.map((_mo, i) => {
     const moNum  = i + 1;
@@ -5376,16 +5377,18 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
     // Reserve — static balance, interest earned but not reinvested
     const rsvAtInt = rsvBal * (RSV_AT / 12);
 
-    // Capital Build — static balance, interest earned but not reinvested
-    const bldAtInt = bldBal * (BLD_AT / 12);
+    // Capital Build — T-bills accrue interest monthly but pay out at end of year (December)
+    const bldMonthlyAccrual = bldBal * (BLD_AT / 12);
+    bldCumAccrued += bldMonthlyAccrual;
+    const bldCashIncome = (i === 11) ? bldCumAccrued : 0; // Cash paid only in December
 
     return {
       mo: _mo,
       ops:  { begin: opsBegin, comp: opsComp, intIncome: opsIntIncome, income: opsIncome, expenses: opsExp, end: opsEnd, atInt: opsAtInt },
       rsv:  { begin: rsvBal, end: rsvBal, atInt: rsvAtInt },
-      bld:  { begin: bldBal, end: bldBal, atInt: bldAtInt },
+      bld:  { begin: bldBal, end: bldBal, accruedInt: bldCumAccrued, cashIncome: bldCashIncome, monthlyAccrual: bldMonthlyAccrual },
       totalEnd:   opsEnd + rsvBal + bldBal,
-      totalAtInt: opsAtInt + rsvAtInt + bldAtInt,
+      totalAtInt: opsAtInt + rsvAtInt + bldCashIncome,
     };
   });
 
@@ -5397,7 +5400,7 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
     opsExpenses: data.reduce((s, d) => s + d.ops.expenses,   0),
     opsAtInt:    data.reduce((s, d) => s + d.ops.atInt,      0),
     rsvAtInt:    data.reduce((s, d) => s + d.rsv.atInt,      0),
-    bldAtInt:    data.reduce((s, d) => s + d.bld.atInt,      0),
+    bldCashIncome: data.reduce((s, d) => s + d.bld.cashIncome, 0),
     totalAtInt:  data.reduce((s, d) => s + d.totalAtInt,     0),
   };
 
@@ -5410,63 +5413,84 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
   };
   const fmtPct = (v: number) => `${(v * 100).toFixed(2)}%`;
 
-  // ── Design tokens ──────────────────────────────────────────────────────────
+  // ── Design tokens (GI Table Rules) ────────────────────────────────────────
   const MONO  = "'JetBrains Mono', 'Courier New', monospace";
   const UI    = "Inter, system-ui, sans-serif";
-  const DS_BG = "#0c1828";
+  const BG_PAGE    = "#141c2b";
+  const BS_BG_BASE = "#0f1e33";
+  const BS_BG_ALT  = "#122038";
+  const BS_BG_GRPHDR   = "#162843";
+  const BS_BG_SECTOT   = "#1a2d47";
+  const BS_BG_GRANDTOT = "#0d1b2e";
+  const BS_BORDER     = "#1e3352";
+  const BS_BORDER_SEC = "#2a4a6e";
+  const BS_GREEN_DIM = "hsl(152,45%,42%)";
+  const BS_GREEN_MED = "hsl(152,52%,55%)";
   const GREEN = "#44e08a";
-  const OPS_C = "#4a7fd4";
-  const RSV_C = "#c49a30";
-  const BLD_C = "#3aad61";
-  const SEP_C = "rgba(255,255,255,0.08)";
+  const AMBER = "#ffc83c";
+  const BS_TEXT    = "hsl(0,0%,88%)";
+  const BS_TEXT_SUB = "rgba(255,255,255,0.82)";
+  // Bucket accent colors for section header top stripes
+  const OPS_C = "#1E4F9C";
+  const RSV_C = "#835800";
+  const BLD_C = "#195830";
   const COL_W = 76;
   const LBL_W = 240;
   const ANN_W = 96;
 
   // ── Shared cell style helpers ──────────────────────────────────────────────
   const cellBase: React.CSSProperties = {
-    fontFamily: MONO, fontSize: 11, textAlign: "right" as const,
-    padding: "3px 10px 3px 4px", whiteSpace: "nowrap" as const,
-    color: "rgba(255,255,255,0.82)", borderLeft: `0.5px solid ${SEP_C}`,
+    fontFamily: MONO, fontSize: 10.5, textAlign: "right" as const,
+    padding: "5px 8px", whiteSpace: "nowrap" as const,
+    color: BS_TEXT_SUB, borderLeft: `1px solid ${BS_BORDER}`,
     minWidth: COL_W, width: COL_W,
   };
   const labelBase: React.CSSProperties = {
-    fontFamily: UI, fontSize: 11, padding: "3px 12px 3px 16px",
-    color: "rgba(255,255,255,0.70)", whiteSpace: "nowrap" as const,
-    position: "sticky" as const, left: 0, background: DS_BG, zIndex: 2,
-    borderRight: `1px solid rgba(255,255,255,0.12)`,
-    minWidth: LBL_W, width: LBL_W,
+    fontFamily: MONO, fontSize: 10.5, padding: "5px 8px",
+    color: BS_TEXT_SUB, whiteSpace: "nowrap" as const,
+    position: "sticky" as const, left: 0, background: BS_BG_BASE, zIndex: 2,
+    borderRight: `1px solid ${BS_BORDER_SEC}`,
+    minWidth: LBL_W, width: LBL_W, textAlign: "left" as const,
+    fontWeight: 400, fontVariantNumeric: "tabular-nums" as any,
   };
   const annBase: React.CSSProperties = {
-    ...cellBase, minWidth: ANN_W, width: ANN_W, fontWeight: 500,
-    borderLeft: `1px solid rgba(255,255,255,0.18)`,
+    fontFamily: MONO, fontSize: 10.5, textAlign: "right" as const,
+    padding: "5px 8px", whiteSpace: "nowrap" as const,
+    color: BS_TEXT_SUB, borderLeft: `2px solid ${BS_BORDER_SEC}`, fontWeight: 500,
+    minWidth: ANN_W, width: ANN_W,
+    fontVariantNumeric: "tabular-nums" as any,
   };
 
   // ── Row builder helpers ────────────────────────────────────────────────────
-  const rowBg = (shade: "normal"|"subtotal"|"ending"|"total"|"section"): React.CSSProperties => {
-    switch (shade) {
-      case "section":  return { background: "rgba(255,255,255,0.04)" };
-      case "subtotal": return { background: "rgba(255,255,255,0.04)" };
-      case "ending":   return { background: "rgba(255,255,255,0.07)" };
-      case "total":    return { background: "rgba(255,255,255,0.11)" };
-      default:         return { background: "transparent" };
+  // Tier backgrounds: alternating subaccounts, section totals, grand totals
+  // Maintain row counter for alternating backgrounds within each section
+  let subaccountCount = 0;
+  const rowBg = (rowType: "subaccount" | "sectot" | "grandtot" | "separator", reset?: boolean): React.CSSProperties => {
+    if (reset) subaccountCount = 0;
+    switch (rowType) {
+      case "subaccount":
+        return { background: (subaccountCount++ % 2 === 0) ? BS_BG_BASE : BS_BG_ALT };
+      case "sectot":
+        subaccountCount = 0;
+        return { background: BS_BG_SECTOT };
+      case "grandtot":
+        return { background: BS_BG_GRANDTOT };
+      case "separator":
+        return { background: BG_PAGE, height: "18px" };
+      default:
+        return { background: BS_BG_BASE };
     }
   };
 
-  const sectionHeader = (label: string, color: string, product: string, pretax: string, at: string) => (
-    <tr style={{ ...rowBg("section") }}>
+  const sectionHeader = (label: string, bucketColor: string) => (
+    <tr style={{ background: BS_BG_GRPHDR, borderTop: `4px solid ${bucketColor}`, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
       <td colSpan={14} style={{
-        fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
-        textTransform: "uppercase" as const, color,
-        padding: "6px 16px",
+        fontFamily: MONO, fontSize: 12, fontWeight: 800, letterSpacing: "0.12em",
+        textTransform: "uppercase" as const, color: "#fff",
+        padding: "12px 14px",
         position: "sticky" as const, left: 0,
-        borderTop: `1px solid ${color}33`, borderBottom: `0.5px solid ${color}33`,
       }}>
         {label}
-        <span style={{ marginLeft: 10, opacity: 0.55, fontWeight: 400, letterSpacing: "0.06em", fontSize: 9 }}>{product}</span>
-        <span style={{ marginLeft: 14, opacity: 0.50, fontWeight: 400, letterSpacing: 0, fontSize: 9, textTransform: "none" as const }}>
-          Pre-Tax: {pretax}&nbsp;&nbsp;·&nbsp;&nbsp;After-Tax: {at}
-        </span>
       </td>
     </tr>
   );
@@ -5475,56 +5499,116 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
     label: string,
     values: number[],
     annVal: number | null,
-    shade: "normal"|"subtotal"|"ending"|"total",
+    rowType: "subaccount" | "sectot-beginning" | "sectot-ending" | "sectot-interest" | "grandtot",
     opts: {
-      indent?: number; color?: string; paren?: boolean; isGreen?: boolean;
-      dim?: boolean; labelBold?: boolean;
+      indent?: number; paren?: boolean;
     } = {}
   ) => {
-    const { indent = 0, paren = false, isGreen = false, dim = false, labelBold = false } = opts;
-    const bg = rowBg(shade);
-    const txtColor = isGreen ? GREEN : dim ? "rgba(255,255,255,0.35)" : opts.color ?? "rgba(255,255,255,0.82)";
-    const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderRight: `1px solid rgba(255,255,255,0.12)` };
+    const { indent = 0, paren = false } = opts;
+    const bg = rowType.startsWith("sectot") ? rowBg("sectot") : rowType === "grandtot" ? rowBg("grandtot") : rowBg("subaccount");
+
+    // Tier 2 subaccount rows
+    if (rowType === "subaccount") {
+      const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderRight: `1px solid ${BS_BORDER_SEC}` };
+      const paddingLeft = 28;
+      return (
+        <tr style={bg}>
+          <td style={{ ...labelBase, ...lBg, paddingLeft, color: BS_TEXT_SUB }}>
+            {label}
+          </td>
+          {values.map((v, i) => {
+            const display = paren ? (v !== 0 ? `(${Math.abs(Math.round(v)).toLocaleString("en-US")})` : "—") : fmt(v);
+            return (
+              <td key={i} style={{ ...cellBase, color: BS_TEXT_SUB, borderTop: `1px solid ${BS_BORDER}`, borderBottom: `1px solid ${BS_BORDER}` }}>
+                {display}
+              </td>
+            );
+          })}
+          <td style={{ ...annBase, color: BS_TEXT_SUB, borderTop: `1px solid ${BS_BORDER}`, borderBottom: `1px solid ${BS_BORDER}` }}>
+            {annVal !== null ? (paren ? (annVal !== 0 ? `(${Math.abs(Math.round(annVal)).toLocaleString("en-US")})` : "—") : fmt(annVal)) : ""}
+          </td>
+        </tr>
+      );
+    }
+
+    // Tier 3 section totals (Beginning, Ending, Interest)
+    if (rowType.startsWith("sectot")) {
+      const isEnding = rowType === "sectot-ending";
+      const labelColor = isEnding ? BS_GREEN_MED : BS_TEXT;
+      const numberColor = BS_TEXT; // All section total numbers are white
+      const leftBorderStyle = isEnding ? `3px solid ${BS_GREEN_DIM}` : `1px solid ${BS_BORDER_SEC}`;
+      const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderRight: `1px solid ${BS_BORDER_SEC}` };
+
+      return (
+        <tr style={{ ...bg, borderTop: `2px solid ${BS_BORDER_SEC}`, borderBottom: `2px solid ${BS_BORDER_SEC}` }}>
+          <td style={{ ...labelBase, ...lBg, paddingLeft: 12, color: labelColor, fontWeight: 800, letterSpacing: "0.06em", borderLeft: leftBorderStyle, borderRight: `1px solid ${BS_BORDER_SEC}` }}>
+            {label}
+          </td>
+          {values.map((v, i) => {
+            const display = paren ? (v !== 0 ? `(${Math.abs(Math.round(v)).toLocaleString("en-US")})` : "—") : fmt(v);
+            return (
+              <td key={i} style={{ ...cellBase, color: numberColor, fontWeight: 800, borderTop: "none", borderBottom: "none" }}>
+                {display}
+              </td>
+            );
+          })}
+          <td style={{ ...annBase, color: numberColor, fontWeight: 800 }}>
+            {annVal !== null ? (paren ? (annVal !== 0 ? `(${Math.abs(Math.round(annVal)).toLocaleString("en-US")})` : "—") : fmt(annVal)) : ""}
+          </td>
+        </tr>
+      );
+    }
+
+    // Tier 4 grand totals (green everywhere)
+    if (rowType === "grandtot") {
+      const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderLeft: `4px solid ${GREEN}`, borderRight: `1px solid ${BS_BORDER_SEC}` };
+      return (
+        <tr style={{ ...bg, borderTop: `3px solid ${BS_BORDER_SEC}` }}>
+          <td style={{ ...labelBase, ...lBg, padding: "10px 8px", paddingLeft: 12, color: BS_GREEN_MED, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const }}>
+            {label}
+          </td>
+          {values.map((v, i) => {
+            const display = fmt(v);
+            return (
+              <td key={i} style={{ ...cellBase, padding: "10px 8px", color: BS_GREEN_MED, fontWeight: 800, borderTop: "none", borderBottom: "none" }}>
+                {display}
+              </td>
+            );
+          })}
+          <td style={{ ...annBase, padding: "10px 8px", color: BS_GREEN_MED, fontWeight: 800 }}>
+            {annVal !== null ? fmt(annVal) : ""}
+          </td>
+        </tr>
+      );
+    }
+
+    return null;
+  };
+
+  // Yield rate row — Tier 2 subtype: same 10.5px, italic style, white text (never green)
+  const yieldRow = (label: string, annualRate: number) => {
+    const bg = rowBg("subaccount");
+    const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderRight: `1px solid ${BS_BORDER_SEC}` };
     return (
       <tr style={bg}>
-        <td style={{ ...labelBase, ...lBg, paddingLeft: 16 + indent * 16, fontWeight: labelBold ? 600 : 400, color: isGreen ? GREEN : "rgba(255,255,255,0.75)" }}>
+        <td style={{ ...labelBase, ...lBg, paddingLeft: 28, color: BS_TEXT_SUB, fontStyle: "italic" as const, borderTop: `1px solid ${BS_BORDER}`, borderBottom: `1px solid ${BS_BORDER}` }}>
           {label}
         </td>
-        {values.map((v, i) => {
-          const display = paren ? (v !== 0 ? `(${Math.abs(Math.round(v)).toLocaleString("en-US")})` : "—") : fmt(v);
-          return (
-            <td key={i} style={{ ...cellBase, color: txtColor, fontWeight: shade === "total" || shade === "ending" ? 500 : 400 }}>
-              {display}
-            </td>
-          );
-        })}
-        <td style={{ ...annBase, color: isGreen ? GREEN : txtColor, fontWeight: shade === "total" || shade === "ending" ? 600 : 400 }}>
-          {annVal !== null ? (paren ? (annVal !== 0 ? `(${Math.abs(Math.round(annVal)).toLocaleString("en-US")})` : "—") : fmt(annVal)) : ""}
+        {MO.map((_, i) => (
+          <td key={i} style={{ ...cellBase, color: BS_TEXT_SUB, fontStyle: "italic" as const, borderTop: `1px solid ${BS_BORDER}`, borderBottom: `1px solid ${BS_BORDER}` }}>
+            {fmtPct(annualRate)}
+          </td>
+        ))}
+        <td style={{ ...annBase, color: BS_TEXT_SUB, fontStyle: "italic" as const, borderTop: `1px solid ${BS_BORDER}`, borderBottom: `1px solid ${BS_BORDER}` }}>
+          {fmtPct(annualRate)}
         </td>
       </tr>
     );
   };
 
-  // Yield rate row — displays annual rate in every column (market standard)
-  const yieldRow = (label: string, annualRate: number, color?: string) => (
-    <tr style={{ background: "transparent" }}>
-      <td style={{ ...labelBase, background: DS_BG, paddingLeft: 32, fontSize: 10, color: color ?? "rgba(255,255,255,0.32)", fontStyle: "italic" as const }}>
-        {label}
-      </td>
-      {MO.map((_, i) => (
-        <td key={i} style={{ ...cellBase, fontSize: 10, color: color ?? "rgba(255,255,255,0.32)", fontStyle: "italic" as const }}>
-          {fmtPct(annualRate)}
-        </td>
-      ))}
-      <td style={{ ...annBase, fontSize: 10, color: color ?? "rgba(255,255,255,0.32)", fontStyle: "italic" as const }}>
-        {fmtPct(annualRate)}
-      </td>
-    </tr>
-  );
-
-  const sepRow = (color?: string) => (
-    <tr style={{ height: 10 }}>
-      <td colSpan={14} style={{ borderTop: color ? `1px solid ${color}33` : "none", background: DS_BG, position: "sticky" as const, left: 0 }} />
+  const sepRow = () => (
+    <tr style={rowBg("separator")}>
+      <td colSpan={14} style={{ position: "sticky" as const, left: 0, border: "none" }} />
     </tr>
   );
 
@@ -5547,24 +5631,24 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
       </div>
 
       {/* ── Opening Balance Summary Strip ── */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
         {[
           { label: "Operating Cash",    value: operatingCash,    color: OPS_C, pretax: `${(OPS_PRETAX * 100).toFixed(2)}%`, at: `${(OPS_AT * 100).toFixed(2)}%` },
           { label: "Liquidity Reserve", value: liquidityReserve, color: RSV_C, pretax: `${(RSV_PRETAX * 100).toFixed(2)}%`, at: `${(RSV_AT * 100).toFixed(2)}%` },
           { label: "Capital Build",     value: capitalBuild,     color: BLD_C, pretax: `${(BLD_PRETAX * 100).toFixed(2)}%`, at: `${(BLD_AT * 100).toFixed(2)}%` },
-        ].map(({ label, value, color, pretax, at }) => (
-          <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `0.5px solid rgba(255,255,255,0.08)`, borderTop: `2px solid ${color}`, padding: "10px 14px" }}>
-            <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 4 }}>{label}</div>
-            <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color: "rgba(255,255,255,0.92)", marginBottom: 6 }}>
+        ].map(({ label, value, color: bucketColor, pretax, at }) => (
+          <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `0.5px solid rgba(255,255,255,0.08)`, borderTop: `2px solid ${bucketColor}`, padding: "8px 12px" }}>
+            <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 3 }}>{label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color: "rgba(255,255,255,0.92)", marginBottom: 4 }}>
               {value.toLocaleString("en-US")}
             </div>
             <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.40)", marginBottom: 1 }}>Pre-Tax: {pretax} annual</div>
             <div style={{ fontFamily: MONO, fontSize: 10, color: GREEN, fontWeight: 500 }}>After-Tax: {at} annual</div>
           </div>
         ))}
-        <div style={{ flex: 1, background: "rgba(68,224,138,0.06)", border: `0.5px solid rgba(68,224,138,0.18)`, padding: "10px 14px" }}>
-          <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 4 }}>Annual After-Tax Interest</div>
-          <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color: GREEN, marginBottom: 4 }}>
+        <div style={{ flex: 1, background: "rgba(68,224,138,0.06)", border: `0.5px solid rgba(68,224,138,0.18)`, padding: "8px 12px" }}>
+          <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 3 }}>Annual After-Tax Interest</div>
+          <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color: GREEN, marginBottom: 3 }}>
             {Math.round(ann.totalAtInt).toLocaleString("en-US")}
           </div>
           <div style={{ fontFamily: UI, fontSize: 10, color: "rgba(255,255,255,0.38)", marginBottom: 2 }}>All three buckets combined</div>
@@ -5575,84 +5659,84 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
       </div>
 
       {/* ── Waterfall Table ── */}
-      <div style={{ overflowX: "auto", border: `0.5px solid rgba(255,255,255,0.10)` }}>
-        <table style={{ borderCollapse: "collapse" as const, width: "100%", minWidth: LBL_W + COL_W * 12 + ANN_W, background: DS_BG }}>
-          <thead>
-            <tr style={{ background: "rgba(255,255,255,0.06)", borderBottom: `1px solid rgba(255,255,255,0.12)` }}>
-              <th style={{ ...labelBase, background: "rgba(255,255,255,0.06)", zIndex: 3, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.40)", textAlign: "left" as const, padding: "6px 12px 6px 16px" }}>
+      <div style={{ overflowX: "auto", overflowY: "auto", border: `1px solid ${BS_BORDER}`, borderRadius: "10px" }}>
+        <table style={{ borderCollapse: "collapse" as const, width: "100%", minWidth: LBL_W + COL_W * 12 + ANN_W, background: BS_BG_BASE }}>
+          <thead style={{ position: "sticky" as const, top: 0, zIndex: 20 }}>
+            <tr style={{ background: BS_BG_GRANDTOT, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
+              <th style={{ ...labelBase, background: BS_BG_GRANDTOT, zIndex: 3, fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "hsl(210,35%,65%)", textAlign: "left" as const, padding: "7px 8px", borderRight: `1px solid ${BS_BORDER_SEC}` }}>
                 ACCOUNT / LINE ITEM
               </th>
               {MO.map(m => (
-                <th key={m} style={{ ...cellBase, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.40)", padding: "6px 10px 6px 4px" }}>{m}</th>
+                <th key={m} style={{ ...cellBase, background: BS_BG_GRANDTOT, fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "hsl(210,35%,65%)", padding: "7px 8px", borderLeft: `1px solid ${BS_BORDER}` }}>{m}</th>
               ))}
-              <th style={{ ...annBase, fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.40)", padding: "6px 10px 6px 4px" }}>ANNUAL</th>
+              <th style={{ ...annBase, background: BS_BG_GRANDTOT, fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "hsl(210,35%,65%)", padding: "7px 8px", borderLeft: `2px solid ${BS_BORDER_SEC}` }}>ANNUAL</th>
             </tr>
           </thead>
           <tbody>
 
             {/* ═══ SECTION 1: OPERATING CASH ═══ */}
-            {sectionHeader("Operating Cash", OPS_C, "Weighted average — current holdings", `${(OPS_PRETAX*100).toFixed(2)}%`, `${(OPS_AT*100).toFixed(2)}%`)}
+            {sectionHeader("Operating Cash", OPS_C)}
+            {(() => { subaccountCount = 0; return null; })()}
             {dataRow("Beginning Balance",
-              data.map(d => d.ops.begin), operatingCash, "normal", {})}
+              data.map(d => d.ops.begin), operatingCash, "sectot-beginning", {})}
             {dataRow("+ Cash Compensation",
-              data.map(d => d.ops.comp), ann.opsComp, "normal", { indent: 1 })}
+              data.map(d => d.ops.comp), ann.opsComp, "subaccount", { indent: 1 })}
             {dataRow("+ Bank Interest Income",
-              data.map(d => d.ops.intIncome), ann.opsIntIncome, "normal", { indent: 1 })}
-            {dataRow("Total Income",
-              data.map(d => d.ops.income), ann.opsIncome, "subtotal", { labelBold: true })}
+              data.map(d => d.ops.intIncome), ann.opsIntIncome, "subaccount", { indent: 1 })}
             {dataRow("− Expenses",
-              data.map(d => d.ops.expenses), ann.opsExpenses, "normal", { indent: 1, paren: true })}
+              data.map(d => d.ops.expenses), ann.opsExpenses, "subaccount", { indent: 1, paren: true })}
             {dataRow("Ending Balance",
-              data.map(d => d.ops.end), data[11].ops.end, "ending", { labelBold: true })}
+              data.map(d => d.ops.end), data[11].ops.end, "sectot-ending", {})}
             {yieldRow("Pre-Tax Yield (annual)",  OPS_PRETAX)}
-            {yieldRow("After-Tax Yield (annual)", OPS_AT, GREEN)}
+            {yieldRow("After-Tax Yield (annual)", OPS_AT)}
             {dataRow("+ After-Tax Interest Income",
-              data.map(d => d.ops.atInt), ann.opsAtInt, "normal", { indent: 1, isGreen: true })}
+              data.map(d => d.ops.atInt), ann.opsAtInt, "sectot-interest", {})}
 
-            {sepRow(OPS_C)}
+            {sepRow()}
 
             {/* ═══ SECTION 2: LIQUIDITY RESERVE ═══ */}
-            {sectionHeader("Liquidity Reserve", RSV_C, "Weighted average — current holdings", `${(RSV_PRETAX*100).toFixed(2)}%`, `${(RSV_AT*100).toFixed(2)}%`)}
+            {sectionHeader("Liquidity Reserve", RSV_C)}
+            {(() => { subaccountCount = 0; return null; })()}
             {dataRow("Beginning Balance",
-              data.map(d => d.rsv.begin), liquidityReserve, "normal", {})}
+              data.map(d => d.rsv.begin), liquidityReserve, "sectot-beginning", {})}
             {dataRow("+ Income Allocation",
-              data.map(() => 0), 0, "normal", { indent: 1 })}
+              data.map(() => 0), 0, "subaccount", { indent: 1 })}
             {dataRow("− Expenses",
-              data.map(() => 0), 0, "normal", { indent: 1, paren: false })}
+              data.map(() => 0), 0, "subaccount", { indent: 1, paren: false })}
             {dataRow("Ending Balance",
-              data.map(d => d.rsv.end), data[11].rsv.end, "ending", { labelBold: true })}
+              data.map(d => d.rsv.end), data[11].rsv.end, "sectot-ending", {})}
             {yieldRow("Pre-Tax Yield (annual)",  RSV_PRETAX)}
-            {yieldRow("After-Tax Yield (annual)", RSV_AT, GREEN)}
+            {yieldRow("After-Tax Yield (annual)", RSV_AT)}
             {dataRow("+ After-Tax Interest Income",
-              data.map(d => d.rsv.atInt), ann.rsvAtInt, "normal", { indent: 1, isGreen: true })}
+              data.map(d => d.rsv.atInt), ann.rsvAtInt, "sectot-interest", {})}
 
-            {sepRow(RSV_C)}
+            {sepRow()}
 
             {/* ═══ SECTION 3: CAPITAL BUILD ═══ */}
-            {sectionHeader("Capital Build", BLD_C, "Weighted average — current holdings", `${(BLD_PRETAX*100).toFixed(2)}%`, `${(BLD_AT*100).toFixed(2)}%`)}
+            {sectionHeader("Capital Build", BLD_C)}
+            {(() => { subaccountCount = 0; return null; })()}
             {dataRow("Beginning Balance",
-              data.map(d => d.bld.begin), capitalBuild, "normal", {})}
+              data.map(d => d.bld.begin), capitalBuild, "sectot-beginning", {})}
             {dataRow("+ Income Allocation",
-              data.map(() => 0), 0, "normal", { indent: 1 })}
+              data.map(() => 0), 0, "subaccount", { indent: 1 })}
             {dataRow("− Expenses",
-              data.map(() => 0), 0, "normal", { indent: 1, paren: false })}
+              data.map(() => 0), 0, "subaccount", { indent: 1, paren: false })}
             {dataRow("Ending Balance",
-              data.map(d => d.bld.end), data[11].bld.end, "ending", { labelBold: true })}
+              data.map(d => d.bld.end), data[11].bld.end, "sectot-ending", {})}
             {yieldRow("Pre-Tax Yield (annual)",  BLD_PRETAX)}
-            {yieldRow("After-Tax Yield (annual)", BLD_AT, GREEN)}
-            {dataRow("+ After-Tax Interest Income",
-              data.map(d => d.bld.atInt), ann.bldAtInt, "normal", { indent: 1, isGreen: true })}
+            {yieldRow("After-Tax Yield (annual)", BLD_AT)}
+            {dataRow("Accrued Interest (cumulative)",
+              data.map(d => d.bld.accruedInt), data[11].bld.accruedInt, "subaccount", {})}
+            {dataRow("+ After-Tax Cash Income (paid at maturity)",
+              data.map(d => d.bld.cashIncome), ann.bldCashIncome, "sectot-interest", {})}
 
             {sepRow()}
 
             {/* ═══ TOTALS ═══ */}
-            <tr style={{ height: 2, background: "rgba(255,255,255,0.14)" }}>
-              <td colSpan={14} />
-            </tr>
             {dataRow("Total Liquid Ending Balance",
-              data.map(d => d.totalEnd), data[11].totalEnd, "total", { labelBold: true })}
+              data.map(d => d.totalEnd), data[11].totalEnd, "grandtot", {})}
             {dataRow("Total After-Tax Interest Income",
-              data.map(d => d.totalAtInt), ann.totalAtInt, "total", { labelBold: true, isGreen: true })}
+              data.map(d => d.totalAtInt), ann.totalAtInt, "grandtot", {})}
 
           </tbody>
         </table>
@@ -5678,7 +5762,7 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
 // Full P&L ledger: CF_PL_ROWS × CF_MONTHS — same financial model style as
 // LiquidityWaterfallView. Every line item auditable against live cashflow data.
 // ─────────────────────────────────────────────────────────────────────────────
-function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+function CashFlowForecastWaterfallView({ assets, cashFlows, clientId }: { assets: Asset[]; cashFlows: CashFlow[]; clientId: number }) {
   const MO = CF_MONTHS.map(m => m.label);
 
   // ── Interest income from Asset Forecast model ──────────────────────────────
@@ -5763,43 +5847,28 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
     return v < 0 ? `(${s})` : s;
   };
 
-  // ── Design tokens (matching LiquidityWaterfallView) ───────────────────────
+  // ── Design tokens (GI Table Rules) ────────────────────────────────────────
   const MONO  = "'JetBrains Mono', 'Courier New', monospace";
   const UI    = "Inter, system-ui, sans-serif";
-  const DS_BG = "#0c1828";
+  const BG_PAGE    = "#141c2b";
+  const BS_BG_BASE = "#0f1e33";
+  const BS_BG_ALT  = "#122038";
+  const BS_BG_GRPHDR   = "#162843";
+  const BS_BG_SECTOT   = "#1a2d47";
+  const BS_BG_GRANDTOT = "#0d1b2e";
+  const BS_BORDER     = "#1e3352";
+  const BS_BORDER_SEC = "#2a4a6e";
+  const BS_GREEN_DIM = "hsl(152,45%,42%)";
+  const BS_GREEN_MED = "hsl(152,52%,55%)";
   const GREEN = "#44e08a";
   const AMBER = "#d4950a";
-  const SEP_C = "rgba(255,255,255,0.07)";
+  const BS_TEXT    = "hsl(0,0%,88%)";
+  const BS_TEXT_SUB = "rgba(255,255,255,0.82)";
   const COL_W = 76;
-  const LBL_W = 220;
-  const ANN_W = 92;
+  const LBL_W = 240;
+  const ANN_W = 96;
 
-  const cellBase: React.CSSProperties = {
-    fontFamily: MONO, fontSize: 11, textAlign: "right" as const,
-    padding: "3px 9px 3px 3px", whiteSpace: "nowrap" as const,
-    color: "rgba(255,255,255,0.75)", borderLeft: `0.5px solid ${SEP_C}`,
-    minWidth: COL_W, width: COL_W,
-  };
-  const labelBase: React.CSSProperties = {
-    fontFamily: UI, fontSize: 11, padding: "3px 12px 3px 14px",
-    color: "rgba(255,255,255,0.68)", whiteSpace: "nowrap" as const,
-    position: "sticky" as const, left: 0, background: DS_BG, zIndex: 2,
-    borderRight: "1px solid rgba(255,255,255,0.12)",
-    minWidth: LBL_W, width: LBL_W,
-  };
-  const annBase: React.CSSProperties = {
-    ...cellBase, minWidth: ANN_W, width: ANN_W, fontWeight: 500,
-    borderLeft: "1px solid rgba(255,255,255,0.16)",
-  };
-
-  const rowBgs: Record<string, string> = {
-    normal:   "transparent",
-    subtotal: "rgba(255,255,255,0.04)",
-    total:    "rgba(255,255,255,0.10)",
-    group:    "rgba(255,255,255,0.03)",
-  };
-
-  // ── Group → accent color mapping ───────────────────────────────────────────
+  // ── Bucket accent colors for section header top stripes ──────────────────
   const groupColors: Record<string, string> = {
     "EARNED INCOME": "#4a7fd4",
     "TRIBECA — PRIMARY RESIDENCE": "#835800",
@@ -5812,24 +5881,67 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
     "TRAVEL": "#4a6080",
     "YEAR-END & MISC": "#506070",
   };
-  let currentGroupColor = "rgba(255,255,255,0.40)";
+  let currentGroupColor = GREEN;
+
+  // ── Shared cell style helpers ──────────────────────────────────────────────
+  const cellBase: React.CSSProperties = {
+    fontFamily: MONO, fontSize: 10.5, textAlign: "right" as const,
+    padding: "5px 8px", whiteSpace: "nowrap" as const,
+    color: BS_TEXT_SUB, borderLeft: `1px solid ${BS_BORDER}`,
+    minWidth: COL_W, width: COL_W,
+  };
+  const labelBase: React.CSSProperties = {
+    fontFamily: MONO, fontSize: 10.5, padding: "5px 8px",
+    color: BS_TEXT_SUB, whiteSpace: "nowrap" as const,
+    position: "sticky" as const, left: 0, background: BS_BG_BASE, zIndex: 2,
+    borderRight: `1px solid ${BS_BORDER_SEC}`,
+    minWidth: LBL_W, width: LBL_W, textAlign: "left" as const,
+    fontWeight: 400, fontVariantNumeric: "tabular-nums" as any,
+  };
+  const annBase: React.CSSProperties = {
+    fontFamily: MONO, fontSize: 10.5, textAlign: "right" as const,
+    padding: "5px 8px", whiteSpace: "nowrap" as const,
+    color: BS_TEXT_SUB, borderLeft: `2px solid ${BS_BORDER_SEC}`, fontWeight: 500,
+    minWidth: ANN_W, width: ANN_W,
+    fontVariantNumeric: "tabular-nums" as any,
+  };
+
+  // ── Row background management for alternating subaccounts ────────────────
+  let subaccountCount = 0;
+  const rowBg = (rowType: "subaccount" | "sectot" | "grandtot" | "separator", reset?: boolean): React.CSSProperties => {
+    if (reset) subaccountCount = 0;
+    switch (rowType) {
+      case "subaccount":
+        return { background: (subaccountCount++ % 2 === 0) ? BS_BG_BASE : BS_BG_ALT };
+      case "sectot":
+        subaccountCount = 0;
+        return { background: BS_BG_SECTOT };
+      case "grandtot":
+        return { background: BS_BG_GRANDTOT };
+      case "separator":
+        return { background: BG_PAGE, height: "18px" };
+      default:
+        return { background: BS_BG_BASE };
+    }
+  };
 
   // ── Row renderer ───────────────────────────────────────────────────────────
   const renderRow = (row: PLRowDef): React.ReactNode => {
     if (row.kind === "group") {
-      currentGroupColor = groupColors[row.label] ?? "rgba(255,255,255,0.35)";
+      currentGroupColor = groupColors[row.label] ?? GREEN;
       return (
         <React.Fragment key={row.key}>
-          {/* Small spacer row between sections */}
-          <tr style={{ background: DS_BG }}>
-            <td colSpan={14} style={{ padding: "3px 0", borderBottom: "none" }} />
+          {/* 18px spacer between sections (page bg) */}
+          <tr style={rowBg("separator")}>
+            <td colSpan={14} style={{ position: "sticky" as const, left: 0, border: "none" }} />
           </tr>
-          <tr style={{ background: rowBgs.group, borderTop: `0.5px solid ${currentGroupColor}40` }}>
+          {/* Tier 1: Section Header */}
+          <tr style={{ background: BS_BG_GRPHDR, borderTop: `4px solid ${currentGroupColor}`, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
             <td colSpan={14} style={{
-              fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.13em",
-              textTransform: "uppercase" as const, color: currentGroupColor,
-              padding: "6px 14px 5px 14px", position: "sticky" as const, left: 0,
-              borderBottom: `0.5px solid ${currentGroupColor}40`,
+              fontFamily: MONO, fontSize: 12, fontWeight: 800, letterSpacing: "0.12em",
+              textTransform: "uppercase" as const, color: "#fff",
+              padding: "12px 14px",
+              position: "sticky" as const, left: 0,
             }}>
               {row.label}
             </td>
@@ -5841,9 +5953,6 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
     const rowVals = vals[row.key] ?? CF_MONTHS.map(() => 0);
     const isSubtotal  = row.kind === "subtotal" || ("renderAs" in row && row.renderAs === "subtotal");
     const isTotal     = row.kind === "total";
-    const bg          = isTotal ? rowBgs.total : isSubtotal ? rowBgs.subtotal : rowBgs.normal;
-    const indent      = !isSubtotal && !isTotal ? 14 : 0;
-    const lBgColor    = isTotal ? "rgba(255,255,255,0.06)" : isSubtotal ? "rgba(255,255,255,0.03)" : DS_BG;
 
     // Annual value: sum for most rows; Dec ending for cumulative
     let annVal: number;
@@ -5857,60 +5966,100 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
       annVal = rowVals.reduce((s, v) => s + v, 0);
     }
 
-    // Text color for total rows
-    const totalAccent = isTotal && "accent" in row
-      ? (row.accent === "green" ? GREEN : AMBER)
-      : null;
-
-    const labelColor  = totalAccent ?? (isSubtotal ? "rgba(255,255,255,0.80)" : "rgba(255,255,255,0.65)");
-    const labelWeight = isTotal ? 700 : isSubtotal ? 600 : 400;
-
-    return (
-      <tr key={row.key} style={{ background: bg }}>
-        <td style={{
-          ...labelBase, background: lBgColor, paddingLeft: 14 + indent,
-          fontWeight: labelWeight, color: labelColor,
-          fontSize: isTotal ? 11 : 11,
-          letterSpacing: isTotal ? "0.03em" : "normal",
-        }}>
-          {row.label}
-        </td>
-        {rowVals.map((v, i) => {
-          let color = totalAccent ?? "rgba(255,255,255,0.75)";
-          // For net/cumulative rows: green positive, amber negative
-          if (isTotal && "compute" in row && (row.compute === "net" || row.compute === "cumulative")) {
-            color = v >= 0 ? GREEN : AMBER;
-          }
-          return (
-            <td key={i} style={{
-              ...cellBase,
-              color,
-              fontWeight: isTotal ? 600 : isSubtotal ? 500 : 400,
-              fontSize: isTotal ? 11 : 11,
-            }}>
+    // ──── TIER 2: Subaccount rows (normal items) ────────────────────────────
+    if (!isSubtotal && !isTotal) {
+      const bg = rowBg("subaccount");
+      const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderRight: `1px solid ${BS_BORDER_SEC}` };
+      return (
+        <tr key={row.key} style={bg}>
+          <td style={{ ...labelBase, ...lBg, color: BS_TEXT_SUB }}>
+            {row.label}
+          </td>
+          {rowVals.map((v, i) => (
+            <td key={i} style={{ ...cellBase, color: BS_TEXT_SUB, borderTop: `1px solid ${BS_BORDER}`, borderBottom: `1px solid ${BS_BORDER}` }}>
               {fmt(v)}
             </td>
-          );
-        })}
-        <td style={{
-          ...annBase,
-          color: totalAccent ?? (isTotal && "compute" in row && (row.compute === "net" || row.compute === "cumulative")
-            ? (annVal >= 0 ? GREEN : AMBER)
-            : "rgba(255,255,255,0.80)"),
-          fontWeight: isTotal ? 700 : isSubtotal ? 600 : 500,
-          fontStyle: (isTotal && "compute" in row && row.compute === "cumulative") ? "italic" as const : "normal" as const,
-        }}>
-          {(isTotal && "compute" in row && row.compute === "cumulative") ? `Dec: ${fmt(annVal)}` : fmt(annVal)}
-        </td>
-      </tr>
-    );
+          ))}
+          <td style={{ ...annBase, color: BS_TEXT_SUB, borderTop: `1px solid ${BS_BORDER}`, borderBottom: `1px solid ${BS_BORDER}` }}>
+            {fmt(annVal)}
+          </td>
+        </tr>
+      );
+    }
+
+    // ──── TIER 3: Section Totals (subtotals) ────────────────────────────────
+    if (isSubtotal) {
+      const bg = rowBg("sectot");
+      const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderRight: `1px solid ${BS_BORDER_SEC}` };
+      return (
+        <tr key={row.key} style={{ ...bg, borderTop: `2px solid ${BS_BORDER_SEC}`, borderBottom: `2px solid ${BS_BORDER_SEC}` }}>
+          <td style={{ ...labelBase, ...lBg, paddingLeft: 12, color: BS_TEXT, fontWeight: 800, letterSpacing: "0.06em", borderLeft: `1px solid ${BS_BORDER_SEC}`, borderRight: `1px solid ${BS_BORDER_SEC}` }}>
+            {row.label}
+          </td>
+          {rowVals.map((v, i) => (
+            <td key={i} style={{ ...cellBase, color: BS_TEXT, fontWeight: 800, borderTop: "none", borderBottom: "none" }}>
+              {fmt(v)}
+            </td>
+          ))}
+          <td style={{ ...annBase, color: BS_TEXT, fontWeight: 800 }}>
+            {fmt(annVal)}
+          </td>
+        </tr>
+      );
+    }
+
+    // ──── TIER 4: Grand Totals ──────────────────────────────────────────────
+    if (isTotal) {
+      const bg = rowBg("grandtot");
+      const lBg = { ...bg, position: "sticky" as const, left: 0, zIndex: 2, borderLeft: `4px solid ${GREEN}`, borderRight: `1px solid ${BS_BORDER_SEC}` };
+
+      // Determine text color for label and numbers based on row type
+      let labelColor = BS_GREEN_MED;
+      let numberColor = BS_GREEN_MED;
+
+      if ("compute" in row && row.compute === "net") {
+        // Net row: green for positive, amber for negative (per spec)
+        numberColor = annVal >= 0 ? GREEN : AMBER;
+      } else if ("compute" in row && row.compute === "cumulative") {
+        // Cumulative: green for positive, amber for negative
+        numberColor = annVal >= 0 ? GREEN : AMBER;
+      } else if ("compute" in row && row.compute === "outflow") {
+        // Outflow (expenses): use amber
+        numberColor = AMBER;
+      }
+
+      return (
+        <tr key={row.key} style={{ ...bg, borderTop: `3px solid ${BS_BORDER_SEC}` }}>
+          <td style={{ ...labelBase, ...lBg, padding: "10px 8px", fontSize: 12, color: labelColor, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const }}>
+            {row.label}
+          </td>
+          {rowVals.map((v, i) => {
+            let color = numberColor;
+            // For net/cumulative: override per-cell color based on value sign
+            if ("compute" in row && (row.compute === "net" || row.compute === "cumulative")) {
+              color = v >= 0 ? GREEN : AMBER;
+            }
+            return (
+              <td key={i} style={{ ...cellBase, padding: "10px 8px", fontSize: 12, color, fontWeight: 800, borderTop: "none", borderBottom: "none" }}>
+                {fmt(v)}
+              </td>
+            );
+          })}
+          <td style={{ ...annBase, padding: "10px 8px", fontSize: 12, color: numberColor, fontWeight: 800 }}>
+            {(("compute" in row && row.compute === "cumulative")) ? `Dec: ${fmt(annVal)}` : fmt(annVal)}
+          </td>
+        </tr>
+      );
+    }
+
+    return null;
   };
 
   return (
     <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "0 40px 80px" }}>
 
       {/* ── Header ── */}
-      <div style={{ marginBottom: 18 }}>
+      <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 6 }}>
           <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: GREEN }}>
             GURU INTELLIGENCE · CF-2
@@ -5919,46 +6068,42 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
             CASH FLOW MODEL · FY 2026 · LIVE FROM TRANSACTION DATA
           </div>
         </div>
-        <div style={{ fontFamily: UI, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+        <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
           Month-by-month inflow and outflow ledger. All figures from live account data and the 2026 cash flow schedule. Cumulative net cash flow drives the liquidity trough calculation.
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+          <AddCashFlowModal clientId={clientId} />
         </div>
       </div>
 
       {/* ── Summary KPI strip ── */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
         {[
           { label: "Total Cash Income",    val: annualIncome,   color: GREEN },
           { label: "Total Cash Expenses",  val: (vals["total_expenses"] ?? []).reduce((s,v) => s+v, 0), color: AMBER },
           { label: "Net Cash Flow (FY)",   val: annualNet,      color: annualNet >= 0 ? GREEN : AMBER },
-          { label: "Trough (Nov)",         val: troughDepth,    color: troughDepth < 0 ? AMBER : GREEN, note: "lowest cumulative NCF — sizes reserve" },
+          { label: "Trough (Nov)",         val: troughDepth,    color: troughDepth < 0 ? AMBER : GREEN, note: "lowest cumulative net cash flow — sizes reserve" },
         ].map(({ label, val, color, note }) => (
-          <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `0.5px solid rgba(255,255,255,0.08)`, borderTop: `2px solid ${color}`, padding: "10px 14px" }}>
-            <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>{label}</div>
-            <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color }}>{fmt(val)}</div>
-            {note && <div style={{ fontFamily: UI, fontSize: 9, color: "rgba(255,255,255,0.28)", marginTop: 3 }}>{note}</div>}
+          <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: `2px solid ${color}`, padding: "8px 12px" }}>
+            <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 3 }}>{label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1, marginBottom: 4 }}>{fmt(val)}</div>
+            {note && <div style={{ fontFamily: UI, fontSize: 9, color: "rgba(255,255,255,0.35)", lineHeight: 1.4 }}>{note}</div>}
           </div>
         ))}
       </div>
 
-      {/* ── P&L Table ── */}
-      <div style={{ overflowX: "auto", border: `0.5px solid rgba(255,255,255,0.10)` }}>
-        <table style={{ borderCollapse: "collapse" as const, minWidth: LBL_W + COL_W * 12 + ANN_W, background: DS_BG }}>
-          <thead>
-            <tr style={{ background: "rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
-              <th style={{ ...labelBase, background: "rgba(255,255,255,0.06)", zIndex: 3,
-                fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.10em",
-                textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)",
-                textAlign: "left" as const, padding: "6px 12px 6px 14px" }}>
+      {/* ── P&L Table (GI Table styling) ── */}
+      <div style={{ overflowX: "auto", overflowY: "auto", border: `1px solid ${BS_BORDER}`, borderRadius: "10px" }}>
+        <table style={{ borderCollapse: "collapse" as const, width: "100%", minWidth: LBL_W + COL_W * 12 + ANN_W, background: BS_BG_BASE }}>
+          <thead style={{ position: "sticky" as const, top: 0, zIndex: 20 }}>
+            <tr style={{ background: BS_BG_GRANDTOT, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
+              <th style={{ ...labelBase, background: BS_BG_GRANDTOT, zIndex: 3, fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "hsl(210,35%,65%)", textAlign: "left" as const, padding: "7px 8px", borderRight: `1px solid ${BS_BORDER_SEC}` }}>
                 LINE ITEM
               </th>
               {MO.map(m => (
-                <th key={m} style={{ ...cellBase, fontFamily: UI, fontSize: 9, fontWeight: 700,
-                  letterSpacing: "0.08em", textTransform: "uppercase" as const,
-                  color: "rgba(255,255,255,0.38)", padding: "6px 9px 6px 3px" }}>{m}</th>
+                <th key={m} style={{ ...cellBase, background: BS_BG_GRANDTOT, fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "hsl(210,35%,65%)", padding: "7px 8px", borderLeft: `1px solid ${BS_BORDER}` }}>{m}</th>
               ))}
-              <th style={{ ...annBase, fontFamily: UI, fontSize: 9, fontWeight: 700,
-                letterSpacing: "0.08em", textTransform: "uppercase" as const,
-                color: "rgba(255,255,255,0.38)", padding: "6px 9px 6px 3px" }}>ANNUAL</th>
+              <th style={{ ...annBase, background: BS_BG_GRANDTOT, fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "hsl(210,35%,65%)", padding: "7px 8px", borderLeft: `2px solid ${BS_BORDER_SEC}` }}>ANNUAL</th>
             </tr>
           </thead>
           <tbody>
@@ -5974,6 +6119,22 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
           {" "}· All figures sourced from live cash flow schedule · Inflows positive, outflows in parentheses · Annual column sums Jan–Dec except Cumulative (shows Dec year-end balance)
           · Trough depth feeds directly into reserve target calculation in Asset Forecast
         </div>
+      </div>
+
+      {/* ── Tax Rate Legend ── */}
+      <div style={{ display: "flex", gap: 18, flexWrap: "wrap" as const, marginTop: 14 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.82)" }}>
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: "hsl(0,65%,52%)" }} />
+          <span style={{ color: "hsl(0,65%,60%)" }}>47%</span> — NYC combined (fed 35% + state 8% + city 4%)
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.82)" }}>
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: "hsl(42,80%,52%)" }} />
+          <span style={{ color: "hsl(38,80%,58%)" }}>35%</span> — federal only — US treasury securities
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.82)" }}>
+          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: "hsl(215,65%,58%)" }} />
+          <span style={{ color: "hsl(215,75%,65%)" }}>20%</span> Long-Term Capital Gains — equity / investment portfolio
+        </span>
       </div>
     </div>
   );
@@ -6051,7 +6212,7 @@ function MoneyMovementView({
       </div>
     );
   };
-  const [mmView, setMmView] = useState<'table'|'flow'>('flow');
+  const [mmView, setMmView] = useState<'table'|'flow'>('table');
   const [selectedMonth, setSelectedMonth] = useState(1); // February = T-bill maturity month
 
   const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -6275,15 +6436,23 @@ function MoneyMovementView({
   ];
 
   const fmtN = (v: number): React.ReactNode => {
-    if (v === 0) return <span className="text-slate-300">—</span>;
+    if (v === 0) return <span style={{ color: 'rgba(255,255,255,0.5)' }}>—</span>;
     const s = Math.abs(v).toLocaleString("en-US");
-    if (v > 0) return <span className="text-emerald-700 font-medium">+${s}</span>;
-    return <span className="text-red-600 font-medium">{`($${s})`}</span>;
+    if (v > 0) return <span style={{ color: '#5ecc8a', fontWeight: 500 }}>+${s}</span>;
+    return <span style={{ color: '#ffc83c', fontWeight: 500 }}>{`($${s})`}</span>;
   };
 
-  const fmtBal = (v: number) => v < 0
-    ? `(${Math.abs(v).toLocaleString("en-US")})`
-    : `$${v.toLocaleString("en-US")}`;
+  const fmtBal = (v: number): React.ReactNode => {
+    if (v === 0) return <span style={{ color: 'rgba(255,255,255,0.35)' }}>—</span>;
+    const formatted = v < 0
+      ? `(${Math.abs(v).toLocaleString("en-US")})`
+      : `$${v.toLocaleString("en-US")}`;
+
+    if (v < 0) {
+      return <span style={{ color: '#ffc83c' }}>{formatted}</span>;
+    }
+    return <span style={{ color: 'hsl(0,0%,88%)' }}>{formatted}</span>;
+  };
 
   const minOpsOk = Math.min(...EFF_IMM) >= minOps;
 
@@ -6478,44 +6647,324 @@ function MoneyMovementView({
           Automated transfer schedule and account-by-account balance forecast. Inflows and expenses from the 2026 cash flow schedule with GURU-managed sweep logic applied.
         </div>
       </div>
-    <div className="rounded-xl overflow-hidden shadow-xl border border-slate-200">
-      {/* ── Title bar: title + view toggle + controls ── */}
-      <div className="bg-slate-800 px-6 py-4 flex items-center gap-4 flex-wrap">
-        <h2 className="text-white text-[15px] leading-snug flex-1 min-w-0">
-          <span className="font-black">Continuous Money Movement:</span>
-          <span className="font-light ml-2">GURU's Planned Transfers  For the Next Year</span>
-        </h2>
+    <div>
+      {/* ══════════════════════════════════════════════════════════
+          ACCOUNT FORECAST TABLE VIEW
+          ══════════════════════════════════════════════════════════ */}
+      {mmView === 'table' && (
+        <>
+          <div style={{ overflowX: 'auto', backgroundColor: '#0f1e33', maxHeight: '620px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 'max-content' }}>
 
-        {/* View toggle */}
-        <div className="flex items-center bg-slate-700 rounded-lg p-0.5 gap-0.5 flex-shrink-0">
-          {(['table','flow'] as const).map(v => (
-            <button
-              key={v}
-              onClick={() => setMmView(v)}
-              className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${
-                mmView === v ? 'bg-white text-slate-800 shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {v === 'table' ? 'Account Forecast' : 'Flow Schematic'}
-            </button>
-          ))}
-        </div>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 20 }}>
+                <tr style={{ backgroundColor: '#0d1b2e', borderBottom: '2px solid #2a4a6e' }}>
+                  <th style={{ padding: '7px 8px', textAlign: 'left', fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.10em', color: 'hsl(210,35%,65%)', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#0d1b2e', zIndex: 3, fontFamily: "'JetBrains Mono', 'Courier New', monospace" }}>Line Item</th>
+                  {MONTHS.map((mo, mi) => (
+                    <th key={mo} style={{ padding: '7px 8px', textAlign: 'right', fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.10em', color: 'hsl(210,35%,65%)', minWidth: mi === 11 ? '96px' : '76px', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352', fontFamily: "'JetBrains Mono', 'Courier New', monospace" }}>
+                      {mo}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
 
-        {/* Month selector — only relevant for flow view */}
-        {mmView === 'flow' && (
-          <select
-            data-testid="mm-month-select"
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(Number(e.target.value))}
-            className="bg-white border border-slate-200 text-slate-700 text-[11px] rounded-md px-3 py-1.5 focus:outline-none focus:border-blue-400 flex-shrink-0 shadow-sm"
-          >
-            {MONTHS.map((mo, i) => (
-              <option key={mo} value={i}>{mo} 2026{i === 0 ? ' — Next Month' : i === 1 ? ' — T-Bill Maturity' : ''}</option>
+              <tbody>
+                {/* ══ OPERATING CASH ══ */}
+                {/* ↳ Chase Total Checking */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: allZero(HC_CHASE) ? '#122038' : '#0f1e33' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: allZero(HC_CHASE) ? '#122038' : '#0f1e33', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    Chase Total Checking
+                  </td>
+                  {HC_CHASE.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ Citizens Private Banking Checking */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: allZero(HC_CITIZENS_CHECK) ? '#0f1e33' : '#122038' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: allZero(HC_CITIZENS_CHECK) ? '#0f1e33' : '#122038', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    Citizens Private Banking Checking
+                  </td>
+                  {HC_CITIZENS_CHECK.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ CIT Money Market Bank Account */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: '#122038' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#122038', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    CIT Money Market Bank Account
+                  </td>
+                  {HC_CIT_MM.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Operating Cash TOTAL */}
+                <tr style={{ backgroundColor: '#1a2d47', borderTop: '2px solid #2a4a6e', borderBottom: '2px solid #2a4a6e', borderLeft: '4px solid #1E4F9C' }}>
+                  <td style={{ padding: '12px 14px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#1a2d47', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#44e08a' }}>
+                    OPERATING CASH
+                  </td>
+                  {HC_OPS_TOTAL.map((v, mi) => (
+                    <td key={mi} style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontWeight: 800, color: 'hsl(0,0%,88%)', borderLeft: mi === 11 ? '2px solid #2a4a6e' : 'none' }}>
+                      <div style={{ position: 'relative', display: 'inline-block', cursor: 'help' }} className="group">
+                        {fmtBal(v)}
+                        {cellTip([
+                          `Operating Cash — ${MONTHS[mi]} 2026`,
+                          "─",
+                          mi > 0 ? `Prior month: ${fmtBal(HC_OPS_TOTAL[mi - 1])}` : null,
+                          `+ After-tax income: ${fmtBal(INCOME_TO_IMM[mi])}`,
+                          `- Monthly expenses: ${fmtBal(Math.abs(EXPENSES[mi]))}`,
+                          FROM_ST_TO_IMM[mi] > 0 ? `+ Draw from Reserve: ${fmtBal(FROM_ST_TO_IMM[mi])}` : null,
+                          IMM_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(IMM_INT[mi])}` : null,
+                          "─",
+                          `= Month-end balance: ${fmtBal(v)}`,
+                        ])}
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Min ops floor check */}
+                <tr style={{ backgroundColor: 'rgba(29,78,216,0.08)', borderBottom: '1px solid rgba(29,78,216,0.2)' }}>
+                  <td style={{ padding: '8px 14px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: 'rgba(29,78,216,0.08)', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10px', fontWeight: 600, fontStyle: 'italic', color: '#1d4ed8' }}>
+                    ⤷ Holds ≥ {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses
+                  </td>
+                  {HC_OPS_TOTAL.map((bal, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10px', fontWeight: 900, fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: bal >= minOps ? '#5ecc8a' : '#ffc83c', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid rgba(29,78,216,0.2)' }}>
+                      {bal >= minOps ? '✓' : '⚠'}
+                    </td>
+                  ))}
+                </tr>
+
+                <tr style={{ height: '18px', backgroundColor: '#141c2b', borderBottom: 'none' }}><td colSpan={13} /></tr>
+
+                {/* ══ RESERVE ══ */}
+                {/* ↳ Citizens Private Bank Money Market */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: allZero(HC_CITIZENS_MM) ? '#122038' : '#0f1e33' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: allZero(HC_CITIZENS_MM) ? '#122038' : '#0f1e33', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    Citizens Private Bank Money Market
+                  </td>
+                  {HC_CITIZENS_MM.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ CapitalOne 360 Performance Savings */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: allZero(HC_CAPONE) ? '#0f1e33' : '#122038' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: allZero(HC_CAPONE) ? '#0f1e33' : '#122038', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    CapitalOne 360 Performance Savings
+                  </td>
+                  {HC_CAPONE.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ JPMorgan 100% Treasuries Money Market Fund */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: '#122038' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#122038', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    JPMorgan 100% Treasuries Money Market Fund
+                  </td>
+                  {HC_JPM_MMF.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ US T-Bill 1 month */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: '#0f1e33' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#0f1e33', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    US T-Bill 1 month
+                  </td>
+                  {HC_TBILL_1MO.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ US T-Bill 3 months */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: '#122038' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#122038', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    US T-Bill 3 months
+                  </td>
+                  {HC_TBILL_3MO.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ US T-Bill 6 months */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: '#0f1e33' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#0f1e33', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    US T-Bill 6 months
+                  </td>
+                  {HC_TBILL_6MO.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ US T-Bill 9 months */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: '#122038' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#122038', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    US T-Bill 9 months
+                  </td>
+                  {HC_TBILL_9MO.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Reserve TOTAL */}
+                <tr style={{ backgroundColor: '#1a2d47', borderTop: '2px solid #2a4a6e', borderBottom: '2px solid #2a4a6e', borderLeft: '4px solid #835800' }}>
+                  <td style={{ padding: '12px 14px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#1a2d47', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#44e08a' }}>
+                    LIQUIDITY RESERVE
+                  </td>
+                  {HC_RSV_TOTAL.map((v, mi) => (
+                    <td key={mi} style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontWeight: 800, color: 'hsl(0,0%,88%)', borderLeft: mi === 11 ? '2px solid #2a4a6e' : 'none' }}>
+                      <div style={{ position: 'relative', display: 'inline-block', cursor: 'help' }} className="group">
+                        {fmtBal(v)}
+                        {cellTip([
+                          `Reserve Cash — ${MONTHS[mi]} 2026`,
+                          "─",
+                          mi > 0 ? `Prior month: ${fmtBal(HC_RSV_TOTAL[mi - 1])}` : null,
+                          INCOME_TO_ST[mi] > 0 ? `+ Inflow: ${fmtBal(INCOME_TO_ST[mi])}` : null,
+                          FROM_ST_OUT[mi] > 0 ? `- Draw to Ops Cash: ${fmtBal(FROM_ST_OUT[mi])}` : null,
+                          ST_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(ST_INT[mi])}` : null,
+                          "─",
+                          `= Month-end balance: ${fmtBal(v)}`,
+                        ])}
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+
+                <tr style={{ height: '18px', backgroundColor: '#141c2b', borderBottom: 'none' }}><td colSpan={13} /></tr>
+
+                {/* ══ BUILD ══ */}
+                {/* ↳ Treasuries 1 year */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: allZero(HC_TREAS_1YR) ? '#122038' : '#0f1e33' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: allZero(HC_TREAS_1YR) ? '#122038' : '#0f1e33', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    Treasuries 1 year
+                  </td>
+                  {HC_TREAS_1YR.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ The City of New York Muni Bonds */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: '#122038' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#122038', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    The City of New York Muni Bonds Due 02/2028
+                  </td>
+                  {HC_MUNI_BONDS.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ↳ S&P Low Volatility Index */}
+                <tr style={{ borderBottom: '1px solid #1e3352', backgroundColor: '#0f1e33' }}>
+                  <td style={{ paddingLeft: '28px', paddingRight: '8px', paddingTop: '8px', paddingBottom: '8px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#0f1e33', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '10.5px', color: 'rgba(255,255,255,0.82)' }}>
+                    S&P Low Volatility Index
+                  </td>
+                  {HC_SP_LOW_VOL.map((v, mi) => (
+                    <td key={mi} style={{ padding: '8px', textAlign: 'center', fontSize: '10.5px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", color: 'rgba(255,255,255,0.82)', borderBottom: '1px solid #1e3352', borderLeft: mi === 11 ? '2px solid #2a4a6e' : '1px solid #1e3352' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Build TOTAL */}
+                <tr style={{ backgroundColor: '#1a2d47', borderTop: '2px solid #2a4a6e', borderBottom: '2px solid #2a4a6e', borderLeft: '4px solid #195830' }}>
+                  <td style={{ padding: '12px 14px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#1a2d47', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#44e08a' }}>
+                    CAPITAL BUILD
+                  </td>
+                  {HC_BLD_TOTAL.map((v, mi) => (
+                    <td key={mi} style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontWeight: 800, color: 'hsl(0,0%,88%)', borderLeft: mi === 11 ? '2px solid #2a4a6e' : 'none' }}>
+                      <div style={{ position: 'relative', display: 'inline-block', cursor: 'help' }} className="group">
+                        {fmtBal(v)}
+                        {cellTip([
+                          `Capital Build — ${MONTHS[mi]} 2026`,
+                          "─",
+                          mi > 0 ? `Prior month: ${fmtBal(HC_BLD_TOTAL[mi - 1])}` : null,
+                          INCOME_TO_MT[mi] > 0 ? `+ Inflow: ${fmtBal(INCOME_TO_MT[mi])}` : null,
+                          FROM_MT_OUT[mi] > 0 ? `- Outflow: ${fmtBal(FROM_MT_OUT[mi])}` : null,
+                          MT_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(MT_INT[mi])}` : null,
+                          "─",
+                          `= Month-end balance: ${fmtBal(v)}`,
+                        ])}
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+
+                <tr style={{ height: '18px', backgroundColor: '#141c2b', borderBottom: 'none' }}><td colSpan={13} /></tr>
+
+                {/* ══ INVESTMENTS ══ */}
+                <tr style={{ backgroundColor: '#1a2d47', borderTop: '2px solid #2a4a6e', borderBottom: '2px solid #2a4a6e', borderLeft: '4px solid #4A3FA0' }}>
+                  <td style={{ padding: '12px 14px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#1a2d47', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#44e08a' }}>
+                    INVESTMENTS
+                  </td>
+                  {HC_GROW.map((v, mi) => (
+                    <td key={mi} style={{ padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontWeight: 800, color: 'hsl(0,0%,88%)', borderLeft: mi === 11 ? '2px solid #2a4a6e' : 'none' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+
+                <tr style={{ height: '18px', backgroundColor: '#141c2b', borderBottom: 'none' }}><td colSpan={13} /></tr>
+
+                {/* ══ NET WORTH (Grand Total) ══ */}
+                <tr style={{ backgroundColor: '#0d1b2e', borderTop: '3px solid #2a4a6e', borderLeft: '4px solid #44e08a' }}>
+                  <td style={{ padding: '10px 14px', minWidth: '240px', position: 'sticky', left: 0, backgroundColor: '#0d1b2e', zIndex: 1, fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.10em', color: '#44e08a' }}>
+                    Total Net Worth
+                  </td>
+                  {HC_NET_WORTH.map((v, mi) => (
+                    <td key={mi} style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontWeight: 800, color: '#44e08a', borderLeft: mi === 11 ? '2px solid #2a4a6e' : 'none' }}>
+                      {fmtBal(v)}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ backgroundColor: '#0d1b2e', borderTop: '1px solid #1e3352', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.25)' }}>GURU Autopilot</span>
+            {[
+              { color: "#1E4F9C", label: "Operating Cash" },
+              { color: "#835800", label: "Liquidity Reserve" },
+              { color: "#195830", label: "Capital Build" },
+              { color: "#4A3FA0", label: "Investments" },
+              { color: "#44e08a", label: "Total Net Worth" },
+            ].map(({ color, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '2px', flexShrink: 0, backgroundColor: color }} />
+                <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)' }}>{label}</span>
+              </div>
             ))}
-          </select>
-        )}
+          </div>
+        </>
+      )}
 
-      </div>
       {/* ══════════════════════════════════════════════════════════
           FLOW SCHEMATIC VIEW
           ══════════════════════════════════════════════════════════ */}
@@ -6728,7 +7177,7 @@ function MoneyMovementView({
                       { label: 'Michael Kessler — Salary', amount: `+${fmtBal(p1Salary)}`, type: 'plus' as const },
                       { label: 'Sarah Kessler — Salary', amount: `+${fmtBal(p2Salary)}`, type: 'plus' as const },
                       { label: 'Sarasota Property — Rental Income', amount: `+${fmtBal(rentalAmt)}`, type: 'plus' as const },
-                      ...(jpmRsvDraw > 0 ? [{ label: 'JPMorgan 100% Treasuries MMF — Draw', amount: `+${fmtBal(jpmRsvDraw)}`, type: 'plus' as const }] : []),
+                      ...(jpmRsvDraw > 0 ? [{ label: 'JPMorgan 100% Treasuries Money Market Fund — Draw', amount: `+${fmtBal(jpmRsvDraw)}`, type: 'plus' as const }] : []),
                       { label: 'Monthly Expenses', amount: `(${fmtBal(totalExp)})`, type: 'less' as const },
                     ].map((e, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -6851,7 +7300,7 @@ function MoneyMovementView({
                           </div>
                           <LedgerCard
                             title={`${t.label} — Matured`}
-                            subtitle={`${t.rate} · proceeds to JPMorgan MMF`}
+                            subtitle={`${t.rate} · proceeds to JPMorgan Money Market Fund`}
                             balance="$0"
                             balanceColor="#94a3b8"
                             accent="#d97706"
@@ -6903,351 +7352,6 @@ function MoneyMovementView({
       {/* ══════════════════════════════════════════════════════════
           SPREADSHEET VIEW
           ══════════════════════════════════════════════════════════ */}
-      {mmView === 'table' && (
-        <>
-          <div className="overflow-auto bg-white" style={{ maxHeight: 620 }}>
-            <table className="w-full border-collapse min-w-max">
-
-              <thead className="sticky top-0 z-20">
-                <tr className="bg-slate-900 border-b-2 border-slate-700">
-                  <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-400 w-[300px]">Line Item</th>
-                  {MONTHS.map((mo, mi) => (
-                    <th key={mo} className={`px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider min-w-[76px] ${mi === 0 ? 'text-amber-400 bg-slate-800' : 'text-slate-300'}`}>
-                      {mo}
-                      {mi === 0 && <div className="text-[7px] font-normal text-amber-400/70 normal-case leading-none mt-0.5">upcoming</div>}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {/* ══ OPERATING CASH ══ */}
-                {/* ↳ Chase Total Checking — $0 (consolidated into CIT MM) */}
-                <tr className={`border-b transition-colors ${allZero(HC_CHASE) ? 'bg-slate-50/80' : 'hover:bg-blue-50/40'} border-[#1d4ed8]/10`}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-semibold ${allZero(HC_CHASE) ? 'text-slate-300' : 'text-blue-800'}`}>Chase Total Checking</span>
-                      <span className={`text-[8px] font-mono ${allZero(HC_CHASE) ? 'text-slate-300' : 'text-blue-400'}`}>Checking</span>
-                    </div>
-                  </td>
-                  {HC_CHASE.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold ${allZero(HC_CHASE) ? 'text-slate-300' : 'text-blue-700'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ Citizens Private Banking Checking — $0 (consolidated) */}
-                <tr className={`border-b transition-colors ${allZero(HC_CITIZENS_CHECK) ? 'bg-slate-50/80' : 'hover:bg-blue-50/40'} border-[#1d4ed8]/10`}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-semibold ${allZero(HC_CITIZENS_CHECK) ? 'text-slate-300' : 'text-blue-700'}`}>Citizens Private Banking Checking</span>
-                      <span className={`text-[8px] font-mono ${allZero(HC_CITIZENS_CHECK) ? 'text-slate-300' : 'text-amber-500'}`}>Checking</span>
-                    </div>
-                  </td>
-                  {HC_CITIZENS_CHECK.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold ${allZero(HC_CITIZENS_CHECK) ? 'text-slate-300' : 'text-blue-600'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ CIT Money Market Bank Account — active operating account */}
-                <tr className="border-b border-[#1d4ed8]/10 hover:bg-blue-50/40 transition-colors"
-                  style={{ backgroundColor: "rgba(29,78,216,0.04)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-blue-800">CIT Money Market Bank Account</span>
-                      <span className="text-[8px] text-blue-500 font-mono">4.65%</span>
-                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
-                    </div>
-                  </td>
-                  {HC_CIT_MM.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-blue-700">
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* Operating Cash TOTAL */}
-                <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#1d4ed8" }}>
-                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Operating Cash</td>
-                  {HC_OPS_TOTAL.map((v, mi) => (
-                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white relative">
-                      <div className="group relative inline-block cursor-help">
-                        {fmtBal(v)}
-                        {cellTip([
-                          `Operating Cash — ${MONTHS[mi]} 2026`,
-                          "─",
-                          mi > 0 ? `Prior month: ${fmtBal(HC_OPS_TOTAL[mi - 1])}` : null,
-                          `+ After-tax income: ${fmtBal(INCOME_TO_IMM[mi])}`,
-                          `- Monthly expenses: ${fmtBal(Math.abs(EXPENSES[mi]))}`,
-                          FROM_ST_TO_IMM[mi] > 0 ? `+ Draw from Reserve: ${fmtBal(FROM_ST_TO_IMM[mi])}` : null,
-                          IMM_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(IMM_INT[mi])}` : null,
-                          "─",
-                          `= Month-end balance: ${fmtBal(v)}`,
-                        ])}
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-                {/* Min ops floor check */}
-                <tr style={{ backgroundColor: "rgba(29,78,216,0.08)" }} className="border-b border-[#1d4ed8]/20">
-                  <td className="px-4 py-1.5 w-[300px]">
-                    <div className="flex items-center gap-1 text-[10px] font-semibold italic" style={{ color: "#1d4ed8" }}>
-                      <span style={{ color: "#1d4ed8" }}>⤷</span> Holds ≥ {opsCashMonths} month{opsCashMonths !== 1 ? "s" : ""} of expenses
-                    </div>
-                  </td>
-                  {HC_OPS_TOTAL.map((bal, mi) => (
-                    <td key={mi} className={`px-2 py-1.5 text-[10px] text-center font-black tabular-nums ${bal >= minOps ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {bal >= minOps ? '✓' : '⚠'}
-                    </td>
-                  ))}
-                </tr>
-                <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
-
-                {/* ══ RESERVE ══ */}
-                {/* ↳ Citizens Private Bank Money Market — $0 (consolidated into JPMorgan MMF) */}
-                <tr className={`border-b transition-colors ${allZero(HC_CITIZENS_MM) ? 'bg-slate-50/80' : 'hover:bg-amber-50/30'} border-amber-100/40`}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-semibold ${allZero(HC_CITIZENS_MM) ? 'text-slate-300' : 'text-amber-800'}`}>Citizens Private Bank Money Market</span>
-                      <span className={`text-[8px] font-mono ${allZero(HC_CITIZENS_MM) ? 'text-slate-300' : 'text-amber-500'}`}>4.85%</span>
-                    </div>
-                  </td>
-                  {HC_CITIZENS_MM.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold ${allZero(HC_CITIZENS_MM) ? 'text-slate-300' : 'text-amber-700'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ CapitalOne 360 Performance Savings — $0 (consolidated) */}
-                <tr className={`border-b transition-colors ${allZero(HC_CAPONE) ? 'bg-slate-50/80' : 'hover:bg-amber-50/20'} border-amber-100/30`}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] ${allZero(HC_CAPONE) ? 'text-slate-300' : 'text-slate-600'}`}>CapitalOne 360 Performance Savings</span>
-                      <span className={`text-[8px] font-mono ${allZero(HC_CAPONE) ? 'text-slate-300' : 'text-amber-500'}`}>3.78%</span>
-                    </div>
-                  </td>
-                  {HC_CAPONE.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${allZero(HC_CAPONE) ? 'text-slate-300' : 'text-amber-600'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ JPMorgan 100% Treasuries Money Market Fund — primary reserve vehicle */}
-                <tr className="border-b border-amber-100/40 hover:bg-amber-50/30 transition-colors"
-                  style={{ backgroundColor: "rgba(217,119,6,0.04)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-amber-800">JPMorgan 100% Treasuries Money Market Fund</span>
-                      <span className="text-[8px] text-amber-500 font-mono">4.72%</span>
-                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
-                    </div>
-                  </td>
-                  {HC_JPM_MMF.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-amber-700">
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ US T-Bill 1 month */}
-                <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
-                  style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-amber-800">US T-Bill 1 month</span>
-                      <span className="text-[8px] text-amber-500 font-mono">5.08%</span>
-                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
-                    </div>
-                  </td>
-                  {HC_TBILL_1MO.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${v === 0 ? 'text-slate-300' : 'text-amber-600 font-semibold'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ US T-Bill 3 months */}
-                <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
-                  style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-amber-800">US T-Bill 3 months</span>
-                      <span className="text-[8px] text-amber-500 font-mono">5.01%</span>
-                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
-                    </div>
-                  </td>
-                  {HC_TBILL_3MO.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${v === 0 ? 'text-slate-300' : 'text-amber-600 font-semibold'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ US T-Bill 6 months */}
-                <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
-                  style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-amber-800">US T-Bill 6 months</span>
-                      <span className="text-[8px] text-amber-500 font-mono">4.95%</span>
-                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
-                    </div>
-                  </td>
-                  {HC_TBILL_6MO.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${v === 0 ? 'text-slate-300' : 'text-amber-600 font-semibold'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ US T-Bill 9 months */}
-                <tr className="border-b border-amber-100/30 hover:bg-amber-50/20 transition-colors"
-                  style={{ backgroundColor: "rgba(217,119,6,0.03)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-amber-800">US T-Bill 9 months</span>
-                      <span className="text-[8px] text-amber-500 font-mono">4.85%</span>
-                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
-                    </div>
-                  </td>
-                  {HC_TBILL_9MO.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums ${v === 0 ? 'text-slate-300' : 'text-amber-600 font-semibold'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* Reserve TOTAL */}
-                <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#d97706" }}>
-                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Reserve Cash</td>
-                  {HC_RSV_TOTAL.map((v, mi) => (
-                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white relative">
-                      <div className="group relative inline-block cursor-help">
-                        {fmtBal(v)}
-                        {cellTip([
-                          `Reserve Cash — ${MONTHS[mi]} 2026`,
-                          "─",
-                          mi > 0 ? `Prior month: ${fmtBal(HC_RSV_TOTAL[mi - 1])}` : null,
-                          INCOME_TO_ST[mi] > 0 ? `+ Inflow: ${fmtBal(INCOME_TO_ST[mi])}` : null,
-                          FROM_ST_OUT[mi] > 0 ? `- Draw to Ops Cash: ${fmtBal(FROM_ST_OUT[mi])}` : null,
-                          ST_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(ST_INT[mi])}` : null,
-                          "─",
-                          `= Month-end balance: ${fmtBal(v)}`,
-                        ])}
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-                <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
-
-                {/* ══ BUILD ══ */}
-                {/* ↳ Treasuries 1 year — $0 (replaced by Munis + S&P Low Vol) */}
-                <tr className={`border-b transition-colors ${allZero(HC_TREAS_1YR) ? 'bg-slate-50/80' : 'hover:bg-green-50/30'} border-green-100/40`}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-semibold ${allZero(HC_TREAS_1YR) ? 'text-slate-300' : 'text-green-800'}`}>Treasuries 1 year</span>
-                      <span className={`text-[8px] font-mono ${allZero(HC_TREAS_1YR) ? 'text-slate-300' : 'text-green-600'}`}>4.50%</span>
-                    </div>
-                  </td>
-                  {HC_TREAS_1YR.map((v, mi) => (
-                    <td key={mi} className={`px-2 py-2 text-[10px] text-center tabular-nums font-semibold ${allZero(HC_TREAS_1YR) ? 'text-slate-300' : 'text-green-700'}`}>
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ The City of New York Muni Bonds Due 02/2028 */}
-                <tr className="border-b border-green-100/40 hover:bg-green-50/30 transition-colors"
-                  style={{ backgroundColor: "rgba(22,163,74,0.04)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-green-800">The City of New York Muni Bonds Due 02/2028</span>
-                      <span className="text-[8px] text-green-600 font-mono">3.85%</span>
-                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
-                    </div>
-                  </td>
-                  {HC_MUNI_BONDS.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-green-700">
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* ↳ S&P Low Volatility Index */}
-                <tr className="border-b border-green-100/40 hover:bg-green-50/30 transition-colors"
-                  style={{ backgroundColor: "rgba(22,163,74,0.03)" }}>
-                  <td className="pl-7 pr-4 py-2 w-[300px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-semibold text-green-800">S&amp;P Low Volatility Index</span>
-                      <span className="text-[8px] text-green-600 font-mono">ETF</span>
-                      <span style={{ backgroundColor: '#059669', color: 'white', fontSize: 7, fontWeight: 900, letterSpacing: '0.08em', padding: '2px 5px', borderRadius: 3, textTransform: 'uppercase', flexShrink: 0 }}>NEW</span>
-                    </div>
-                  </td>
-                  {HC_SP_LOW_VOL.map((v, mi) => (
-                    <td key={mi} className="px-2 py-2 text-[10px] text-center tabular-nums font-semibold text-green-700">
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-                {/* Build TOTAL */}
-                <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#16a34a" }}>
-                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Capital Build</td>
-                  {HC_BLD_TOTAL.map((v, mi) => (
-                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white relative">
-                      <div className="group relative inline-block cursor-help">
-                        {fmtBal(v)}
-                        {cellTip([
-                          `Capital Build — ${MONTHS[mi]} 2026`,
-                          "─",
-                          mi > 0 ? `Prior month: ${fmtBal(HC_BLD_TOTAL[mi - 1])}` : null,
-                          INCOME_TO_MT[mi] > 0 ? `+ Inflow: ${fmtBal(INCOME_TO_MT[mi])}` : null,
-                          FROM_MT_OUT[mi] > 0 ? `- Outflow: ${fmtBal(FROM_MT_OUT[mi])}` : null,
-                          MT_INT[mi] > 0 ? `+ Interest earned: ${fmtBal(MT_INT[mi])}` : null,
-                          "─",
-                          `= Month-end balance: ${fmtBal(v)}`,
-                        ])}
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-                <tr className="h-2 bg-slate-50"><td colSpan={13} /></tr>
-
-                <tr className="border-y-2 border-white/20" style={{ backgroundColor: "#5b21b6" }}>
-                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">
-                    Grow
-                    <span className="ml-1.5 text-[9px] font-normal text-white/60 normal-case">(Brokerage &amp; Retirement)</span>
-                  </td>
-                  {HC_GROW.map((v, mi) => (
-                    <td key={mi} className="px-2 py-3 text-[11px] font-black text-center tabular-nums whitespace-nowrap text-white">
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-
-                <tr className="h-3 bg-slate-100"><td colSpan={13} /></tr>
-
-                <tr className="bg-slate-700">
-                  <td className="px-4 py-3 text-[12px] font-black uppercase tracking-wide text-white">Total Net Worth</td>
-                  {HC_NET_WORTH.map((v, mi) => (
-                    <td key={mi} className="px-2 py-3 text-[12px] font-black text-center tabular-nums whitespace-nowrap text-white">
-                      {fmtBal(v)}
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="bg-slate-50 border-t border-slate-200 px-5 py-2.5 flex items-center gap-5 flex-wrap">
-            <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">GURU Autopilot</span>
-            {[
-              { color: "#1d4ed8", label: "Operating Cash" },
-              { color: "#d97706", label: "Reserve (Short-Term)" },
-              { color: "#16a34a", label: "Build (Medium-Term)" },
-              { color: "#5b21b6", label: "Grow (Long-Term)" },
-              { color: "#374151", label: "Total Net Worth" },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <span className="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
-                <span className="text-[9px] text-slate-500">{label}</span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
     </div>
     </div>
   );
@@ -7403,7 +7507,7 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
       type: "Index ETF",
       grossYield: "6.50%",
       atYield: "4.42%",
-      pickup: "+1.62% AT",
+      pickup: "+1.62% After-Tax",
       isGuru: false,
     },
   ],
@@ -7527,7 +7631,7 @@ function GuruAllocationView({
   } = computeReturnOptimization(assets, cashFlows);
   const excessProdsT = [
     { name: "Cresset Short Duration", risk: "Low risk", grossYield: "6.10%", atYield: "5.40%", annualIncome: Math.round(totalExcessT * 0.054), liquidity: "Daily liquidity · small NAV movement", rec: true },
-    { name: "JPMorgan 100% Treasuries MMF", risk: "Zero risk", grossYield: "4.30%", atYield: "2.80%", annualIncome: Math.round(totalExcessT * 0.028), liquidity: "Same-day liquidity · stable NAV", rec: false },
+    { name: "JPMorgan 100% Treasuries Money Market Fund", risk: "Zero risk", grossYield: "4.30%", atYield: "2.80%", annualIncome: Math.round(totalExcessT * 0.028), liquidity: "Same-day liquidity · stable NAV", rec: false },
     { name: "US Treasury Ladder 1–6 Month", risk: "Zero risk", grossYield: "4.22%", atYield: "2.74%", annualIncome: Math.round(totalExcessT * 0.0274), liquidity: "Holds to maturity · full capital return", rec: false },
   ];
 
@@ -7574,7 +7678,7 @@ function GuruAllocationView({
               { label: "Total Assets", val: fmt(totalAssets), sub: "Full balance sheet", color: "rgba(255,255,255,0.9)" },
               { label: "Liquid Coverage", val: `${liquidCoverageT.toFixed(1)} months`, sub: `Target: ${opMonthsLocal + resMonthsLocal} months`, color: "#9a7b3c" },
               { label: "Excess Liquidity", val: fmt(totalExcessT), sub: "Above coverage threshold", color: "#9a7b3c" },
-              { label: "Income Pickup / Year", val: `+${fmt(returnPickupT)}`, sub: `${fmt(atCurrentT)} → ${fmt(atProformaT)} AT`, color: "#2e7a52" },
+              { label: "Income Pickup / Year", val: `+${fmt(returnPickupT)}`, sub: `${fmt(atCurrentT)} → ${fmt(atProformaT)} After-Tax`, color: "#2e7a52" },
             ].map((m) => (
               <div key={m.label}>
                 <p className="text-[9px] font-semibold uppercase tracking-[0.12em] mb-1" style={{ color: "rgba(255,255,255,0.35)" }}>{m.label}</p>
@@ -7870,7 +7974,7 @@ function GuruAllocationView({
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#9a7b3c", opacity: 0.75 }} />
               <span className="text-[9px] font-bold uppercase tracking-[0.14em] flex-shrink-0" style={{ color: "#9a7b3c" }}>GURU</span>
               <span className="text-muted-foreground/40 select-none px-0.5">·</span>
-              <span className="text-[10px] italic text-muted-foreground">Based on market yields and your {opMonthsLocal + resMonthsLocal}-month liquidity policy, GURU recommends short-duration income strategies · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>+{fmt(returnPickupT)}/yr</span> income pickup vs. current portfolio ({fmt(atCurrentT)} → {fmt(atProformaT)} AT).</span>
+              <span className="text-[10px] italic text-muted-foreground">Based on market yields and your {opMonthsLocal + resMonthsLocal}-month liquidity policy, GURU recommends short-duration income strategies · <span className="font-semibold not-italic" style={{ color: "#9a7b3c" }}>+{fmt(returnPickupT)}/yr</span> income pickup vs. current portfolio ({fmt(atCurrentT)} → {fmt(atProformaT)} After-Tax).</span>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -7887,7 +7991,7 @@ function GuruAllocationView({
                     </div>
                     <div>
                       <p className="text-[20px] font-bold tabular-nums leading-none" style={{ color: "#9a7b3c" }}>{p.atYield}</p>
-                      <p className="text-[9px] text-muted-foreground mt-0.5">{p.grossYield} gross · AT yield</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">{p.grossYield} gross · After-Tax yield</p>
                     </div>
                     <div className="flex items-center justify-between pt-1 border-t border-border">
                       <span className="text-[9px] text-muted-foreground">Annual Income</span>
@@ -7981,12 +8085,19 @@ function DetailsView({
         <div className="space-y-4" style={{ padding: "0" }}>
           {/* ── GURU Intelligence Header ── */}
           <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 5 }}>
-              <div style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#44e08a" }}>
-                GURU INTELLIGENCE · NW-1
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
+                <div style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#44e08a" }}>
+                  GURU INTELLIGENCE · NW-1
+                </div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
+                  BALANCE SHEET TODAY · LIVE FROM TRANSACTION DATA
+                </div>
               </div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
-                BALANCE SHEET TODAY · LIVE FROM TRANSACTION DATA
+              <div style={{ display: "flex", gap: 8 }}>
+                <AddAssetModal clientId={clientId} />
+                <AddLiabilityModal clientId={clientId} />
+                <AddCashFlowModal clientId={clientId} />
               </div>
             </div>
             <div style={{ fontFamily: CF2.INTER, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
@@ -8013,20 +8124,18 @@ function DetailsView({
               flex: 1,
               background: "rgba(255,255,255,0.04)",
               border: "0.5px solid rgba(255,255,255,0.08)",
-              padding: "10px 14px",
+              padding: "8px 12px",
             };
-            const liqBuckets = [
-              { label: "Operating Cash",    val: dvOpCash,   color: "#1E4F9C", pretax: fmtPctKpi(opY.pretax),  at: fmtPctKpi(opY.at)  },
-              { label: "Liquidity Reserve", val: dvResCash,  color: "#835800", pretax: fmtPctKpi(resY.pretax), at: fmtPctKpi(resY.at) },
-              { label: "Capital Build",     val: dvCapBuild, color: "#195830", pretax: fmtPctKpi(bldY.pretax), at: fmtPctKpi(bldY.at) },
-            ];
             return (
-              <div style={{ display: "flex", gap: 12, padding: "14px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                {/* Total Assets */}
+              <div style={{ display: "flex", gap: 10, padding: "10px 20px 12px" }}>
+                {/* Total Assets (with liquid assets sub-line) */}
                 <div style={{ ...cardStyle, borderTop: "2px solid rgba(91,143,204,0.70)" }}>
                   <div style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 6 }}>Total Assets</div>
                   <div style={{ fontFamily: MONO_F, fontSize: 17, fontWeight: 400, color: "rgba(255,255,255,0.92)", marginBottom: 6, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(totalAssets)}</div>
-                  <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.35)", lineHeight: 1.4 }}>All accounts &amp; holdings · Dec 29, 2025</div>
+                  <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.35)", lineHeight: 1.4 }}>
+                    Liquid: <span style={{ fontFamily: MONO_F, color: CF2.green }}>{fmt(dvTotalLiquid)}</span>
+                    <span style={{ marginLeft: 6 }}>· {fmtPctKpi(blendedAt)} blended after-tax</span>
+                  </div>
                 </div>
                 {/* Total Liabilities */}
                 <div style={{ ...cardStyle, borderTop: "2px solid rgba(155,32,32,0.70)" }}>
@@ -8040,36 +8149,12 @@ function DetailsView({
                   <div style={{ fontFamily: MONO_F, fontSize: 17, fontWeight: 400, color: CF2.green, marginBottom: 6, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(netWorth)}</div>
                   <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.35)", lineHeight: 1.4 }}>Assets less liabilities · continuously updated</div>
                 </div>
-                {/* Liquidity Position */}
-                <div style={{ ...cardStyle, borderTop: "2px solid rgba(68,224,138,0.50)", flex: 1.4 }}>
-                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-                    <div style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)" }}>Liquidity Position</div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                      <span style={{ fontFamily: MONO_F, fontSize: 14, fontWeight: 400, color: CF2.green, fontVariantNumeric: "tabular-nums" as const }}>{fmt(dvTotalLiquid)}</span>
-                      <span style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.28)" }}>blended {fmtPctKpi(blendedAt)} after-tax</span>
-                    </div>
-                  </div>
-                  {liqBuckets.map(b => (
-                    <div key={b.label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
-                      <div style={{ width: 3, height: 28, background: b.color, flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.45)", marginBottom: 1 }}>{b.label}</div>
-                        <div style={{ fontFamily: MONO_F, fontSize: 11, color: "rgba(255,255,255,0.35)" }}>Pre-Tax: {b.pretax} · After-Tax: <span style={{ color: CF2.green }}>{b.at}</span></div>
-                      </div>
-                      <div style={{ fontFamily: MONO_F, fontSize: 14, fontWeight: 400, color: "rgba(255,255,255,0.85)", fontVariantNumeric: "tabular-nums" as const, flexShrink: 0 }}>{fmt(b.val)}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
             );
           })()}
 
           <div className="space-y-4" style={{ padding: "0 20px 20px" }}>
-          <div className="flex justify-end gap-2">
-            <AddAssetModal clientId={clientId} />
-            <AddLiabilityModal clientId={clientId} />
-          </div>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <BsTable
               sections={assetGroups}
               totalLabel="Total Assets"
@@ -8458,7 +8543,7 @@ function CashFlowAdvisorView({ assets, cashFlows }: { assets: Asset[]; cashFlows
               <tbody>
                 {([
                   { label: "Operating Cash",    color: OPS_COLOR, values: FC_OPS, desc: "Checking · daily float" },
-                  { label: "Liquidity Reserve", color: RSV_COLOR, values: FC_RSV, desc: "MMF · T-bills (short)" },
+                  { label: "Liquidity Reserve", color: RSV_COLOR, values: FC_RSV, desc: "Money Market Fund · T-bills (short)" },
                   { label: "Capital Build",     color: BLD_COLOR, values: FC_BLD, desc: "Treasuries · goal savings" },
                 ] as const).map((bucket, bi) => (
                   <tr key={bi} style={{ background: "#FFFFFF", borderTop: bi > 0 ? `0.5px solid ${BORDER}` : "none" }}>
@@ -8543,7 +8628,7 @@ function AdvisorBriefView({
     operatingTarget,
     operatingExcess,
     liquidityReserve,
-    reserveTarget,
+    totalLiquidityTarget,
     reserveExcess,
     capitalBuild,
     totalLiquid,
@@ -9207,7 +9292,7 @@ function AdvisorBriefView({
                     <div style={{ flex: 1, border: "1px solid rgba(124,74,10,0.2)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: "rgba(124,74,10,0.03)", borderBottom: "1px solid rgba(124,74,10,0.1)" }}>
                         <div style={{ minWidth: 0, marginRight: 8 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#7c4a0a", lineHeight: 1.3, fontFamily: FONT }}>JPMorgan 100% Treasuries MMF</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#7c4a0a", lineHeight: 1.3, fontFamily: FONT }}>JPMorgan 100% Treasuries Money Market Fund</div>
                           <div style={{ fontSize: 11, color: "#a06020", marginTop: 2, fontFamily: FONT }}>Autodraw to Operating</div>
                         </div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: "#7c4a0a", fontVariantNumeric: "tabular-nums", flexShrink: 0, fontFamily: FONT }}>$27,927</span>
@@ -9334,9 +9419,9 @@ function AdvisorBriefView({
             {talkingPoints("cashflow",
               "The three-bucket structure is running automatically. Two tax payments and a tuition installment total $75,000 over the next 35 days — all covered by existing operating cash.",
               [
-                `<strong>$46,739</strong> autodrew from JPMorgan Treasuries MMF into the CIT bank account this month — keeping 2 months of forward cash expense coverage.`,
+                `<strong>$46,739</strong> autodrew from JPMorgan Treasuries Money Market Fund into the CIT bank account this month — keeping 2 months of forward cash expense coverage.`,
                 `<strong>$15,000 tuition</strong> wires Apr 1 and <strong>$30,000 federal estimated tax</strong> ACHs Apr 15 — both covered by current operating cash of $90,879.`,
-                `<strong>$7,478</strong> in a maturing T-Bill rolled directly into JPMorgan MMF — keeps the Reserve layer funded without any action from the Kesslers.`,
+                `<strong>$7,478</strong> in a maturing T-Bill rolled directly into JPMorgan Money Market Fund — keeps the Reserve layer funded without any action from the Kesslers.`,
                 `Every transfer is pre-authorized. You'll receive a confirmation as each movement settles.`,
               ]
             )}
@@ -9676,12 +9761,12 @@ function GuruLandingView({
 
   // ── GURU targets — live via computeLiquidityTargets(), anchored to Dec 31 2025 ──
   // operatingTarget = rolling 2-month cash expenses (Jan+Feb 2026)
-  // reserveTarget   = monthlyRate × 6
+  // totalLiquidityTarget = troughDepth + operatingFloorAtTrough (12-month liquidity needed)
   const {
     operatingExcess: opExcess,
     reserveExcess:   resExcess,
     operatingTarget: opTarget,
-    reserveTarget:   resTarget,
+    totalLiquidityTarget:   resTarget,
     excessLiquidity,
     coverageMonths: liquidityCoverageMonths,
   } = computeLiquidityTargets(assets, cashFlows);
@@ -9705,7 +9790,7 @@ function GuruLandingView({
         accounts: [
           { name: "Citizens Bank Money Market", ref: "·· 7204", amount: 225000, excess: true },
           { name: "Citizens High Yield Savings", ref: "·· 1482", amount: 100440, excess: true },
-          { name: "JPMorgan 100% Tsy MMF",      ref: "·· 4976", amount: 101146 },
+          { name: "JPMorgan 100% Treasury Money Market Fund",      ref: "·· 4976", amount: 101146 },
         ],
       },
       bld: {
@@ -10410,7 +10495,7 @@ function GuruLandingView({
                 <div style={{ background:"rgba(255,255,255,0.06)" }} />
                 {/* % AT Return Increase */}
                 <div style={{ padding:"12px 18px 14px", display:"flex", flexDirection:"column", gap:4 }}>
-                  <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.32)" }}>% AT Return Increase</span>
+                  <span style={{ fontSize:8, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.32)" }}>% After-Tax Return Increase</span>
                   <span style={{ fontSize:22, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.03em", color: incomeImpact?.yieldDelta && incomeImpact.yieldDelta !== "—" ? "#5ecc8a" : "rgba(255,255,255,0.22)", lineHeight:1 }}>
                     {incomeImpact?.yieldDelta ?? "—"}
                   </span>
@@ -10479,7 +10564,7 @@ function GuruLandingView({
                   { key:"bld", label:"Build", color:"#2e7a52", desc:"Short-duration fixed income · CDs and T-bills", accounts:[
                     { name:"US Treasuries (3.95% yield)",         ref:"··1142", yield:"3.95%", bal:135000, pct:"2.3%", note:"rolling maturities" },
                   ], subtotal:135000, subPct:"2.3%" },
-                  { key:"grw", label:"Grow", color:"#a855f7", desc:"Long-term wealth accumulation · investments, RE, retirement", accounts:[
+                  { key:"grw", label:"Investments", color:"#a855f7", desc:"Long-term wealth accumulation · investments, RE, retirement", accounts:[
                     { name:"Fidelity Brokerage",                  ref:"··9031", yield:"4.85%", bal:135000, pct:"2.3%", note:"brokerage cash" },
                     { name:"Investments & Retirement",            ref:"various", yield:"—",    bal:1094726, pct:"18.5%" },
                   ], subtotal:1229726, subPct:"20.8%" },
@@ -12540,17 +12625,23 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   onNavigate: (v: string) => void;
 }) {
   const INTER = "Inter, system-ui, sans-serif";
+  const MONO  = "'JetBrains Mono', 'Courier New', monospace";
   const DS_BG   = "#141c2b";
   const DS_CARD = "#1e2838";
   const GREEN   = "#5ecc8a";
+  const GI_GREEN = "#44e08a";
   const AMBER   = "#ffc83c";
   const BLUE    = "#5b8fcc";
   const BORDER  = "rgba(255,255,255,0.08)";
   const MUTED   = "rgba(255,255,255,0.5)";
   const DIM     = "rgba(255,255,255,0.32)";
-  const OP_COL  = "#4d9de0";
-  const RES_COL = "#e8a830";
-  const CAP_COL = "#2a9a5a";
+  const OP_COL  = "#1E4F9C";
+  const RES_COL = "#835800";
+  const CAP_COL = "#195830";
+  // GI card style (Asset Forecast glass cards)
+  const GI_CARD: React.CSSProperties = { background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", overflow: "hidden" };
+  // Consistent section header style (matches chart headers)
+  const sectionHdr: React.CSSProperties = { padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontFamily: INTER, fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(0,0%,88%)" };
   const TAX_RATE       = 0.47;  // NYC combined for bank interest
   const TREAS_TAX_RATE = 0.35;  // Federal only for treasuries (state/city exempt)
 
@@ -12572,7 +12663,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   const forecastData = buildForecast(cashFlows);
 
   // ── Cumulative & trough — computeCumulativeNCF is the master for monthly data
-  const { cumulativeByMonth, troughIdx } = computeCumulativeNCF(cashFlows);
+  const { cumulativeByMonth, troughIdx, netByMonth: dsNetByMonth } = computeCumulativeNCF(cashFlows);
   const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const troughMonth  = MONTH_NAMES[troughIdx] ?? "Nov";
 
@@ -12619,6 +12710,16 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   const fmtD = (v: number) => `$${Math.round(v).toLocaleString()}`;
   const fmtY = (v: number) => v > 0 ? `${(v * 100).toFixed(2)}%` : "< 0.01%";
 
+  // ── Chart tooltip state ─────────────────────────────────────────────────────
+  const [chartTip, setChartTip] = useState<{ chart: "cf"|"run"; idx: number; x: number; y: number } | null>(null);
+  const tipTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTip = (chart: "cf"|"run", idx: number, e: React.MouseEvent<SVGElement>) => {
+    if (tipTimeout.current) clearTimeout(tipTimeout.current);
+    const rect = (e.currentTarget.closest("svg") as SVGSVGElement).getBoundingClientRect();
+    setChartTip({ chart, idx, x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+  const hideTip = () => { tipTimeout.current = setTimeout(() => setChartTip(null), 120); };
+
   // ── April cluster total ────────────────────────────────────────────────────
   const aprilTotal = cashFlows.filter(cf => {
     const d = new Date(cf.date as string);
@@ -12626,8 +12727,8 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   }).reduce((s, cf) => s + Number(cf.amount), 0);
 
   // ── SVG chart calculations (computed once, used in render) ─────────────────
-  const MNMS = ["J","F","M","A","M","J","J","A","S","O","N","D"];
-  const CW = 400, CH = 178, CPX = 32, CPY = 18;
+  const MNMS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const CW = 560, CH = 210, CPX = 42, CPY = 24;
   const cPlotW = CW - 2 * CPX, cPlotH = CH - 2 * CPY;
   // Chart 1: Cumulative CF
   const cumChartMin   = Math.min(0, ...cumulativeByMonth);
@@ -12635,21 +12736,77 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   const cumChartRange = (cumChartMax - cumChartMin) || 1;
   const ccx = (i: number) => CPX + (i / 11) * cPlotW;
   const ccy = (v: number) => CPY + (1 - (v - cumChartMin) / cumChartRange) * cPlotH;
-  const cumChartPath = cumulativeByMonth.map((v, i) => `${i === 0 ? "M" : "L"}${ccx(i).toFixed(1)},${ccy(v).toFixed(1)}`).join(" ");
-  const cumChartFill = cumulativeByMonth.map((v, i) => `${i === 0 ? "M" : "L"}${ccx(i).toFixed(1)},${ccy(v).toFixed(1)}`).join(" ")
-    + ` L${ccx(11).toFixed(1)},${ccy(0).toFixed(1)} L${ccx(0).toFixed(1)},${ccy(0).toFixed(1)} Z`;
   const cumZeroY = ccy(0);
-  // Chart 2: Liquidity Runway
+  const TODAY_IDX = 2; // March = "today"
+
+  // Smooth cubic-bezier path helper (tension 0.15 like Chart.js)
+  const smoothPath = (pts: { x: number; y: number }[]): string => {
+    if (pts.length < 2) return "";
+    const T = 0.15;
+    let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p0 = pts[Math.max(i - 2, 0)];
+      const p1 = pts[i - 1];
+      const p2 = pts[i];
+      const p3 = pts[Math.min(i + 1, pts.length - 1)];
+      const cp1x = p1.x + (p2.x - p0.x) * T;
+      const cp1y = p1.y + (p2.y - p0.y) * T;
+      const cp2x = p2.x - (p3.x - p1.x) * T;
+      const cp2y = p2.y - (p3.y - p1.y) * T;
+      d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+    }
+    return d;
+  };
+
+  // All data points for smooth path
+  const cumPts = cumulativeByMonth.map((v, i) => ({ x: ccx(i), y: ccy(v) }));
+  const cumFullPath = smoothPath(cumPts);
+
+  // Solid green path before today (first 3 points)
+  const cumLineSolid = smoothPath(cumPts.slice(0, TODAY_IDX + 1));
+  // After-today: one smooth dashed path, colored segments by pos/neg
+  const cumLineSegments: { d: string; color: string }[] = [];
+  for (let i = TODAY_IDX + 1; i < 12; i++) {
+    const prev = cumulativeByMonth[i - 1];
+    const cur = cumulativeByMonth[i];
+    const isNeg = prev < 0 || cur < 0;
+    // Use straight segments for the dashed portion (bezier dashes look odd)
+    cumLineSegments.push({
+      d: `M${ccx(i - 1).toFixed(1)},${ccy(prev).toFixed(1)} L${ccx(i).toFixed(1)},${ccy(cur).toFixed(1)}`,
+      color: isNeg ? "rgba(255,100,100,0.7)" : GREEN,
+    });
+  }
+
+  // Build fill paths: green fill above zero, red fill below zero
+  const cumFillAbove = (() => {
+    const pts = cumulativeByMonth.map((v, i) => ({ x: ccx(i), y: ccy(Math.max(v, 0)) }));
+    return smoothPath(pts)
+      + ` L${ccx(11).toFixed(1)},${cumZeroY.toFixed(1)} L${ccx(0).toFixed(1)},${cumZeroY.toFixed(1)} Z`;
+  })();
+  const cumFillBelow = (() => {
+    const pts = cumulativeByMonth.map((v, i) => ({ x: ccx(i), y: ccy(Math.min(v, 0)) }));
+    return smoothPath(pts)
+      + ` L${ccx(11).toFixed(1)},${cumZeroY.toFixed(1)} L${ccx(0).toFixed(1)},${cumZeroY.toFixed(1)} Z`;
+  })();
+
+  // Trough annotation
+  const troughValFmt = `($${Math.abs(Math.round(cumulativeByMonth[troughIdx])).toLocaleString()})`;
+  const troughAnnX = ccx(troughIdx);
+  const troughAnnY = ccy(cumulativeByMonth[troughIdx]);
+  // Chart 2: Liquidity Runway (BAR chart)
   const runwayVals   = cumulativeByMonth.map(cum => totalLiquid + cum);
-  const runChartMin  = Math.min(liquidityReserve * 0.8, ...runwayVals);
-  const runChartMax  = Math.max(...runwayVals) * 1.06;
+  const runChartMin  = 0; // bars anchored at 0 for honest proportions
+  const runChartMax  = Math.max(...runwayVals) * 1.08;
   const runChartRange = (runChartMax - runChartMin) || 1;
   const rcx = (i: number) => CPX + (i / 11) * cPlotW;
   const rcy = (v: number) => CPY + (1 - (v - runChartMin) / runChartRange) * cPlotH;
-  const runChartPath = runwayVals.map((v, i) => `${i === 0 ? "M" : "L"}${rcx(i).toFixed(1)},${rcy(v).toFixed(1)}`).join(" ");
-  const runChartFill = runwayVals.map((v, i) => `${i === 0 ? "M" : "L"}${rcx(i).toFixed(1)},${rcy(v).toFixed(1)}`).join(" ")
-    + ` L${rcx(11).toFixed(1)},${rcy(runChartMin).toFixed(1)} L${rcx(0).toFixed(1)},${rcy(runChartMin).toFixed(1)} Z`;
   const runFloorY    = rcy(liquidityReserve);
+  // Bar dimensions
+  const RUN_BAR_W = cPlotW / 11 * 0.55; // bar width ~55% of slot
+  // Find the lowest value index for annotation
+  const runLowIdx = runwayVals.reduce((minI, v, i, arr) => v < arr[minI] ? i : minI, 0);
+  const runLowVal = runwayVals[runLowIdx];
+  const runLowFmt = `$${Math.round(runLowVal).toLocaleString()}`;
   // Quarterly Cash Balance Walk
   const qDefs = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]] as const;
   const quarters = qDefs.map((months, qi) => {
@@ -12693,19 +12850,29 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
       {/* ── Scrollable body ── */}
       <div style={{ flex: 1, overflowY: "auto" as const, padding: "14px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-        {/* ── TOP ROW: Detection (left) + Liquidity (right) ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "480px 1fr", gap: 12, alignItems: "stretch" }}>
+        {/* ── GI Header (Asset Forecast style) ── */}
+        <div style={{ marginBottom: 2 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 6 }}>
+            <div style={{ fontFamily: INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: GI_GREEN }}>GURU INTELLIGENCE · DS-1</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>DETECTION &amp; CASH FLOW ANALYSIS · {format(DEMO_NOW, "MMM yyyy").toUpperCase()} · LIVE FROM TRANSACTION DATA</div>
+          </div>
+          <div style={{ fontFamily: INTER, fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+            Active monitoring of liquidity signals, cash flow patterns, and upcoming obligations across all connected accounts.
+          </div>
+        </div>
+
+        {/* ── TOP ROW: Detection (left) + KPIs (center) + Liquidity (right) ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "480px 320px 1fr", gap: 12, alignItems: "stretch" }}>
 
           {/* ── LEFT: Detection System panel ── */}
           <div style={{ background: "linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border: "1px solid rgba(91,143,204,0.32)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,rgba(91,143,204,0.65),rgba(91,143,204,0.1) 60%,transparent)", pointerEvents: "none" }} />
-            <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(91,143,204,0.28)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid rgba(91,143,204,0.28)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <div style={{ width: 3, height: 18, borderRadius: 2, background: GREEN, flexShrink: 0 }} />
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN, display: "inline-block", flexShrink: 0, animation: "ds-dot 2s ease-in-out infinite" }} />
-                <span style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Detection System</span>
+                <span style={{ fontFamily: INTER, fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(0,0%,88%)" }}>Detection System</span>
               </div>
-              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.28)" }}>4 Active</span>
+              <span style={{ fontFamily: INTER, fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.28)" }}>4 Active</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px", flex: 1 }}>
 
@@ -12789,302 +12956,355 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
             </div>
           </div>
 
-          {/* ── RIGHT: Today's Liquidity Position ── */}
-          <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ padding: "8px 14px 7px", borderBottom: "1px solid rgba(42,74,110,0.4)", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-              <div style={{ width: 4, height: 26, background: "linear-gradient(to bottom,rgba(91,143,204,1),rgba(91,143,204,0.15))", borderRadius: 2, flexShrink: 0, boxShadow: "0 0 8px rgba(91,143,204,0.35)" }} />
-              <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.82)", whiteSpace: "nowrap" }}>Today's Liquidity Position</span>
-              <div style={{ flex: 1, height: 2, background: "linear-gradient(to right,rgba(91,143,204,0.35),rgba(91,143,204,0.08) 50%,transparent)", borderRadius: 1 }} />
-              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>{[...opAccts,...resAccts,...capAccts].length} accounts · {format(DEMO_NOW, "MMM d, yyyy")}</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "row" as const, flex: 1, minHeight: 0 }}>
-
-              {/* Donut sidebar */}
-              <div style={{ width: 220, flexShrink: 0, padding: "14px 14px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, borderRight: "1px solid rgba(255,255,255,0.07)" }}>
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.09em", color: "rgba(255,255,255,0.82)", alignSelf: "flex-start" }}>Cash &amp; Treasuries</span>
-                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", marginTop: -6, alignSelf: "flex-start" }}>{format(DEMO_NOW, "MMMM d")}</span>
-                <svg viewBox="0 0 180 180" width="160" height="160">
-                  <circle cx="90" cy="90" r={R} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="20"/>
-                  <circle cx="90" cy="90" r={R} fill="none" stroke={OP_COL}  strokeWidth="20" strokeDasharray={opSeg.dashArray}  strokeDashoffset={opSeg.dashOffset}  transform="rotate(-90 90 90)"/>
-                  <circle cx="90" cy="90" r={R} fill="none" stroke={RES_COL} strokeWidth="20" strokeDasharray={resSeg.dashArray} strokeDashoffset={resSeg.dashOffset} transform="rotate(-90 90 90)"/>
-                  <circle cx="90" cy="90" r={R} fill="none" stroke={CAP_COL} strokeWidth="20" strokeDasharray={capSeg.dashArray} strokeDashoffset={capSeg.dashOffset} transform="rotate(-90 90 90)"/>
-                  <text x="90" y="87" textAnchor="middle" fill="rgba(255,255,255,0.88)" fontSize="18" fontWeight="300" fontFamily="Inter,system-ui">{fmtD(totalLiquid)}</text>
-                  <text x="90" y="102" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="9" fontWeight="500" fontFamily="Inter,system-ui" letterSpacing="1">TOTAL LIQUID</text>
-                </svg>
-                <div style={{ display: "flex", flexDirection: "column", gap: 7, width: "100%" }}>
-                  {[
-                    { color: OP_COL,  label: "Operating", val: operatingCash,    pct: totalLiquid > 0 ? Math.round(opFrac  * 100) : 0 },
-                    { color: RES_COL, label: "Reserve",   val: liquidityReserve, pct: totalLiquid > 0 ? Math.round(resFrac * 100) : 0 },
-                    { color: CAP_COL, label: "Build",     val: capitalBuild,     pct: totalLiquid > 0 ? Math.round(capFrac * 100) : 0 },
-                  ].map(item => (
-                    <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: 10, color: MUTED, flex: 1 }}>{item.label}</span>
-                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.72)", fontVariantNumeric: "tabular-nums" as const }}>{fmtD(item.val)}</span>
-                      <span style={{ fontSize: 9, color: DIM, minWidth: 24, textAlign: "right" as const }}>{item.pct}%</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ width: "100%", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 10, display: "flex", gap: 10 }}>
-                  {[
-                    { label: "Blended Yield", val: fmtY(totalBlended) },
-                    { label: "After-Tax",     val: fmtY(totalAfterTax) },
-                  ].map(item => (
-                    <div key={item.label} style={{ flex: 1 }}>
-                      <div style={{ fontSize: 8, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: DIM, marginBottom: 3 }}>{item.label}</div>
-                      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{item.val}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Account table */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" as const }}>
-                  <thead>
-                    <tr style={{ background: "#1a2433", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                      {["Account","Balance","Yield","After-Tax"].map((h, i) => (
-                        <th key={h} style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "rgba(255,255,255,0.82)", padding: "6px 10px", textAlign: i === 0 ? "left" : "right" as const, paddingLeft: i === 0 ? 14 : undefined, borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.07)" : undefined }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Operating */}
-                    {opAccts.map((a, i) => { const y = getGrossYield(a.description ?? ""); return (
-                      <tr key={i} style={{ background: "rgba(77,157,224,0.07)", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
-                        <td style={{ padding: "5px 10px 5px 18px", fontSize: 11, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap" as const }}>{a.description}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 12, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "rgba(255,255,255,0.78)", borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtD(Number(a.value))}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 11, textAlign: "right" as const, color: DIM, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtY(y)}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 11, textAlign: "right" as const, color: DIM, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtY(y * (1 - TAX_RATE))}</td>
-                      </tr>
-                    ); })}
-                    <tr style={{ background: "rgba(77,157,224,0.19)", borderTop: "1px solid rgba(77,157,224,0.22)" }}>
-                      <td style={{ padding: "5px 10px 5px 14px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.09em", color: OP_COL }}>⬤ Operating</td>
-                      <td style={{ padding: "5px 10px", fontSize: 12, fontWeight: 600, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: OP_COL, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtD(operatingCash)}</td>
-                      <td style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, textAlign: "right" as const, color: OP_COL, borderLeft: "1px solid rgba(255,255,255,0.07)", opacity: 0.8 }}>{fmtY(opYield)}</td>
-                      <td style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, textAlign: "right" as const, color: OP_COL, borderLeft: "1px solid rgba(255,255,255,0.07)", opacity: 0.8 }}>{fmtY(opYield * (1 - TAX_RATE))}</td>
-                    </tr>
-                    {/* Reserve */}
-                    {resAccts.map((a, i) => { const y = getGrossYield(a.description ?? ""); return (
-                      <tr key={i} style={{ background: "rgba(232,168,48,0.07)", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
-                        <td style={{ padding: "5px 10px 5px 18px", fontSize: 11, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap" as const }}>{a.description}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 12, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "rgba(255,255,255,0.78)", borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtD(Number(a.value))}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 11, textAlign: "right" as const, color: DIM, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtY(y)}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 11, textAlign: "right" as const, color: DIM, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtY(y * (1 - TAX_RATE))}</td>
-                      </tr>
-                    ); })}
-                    <tr style={{ background: "rgba(232,168,48,0.19)", borderTop: "1px solid rgba(232,168,48,0.22)" }}>
-                      <td style={{ padding: "5px 10px 5px 14px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.09em", color: RES_COL }}>⬤ Reserve</td>
-                      <td style={{ padding: "5px 10px", fontSize: 12, fontWeight: 600, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: RES_COL, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtD(liquidityReserve)}</td>
-                      <td style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, textAlign: "right" as const, color: RES_COL, borderLeft: "1px solid rgba(255,255,255,0.07)", opacity: 0.8 }}>{fmtY(resYield)}</td>
-                      <td style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, textAlign: "right" as const, color: RES_COL, borderLeft: "1px solid rgba(255,255,255,0.07)", opacity: 0.8 }}>{fmtY(resYield * (1 - TAX_RATE))}</td>
-                    </tr>
-                    {/* Capital Build */}
-                    {capAccts.map((a, i) => { const y = getGrossYield(a.description ?? ""); return (
-                      <tr key={i} style={{ background: "rgba(42,154,90,0.07)", borderTop: "1px solid rgba(255,255,255,0.03)" }}>
-                        <td style={{ padding: "5px 10px 5px 18px", fontSize: 11, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap" as const }}>{a.description}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 12, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "rgba(255,255,255,0.78)", borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtD(Number(a.value))}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 11, textAlign: "right" as const, color: DIM, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtY(y)}</td>
-                        <td style={{ padding: "5px 10px", fontSize: 11, textAlign: "right" as const, color: DIM, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtY(y * (1 - TREAS_TAX_RATE))}</td>
-                      </tr>
-                    ); })}
-                    <tr style={{ background: "rgba(42,154,90,0.19)", borderTop: "1px solid rgba(42,154,90,0.22)" }}>
-                      <td style={{ padding: "5px 10px 5px 14px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.09em", color: CAP_COL }}>⬤ Capital Build</td>
-                      <td style={{ padding: "5px 10px", fontSize: 12, fontWeight: 600, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: CAP_COL, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtD(capitalBuild)}</td>
-                      <td style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, textAlign: "right" as const, color: CAP_COL, borderLeft: "1px solid rgba(255,255,255,0.07)", opacity: 0.8 }}>{fmtY(capYield)}</td>
-                      <td style={{ padding: "5px 10px", fontSize: 11, fontWeight: 600, textAlign: "right" as const, color: CAP_COL, borderLeft: "1px solid rgba(255,255,255,0.07)", opacity: 0.8 }}>{fmtY(capYield * (1 - TREAS_TAX_RATE))}</td>
-                    </tr>
-                    {/* Total */}
-                    <tr style={{ borderTop: "2px solid rgba(255,255,255,0.13)", background: "rgba(255,255,255,0.03)" }}>
-                      <td style={{ padding: "7px 10px 7px 14px", fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "rgba(255,255,255,0.88)" }}>Total Liquidity</td>
-                      <td style={{ padding: "7px 10px", fontSize: 12, fontWeight: 700, textAlign: "right" as const, color: "rgba(255,255,255,0.92)", fontVariantNumeric: "tabular-nums" as const, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtD(totalLiquid)}</td>
-                      <td style={{ padding: "7px 10px", fontSize: 11, fontWeight: 700, textAlign: "right" as const, color: MUTED, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtY(totalBlended)}</td>
-                      <td style={{ padding: "7px 10px", fontSize: 11, fontWeight: 700, textAlign: "right" as const, color: MUTED, borderLeft: "1px solid rgba(255,255,255,0.07)" }}>{fmtY(totalAfterTax)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div style={{ padding: "7px 12px", borderTop: "1px solid rgba(255,255,255,0.07)", textAlign: "right" as const, fontSize: 11, color: "rgba(91,143,204,0.8)", cursor: "pointer" }} onClick={() => onNavigate("guru")}>Optimize in Allocation Tool →</div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        {/* ── Section break ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, padding: "8px 0 2px" }}>
-          <div style={{ width: 4, height: 26, background: "linear-gradient(to bottom,rgba(91,143,204,1),rgba(91,143,204,0.15))", borderRadius: 2, flexShrink: 0, boxShadow: "0 0 8px rgba(91,143,204,0.35)" }} />
-          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.82)", whiteSpace: "nowrap" }}>12-Month Cash Flow Forecast</span>
-          <div style={{ flex: 1, height: 2, background: "linear-gradient(to right,rgba(91,143,204,0.35),rgba(91,143,204,0.08) 50%,transparent)", borderRadius: 1 }} />
-          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(91,143,204,0.5)", padding: "2px 8px", border: "1px solid rgba(91,143,204,0.18)", borderRadius: 3 }}>Jan – Dec 2026</span>
-        </div>
-
-        {/* ── Forecast: KPIs+Payments (left) + Charts+Walk (right) ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "480px 1fr", gap: 12, alignItems: "start" }}>
-
-          {/* LEFT: Annual hero + KPI + Upcoming payments */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* ── CENTER: Cash Flow KPIs (single GI card with section header) ── */}
+          <div style={{ ...GI_CARD, borderTop: `2px solid ${GI_GREEN}`, display: "flex", flexDirection: "column" }}>
+            <div style={sectionHdr}>Cash Flow KPIs</div>
 
             {/* Annual Net CF hero */}
-            <div style={{ background: "linear-gradient(135deg,#1a2d47 0%,#162540 100%)", border: "1px solid rgba(91,143,204,0.25)", borderRadius: 8, padding: "14px 18px", position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,rgba(91,143,204,0.8),rgba(91,143,204,0.2),transparent)" }} />
-              <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(91,143,204,0.55)", marginBottom: 4 }}>Annual Net Cash Flow</div>
-              <div style={{ fontSize: 36, fontWeight: 300, lineHeight: 1, color: annualNetCF >= 0 ? GREEN : "#ff6464", fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.02em", marginBottom: 8 }}>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ fontFamily: INTER, fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.12em", color: "rgba(255,255,255,0.38)", marginBottom: 6 }}>Annual Net Cash Flow</div>
+              <div style={{ fontFamily: MONO, fontSize: 32, fontWeight: 300, lineHeight: 1, color: annualNetCF >= 0 ? GI_GREEN : "#ff6464", fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.02em", marginBottom: 8 }}>
                 {annualNetCF >= 0 ? "+" : ""}{fmtD(annualNetCF)}
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 3, background: annualNetCF >= 0 ? "rgba(94,204,138,0.12)" : "rgba(255,100,100,0.12)", border: `1px solid ${annualNetCF >= 0 ? "rgba(94,204,138,0.4)" : "rgba(255,100,100,0.4)"}`, color: annualNetCF >= 0 ? GREEN : "#ff6464" }}>
+                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 3, background: annualNetCF >= 0 ? "rgba(68,224,138,0.12)" : "rgba(255,100,100,0.12)", border: `1px solid ${annualNetCF >= 0 ? "rgba(68,224,138,0.4)" : "rgba(255,100,100,0.4)"}`, color: annualNetCF >= 0 ? GI_GREEN : "#ff6464" }}>
                   {annualNetCF >= 0 ? "▲ Cash positive" : "▼ Cash negative"}
                 </span>
                 <div style={{ textAlign: "right" as const }}>
-                  <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "rgba(180,210,255,0.35)" }}>Income / Expenses</div>
-                  <div style={{ fontSize: 11, fontWeight: 300, color: "rgba(255,255,255,0.42)", fontVariantNumeric: "tabular-nums" as const }}>{fmtD(annualInflows)} / {fmtD(annualOutflows)}</div>
+                  <div style={{ fontFamily: INTER, fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "rgba(255,255,255,0.35)" }}>Income / Expenses</div>
+                  <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 300, color: "rgba(255,255,255,0.42)", fontVariantNumeric: "tabular-nums" as const }}>{fmtD(annualInflows)} / {fmtD(annualOutflows)}</div>
                 </div>
               </div>
             </div>
 
-            {/* KPI table */}
-            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
+            {/* KPI table rows */}
+            <div style={{ flex: 1 }}>
               {([
                 { label: "Annual Income (Pre-Tax)",   sub: "Gross earned income + distributions",    val: fmtD(annualInflows),   color: "rgba(255,255,255,0.82)", indent: false },
                 { label: "Total Annual Expenses",     sub: "Core living + taxes + one-time",         val: `(${fmtD(annualOutflows)})`, color: "rgba(255,255,255,0.82)", indent: false },
-                { label: "Coverage Ratio",            sub: "Annual income ÷ expenses",               val: `${coverageRatio}%`,   color: coverageRatio >= 100 ? GREEN : "#ff6464", indent: true },
+                { label: "Coverage Ratio",            sub: "Annual income ÷ expenses",               val: `${coverageRatio}%`,   color: coverageRatio >= 100 ? GI_GREEN : "#ff6464", indent: true },
                 { label: "Monthly Burn Rate",         sub: "Average monthly outflows",               val: fmtD(monthlyBurn),     color: "#ff6464", indent: false },
                 { label: "Cash Runway",               sub: "Total liquidity ÷ monthly burn",         val: `${cashRunway} months`, color: "rgba(255,255,255,0.65)", indent: true },
                 { label: "Cash Flow Trough",          sub: "Cumulative low point",                   val: `(${fmtD(troughDepth)})`, sub2: troughMonth.toUpperCase(), color: AMBER, indent: false },
                 { label: "Median Monthly Cash Flow",  sub: "50th percentile, monthly",               val: medianMonthly >= 0 ? fmtD(medianMonthly) : `(${fmtD(Math.abs(medianMonthly))})`, color: AMBER, indent: false },
               ] as const).map((row, i, arr) => (
-                <div key={row.label} style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", padding: `10px ${row.indent ? 28 : 14}px`, borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: row.indent ? "rgba(91,143,204,0.04)" : "transparent" }}>
+                <div key={row.label} style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", padding: `8px ${row.indent ? 28 : 14}px`, borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: row.indent ? "rgba(68,224,138,0.04)" : "transparent" }}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>{row.label}</div>
-                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", marginTop: 1 }}>{row.sub}</div>
+                    <div style={{ fontFamily: INTER, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>{row.label}</div>
+                    <div style={{ fontFamily: INTER, fontSize: 10, color: "rgba(255,255,255,0.38)", marginTop: 1 }}>{row.sub}</div>
                   </div>
                   <div style={{ textAlign: "right" as const }}>
-                    <div style={{ fontSize: row.indent ? 16 : 14, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: row.color }}>{row.val}</div>
-                    {"sub2" in row && row.sub2 && <div style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: AMBER }}>{row.sub2}</div>}
+                    <div style={{ fontFamily: MONO, fontSize: row.indent ? 16 : 14, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: row.color }}>{row.val}</div>
+                    {"sub2" in row && row.sub2 && <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: AMBER }}>{row.sub2}</div>}
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Upcoming large payments */}
-            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(255,200,60,0.22)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                  <div style={{ width: 3, height: 18, borderRadius: 2, background: "rgba(255,200,60,0.75)", flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Upcoming Large Payments</span>
-                </div>
-                <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(255,200,60,0.55)", border: "1px solid rgba(255,200,60,0.2)", borderRadius: 3, padding: "2px 7px" }}>{upcomingPayments.length} scheduled</span>
-              </div>
-              {upcomingPayments.map((pmt, i) => {
-                const d = new Date(pmt.date as string);
-                const daysAway = Math.round((d.getTime() - DEMO_NOW.getTime()) / 86400000);
-                const urgent = daysAway <= 20;
-                return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: i < upcomingPayments.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none", background: urgent ? "rgba(255,200,60,0.04)" : "transparent" }}>
-                    <div style={{ flexShrink: 0, width: 36, textAlign: "center" as const }}>
-                      <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: `rgba(255,200,60,${urgent ? 0.8 : 0.5})` }}>{format(d, "MMM")}</div>
-                      <div style={{ fontSize: 18, fontWeight: 300, lineHeight: 1.1, color: `rgba(255,200,60,${urgent ? 0.9 : 0.6})` }}>{format(d, "d")}</div>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: `rgba(255,255,255,${urgent ? 0.85 : 0.6})`, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{pmt.description}</div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", marginTop: 3 }}>{pmt.category ?? "outflow"}</div>
-                    </div>
-                    <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 300, color: `rgba(255,200,60,${urgent ? 0.9 : 0.7})`, fontVariantNumeric: "tabular-nums" as const }}>{fmtD(Number(pmt.amount))}</div>
-                      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: urgent ? "rgba(255,200,60,0.65)" : "rgba(255,255,255,0.25)", marginTop: 2 }}>{daysAway > 0 ? `${daysAway} DAYS` : "DUE TODAY"}</div>
-                    </div>
-                  </div>
-                );
-              })}
-              {upcomingPayments.length === 0 && <div style={{ padding: "20px 16px", fontSize: 12, color: "rgba(255,255,255,0.38)", textAlign: "center" as const }}>No large payments scheduled</div>}
-            </div>
-
           </div>
 
-          {/* RIGHT: Two charts + Quarterly Cash Balance Walk */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* ── RIGHT: Today's Liquidity Position ── */}
+          <div style={{ ...GI_CARD, borderTop: `2px solid ${BLUE}`, display: "flex", flexDirection: "column", overflow: "visible" }}>
+            <div style={sectionHdr}>Today's Liquidity Position</div>
+            <div style={{ padding: "4px 16px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontFamily: INTER, fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.04em" }}>{[...opAccts,...resAccts,...capAccts].length} accounts · {format(DEMO_NOW, "MMM d, yyyy")}</div>
+            <div style={{ display: "flex", flexDirection: "row" as const, flex: 1 }}>
 
-            {/* Chart 1: Cumulative Cash Flow */}
-            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ padding: "8px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Cumulative Cash Flow</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: GREEN, display: "inline-block" }} /><span style={{ fontSize: 9, color: DIM }}>Net CF</span></div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 14, borderTop: `2px dashed ${AMBER}` }} /><span style={{ fontSize: 9, color: DIM }}>{troughMonth} trough</span></div>
+              {/* Donut sidebar */}
+              <div style={{ width: 260, flexShrink: 0, padding: "16px 20px 14px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+                <span style={{ fontFamily: INTER, fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.12em", color: "rgba(255,255,255,0.38)", alignSelf: "flex-start" }}>Cash &amp; Treasuries</span>
+                <svg viewBox="0 0 200 200" width="180" height="180">
+                  <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="22"/>
+                  <circle cx="100" cy="100" r="72" fill="none" stroke={OP_COL}  strokeWidth="22" strokeDasharray={`${(opFrac * 2 * Math.PI * 72).toFixed(1)} ${(2 * Math.PI * 72).toFixed(1)}`}  strokeDashoffset="0"  transform="rotate(-90 100 100)"/>
+                  <circle cx="100" cy="100" r="72" fill="none" stroke={RES_COL} strokeWidth="22" strokeDasharray={`${(resFrac * 2 * Math.PI * 72).toFixed(1)} ${(2 * Math.PI * 72).toFixed(1)}`} strokeDashoffset={`${-(opFrac * 2 * Math.PI * 72).toFixed(1)}`} transform="rotate(-90 100 100)"/>
+                  <circle cx="100" cy="100" r="72" fill="none" stroke={CAP_COL} strokeWidth="22" strokeDasharray={`${(capFrac * 2 * Math.PI * 72).toFixed(1)} ${(2 * Math.PI * 72).toFixed(1)}`} strokeDashoffset={`${-((opFrac + resFrac) * 2 * Math.PI * 72).toFixed(1)}`} transform="rotate(-90 100 100)"/>
+                  <text x="100" y="96" textAnchor="middle" fill="rgba(255,255,255,0.92)" fontSize="18" fontWeight="300" fontFamily={MONO}>{fmtD(totalLiquid)}</text>
+                  <text x="100" y="113" textAnchor="middle" fill="rgba(255,255,255,0.38)" fontSize="9" fontWeight="700" fontFamily={INTER} letterSpacing="1.5">TOTAL LIQUID</text>
+                </svg>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7, width: "100%" }}>
+                  {[
+                    { color: OP_COL,  label: "Operating Cash",     val: operatingCash,    pct: totalLiquid > 0 ? Math.round(opFrac  * 100) : 0 },
+                    { color: RES_COL, label: "Liquidity Reserve",  val: liquidityReserve, pct: totalLiquid > 0 ? Math.round(resFrac * 100) : 0 },
+                    { color: CAP_COL, label: "Capital Build",      val: capitalBuild,     pct: totalLiquid > 0 ? Math.round(capFrac * 100) : 0 },
+                  ].map(item => (
+                    <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color, flexShrink: 0 }} />
+                      <span style={{ fontFamily: INTER, fontSize: 11, color: "rgba(255,255,255,0.82)", flex: 1 }}>{item.label}</span>
+                      <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(255,255,255,0.82)", fontVariantNumeric: "tabular-nums" as const }}>{fmtD(item.val)}</span>
+                      <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.38)", minWidth: 28, textAlign: "right" as const }}>{item.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ width: "100%", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, display: "flex", gap: 16 }}>
+                  {[
+                    { label: "Blended Yield", val: fmtY(totalBlended) },
+                    { label: "After-Tax",     val: fmtY(totalAfterTax) },
+                  ].map(item => (
+                    <div key={item.label} style={{ flex: 1 }}>
+                      <div style={{ fontFamily: INTER, fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.09em", color: "rgba(255,255,255,0.38)", marginBottom: 4 }}>{item.label}</div>
+                      <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 400, color: "rgba(255,255,255,0.82)" }}>{item.val}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div style={{ padding: "8px 0 4px" }}>
+
+              {/* Account table (GI four-tier styling) */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" as const }}>
+                  <thead>
+                    <tr style={{ background: "#0d1b2e", borderBottom: "1px solid #2a4a6e" }}>
+                      {["Account","Balance","Yield","After-Tax"].map((h, i) => (
+                        <th key={h} style={{ fontFamily: MONO, fontSize: 10, fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(210,35%,65%)", padding: "7px 10px", textAlign: i === 0 ? "left" : "right" as const, paddingLeft: i === 0 ? 14 : undefined, borderLeft: i > 0 ? "1px solid #1e3352" : undefined }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* ── Operating Cash (Tier 1 header) ── */}
+                    <tr><td colSpan={4} style={{ fontFamily: MONO, fontSize: 11, fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.12em", padding: "10px 14px", color: "#fff", background: "#162843", borderTop: `4px solid ${OP_COL}`, borderBottom: "1px solid #2a4a6e" }}>Operating Cash</td></tr>
+                    {opAccts.map((a, i) => { const y = getGrossYield(a.description ?? ""); return (
+                      <tr key={i} style={{ background: i % 2 === 0 ? "#0f1e33" : "#122038" }}>
+                        <td style={{ fontFamily: INTER, fontSize: 10.5, fontWeight: 400, color: "rgba(255,255,255,0.82)", padding: "6px 10px 6px 28px", whiteSpace: "nowrap" as const, borderBottom: "1px solid #1e3352" }}>{a.description}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtD(Number(a.value))}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtY(y)}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtY(y * (1 - TAX_RATE))}</td>
+                      </tr>
+                    ); })}
+                    <tr style={{ background: "#1a2d47", borderTop: "2px solid #2a4a6e", borderBottom: "2px solid #2a4a6e" }}>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em", color: "hsl(152,52%,55%)", padding: "8px 10px 8px 12px", borderLeft: "3px solid hsl(152,45%,42%)" }}>Operating Cash Total</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtD(operatingCash)}</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtY(opYield)}</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtY(opYield * (1 - TAX_RATE))}</td>
+                    </tr>
+                    <tr><td colSpan={4} style={{ background: "#0f1e33", height: 10, border: "none", padding: 0 }} /></tr>
+
+                    {/* ── Liquidity Reserve (Tier 1 header) ── */}
+                    <tr><td colSpan={4} style={{ fontFamily: MONO, fontSize: 11, fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.12em", padding: "10px 14px", color: "#fff", background: "#162843", borderTop: `4px solid ${RES_COL}`, borderBottom: "1px solid #2a4a6e" }}>Liquidity Reserve</td></tr>
+                    {resAccts.map((a, i) => { const y = getGrossYield(a.description ?? ""); return (
+                      <tr key={i} style={{ background: i % 2 === 0 ? "#0f1e33" : "#122038" }}>
+                        <td style={{ fontFamily: INTER, fontSize: 10.5, fontWeight: 400, color: "rgba(255,255,255,0.82)", padding: "6px 10px 6px 28px", whiteSpace: "nowrap" as const, borderBottom: "1px solid #1e3352" }}>{a.description}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtD(Number(a.value))}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtY(y)}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtY(y * (1 - TAX_RATE))}</td>
+                      </tr>
+                    ); })}
+                    <tr style={{ background: "#1a2d47", borderTop: "2px solid #2a4a6e", borderBottom: "2px solid #2a4a6e" }}>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em", color: "hsl(152,52%,55%)", padding: "8px 10px 8px 12px", borderLeft: "3px solid hsl(152,45%,42%)" }}>Liquidity Reserve Total</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtD(liquidityReserve)}</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtY(resYield)}</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtY(resYield * (1 - TAX_RATE))}</td>
+                    </tr>
+                    <tr><td colSpan={4} style={{ background: "#0f1e33", height: 10, border: "none", padding: 0 }} /></tr>
+
+                    {/* ── Capital Build (Tier 1 header) ── */}
+                    <tr><td colSpan={4} style={{ fontFamily: MONO, fontSize: 11, fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.12em", padding: "10px 14px", color: "#fff", background: "#162843", borderTop: `4px solid ${CAP_COL}`, borderBottom: "1px solid #2a4a6e" }}>Capital Build</td></tr>
+                    {capAccts.map((a, i) => { const y = getGrossYield(a.description ?? ""); return (
+                      <tr key={i} style={{ background: i % 2 === 0 ? "#0f1e33" : "#122038" }}>
+                        <td style={{ fontFamily: INTER, fontSize: 10.5, fontWeight: 400, color: "rgba(255,255,255,0.82)", padding: "6px 10px 6px 28px", whiteSpace: "nowrap" as const, borderBottom: "1px solid #1e3352" }}>{a.description}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtD(Number(a.value))}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtY(y)}</td>
+                        <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 400, textAlign: "right" as const, color: "rgba(255,255,255,0.82)", padding: "6px 10px", borderLeft: "1px solid #1e3352", borderBottom: "1px solid #1e3352" }}>{fmtY(y * (1 - TREAS_TAX_RATE))}</td>
+                      </tr>
+                    ); })}
+                    <tr style={{ background: "#1a2d47", borderTop: "2px solid #2a4a6e", borderBottom: "2px solid #2a4a6e" }}>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em", color: "hsl(152,52%,55%)", padding: "8px 10px 8px 12px", borderLeft: "3px solid hsl(152,45%,42%)" }}>Capital Build Total</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtD(capitalBuild)}</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtY(capYield)}</td>
+                      <td style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 800, textAlign: "right" as const, color: "hsl(0,0%,88%)", padding: "8px 10px", borderLeft: "1px solid #1e3352" }}>{fmtY(capYield * (1 - TREAS_TAX_RATE))}</td>
+                    </tr>
+                    <tr><td colSpan={4} style={{ background: "#0f1e33", height: 10, border: "none", padding: 0 }} /></tr>
+
+                    {/* ── Grand Total (Tier 4) ── */}
+                    <tr style={{ background: "#0d1b2e", borderTop: "3px solid #2a4a6e" }}>
+                      <td style={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.10em", color: "hsl(152,52%,55%)", padding: "10px 10px 10px 12px", borderLeft: `4px solid ${GI_GREEN}` }}>Total Liquid Assets</td>
+                      <td style={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "hsl(152,52%,55%)", padding: "10px 10px", borderLeft: "1px solid #1e3352" }}>{fmtD(totalLiquid)}</td>
+                      <td style={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, textAlign: "right" as const, color: "hsl(152,52%,55%)", padding: "10px 10px", borderLeft: "1px solid #1e3352" }}>{fmtY(totalBlended)}</td>
+                      <td style={{ fontFamily: MONO, fontSize: 12, fontWeight: 800, textAlign: "right" as const, color: "hsl(152,52%,55%)", padding: "10px 10px", borderLeft: "1px solid #1e3352" }}>{fmtY(totalAfterTax)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* ── Section break (GI header style) ── */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 8, marginBottom: 4 }}>
+          <div style={{ fontFamily: INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: GI_GREEN }}>12-Month Cash Flow Forecast</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>JAN – DEC 2026 · PROJECTED FROM TRANSACTION DATA</div>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
+        </div>
+
+        {/* ── Forecast: Charts + Walk table (full width) ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+            {/* Charts row — side by side */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+
+            {/* Chart 1: Cumulative Cash Flow */}
+            <div style={{ ...GI_CARD }}>
+              <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: INTER, fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(0,0%,88%)" }}>Cumulative Net Cash Flow</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 12, height: 2, borderRadius: 1, background: GREEN, display: "inline-block" }} /><span style={{ fontSize: 9, color: MUTED }}>Net CF</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ display: "inline-block", width: 12, borderTop: `1.5px dashed ${AMBER}` }} /><span style={{ fontSize: 9, color: MUTED }}>{troughMonth} trough</span></div>
+                </div>
+              </div>
+              <div style={{ padding: "4px 0 2px", position: "relative" }}>
                 <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", height: "auto", display: "block" }}>
-                  {/* Zero baseline */}
-                  <line x1={CPX} y1={cumZeroY} x2={CW - CPX} y2={cumZeroY} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
-                  {/* Fill area */}
-                  <path d={cumChartFill} fill="rgba(94,204,138,0.1)" />
-                  {/* Line */}
-                  <path d={cumChartPath} fill="none" stroke={GREEN} strokeWidth={2} strokeLinejoin="round" />
-                  {/* Trough vertical marker */}
-                  <line x1={ccx(troughIdx)} y1={CPY} x2={ccx(troughIdx)} y2={CH - CPY} stroke={AMBER} strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
-                  {/* Data points */}
+                  {/* Grid lines */}
+                  <line x1={CPX} y1={cumZeroY} x2={CW - CPX} y2={cumZeroY} stroke="rgba(255,255,255,0.25)" strokeWidth={1} />
+                  {[cumChartMin, cumChartMax].map((v, i) => (
+                    <line key={i} x1={CPX} y1={ccy(v)} x2={CW - CPX} y2={ccy(v)} stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+                  ))}
+                  {/* Dual fills: green above zero, red below zero */}
+                  <path d={cumFillAbove} fill="rgba(94,204,138,0.09)" />
+                  <path d={cumFillBelow} fill="rgba(255,80,80,0.18)" />
+                  {/* TODAY vertical line at March */}
+                  <line x1={ccx(TODAY_IDX)} y1={CPY} x2={ccx(TODAY_IDX)} y2={CH - CPY} stroke="rgba(255,255,255,0.18)" strokeWidth={1} strokeDasharray="3 4" />
+                  <text x={ccx(TODAY_IDX)} y={CPY - 4} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={6} fontWeight={600} fontFamily="Inter,system-ui">TODAY</text>
+                  {/* Solid green line before today */}
+                  <path d={cumLineSolid} fill="none" stroke={GREEN} strokeWidth={1.5} strokeLinejoin="round" />
+                  {/* Dashed segments after today, colored by pos/neg */}
+                  {cumLineSegments.map((seg, i) => (
+                    <path key={i} d={seg.d} fill="none" stroke={seg.color} strokeWidth={1.5} strokeDasharray="4 2" strokeLinejoin="round" />
+                  ))}
+                  {/* Data point markers + hover targets */}
                   {cumulativeByMonth.map((v, i) => (
-                    <circle key={i} cx={ccx(i)} cy={ccy(v)} r={3} fill={v >= 0 ? GREEN : AMBER} opacity={0.85} />
+                    <g key={i} onMouseEnter={e => showTip("cf", i, e)} onMouseLeave={hideTip} style={{ cursor: "crosshair" }}>
+                      <circle cx={ccx(i)} cy={ccy(v)} r={10} fill="transparent" />
+                      <circle cx={ccx(i)} cy={ccy(v)} r={i === troughIdx ? 3.5 : 2}
+                        fill={i === troughIdx ? AMBER : v >= 0 ? GREEN : "rgba(255,100,100,0.85)"}
+                        stroke="#141c2b" strokeWidth={0.7} opacity={0.85} />
+                    </g>
                   ))}
-                  {/* X-axis labels */}
+                  {/* Trough annotation callout */}
+                  <line x1={troughAnnX} y1={troughAnnY - 5} x2={troughAnnX} y2={troughAnnY - 22} stroke="rgba(255,200,60,0.5)" strokeWidth={1} strokeDasharray="3 2" />
+                  <rect x={troughAnnX - 38} y={troughAnnY - 42} width={76} height={20} rx={3} fill="rgba(6,14,28,0.97)" stroke="rgba(255,200,60,0.55)" strokeWidth={1} />
+                  <text x={troughAnnX} y={troughAnnY - 28} textAnchor="middle" fill={AMBER} fontSize={9} fontWeight={700} fontFamily="Inter,system-ui">{troughValFmt}</text>
+                  <text x={troughAnnX} y={troughAnnY - 22.5} textAnchor="middle" fill="rgba(255,255,255,0.42)" fontSize={5} fontWeight={700} fontFamily="Inter,system-ui">{troughMonth.toUpperCase()} TROUGH</text>
+                  {/* Month labels */}
                   {MNMS.map((m, i) => (
-                    <text key={i} x={ccx(i)} y={CH - 2} textAnchor="middle" fill={i === troughIdx ? AMBER : "rgba(255,255,255,0.3)"} fontSize={9} fontFamily="Inter,system-ui">{m}</text>
+                    <text key={i} x={ccx(i)} y={CH - 1} textAnchor="middle"
+                      fill={i === troughIdx ? AMBER : i === TODAY_IDX ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.35)"}
+                      fontSize={7} fontFamily="Inter,system-ui">{m}</text>
                   ))}
-                  {/* Y-axis: min, 0, max */}
+                  {/* Y-axis labels */}
                   {[cumChartMin, 0, cumChartMax].map((v, i) => (
-                    <text key={i} x={CPX - 4} y={ccy(v) + 4} textAnchor="end" fill="rgba(255,255,255,0.28)" fontSize={8} fontFamily="Inter,system-ui">{v >= 0 ? `$${Math.round(v/1000)}k` : `(${Math.round(Math.abs(v)/1000)}k)`}</text>
+                    <text key={i} x={CPX - 3} y={ccy(v) + 3} textAnchor="end" fill="rgba(255,255,255,0.28)" fontSize={6.5} fontFamily="Inter,system-ui">
+                      {v >= 0 ? `+$${Math.round(v/1000)}K` : `($${Math.round(Math.abs(v)/1000)}K)`}
+                    </text>
                   ))}
                 </svg>
+                {chartTip?.chart === "cf" && (() => {
+                  const i = chartTip.idx;
+                  const cumVal = cumulativeByMonth[i];
+                  const netVal = dsNetByMonth[i];
+                  return (
+                    <div style={{ position: "absolute", left: chartTip.x + 8, top: chartTip.y - 10, pointerEvents: "none", zIndex: 50, background: "rgba(6,14,28,0.96)", border: "1px solid rgba(91,143,204,0.4)", borderRadius: 6, padding: "6px 10px", fontSize: 10, color: "rgba(255,255,255,0.88)", fontFamily: INTER, minWidth: 120, boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
+                      <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 4, color: "rgba(91,143,204,0.9)" }}>{MNMS[i]} 2026</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 2 }}>
+                        <span style={{ color: "rgba(255,255,255,0.5)" }}>Net CF</span>
+                        <span style={{ fontWeight: 600, color: netVal >= 0 ? GREEN : "#ff6464", fontVariantNumeric: "tabular-nums" as const }}>{netVal >= 0 ? "+" : ""}{fmtD(netVal)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                        <span style={{ color: "rgba(255,255,255,0.5)" }}>Cumulative</span>
+                        <span style={{ fontWeight: 600, color: cumVal >= 0 ? GREEN : "#ff6464", fontVariantNumeric: "tabular-nums" as const }}>{cumVal >= 0 ? "+" : ""}{fmtD(cumVal)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
             {/* Chart 2: Liquidity Runway */}
-            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ padding: "8px 14px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Liquidity Runway</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: BLUE, display: "inline-block" }} /><span style={{ fontSize: 9, color: DIM }}>Cash balance</span></div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 14, borderTop: `2px dashed rgba(94,204,138,0.6)` }} /><span style={{ fontSize: 9, color: DIM }}>Reserve floor</span></div>
+            <div style={{ ...GI_CARD }}>
+              <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: INTER, fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(0,0%,88%)" }}>Liquidity Runway</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: "rgba(91,143,204,0.75)", display: "inline-block" }} /><span style={{ fontSize: 9, color: MUTED }}>Cash balance</span></div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ display: "inline-block", width: 12, borderTop: `1.5px dashed rgba(94,204,138,0.6)` }} /><span style={{ fontSize: 9, color: MUTED }}>Reserve floor</span></div>
                 </div>
               </div>
-              <div style={{ padding: "8px 0 4px" }}>
+              <div style={{ padding: "4px 0 2px", position: "relative" }}>
                 <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", height: "auto", display: "block" }}>
-                  {/* Floor dashed line */}
-                  <line x1={CPX} y1={runFloorY} x2={CW - CPX} y2={runFloorY} stroke="rgba(94,204,138,0.5)" strokeWidth={1.5} strokeDasharray="6 4" />
-                  {/* Fill */}
-                  <path d={runChartFill} fill="rgba(91,143,204,0.08)" />
-                  {/* Line */}
-                  <path d={runChartPath} fill="none" stroke={BLUE} strokeWidth={2} strokeLinejoin="round" />
-                  {/* Data points */}
-                  {runwayVals.map((v, i) => (
-                    <circle key={i} cx={rcx(i)} cy={rcy(v)} r={3} fill={v < liquidityReserve ? "#ff6464" : BLUE} opacity={0.85} />
-                  ))}
-                  {/* X-axis labels */}
+                  <defs>
+                    <linearGradient id="runBarGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(91,143,204,0.85)" />
+                      <stop offset="100%" stopColor="rgba(40,72,130,0.4)" />
+                    </linearGradient>
+                  </defs>
+                  {/* Y-axis grid */}
+                  {[0, 1, 2, 3, 4].map(i => {
+                    const v = runChartMin + (runChartRange / 4) * i;
+                    return <line key={i} x1={CPX} y1={rcy(v)} x2={CW - CPX} y2={rcy(v)} stroke="rgba(255,255,255,0.05)" strokeWidth={1} />;
+                  })}
+                  {/* Reserve floor fill (subtle green below floor line) */}
+                  <rect x={CPX} y={runFloorY} width={cPlotW} height={rcy(0) - runFloorY} fill="rgba(94,204,138,0.06)" />
+                  {/* Bars + hover targets */}
+                  {runwayVals.map((v, i) => {
+                    const barX = rcx(i) - RUN_BAR_W / 2;
+                    const barY = rcy(v);
+                    const barH = rcy(0) - barY;
+                    const isLow = i === runLowIdx;
+                    return (
+                      <g key={i} onMouseEnter={e => showTip("run", i, e)} onMouseLeave={hideTip} style={{ cursor: "crosshair" }}>
+                        <rect x={barX - 4} y={CPY} width={RUN_BAR_W + 8} height={cPlotH} fill="transparent" />
+                        <rect x={barX} y={barY} width={RUN_BAR_W} height={Math.max(barH, 1)} rx={2}
+                          fill={isLow ? "rgba(255,200,60,0.55)" : "url(#runBarGrad)"} />
+                      </g>
+                    );
+                  })}
+                  {/* Reserve floor dashed line */}
+                  <line x1={CPX} y1={runFloorY} x2={CW - CPX} y2={runFloorY} stroke="rgba(94,204,138,0.55)" strokeWidth={1.5} strokeDasharray="8 5" />
+                  {/* Low-point annotation callout */}
+                  <line x1={rcx(runLowIdx)} y1={rcy(runLowVal) - 3} x2={rcx(runLowIdx)} y2={rcy(runLowVal) - 20} stroke="rgba(255,200,60,0.45)" strokeWidth={1} strokeDasharray="3 2" />
+                  <rect x={rcx(runLowIdx) - 34} y={rcy(runLowVal) - 38} width={68} height={18} rx={3} fill="rgba(6,14,28,0.97)" stroke="rgba(255,200,60,0.5)" strokeWidth={1} />
+                  <text x={rcx(runLowIdx)} y={rcy(runLowVal) - 25} textAnchor="middle" fill={AMBER} fontSize={9} fontWeight={700} fontFamily="Inter,system-ui">{runLowFmt}</text>
+                  {/* Month labels */}
                   {MNMS.map((m, i) => (
-                    <text key={i} x={rcx(i)} y={CH - 2} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize={9} fontFamily="Inter,system-ui">{m}</text>
+                    <text key={i} x={rcx(i)} y={CH - 1} textAnchor="middle"
+                      fill={i === runLowIdx ? AMBER : "rgba(255,255,255,0.38)"}
+                      fontSize={7} fontFamily="Inter,system-ui">{m}</text>
                   ))}
-                  {/* Y-axis */}
-                  {[runChartMin, liquidityReserve, runChartMax].map((v, i) => (
-                    <text key={i} x={CPX - 4} y={rcy(v) + 4} textAnchor="end" fill={i === 1 ? "rgba(94,204,138,0.55)" : "rgba(255,255,255,0.28)"} fontSize={8} fontFamily="Inter,system-ui">{`$${Math.round(v/1000)}k`}</text>
+                  {/* Y-axis labels */}
+                  {[0, Math.round(runChartMax / 2), Math.round(runChartMax)].map((v, i) => (
+                    <text key={i} x={CPX - 3} y={rcy(v) + 3} textAnchor="end" fill="rgba(255,255,255,0.28)" fontSize={6.5} fontFamily="Inter,system-ui">{`$${Math.round(v/1000)}K`}</text>
                   ))}
+                  {/* Reserve floor label */}
+                  <text x={CPX - 3} y={runFloorY + 3} textAnchor="end" fill="rgba(94,204,138,0.55)" fontSize={6.5} fontFamily="Inter,system-ui">{`$${Math.round(liquidityReserve/1000)}K`}</text>
                 </svg>
-                <div style={{ padding: "4px 14px 8px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ display: "inline-block", width: 16, flexShrink: 0, borderTop: "1.5px dashed rgba(94,204,138,0.5)" }} />
-                  <span style={{ fontSize: 10, color: DIM }}><strong style={{ color: "rgba(94,204,138,0.7)" }}>Reserve floor {fmtD(liquidityReserve)}</strong> — 12 months core expenses. Balance above is deployable.</span>
-                </div>
+                {chartTip?.chart === "run" && (() => {
+                  const i = chartTip.idx;
+                  const bal = runwayVals[i];
+                  const aboveFloor = bal - liquidityReserve;
+                  return (
+                    <div style={{ position: "absolute", left: chartTip.x + 8, top: chartTip.y - 10, pointerEvents: "none", zIndex: 50, background: "rgba(6,14,28,0.96)", border: "1px solid rgba(91,143,204,0.4)", borderRadius: 6, padding: "6px 10px", fontSize: 10, color: "rgba(255,255,255,0.88)", fontFamily: INTER, minWidth: 130, boxShadow: "0 4px 16px rgba(0,0,0,0.5)" }}>
+                      <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 4, color: "rgba(91,143,204,0.9)" }}>{MNMS[i]} 2026</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 2 }}>
+                        <span style={{ color: "rgba(255,255,255,0.5)" }}>Balance</span>
+                        <span style={{ fontWeight: 600, color: BLUE, fontVariantNumeric: "tabular-nums" as const }}>{fmtD(bal)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 2 }}>
+                        <span style={{ color: "rgba(255,255,255,0.5)" }}>Reserve Floor</span>
+                        <span style={{ fontWeight: 600, color: GREEN, fontVariantNumeric: "tabular-nums" as const }}>{fmtD(liquidityReserve)}</span>
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 3, marginTop: 2, display: "flex", justifyContent: "space-between", gap: 12 }}>
+                        <span style={{ color: "rgba(255,255,255,0.5)" }}>{aboveFloor >= 0 ? "Surplus" : "Shortfall"}</span>
+                        <span style={{ fontWeight: 600, color: aboveFloor >= 0 ? GREEN : "#ff6464", fontVariantNumeric: "tabular-nums" as const }}>{aboveFloor >= 0 ? "+" : ""}{fmtD(aboveFloor)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
+            </div>{/* /charts-row */}
+
             {/* Quarterly Cash Balance Walk */}
-            <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "hidden" }}>
-              <div style={{ padding: "8px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 9 }}>
-                <div style={{ width: 3, height: 18, borderRadius: 2, background: BLUE, flexShrink: 0 }} />
-                <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(255,255,255,0.88)" }}>Cash Balance Walk</span>
-              </div>
-              <div style={{ overflowX: "auto" as const }}>
+            <div style={{ ...GI_CARD }}>
+              <div style={sectionHdr}>Cash Balance Walk</div>
+              <div style={{ overflowX: "auto" as const, overflowY: "auto" as const }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" as const, fontSize: 11 }}>
-                  <thead>
+                  <thead style={{ position: "sticky" as const, top: 0, zIndex: 20 }}>
                     <tr style={{ background: "rgba(91,143,204,0.13)", borderBottom: "1px solid rgba(91,143,204,0.22)" }}>
                       <th style={{ textAlign: "left" as const, padding: "7px 14px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)", width: 140 }}></th>
                       {qLabels.map((q, qi) => (
@@ -13111,19 +13331,49 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
               </div>
             </div>
 
+        </div>
+
+        {/* ── Upcoming Large Payments ── */}
+        <div style={{ ...GI_CARD, borderTop: `2px solid ${AMBER}` }}>
+          <div style={{ ...sectionHdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>Upcoming Large Payments</span>
+            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(255,200,60,0.55)", border: "1px solid rgba(255,200,60,0.2)", borderRadius: 3, padding: "2px 7px" }}>{upcomingPayments.length} scheduled</span>
           </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 0 }}>
+            {upcomingPayments.map((pmt, i) => {
+              const d = new Date(pmt.date as string);
+              const daysAway = Math.round((d.getTime() - DEMO_NOW.getTime()) / 86400000);
+              const urgent = daysAway <= 20;
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", borderRight: "1px solid rgba(255,255,255,0.05)", background: urgent ? "rgba(255,200,60,0.04)" : "transparent" }}>
+                  <div style={{ flexShrink: 0, width: 32, textAlign: "center" as const }}>
+                    <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: `rgba(255,200,60,${urgent ? 0.8 : 0.5})` }}>{format(d, "MMM")}</div>
+                    <div style={{ fontSize: 16, fontWeight: 300, lineHeight: 1.1, color: `rgba(255,200,60,${urgent ? 0.9 : 0.6})` }}>{format(d, "d")}</div>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: `rgba(255,255,255,${urgent ? 0.85 : 0.6})`, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{pmt.description}</div>
+                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.38)", marginTop: 2 }}>{pmt.category ?? "outflow"}</div>
+                  </div>
+                  <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 300, color: `rgba(255,200,60,${urgent ? 0.9 : 0.7})`, fontVariantNumeric: "tabular-nums" as const }}>{fmtD(Number(pmt.amount))}</div>
+                    <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: urgent ? "rgba(255,200,60,0.65)" : "rgba(255,255,255,0.25)", marginTop: 1 }}>{daysAway > 0 ? `${daysAway} DAYS` : "DUE TODAY"}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {upcomingPayments.length === 0 && <div style={{ padding: "20px 16px", fontSize: 12, color: "rgba(255,255,255,0.38)", textAlign: "center" as const }}>No large payments scheduled</div>}
         </div>
 
         {/* ── Section: Monthly Summary Model ── */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, padding: "8px 0 2px" }}>
-          <div style={{ width: 4, height: 26, background: "linear-gradient(to bottom,rgba(91,143,204,1),rgba(91,143,204,0.15))", borderRadius: 2, flexShrink: 0, boxShadow: "0 0 8px rgba(91,143,204,0.35)" }} />
-          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.82)", whiteSpace: "nowrap" }}>Monthly Summary Model</span>
-          <div style={{ flex: 1, height: 2, background: "linear-gradient(to right,rgba(91,143,204,0.35),rgba(91,143,204,0.08) 50%,transparent)", borderRadius: 1 }} />
-          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(91,143,204,0.5)", padding: "2px 8px", border: "1px solid rgba(91,143,204,0.18)", borderRadius: 3 }}>Jan – Dec 2026</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginTop: 8, marginBottom: 4 }}>
+          <div style={{ fontFamily: INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: GI_GREEN }}>Monthly Summary Model</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>JAN – DEC 2026</div>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
         </div>
-        <div style={{ background: DS_CARD, border: BORDER, borderRadius: 8, overflow: "auto" }}>
+        <div style={{ ...GI_CARD, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" as const, fontSize: 11, minWidth: 860 }}>
-            <thead>
+            <thead style={{ position: "sticky" as const, top: 0, zIndex: 20 }}>
               <tr style={{ background: "rgba(91,143,204,0.13)", borderBottom: "1px solid rgba(91,143,204,0.22)" }}>
                 <th style={{ textAlign: "left" as const, padding: "8px 14px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)", width: 150 }}></th>
                 {forecastData.map((d, i) => (
@@ -13903,7 +14153,7 @@ export default function ClientDashboard() {
           )}
           {guruIntelTab === "cfforecast" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", marginTop: 24 }}>
-              <CashFlowForecastWaterfallView assets={assets} cashFlows={cashFlows} />
+              <CashFlowForecastWaterfallView assets={assets} cashFlows={cashFlows} clientId={client.id} />
             </div>
           )}
         </div>

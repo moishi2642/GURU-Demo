@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+npm import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
 import { type Asset, type Liability, type CashFlow } from '@shared/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,5 +136,4 @@ export function CashFlowChart({ cashFlows }: { cashFlows: CashFlow[] }) {
         />
       </LineChart>
     </ResponsiveContainer>
-  );
-}
+  )
