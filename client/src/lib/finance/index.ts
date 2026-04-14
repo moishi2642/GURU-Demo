@@ -30,3 +30,6 @@ export * from "./balancesheet";
 
 // Monthly running balance simulation (computeMonthlyBalances)
 export * from "./balances";
+
+// Payroll deductions & gross-to-net salary (computeGrossToNet, monthlyNetSalary)
+export * from "./deductions";

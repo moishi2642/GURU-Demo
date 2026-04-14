@@ -6672,10 +6672,21 @@ function GuruAllocationView({
     proformaAnnualIncome: atProformaT,
     annualPickup:         returnPickupT,
   } = computeReturnOptimization(assets, cashFlows, taxProfile);
+  // Excess liquidity product options — AT yields computed from tax model (deriveTaxRates).
+  // Cresset Short Duration = equity/LTCG product → gross × (1 − ltcg rate)
+  // JPMorgan Treasury MMF  = treasury product   → gross × (1 − treasury rate, federal only)
+  // T-Bill Ladder          = treasury product   → gross × (1 − treasury rate, federal only)
+  const _exTax = deriveTaxRates(taxProfile);
+  const _cressetGross = 0.0610;  // 6.10% gross — Cresset Short Duration equity strategy
+  const _jpmGross     = 0.0430;  // 4.30% gross — JPMorgan 100% Treasury MMF
+  const _tbillGross   = 0.0422;  // 4.22% gross — US Treasury Ladder 1–6 Month
+  const _cressetAT    = _cressetGross * (1 - _exTax.ltcg);      // 6.10% × (1−0.20) = 4.88% AT
+  const _jpmAT        = _jpmGross    * (1 - _exTax.treasury);   // 4.30% × (1−0.35) = 2.80% AT
+  const _tbillAT      = _tbillGross  * (1 - _exTax.treasury);   // 4.22% × (1−0.35) = 2.74% AT
   const excessProdsT = [
-    { name: "Cresset Short Duration", risk: "Low risk", grossYield: "6.10%", atYield: "5.40%", annualIncome: Math.round(totalExcessT * 0.054), liquidity: "Daily liquidity · small NAV movement", rec: true },
-    { name: "JPMorgan 100% Treasuries MMF", risk: "Zero risk", grossYield: "4.30%", atYield: "2.80%", annualIncome: Math.round(totalExcessT * 0.028), liquidity: "Same-day liquidity · stable NAV", rec: false },
-    { name: "US Treasury Ladder 1–6 Month", risk: "Zero risk", grossYield: "4.22%", atYield: "2.74%", annualIncome: Math.round(totalExcessT * 0.0274), liquidity: "Holds to maturity · full capital return", rec: false },
+    { name: "Cresset Short Duration", risk: "Low risk", grossYield: `${(_cressetGross*100).toFixed(2)}%`, atYield: `${(_cressetAT*100).toFixed(2)}%`, annualIncome: Math.round(totalExcessT * _cressetAT), liquidity: "Daily liquidity · small NAV movement", rec: true },
+    { name: "JPMorgan 100% Treasuries MMF", risk: "Zero risk", grossYield: `${(_jpmGross*100).toFixed(2)}%`, atYield: `${(_jpmAT*100).toFixed(2)}%`, annualIncome: Math.round(totalExcessT * _jpmAT), liquidity: "Same-day liquidity · stable NAV", rec: false },
+    { name: "US Treasury Ladder 1–6 Month", risk: "Zero risk", grossYield: `${(_tbillGross*100).toFixed(2)}%`, atYield: `${(_tbillAT*100).toFixed(2)}%`, annualIncome: Math.round(totalExcessT * _tbillAT), liquidity: "Holds to maturity · full capital return", rec: false },
   ];
 
   return (

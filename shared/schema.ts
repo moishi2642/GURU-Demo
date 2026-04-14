@@ -99,24 +99,47 @@ export const strategies = pgTable("strategies", {
 // Stores the client's tax situation so yield and return calculations are
 // client-specific rather than hardcoded constants.
 //
-// This replaces the hardcoded BANK_TAX, TREAS_TAX, LTCG_TAX constants
-// and the PROFORMA_AT object in client-dashboard.tsx.
+// ── Tax rate structure (mirrors BB6-BB15 in Prototype_Model_v4.xlsx) ─────────
 //
-// combinedOrdinaryRate   = federalOrdinaryRate + stateLocalRate  (e.g. 0.47 for NYC)
-// treasuryTaxRate        = federalOrdinaryRate only — US Treasuries are exempt
-//                          from state/local income tax
-// ltcgRate               = long-term capital gains rate (federal)
+// COMPONENT RATES (inputs — one place to change, everything else derives from here):
+//   federalRate  — federal marginal ordinary income rate      (e.g. 0.35 for Kessler)
+//   stateRate    — state income tax rate                       (e.g. 0.08 for NY)
+//   cityRate     — local/city income tax rate                  (e.g. 0.04 for NYC)
+//   ltcgRate     — long-term capital gains rate (federal)      (e.g. 0.20)
+//
+// DERIVED RATES (calculated, never input separately):
+//   combinedOrdinaryRate = federalRate + stateRate + cityRate  (e.g. 0.47)
+//   treasuryTaxRate      = federalRate only                    (e.g. 0.35)
+//     → US Treasuries are exempt from state AND city income tax
+//   muniRate             = 0.00 for in-state munis             (triple tax-exempt)
+//     → Municipal bonds exempt from federal + state + city tax
+//
+// PRODUCT TAX ASSIGNMENT:
+//   Bank deposits / MMA:         combinedOrdinaryRate  (all jurisdictions)
+//   Treasury MMFs / T-bills:     treasuryTaxRate       (federal only)
+//   In-state muni bonds:         muniRate = 0%         (triple exempt)
+//   Equities / ETFs / PE:        ltcgRate              (long-term capital gains)
 
 export const clientTaxProfiles = pgTable("client_tax_profiles", {
   id:                    serial("id").primaryKey(),
   clientId:              integer("client_id").notNull().references(() => clients.id),
-  filingStatus:          text("filing_status").notNull(),        // "married_filing_jointly" | "single" | "head_of_household"
-  taxJurisdiction:       text("tax_jurisdiction").notNull(),     // "NYC" | "CA" | "TX" | etc.
-  federalOrdinaryRate:   numeric("federal_ordinary_rate").notNull(), // e.g. "0.37"
-  stateLocalRate:        numeric("state_local_rate").notNull(),      // e.g. "0.10"
-  combinedOrdinaryRate:  numeric("combined_ordinary_rate").notNull(),// e.g. "0.47"
-  treasuryTaxRate:       numeric("treasury_tax_rate").notNull(),     // e.g. "0.35" (federal only)
-  ltcgRate:              numeric("ltcg_rate").notNull(),             // e.g. "0.20"
+  filingStatus:          text("filing_status").notNull(),     // "married_filing_jointly" | "single" | "head_of_household"
+  taxJurisdiction:       text("tax_jurisdiction").notNull(),  // "NYC" | "CA" | "TX" | etc.
+
+  // ── Component rates (source of truth) ────────────────────────────────────
+  federalRate:           numeric("federal_rate").notNull(),   // e.g. "0.35" — federal ordinary income
+  stateRate:             numeric("state_rate").notNull(),     // e.g. "0.08" — NY state income tax
+  cityRate:              numeric("city_rate").notNull(),      // e.g. "0.04" — NYC local income tax
+  ltcgRate:              numeric("ltcg_rate").notNull(),      // e.g. "0.20" — long-term capital gains
+
+  // ── Derived rates (computed from components, stored for query convenience) ─
+  // combinedOrdinaryRate = federalRate + stateRate + cityRate
+  combinedOrdinaryRate:  numeric("combined_ordinary_rate").notNull(), // e.g. "0.47"
+  // treasuryTaxRate = federalRate only (state+city exempt for US Treasuries)
+  treasuryTaxRate:       numeric("treasury_tax_rate").notNull(),      // e.g. "0.35"
+  // muniRate = 0.00 for in-state munis (triple tax-exempt)
+  muniRate:              numeric("muni_rate").notNull(),               // e.g. "0.00"
+
   createdAt:             timestamp("created_at").defaultNow(),
 });
 

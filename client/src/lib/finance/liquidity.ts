@@ -32,6 +32,7 @@
 
 import type { Asset, CashFlow } from "@shared/schema";
 import { computeCumulativeNCF, CF_MONTHS } from "./cashflow";
+import { isOperatingCash, isLiquidityReserve, isCapitalBuild } from "./buckets";
 
 export function computeLiquidityTargets(
   assets: Asset[],
@@ -55,24 +56,12 @@ export function computeLiquidityTargets(
   monthlyRate:             number;
   coverageMonths:          number;
 } {
-  // ── Account groupings ──────────────────────────────────────────────────────
-  // Operating Cash: checking accounts — instant same-day liquidity, no yield
-  const operatingCash = assets
-    .filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"))
-    .reduce((s, a) => s + Number(a.value), 0);
-
-  // Liquidity Reserve: bank deposit products (savings, money market)
-  // same-day to T+1, FDIC-insured, yield-optimized
-  const liquidityReserve = assets
-    .filter(a => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking"))
-    .reduce((s, a) => s + Number(a.value), 0);
-
-  // Capital Build: investment-grade short-duration market instruments —
-  // Treasuries, T-bills, money market funds, CDs, munis, short-duration fixed income.
-  // Excludes retirement accounts (401k, IRA, Roth) which are long-horizon, illiquid.
-  const capitalBuild = assets
-    .filter(a => a.type === "fixed_income" && !/401|ira|roth/i.test(a.description ?? ""))
-    .reduce((s, a) => s + Number(a.value), 0);
+  // ── Account groupings — single source of truth via buckets.ts predicates ───
+  // Classification logic lives ONLY in isOperatingCash / isLiquidityReserve / isCapitalBuild.
+  // Do not inline string-matching here — always call the shared predicates.
+  const operatingCash    = assets.filter(isOperatingCash).reduce((s, a) => s + Number(a.value), 0);
+  const liquidityReserve = assets.filter(isLiquidityReserve).reduce((s, a) => s + Number(a.value), 0);
+  const capitalBuild     = assets.filter(isCapitalBuild).reduce((s, a) => s + Number(a.value), 0);
 
   const totalLiquid = operatingCash + liquidityReserve + capitalBuild;
 

@@ -192,38 +192,119 @@ export function formatAfterTaxYield(atYield: number | null): string | null {
 // NOTE: muniRate is 0 for in-state munis and should come from the DB once
 // client_tax_profiles adds a muni_rate column (currently missing — TODO).
 
-// ── Hardcoded fallback rates (Kessler — NYC resident) ────────────────────────
-// These are clearly labeled as defaults and should be read from DB when available.
-export const BANK_TAX       = 0.47;    // 47% — NYC combined: federal (35%) + state (8%) + city (4%)
-export const TREAS_TAX      = 0.35;    // 35% — federal only; treasury securities state/city exempt
-export const LTCG_TAX       = 0.20;    // 20% — long-term capital gains
-export const MUNI_TAX       = 0.00;    // 0%  — in-state muni bonds (triple tax-exempt)
+// ── Fallback tax rates (Kessler — NYC, married filing jointly) ────────────────
+// Source: Prototype_Model_v4.xlsx → Cash Flow tab BB6:BB15
+// Used ONLY when taxProfile is not available from the DB.
+// In production, always read from clientTaxProfiles (federalRate, stateRate, cityRate, etc.)
+//
+// COMPONENT RATES:
+export const FEDERAL_RATE   = 0.35;    // 35% — federal ordinary income (BB8)
+export const STATE_RATE     = 0.08;    // 8%  — NY state income tax      (BB7)
+export const CITY_RATE      = 0.04;    // 4%  — NYC city income tax       (BB6)
+export const LTCG_RATE      = 0.20;    // 20% — long-term capital gains   (BB15)
+//
+// DERIVED RATES (= formula, not separate inputs):
+export const BANK_TAX       = FEDERAL_RATE + STATE_RATE + CITY_RATE; // 0.47 = combined ordinary (BB9)
+export const TREAS_TAX      = FEDERAL_RATE;                           // 0.35 = federal only (state/city exempt)
+export const MUNI_TAX       = 0.00;    // 0%  — in-state munis, triple tax-exempt
+export const LTCG_TAX       = LTCG_RATE; // alias for backward compat
+
 export const INVEST_GROSS   = 0.10;    // 10% — assumed gross investment portfolio return
 export const CHECKING_GROSS = 0.0001;  // 0.01% — actual checking yield (effectively 0)
 
-// ── Tax rates by instrument type ──────────────────────────────────────────────
-// PROFORMA_AT: the after-tax yields of the BEST available product per bucket.
-// These represent the income opportunity benchmark ("what you could earn").
-// Gross rates come from actual product data; tax rates from the client's profile.
-// TODO: gross rates should come from a product catalog table in the DB.
-export const PROFORMA_AT = {
-  checking: 0.0228, // CIT Money Market: 4.30% gross × (1 − 47%) = 2.28% AT
-  reserve:  0.0280, // JPMorgan 100% Treasuries MMF: 4.30% × (1 − 35%) = 2.80% AT
-  capital:  0.0520, // S&P Low Volatility Index: 6.50% × (1 − 20% LTCG) = 5.20% AT (highest Build)
-  equity:   INVEST_GROSS * (1 - LTCG_TAX), // 8.00% AT — unchanged, already invested
+// ── deriveTaxRates ────────────────────────────────────────────────────────────
+// Single function to derive all effective tax rates from a client's tax profile.
+// This is the one place that implements: combined = fed + state + city,
+// treasury = fed only, muni = 0.
+// All other functions call this — never derive rates inline.
+export interface EffectiveTaxRates {
+  federal:    number;  // federal ordinary income rate (e.g. 0.35)
+  state:      number;  // state income tax rate        (e.g. 0.08)
+  city:       number;  // city/local income tax rate   (e.g. 0.04)
+  combined:   number;  // bank/MMA: fed+state+city     (e.g. 0.47) — all jurisdictions tax
+  treasury:   number;  // treasury: fed only           (e.g. 0.35) — state+city exempt
+  muni:       number;  // muni bonds: 0%              (e.g. 0.00) — triple tax-exempt
+  ltcg:       number;  // long-term capital gains      (e.g. 0.20)
+}
+
+export function deriveTaxRates(taxProfile?: ClientTaxProfile | null): EffectiveTaxRates {
+  if (taxProfile) {
+    const federal  = Number(taxProfile.federalRate ?? FEDERAL_RATE);
+    const state    = Number(taxProfile.stateRate   ?? 0);
+    const city     = Number(taxProfile.cityRate    ?? 0);
+    const ltcg     = Number(taxProfile.ltcgRate    ?? LTCG_RATE);
+    const muni     = Number(taxProfile.muniRate    ?? 0);
+    return {
+      federal,
+      state,
+      city,
+      combined:  Number(taxProfile.combinedOrdinaryRate ?? (federal + state + city)),
+      treasury:  Number(taxProfile.treasuryTaxRate      ?? federal),
+      muni,
+      ltcg,
+    };
+  }
+  // Fallback: Kessler defaults
+  return {
+    federal:  FEDERAL_RATE,
+    state:    STATE_RATE,
+    city:     CITY_RATE,
+    combined: BANK_TAX,
+    treasury: TREAS_TAX,
+    muni:     MUNI_TAX,
+    ltcg:     LTCG_RATE,
+  };
+}
+
+// ── computeProformaATYields ───────────────────────────────────────────────────
+// Best available product yields per bucket, CALCULATED from tax rates.
+// Gross product yields sourced from OPTIMIZER tab of Prototype_Model_v4.xlsx:
+//   Checking / MMA (bank deposit):  CIT Money Market Fund         4.31% gross
+//   Reserve (treasury MMF):         JPMorgan 100% Treasury MMF    4.30% gross
+//   Capital Build (equity index):   Growth equity market ETFs     7.00% gross
+//   Equity portfolio:               Diversified growth portfolio   10.0% gross
+//
+// AT yield = gross × (1 − applicable_tax_rate)
+// Tax rates come from deriveTaxRates() — one source of truth.
+export interface ProformaATYields {
+  checking: number;  // bank deposit AT yield
+  reserve:  number;  // treasury MMF AT yield
+  capital:  number;  // equity index AT yield
+  equity:   number;  // diversified portfolio AT yield
+}
+
+export const PROFORMA_GROSS = {
+  checking: 0.0431,  // CIT Money Market Fund (OPTIMIZER AW24)
+  reserve:  0.0430,  // JPMorgan 100% Treasury MMF (OPTIMIZER AW25)
+  capital:  0.0700,  // Growth equity market ETFs (OPTIMIZER AW27)
+  equity:   INVEST_GROSS, // 10.0% assumed gross portfolio return
 } as const;
 
+export function computeProformaATYields(taxProfile?: ClientTaxProfile | null): ProformaATYields {
+  const r = deriveTaxRates(taxProfile);
+  return {
+    checking: PROFORMA_GROSS.checking * (1 - r.combined),  // bank deposit: all jurisdictions
+    reserve:  PROFORMA_GROSS.reserve  * (1 - r.treasury),  // treasury MMF: federal only
+    capital:  PROFORMA_GROSS.capital  * (1 - r.ltcg),      // equity index: LTCG rate
+    equity:   PROFORMA_GROSS.equity   * (1 - r.ltcg),      // portfolio: LTCG rate
+  };
+}
+
+// Legacy constant — kept for backward compat with callers not yet updated.
+// New code should call computeProformaATYields(taxProfile) instead.
+export const PROFORMA_AT = computeProformaATYields(null);
+
 // ── Per-account yield lookup map (current holdings) ───────────────────────────
-// Maps asset descriptions to their actual gross yield and applicable tax keep-rate.
-// keepRate = (1 − effectiveTaxRate).
+// Maps asset descriptions → actual gross yield and applicable keep-rate.
+// keepRate = (1 − effectiveTaxRate) using the correct jurisdiction for each product type.
 // Used by liquidAssetYields() to compute weighted AT yields across a bucket.
 export const LIQUID_YIELD_MAP: Array<{ test: (d: string) => boolean; pretax: number; keepRate: number }> = [
-  { test: d => d.includes("capital one") || d.includes("360 performance"),                       pretax: 3.78, keepRate: 1 - BANK_TAX  },  // bank deposit
-  { test: d => d.includes("citizens") && d.includes("money market"),                             pretax: 3.65, keepRate: 1 - BANK_TAX  },  // bank deposit
-  { test: d => d.includes("fidelity") && (d.includes("money market") || d.includes("spaxx") || d.includes("cash sweep")), pretax: 2.50, keepRate: 1 - TREAS_TAX }, // treasury MMF
-  { test: d => d.includes("treasur") || d.includes("t-bill"),                                    pretax: 3.95, keepRate: 1 - TREAS_TAX },  // direct treasury
-  { test: d => d.includes("muni"),                                                                pretax: 3.50, keepRate: 1 - MUNI_TAX  },  // muni bond (triple exempt)
-  { test: d => d.includes("checking"),                                                            pretax: 0.01, keepRate: 1 - BANK_TAX  },  // checking (effectively 0)
+  { test: d => d.includes("capital one") || d.includes("360 performance"),  pretax: 3.78, keepRate: 1 - BANK_TAX  },  // bank deposit (combined rate)
+  { test: d => d.includes("citizens") && d.includes("money market"),        pretax: 3.65, keepRate: 1 - BANK_TAX  },  // bank deposit (combined rate)
+  { test: d => d.includes("fidelity") && (d.includes("money market") || d.includes("spaxx") || d.includes("cash sweep")), pretax: 2.50, keepRate: 1 - TREAS_TAX }, // treasury MMF (fed only)
+  { test: d => d.includes("treasur") || d.includes("t-bill"),               pretax: 3.95, keepRate: 1 - TREAS_TAX },  // direct treasury (fed only)
+  { test: d => d.includes("muni"),                                           pretax: 3.50, keepRate: 1 - MUNI_TAX  },  // muni bond (triple exempt = 0%)
+  { test: d => d.includes("checking"),                                       pretax: 0.01, keepRate: 1 - BANK_TAX  },  // checking (combined rate)
 ];
 
 export interface ReturnAccountDetail {
@@ -293,16 +374,12 @@ export function computeReturnOptimization(assets: Asset[], cashFlows?: CashFlow[
   proformaAnnualIncome: number;
   annualPickup:         number;
 } {
-  // Derive tax rates from DB profile if available; fall back to hardcoded constants
-  const bankTax  = taxProfile ? Number(taxProfile.combinedOrdinaryRate) : BANK_TAX;
-  const treasTax = taxProfile ? Number(taxProfile.treasuryTaxRate)      : TREAS_TAX;
-  const ltcgTax  = taxProfile ? Number(taxProfile.ltcgRate)             : LTCG_TAX;
-  const proformaAT = {
-    checking: 0.0430 * (1 - bankTax),       // CIT Money Market: 4.30% gross
-    reserve:  0.0430 * (1 - treasTax),      // JPMorgan Treasuries MMF: 4.30% gross
-    capital:  0.0650 * (1 - ltcgTax),       // S&P Low Vol Index: 6.50% gross
-    equity:   INVEST_GROSS * (1 - ltcgTax), // Portfolio: 10% gross
-  };
+  // All tax rates derived from one source of truth — deriveTaxRates()
+  const tax = deriveTaxRates(taxProfile);
+  const proformaAT = computeProformaATYields(taxProfile);
+  const bankTax  = tax.combined;
+  const treasTax = tax.treasury;
+  const ltcgTax  = tax.ltcg;
 
   const accounts: ReturnAccountDetail[] = [];
 

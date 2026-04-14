@@ -802,8 +802,13 @@ async function seedDatabase() {
     const d = monthDate(y, m);
 
     // ── Recurring monthly income ──────────────────────────────────────────
-    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary",      amount: "13302.50", date: d, description: "Michael — Net Monthly Salary" });
-    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary",      amount: "5511.03",  date: d, description: "Sarah — Net Monthly Salary" });
+    // Net monthly salary — computed by computeGrossToNet() in lib/finance/deductions.ts
+    // Michael: $350K gross salary → 401K $23K + health $15K pre-tax → taxable $312K
+    //   income taxes (35%+8%+4%) + SS cap $9,932 + Medicare 2.45% → net $146,853/yr ÷ 12 = $12,238/mo
+    // Sarah:   $145K gross salary → 401K $23K + health $15K pre-tax → taxable $107K
+    //   income taxes (35%+8%+4%) + SS $8,990 + Medicare 2.45% → net $44,168/yr ÷ 12 = $3,681/mo
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary",      amount: "12238", date: d, description: "Michael — Net Monthly Salary" });
+    cfBatch.push({ clientId: c1.id, type: "inflow", category: "salary",      amount: "3681",  date: d, description: "Sarah — Net Monthly Salary" });
     cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "2100",     date: d, description: "Investment Property Rental Income" });
     cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "388",      date: d, description: "Reserve MMF & Savings Interest" });
 
@@ -858,8 +863,13 @@ async function seedDatabase() {
     }
     // ── December: year-end bonuses + all annual one-time expenses ─────────
     if (m === 12) {
-      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus",       amount: "191555.94", date: d, description: "Partner 1 Year-End Bonus" });
-      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus",       amount: "25084.71",  date: d, description: "Partner 2 Year-End Bonus" });
+      // Net year-end bonuses — computed by computeGrossToNet() in lib/finance/deductions.ts
+      // Michael: $420K gross bonus → 401K/health maxed from salary → taxable $420K
+      //   income taxes (35%+8%+4%) on full $420K + SS $0 (cap hit on salary) + Medicare $10,290 = $207,690 ded → net $212,310
+      // Sarah:   $55K gross bonus  → 401K/health maxed from salary → taxable $55K
+      //   income taxes (35%+8%+4%) on full $55K + SS $942 (remaining cap) + Medicare $1,348 = $28,140 ded → net $26,860
+      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus",       amount: "212310", date: d, description: "Partner 1 Year-End Bonus" });
+      cfBatch.push({ clientId: c1.id, type: "inflow", category: "bonus",       amount: "26860",  date: d, description: "Partner 2 Year-End Bonus" });
       cfBatch.push({ clientId: c1.id, type: "inflow", category: "investments", amount: "22333",     date: d, description: "Year-End Investment Distributions & Interest" });
       cfBatch.push({ clientId: c1.id, type: "outflow", category: "education", amount: "15000",   date: d, description: "Private School Tuition — December Installment" });
       // One golf dues entry only — $4,102.30 per Excel (single December row)
@@ -877,22 +887,39 @@ async function seedDatabase() {
   await storage.setOnboardingComplete(c1.id, true);
   console.log("[seed] Kessler seeded and marked onboarding complete");
 
+  // ── Inline migration: add component tax rate columns if not present ────────
+  // New schema adds federalRate/stateRate/cityRate/muniRate columns.
+  // ALTER TABLE ADD COLUMN IF NOT EXISTS is idempotent and safe to run repeatedly.
+  await queryWithRetry(`ALTER TABLE client_tax_profiles ADD COLUMN IF NOT EXISTS federal_rate NUMERIC`);
+  await queryWithRetry(`ALTER TABLE client_tax_profiles ADD COLUMN IF NOT EXISTS state_rate NUMERIC`);
+  await queryWithRetry(`ALTER TABLE client_tax_profiles ADD COLUMN IF NOT EXISTS city_rate NUMERIC`);
+  await queryWithRetry(`ALTER TABLE client_tax_profiles ADD COLUMN IF NOT EXISTS muni_rate NUMERIC`);
+
   // ── Seed: Client Tax Profile ────────────────────────────────────────────────
-  // Kessler: NYC resident, married filing jointly
-  // Federal ordinary: 37% | State+local: 10% | Combined: 47%
-  // Treasury tax: 35% (federal only — US Treasuries exempt from NY state tax)
-  // Long-term capital gains: 20%
   await queryWithRetry(`DELETE FROM client_tax_profiles WHERE client_id = $1`, [c1.id]);
+  // ── Tax rates (Kessler — married filing jointly, NYC resident) ─────────────
+  // Source: Prototype_Model_v4.xlsx, Cash Flow tab BB6:BB15
+  //
+  // COMPONENT RATES (inputs):
+  //   Federal ordinary income: 35%  (BB8 — effective marginal rate used in model)
+  //   NY State income tax:      8%  (BB7)
+  //   NYC city income tax:      4%  (BB6)
+  //   Long-term capital gains: 20%  (BB15)
+  //
+  // DERIVED RATES (formula, not inputs):
+  //   Combined (bank/MMA):     47%  = 35% + 8% + 4%        (BB9 — all jurisdictions)
+  //   Treasury MMFs / T-bills: 35%  = federal only          (state + city exempt)
+  //   Muni bonds (in-state):    0%  = triple tax-exempt     (fed + state + city all exempt)
   await queryWithRetry(`
     INSERT INTO client_tax_profiles
       (client_id, filing_status, tax_jurisdiction,
-       federal_ordinary_rate, state_local_rate, combined_ordinary_rate,
-       treasury_tax_rate, ltcg_rate)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       federal_rate, state_rate, city_rate, ltcg_rate,
+       combined_ordinary_rate, treasury_tax_rate, muni_rate)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
   `, [c1.id, "married_filing_jointly", "NYC",
-      "0.37", "0.10", "0.47",
-      "0.35", "0.20"]);
-  console.log("[seed] Kessler tax profile seeded");
+      "0.35", "0.08", "0.04", "0.20",          // component rates
+      "0.47", "0.35", "0.00"]);                 // derived: 0.35+0.08+0.04, fed only, exempt
+  console.log("[seed] Kessler tax profile seeded (federal=35%, state=8%, city=4%, LTCG=20%)");
 
   // ── Seed: Asset Returns ─────────────────────────────────────────────────────
   // These map asset description substrings → performance/yield display labels.
