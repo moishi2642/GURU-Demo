@@ -3341,6 +3341,32 @@ function WfLabel(props: {
   );
 }
 
+// ── CF_PL_ROWS — DB-to-PLRowDef converter ─────────────────────────────────────
+// Converts cfCategoryRules from the database into PLRowDef[] format.
+// This is the bridge between the new DB-driven architecture and the existing
+// rendering logic, so we don't have to rewrite every render site at once.
+//
+// When cfCategoryRules is populated (post-refactor), this produces the rows.
+// When it's empty (e.g. before first seed), CF_PL_ROWS fallback is used.
+function cfRulesToPLRows(rules: CfCategoryRule[]): PLRowDef[] {
+  return rules.map(r => {
+    const descs = (r.matchDescs as string[] | null) ?? [];
+    const sumOf = (r.sumOf as string[] | null) ?? undefined;
+    switch (r.kind) {
+      case "row":
+        return { key: r.key, kind: "item" as const, label: r.label, descs };
+      case "total":
+        return { key: r.key, kind: "total" as const, label: r.label, sumOf, accent: (r.accent === "blue" ? "green" : r.accent ?? "green") as "green" | "amber" };
+      case "subtotal":
+        return { key: r.key, kind: "subtotal" as const, label: r.label, sumOf };
+      case "section":
+        return { key: r.key, kind: "group" as const, label: r.label };
+      default:
+        return { key: r.key, kind: "group" as const, label: r.label };
+    }
+  });
+}
+
 type PLRowDef =
   | { key: string; kind: "group";    label: string }
   | { key: string; kind: "item";     label: string; descs: string[]; renderAs?: "subtotal" }
@@ -3558,9 +3584,15 @@ function CashFlowForecastView({
   const { reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
   const startBalance = cfOperatingCash;
 
+  // Use DB-driven P&L row definitions when available; fall back to CF_PL_ROWS constant
+  const { cfCategoryRules } = useClientConfig();
+  const PL_ROWS: PLRowDef[] = cfCategoryRules.length > 0
+    ? cfRulesToPLRows(cfCategoryRules)
+    : CF_PL_ROWS;
+
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
-    for (const row of CF_PL_ROWS) {
+    for (const row of PL_ROWS) {
       if (row.kind === "group") init[row.key] = true;
     }
     return init;
@@ -3604,7 +3636,7 @@ function CashFlowForecastView({
 
   const vals: Record<string, number[]> = {};
   // Pass 1: items and subtotals (totals with compute= are deferred to pass 2)
-  for (const row of CF_PL_ROWS) {
+  for (const row of PL_ROWS) {
     if (row.kind === "item") {
       // Reserve interest overridden by asset-forecast model so both tabs tie to the same numbers
       if (row.key === "reserve_int") {
@@ -3628,13 +3660,13 @@ function CashFlowForecastView({
   }
 
   const inflowByMonth = CF_MONTHS.map((_, mi) =>
-    CF_PL_ROWS.filter((r) => r.kind === "item").reduce(
+    PL_ROWS.filter((r) => r.kind === "item").reduce(
       (s, r) => s + Math.max(0, vals[r.key]?.[mi] ?? 0),
       0,
     ),
   );
   const outflowByMonth = CF_MONTHS.map((_, mi) =>
-    CF_PL_ROWS.filter((r) => r.kind === "item").reduce(
+    PL_ROWS.filter((r) => r.kind === "item").reduce(
       (s, r) => s + Math.min(0, vals[r.key]?.[mi] ?? 0),
       0,
     ),
@@ -3650,7 +3682,7 @@ function CashFlowForecastView({
     Math.max(0, Math.abs(outflowByMonth[mi] ?? 0) - (coreOutflowByMonth[mi] ?? 0))
   );
   const netByMonth = CF_MONTHS.map((_, mi) =>
-    CF_PL_ROWS.filter((r) => r.kind === "item").reduce(
+    PL_ROWS.filter((r) => r.kind === "item").reduce(
       (s, r) => s + (vals[r.key]?.[mi] ?? 0),
       0,
     ),
@@ -4711,7 +4743,7 @@ function CashFlowForecastView({
                       ))}
                     </div>
                     <div style={{ minWidth: tableView==="mo" ? 1000 : "auto" }}>
-                      {CF_PL_ROWS.map((row) => {
+                      {PL_ROWS.map((row) => {
                         if(row.kind==="group") return (
                           <div key={row.key} style={{ display:"grid", gridTemplateColumns:gridTpl }}>
                             <div style={{ gridColumn:`1 / ${nCols+2}`, padding:"10px 0 0", borderBottom:"none" }} />
@@ -5708,6 +5740,8 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
 // LiquidityWaterfallView. Every line item auditable against live cashflow data.
 // ─────────────────────────────────────────────────────────────────────────────
 function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const { cfCategoryRules } = useClientConfig();
+  const PL_ROWS: PLRowDef[] = cfCategoryRules.length > 0 ? cfRulesToPLRows(cfCategoryRules) : CF_PL_ROWS;
   const MO = CF_MONTHS.map(m => m.label);
 
   // ── Interest income from Asset Forecast model ──────────────────────────────
@@ -5730,7 +5764,7 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
 
   const vals: Record<string, number[]> = {};
 
-  for (const row of CF_PL_ROWS) {
+  for (const row of PL_ROWS) {
     if (row.kind === "item") {
       // Reserve interest row is overridden with model-computed bucket After-Tax interest
       if (row.key === "reserve_int") {
@@ -5756,7 +5790,7 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
   }
 
   // Compute special derived totals
-  const itemRows = CF_PL_ROWS.filter(r => r.kind === "item");
+  const itemRows = PL_ROWS.filter(r => r.kind === "item");
   const netByMonth     = CF_MONTHS.map((_, mi) =>
     itemRows.reduce((s, r) => s + (vals[r.key]?.[mi] ?? 0), 0));
   const outflowByMonth = CF_MONTHS.map((_, mi) =>
@@ -5764,7 +5798,7 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
   const cumByMonth     = netByMonth.reduce<number[]>((acc, v, i) => {
     acc.push((acc[i - 1] ?? 0) + v); return acc; }, []);
 
-  for (const row of CF_PL_ROWS) {
+  for (const row of PL_ROWS) {
     if (row.kind === "total" && row.compute) {
       if      (row.compute === "outflow")    vals[row.key] = outflowByMonth;
       else if (row.compute === "net")        vals[row.key] = netByMonth;
@@ -5991,7 +6025,7 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
             </tr>
           </thead>
           <tbody>
-            {CF_PL_ROWS.map(row => renderRow(row))}
+            {PL_ROWS.map(row => renderRow(row))}
           </tbody>
         </table>
       </div>
@@ -8126,7 +8160,8 @@ function DetailsView({
 
 // ─── Cash Flow Advisor View ───────────────────────────────────────────────────
 function CashFlowAdvisorView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
-  const { taxProfile } = useClientConfig();
+  const { taxProfile, cfCategoryRules } = useClientConfig();
+  const PL_ROWS: PLRowDef[] = cfCategoryRules.length > 0 ? cfRulesToPLRows(cfCategoryRules) : CF_PL_ROWS;
   const FONT  = "'Inter', system-ui, sans-serif";
   const SERIF = "'Playfair Display', Georgia, serif";
   const BG    = "hsl(220,5%,93%)";
@@ -8146,7 +8181,7 @@ function CashFlowAdvisorView({ assets, cashFlows }: { assets: Asset[]; cashFlows
   }
 
   const vals: Record<string, number[]> = {};
-  for (const row of CF_PL_ROWS) {
+  for (const row of PL_ROWS) {
     if (row.kind === "item") {
       vals[row.key] = CF_MONTHS.map(m => monthVal(row.descs as string[], m.year, m.month));
     } else if (row.kind === "subtotal") {
@@ -8160,9 +8195,9 @@ function CashFlowAdvisorView({ assets, cashFlows }: { assets: Asset[]; cashFlows
     }
   }
 
-  const inflowByMonth  = CF_MONTHS.map((_, mi) => CF_PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + Math.max(0, vals[r.key]?.[mi] ?? 0), 0));
-  const outflowByMonth = CF_MONTHS.map((_, mi) => CF_PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + Math.min(0, vals[r.key]?.[mi] ?? 0), 0));
-  const netByMonth     = CF_MONTHS.map((_, mi) => CF_PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + (vals[r.key]?.[mi] ?? 0), 0));
+  const inflowByMonth  = CF_MONTHS.map((_, mi) => PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + Math.max(0, vals[r.key]?.[mi] ?? 0), 0));
+  const outflowByMonth = CF_MONTHS.map((_, mi) => PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + Math.min(0, vals[r.key]?.[mi] ?? 0), 0));
+  const netByMonth     = CF_MONTHS.map((_, mi) => PL_ROWS.filter(r => r.kind === "item").reduce((s, r) => s + (vals[r.key]?.[mi] ?? 0), 0));
   const cumulativeByMonth = netByMonth.reduce<number[]>((acc, v, i) => { acc.push((acc[i - 1] ?? 0) + v); return acc; }, []);
 
   // Fill compute= total rows
@@ -8342,7 +8377,7 @@ function CashFlowAdvisorView({ assets, cashFlows }: { assets: Asset[]; cashFlows
                 </tr>
               </thead>
               <tbody>
-                {CF_PL_ROWS.map((row, ri) => {
+                {PL_ROWS.map((row, ri) => {
                   const rowVals = vals[row.key] ?? CF_MONTHS.map(() => 0);
                   const annual  = rowVals.reduce((s, v) => s + v, 0);
 
