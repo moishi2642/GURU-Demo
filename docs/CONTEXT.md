@@ -182,9 +182,46 @@ The dark card validates the recommendation. The linen panel makes it actionable.
 - Investments (`investments`)
 
 **Right group (GURU Intelligence):**
-- Net Worth (`financials / balancesheet`)
-- Cash Flow (`financials / cashflow`)
-- Money Movement (`moneymovement`)
+- Net Worth (`financials / balancesheet`) — ID: NW-1
+- Cash Flow (`financials / cashflow`) — ID: CF-2
+- Money Movement (`moneymovement`) — ID: MM-1
+- Asset Forecast (`liquiditymodel`) — ID: LQ-7
+
+### GURU Intelligence Header Standard
+
+Every GURU Intelligence tab (except Detection System) must open with this header block:
+
+```tsx
+{/* ── GURU Intelligence Header ── */}
+<div style={{ marginBottom: 18 }}>
+  <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 6 }}>
+    <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: GREEN }}>
+      GURU INTELLIGENCE · {TAB_ID}
+    </div>
+    <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
+      {TAB_DESCRIPTION} · FY 2026 · LIVE FROM TRANSACTION DATA
+    </div>
+  </div>
+  <div style={{ fontFamily: UI, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+    {One sentence description of what this tab shows.}
+  </div>
+</div>
+```
+
+Where:
+- `GREEN = "#44e08a"` (GURU Intelligence accent green)
+- `UI = "Inter, system-ui, sans-serif"`
+- `MONO = "'JetBrains Mono', 'Courier New', monospace"`
+
+### KPI Card Standard (GURU Intelligence tabs)
+
+```tsx
+<div style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid {accent_color}", padding: "10px 14px" }}>
+  <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.38)", marginBottom: 4 }}>{LABEL}</div>
+  <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color: accent_color }}>{VALUE}</div>
+  <div style={{ fontFamily: UI, fontSize: 9, color: "rgba(255,255,255,0.35)", lineHeight: 1.4 }}>{SUBLABEL}</div>
+</div>
+```
 
 **Dashboard (default landing view — still live in app):**
 - Net worth chart (line chart, historical trend)

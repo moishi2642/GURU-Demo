@@ -1,10 +1,12 @@
 import { z } from 'zod';
-import { 
-  insertClientSchema, 
-  insertAssetSchema, 
-  insertLiabilitySchema, 
+import {
+  insertClientSchema,
+  insertAccountSchema,
+  insertAssetSchema,
+  insertLiabilitySchema,
   insertCashFlowSchema,
   clients,
+  accounts,
   assets,
   liabilities,
   cashFlows,
@@ -24,13 +26,16 @@ export const errorSchemas = {
   }),
 };
 
-// Response schema for the unified dashboard view
+// Response schema for the unified dashboard view.
+// accounts — the institution-level account containers (one per brokerage/bank account)
+// assets   — the individual holdings within those accounts (linked via accountId)
 const dashboardResponseSchema = z.object({
-  client: z.custom<typeof clients.$inferSelect>(),
-  assets: z.array(z.custom<typeof assets.$inferSelect>()),
+  client:      z.custom<typeof clients.$inferSelect>(),
+  accounts:    z.array(z.custom<typeof accounts.$inferSelect>()),
+  assets:      z.array(z.custom<typeof assets.$inferSelect>()),
   liabilities: z.array(z.custom<typeof liabilities.$inferSelect>()),
-  cashFlows: z.array(z.custom<typeof cashFlows.$inferSelect>()),
-  strategies: z.array(z.custom<typeof strategies.$inferSelect>()),
+  cashFlows:   z.array(z.custom<typeof cashFlows.$inferSelect>()),
+  strategies:  z.array(z.custom<typeof strategies.$inferSelect>()),
 });
 
 export const api = {
@@ -76,6 +81,25 @@ export const api = {
         500: errorSchemas.internal,
       },
     }
+  },
+  accounts: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/clients/:id/accounts' as const,
+      responses: {
+        200: z.array(z.custom<typeof accounts.$inferSelect>()),
+        404: errorSchemas.notFound,
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/accounts' as const,
+      input: insertAccountSchema,
+      responses: {
+        201: z.custom<typeof accounts.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
   },
   assets: {
     create: {

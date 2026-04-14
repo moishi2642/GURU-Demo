@@ -1,9 +1,10 @@
 import { db } from "./db";
-import { 
-  clients, assets, liabilities, cashFlows, strategies,
-  type InsertClient, type InsertAsset, type InsertLiability, 
-  type InsertCashFlow, type InsertStrategy,
-  type Client, type Asset, type Liability, type CashFlow, type Strategy
+import {
+  clients, accounts, assets, liabilities, cashFlows, strategies,
+  type InsertClient, type InsertAccount, type InsertAsset,
+  type InsertLiability, type InsertCashFlow, type InsertStrategy,
+  type Client, type Account, type Asset,
+  type Liability, type CashFlow, type Strategy
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
@@ -13,16 +14,19 @@ export interface IStorage {
   createClient(client: InsertClient): Promise<Client>;
   deleteClient(id: number): Promise<void>;
   setOnboardingComplete(id: number, complete: boolean): Promise<Client | undefined>;
-  
+
+  getAccounts(clientId: number): Promise<Account[]>;
+  createAccount(account: InsertAccount): Promise<Account>;
+
   getAssets(clientId: number): Promise<Asset[]>;
   createAsset(asset: InsertAsset): Promise<Asset>;
-  
+
   getLiabilities(clientId: number): Promise<Liability[]>;
   createLiability(liability: InsertLiability): Promise<Liability>;
-  
+
   getCashFlows(clientId: number): Promise<CashFlow[]>;
   createCashFlow(cashFlow: InsertCashFlow): Promise<CashFlow>;
-  
+
   getStrategies(clientId: number): Promise<Strategy[]>;
   createStrategy(strategy: InsertStrategy): Promise<Strategy>;
 }
@@ -52,6 +56,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(clients.id, id))
       .returning();
     return updated;
+  }
+
+  async getAccounts(clientId: number): Promise<Account[]> {
+    return await db.select().from(accounts).where(eq(accounts.clientId, clientId));
+  }
+
+  async createAccount(account: InsertAccount): Promise<Account> {
+    const [created] = await db.insert(accounts).values(account).returning();
+    return created;
   }
 
   async getAssets(clientId: number): Promise<Asset[]> {

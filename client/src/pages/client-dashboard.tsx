@@ -91,7 +91,7 @@ import {
 import { motion } from "framer-motion";
 import { ResponsiveSankey } from "@nivo/sankey";
 import { format, addMonths, startOfMonth, subMonths } from "date-fns";
-import type { Asset, Liability, CashFlow, Strategy } from "@shared/schema";
+import type { Account, Asset, Liability, CashFlow, Strategy } from "@shared/schema";
 
 // ─── Count-up animation ───────────────────────────────────────────────────────
 function useCountUp(target: number, duration = 1600) {
@@ -464,6 +464,49 @@ function buildMonthMap(cashFlows: CashFlow[]) {
   return map;
 }
 
+// ── computeLiveMonthlyCF ─────────────────────────────────────────────────────
+// Single source of truth for per-month financial aggregates derived from the DB.
+// Returns 12-element arrays (index 0 = Jan 2026 … index 11 = Dec 2026).
+// All views that previously used hardcoded static arrays should call this instead.
+function computeLiveMonthlyCF(cashFlows: CashFlow[]) {
+  const map = buildMonthMap(cashFlows);
+  const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const key = (m: number) => `${MONTH_LABELS[m]} 26`; // "Jan 26" … "Dec 26"
+
+  // Gross outflows and inflows per calendar month (positive numbers)
+  const grossOutflow = Array.from({length:12}, (_, i) => Math.round(map[key(i)]?.outflow ?? 0));
+  const grossInflow  = Array.from({length:12}, (_, i) => Math.round(map[key(i)]?.inflow  ?? 0));
+
+  // Rental income separately — needed to compute "net expenses" matching Excel structure
+  // (Excel Row 63 "Cash Expenses" nets rental income against Florida outflows)
+  const rentalInflow = Array.from({length:12}, (_, i) => {
+    return cashFlows
+      .filter(cf => {
+        const d = new Date(cf.date as string);
+        return cf.type === "inflow"
+          && d.getUTCFullYear() === 2026
+          && d.getUTCMonth() === i
+          && (cf.description ?? "").toLowerCase().includes("rental");
+      })
+      .reduce((s, cf) => s + Number(cf.amount), 0);
+  });
+
+  // Net expenses = gross outflows − rental income (positive = money out, matching "Cash Expenses")
+  const netExpenses = Array.from({length:12}, (_, i) => grossOutflow[i] - rentalInflow[i]);
+
+  // Signed net cash flow per month (positive = surplus, negative = deficit)
+  const netCashFlow = Array.from({length:12}, (_, i) => grossInflow[i] - grossOutflow[i]);
+
+  // Base monthly expense: average of the 4 "plain" months with no special items
+  // (Mar, Sep, Oct = months with only recurring expenses and no tuition/taxes/travel)
+  const plainMonths = [2, 8, 9]; // 0-indexed: Mar, Sep, Oct
+  const baseMonthlyCFExpense = Math.round(
+    plainMonths.reduce((s, i) => s + netExpenses[i], 0) / plainMonths.length
+  );
+
+  return { grossOutflow, grossInflow, rentalInflow, netExpenses, netCashFlow, baseMonthlyCFExpense };
+}
+
 function buildForecast(cashFlows: CashFlow[]) {
   const map = buildMonthMap(cashFlows);
   const now = new Date(new Date().getFullYear(), 0, 1);
@@ -712,6 +755,40 @@ function computeCumulativeNCF(cashFlows: CashFlow[]): {
   const troughDepth = troughMin < 0 ? Math.abs(troughMin) : troughMin;
 
   return { cumulativeByMonth, troughIdx, troughDepth, netByMonth };
+}
+
+// ─── Canonical cash flow KPI computation ─────────────────────────────────────
+// Single source of truth for ALL derived cash flow KPIs.
+// buildForecast() drives annual totals; computeCumulativeNCF() drives median.
+// Every tab that needs these numbers calls this function — never re-derives them.
+function computeCashFlowKPIs(
+  cashFlows: CashFlow[],
+  totalLiquid: number,
+): {
+  annualInflows:      number;  // sum of all 2026 forecast inflows
+  annualOutflows:     number;  // sum of all 2026 forecast outflows
+  annualNetCF:        number;  // annualInflows − annualOutflows
+  monthlyBurn:        number;  // annualOutflows ÷ 12, rounded to nearest dollar
+  coverageRatio:      number;  // annualInflows ÷ annualOutflows as integer % (income coverage)
+  liquidityCoverage:  number;  // totalLiquid ÷ annualOutflows as % (how many years of expenses in cash)
+  cashRunwayMonths:   number;  // totalLiquid ÷ monthlyBurn, float (for threshold comparisons)
+  cashRunway:         string;  // cashRunwayMonths.toFixed(1), or "—" if monthlyBurn is 0
+  medianMonthly:      number;  // 50th-percentile monthly net cash flow
+} {
+  const forecastData      = buildForecast(cashFlows);
+  const annualInflows     = forecastData.reduce((s, d) => s + d.inflow,  0);
+  const annualOutflows    = forecastData.reduce((s, d) => s + d.outflow, 0);
+  const annualNetCF       = annualInflows - annualOutflows;
+  const monthlyBurn       = Math.round(annualOutflows / 12);
+  const coverageRatio     = annualOutflows > 0 ? Math.round((annualInflows / annualOutflows) * 100) : 0;
+  const liquidityCoverage = annualOutflows > 0 ? (totalLiquid / annualOutflows) * 100 : 999;
+  const cashRunwayMonths  = monthlyBurn > 0 ? totalLiquid / monthlyBurn : 0;
+  const cashRunway        = monthlyBurn > 0 ? cashRunwayMonths.toFixed(1) : "—";
+  const { netByMonth }    = computeCumulativeNCF(cashFlows);
+  const sortedNet         = [...netByMonth].sort((a, b) => a - b);
+  const medianMonthly     = sortedNet[Math.floor(sortedNet.length / 2)] ?? 0;
+  return { annualInflows, annualOutflows, annualNetCF, monthlyBurn, coverageRatio,
+           liquidityCoverage, cashRunwayMonths, cashRunway, medianMonthly };
 }
 
 // ─── Shared liquidity target calculation ─────────────────────────────────────
@@ -1589,14 +1666,13 @@ function CashManagementPanel({
   cashFlows: CashFlow[];
 }) {
   const { reserve, yieldBucket, tactical, totalLiquid, reserveItems, yieldItems, tacticalItems } = cashBuckets(assets);
-  const forecastData = buildForecast(cashFlows);
-  const annualOutflows = forecastData.reduce((s, d) => s + d.outflow, 0);
-  const monthlyBurn = annualOutflows / 12;
-  const monthsRunway = monthlyBurn > 0 ? totalLiquid / monthlyBurn : 0;
+  // ── KPIs: all derived cash flow metrics from single master function ──────────
+  const { monthlyBurn, liquidityCoverage: coveragePct, cashRunwayMonths: monthsRunway } =
+    computeCashFlowKPIs(cashFlows, totalLiquid);
+  const coverageOk    = coveragePct >= 100;
+  const forecastData  = buildForecast(cashFlows);
   const endCumulative = forecastData[forecastData.length - 1]?.cumulative ?? 0;
-  const trendUp = endCumulative >= 0;
-  const coveragePct = monthlyBurn > 0 ? (totalLiquid / (annualOutflows)) * 100 : 999;
-  const coverageOk = coveragePct >= 100;
+  const trendUp       = endCumulative >= 0;
   const [liqLive, setLiqLive] = useState(false);
   useEffect(() => { const t = setTimeout(() => setLiqLive(true), 350); return () => clearTimeout(t); }, []);
 
@@ -2347,11 +2423,16 @@ const BS_ASSET_SUBTITLES: Array<[string[], string]> = [
   [["citizens", "private bank"],                 "Acct ****8874"],
   [["goldman sachs", "money market"],            "Acct ****4521"],
   [["goldman sachs", "marcus"],                  "Acct ****4521"],
-  [["cresset"],                                  "Acct ****5839"],
-  [["schwab"],                                   "Acct ****1192"],
-  [["e*trade"],                                  "Acct ****6074"],
-  [["etrade"],                                   "Acct ****6074"],
-  [["fidelity"],                                 "Acct ****2893"],
+  [["cresset"],                                  "Acct ****3391"],
+  [["vti", "total market"],                       "Acct ****3314"],
+  [["small cap value"],                          "Acct ****3314"],
+  [["treasury bill", "26-week"],                 "CUSIP 912796TY5 · Fidelity ****3314"],
+  [["treasury bill"],                            "CUSIP 912796TY5 · Fidelity ****3314"],
+  [["cash sweep"],                               "Acct ****3314"],
+  [["spaxx"],                                    "Acct ****3314"],
+  [["e*trade"],                                  "Acct ****9782"],
+  [["etrade"],                                   "Acct ****9782"],
+  [["fidelity"],                                 "Acct ****3314"],
   [["401(k)"],                                   "Acct ****7743"],
   [["roth ira"],                                 "Acct ****3892"],
   [["traditional ira"],                          "Acct ****6615"],
@@ -2370,7 +2451,9 @@ const BS_LIAB_SUBTITLES: Array<[string[], string]> = [
   [["credit card"],                              "Acct ****9934"],
   [["tribeca"],                                  "Loan ****4422"],
   [["sarasota"],                                 "Loan ****7019"],
-  [["student loan"],                             "Acct ****5288"],
+  [["student loan", "sarah"],                    "Acct ****2214"],
+  [["student loan", "michael"],                  "Acct ****5589"],
+  [["student loan"],                             "Acct ****2214"],
   [["professional loan"],                        "Acct ****6614"],
   [["capital commitment"],                       "Acct ****6614"],
 ];
@@ -2423,7 +2506,8 @@ function liabComment(l: Liability): AssetComment | null {
   return null;
 }
 
-type LiquidBucket = "operating" | "reserve" | "capital" | null;
+// Matches the 5 keys in GURU_BUCKETS (reserve, yield, tactical, growth, alternatives)
+type LiquidBucket = "reserve" | "yield" | "tactical" | "growth" | "alternatives" | null;
 
 interface BsGroup {
   category: string;
@@ -2461,10 +2545,10 @@ function wavgAtYieldFromItems(items: Array<{ value: number; atYield: string | nu
   const avg = wsum / covered;
   if (avg <= 0.005) return null;
   const equityVal = items.filter(i => i.atYield?.startsWith("+")).reduce((s, i) => s + i.value, 0);
-  return equityVal > covered / 2 ? `+${avg.toFixed(1)}%` : `${avg.toFixed(2)}%`;
+  return equityVal > covered / 2 ? `+${avg.toFixed(3)}%` : `${avg.toFixed(3)}%`;
 }
 
-function buildAssetGroups(assets: Asset[]): BsSection[] {
+function buildAssetGroups(assets: Asset[], accounts: Account[] = []): BsSection[] {
   const isRetirement = (a: Asset) => {
     const d = (a.description ?? "").toLowerCase();
     return d.includes("401") || d.includes("ira") || d.includes("roth");
@@ -2473,172 +2557,214 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
     (a.description ?? "").toLowerCase().includes("carry");
   const isRSU = (a: Asset) =>
     (a.description ?? "").toLowerCase().includes("rsu");
+
+  // ── Account-layer institution lookup ─────────────────────────────────────
+  // Uses the accounts table (new infrastructure) to resolve the institution name
+  // for each holding — so Fidelity Cash Sweep and US Treasuries both correctly
+  // group under "Fidelity" in Taxable Brokerage, matching the client's statement.
+  const accountById: Record<number, Account> = {};
+  for (const a of accounts) accountById[a.id] = a;
+
+  const getInstitution = (a: Asset): string => {
+    if (a.accountId != null) {
+      const acct = accountById[a.accountId];
+      if (acct) {
+        const inst = acct.institutionName;
+        if (inst.includes("Fidelity"))                                    return "Fidelity";
+        if (inst.includes("Cresset"))                                     return "Cresset Capital";
+        if (inst.includes("E*Trade") || inst.includes("Morgan Stanley"))  return "E*Trade";
+      }
+    }
+    // Fallback: parse institution from description string
+    return extractInstitution(a.description ?? "");
+  };
+
+  // Extract the broker/institution name from an asset description (fallback when no accountId).
+  // "Cresset Capital Mgmt — Portfolio"  →  "Cresset Capital Mgmt"
+  // "E*Trade - Meta Platforms"          →  "E*Trade"
+  // "Fidelity - VTI Total Market Index" →  "Fidelity"
+  const extractInstitution = (desc: string): string => {
+    const d = desc.trim();
+    if (d.includes(" — ")) return d.split(" — ")[0].trim();
+    if (d.includes(" - "))  return d.split(" - ")[0].trim();
+    return d.split(" ")[0].trim();
+  };
+
+  // Clean display label for an individual holding inside a brokerage group.
+  // Strips institution prefix and trailing yield info so the label reads like a statement.
+  const holdingLabel = (desc: string): string => {
+    let s = desc;
+    // Strip "Institution - " or "Institution — " prefix
+    if (s.includes(" - "))  s = s.split(" - ").slice(1).join(" - ");
+    else if (s.includes(" — ")) s = s.split(" — ").slice(1).join(" — ");
+    // Strip trailing yield/rate annotations (e.g. "— 3.95% yield", ", 3.95% yield", "3.95% yield" at end)
+    s = s.replace(/[,\s]*[\d.]+%\s*(yield|apy|coupon|rate)?[\s]*$/i, "").trim();
+    // Strip "(self-directed)" qualifier
+    s = s.replace(/\s*\(.*?self-directed.*?\)/i, "");
+    // Strip "(Idle)" qualifier
+    s = s.replace(/\s*\(Idle\)/i, "");
+    return s.trim();
+  };
+
+  // Returns one BsGroup per account (using the accounts layer).
+  // Each group label is "Account Name ****XXXX" — matching what the client sees on
+  // their brokerage statement. Holdings within that account appear as sub-rows.
+  const cleanAcctName = (name: string): string =>
+    name
+      .replace(" — Self-Directed", "")
+      .replace(" — Short Duration", "")
+      .replace(" (US)", "")
+      .trim();
+
+  const mkBrokerageGroups = (arr: Asset[]): BsGroup[] => {
+    // Group by accountId first; fall back to institution name if no accountId
+    const acctKeyMap = new Map<string, { label: string; assets: Asset[] }>();
+    for (const a of arr) {
+      let key: string;
+      let label: string;
+      if (a.accountId != null && accountById[a.accountId]) {
+        const acct = accountById[a.accountId];
+        key = `acct-${acct.id}`;
+        const displayNum = acct.accountNumber ? ` ${acct.accountNumber}` : "";
+        label = `${cleanAcctName(acct.accountName)}${displayNum}`;
+      } else {
+        const inst = getInstitution(a);
+        key = `inst-${inst}`;
+        label = inst;
+      }
+      if (!acctKeyMap.has(key)) acctKeyMap.set(key, { label, assets: [] });
+      acctKeyMap.get(key)!.assets.push(a);
+    }
+    return Array.from(acctKeyMap.values()).map(({ label, assets: holdings }) => {
+      const items = holdings.map((a) => {
+        const d = a.description ?? "";
+        const grossRet = lookupReturn(d);
+        return {
+          label: holdingLabel(d),
+          subtitle: lookupBsSubtitle(d, BS_ASSET_SUBTITLES),
+          value: Number(a.value),
+          rate: extractRate(d),
+          ret: grossRet,
+          atYield: atYieldStr(grossRet, a.type),
+          comment: assetComment(a),
+          bucket: getBucket(a),
+        };
+      });
+      return {
+        category: label,
+        items,
+        subtotal: holdings.reduce((s, a) => s + Number(a.value), 0),
+        avgRate: wavgRate(holdings),
+        avgAtYield: wavgAtYieldFromItems(items),
+      };
+    });
+  };
+
+  // ── Coinbase detection ────────────────────────────────────────────────────
+  const isCoinbaseAsset = (a: Asset) =>
+    (a.description ?? "").toLowerCase().includes("coinbase") ||
+    (a.accountId != null && (accountById[a.accountId]?.institutionName ?? "").toLowerCase().includes("coinbase"));
+
+  // ── Return lookup table ───────────────────────────────────────────────────
+  const ASSET_RETURNS: Array<[string, string]> = [
+    ["cresset — us large cap core",       "+16.400%"],
+    ["cresset — international developed", "+11.200%"],
+    ["cresset — equity income",           "+12.600%"],
+    ["cresset",        "+14.200%"],
+    ["roth ira",       "+11.800%"],
+    ["401(k)",         "+10.400%"],
+    ["traditional ira","+10.400%"],
+    ["meta platforms", "+28.300%"],
+    ["small cap value","+14.800%"],
+    ["vti",            "+9.800%"],
+    ["total market",   "+9.800%"],
+    ["goldman sachs",  "+18.200%"],
+    ["bank of america","+8.600%"],
+    ["citizens private bank money market", "3.650%"],
+    ["capitalon",      "3.780%"],
+    ["citizens private banking checking",  "0.010%"],
+    ["chase total",    "0.010%"],
+    ["cash sweep",     "2.500%"],
+    ["spaxx",          "2.500%"],
+    ["fidelity",       "+10.400%"],
+    ["u.s. treasury bill", "3.950%"],
+    ["us treasuries",      "3.950%"],
+    ["tribeca",        "+4.200%"],
+    ["sarasota",       "+6.100%"],
+    ["carlyle partners viii (pe",      "12.4% IRR"],
+    ["carlyle partners ix (pe",        "14.2% IRR"],
+    ["carlyle partners viii — carry",  "22.6% est."],
+    ["carlyle partners ix — carry",    "26.1% est."],
+    ["coinbase",       "+47.300%"],
+  ];
+  const lookupReturn = (desc: string | null): string | null => {
+    const d = (desc ?? "").toLowerCase();
+    for (const [key, val] of ASSET_RETURNS) { if (d.includes(key)) return val; }
+    return null;
+  };
+
+  const atYieldStr = (grossRet: string | null, assetType: string): string | null => {
+    if (!grossRet) return null;
+    // PE funds — IRR: apply LTCG_TAX (20%)
+    if (grossRet.includes("IRR")) {
+      const pct = parseFloat(grossRet.replace(/%?\s*IRR/i, "").replace("%", "").trim());
+      if (isNaN(pct) || pct <= 0) return null;
+      return `${(pct * (1 - LTCG_TAX)).toFixed(3)}%`;
+    }
+    // Carry / "est." returns: apply LTCG_TAX (20%)
+    if (grossRet.includes("est.")) {
+      const pct = parseFloat(grossRet.replace(/%?\s*est\./i, "").replace("%", "").trim());
+      if (isNaN(pct) || pct <= 0) return null;
+      return `${(pct * (1 - LTCG_TAX)).toFixed(3)}%`;
+    }
+    if (grossRet.startsWith("+")) {
+      const pct = parseFloat(grossRet.slice(1).replace("%", ""));
+      if (isNaN(pct)) return null;
+      return `+${(pct * (1 - LTCG_TAX)).toFixed(3)}%`;
+    }
+    const pct = parseFloat(grossRet.replace("%", ""));
+    if (isNaN(pct) || pct <= 0.01) return null;
+    const taxRate = assetType === "fixed_income" ? TREAS_TAX : BANK_TAX;
+    return `${(pct * (1 - taxRate)).toFixed(3)}%`;
+  };
+
+  // ── GURU 5-bucket mapping ─────────────────────────────────────────────────
+  // Canonical mapping: every asset maps to exactly one of the 5 GURU buckets.
+  // Cresset advisor-managed portfolio → Investments (growth), even if fixed_income sub-type.
+  const getBucket = (a: Asset): LiquidBucket => {
+    const d = (a.description ?? "").toLowerCase();
+    if (a.type === "cash" && d.includes("checking"))    return "reserve";     // Operating Cash
+    if (a.type === "cash")                              return "yield";       // Liquidity Reserve
+    if (d.includes("cresset"))                          return "growth";      // Investments — advisor-managed
+    if (a.type === "fixed_income" && !isRetirement(a)) return "tactical";    // Capital Build
+    if (isRetirement(a))                               return "growth";      // Investments — tax-advantaged
+    if (a.type === "real_estate")                      return "alternatives"; // Other Assets
+    if (isCoinbaseAsset(a))                            return "alternatives"; // Other Assets — crypto
+    if (a.type === "alternative")                      return "alternatives"; // Other Assets — PE/carry
+    if (isRSU(a))                                      return "alternatives"; // Other Assets — deferred comp
+    if (a.type === "equity")                           return "growth";      // Investments
+    return null;
+  };
+
+  // Asset-type filters for section grouping (raw data format)
   const isBrokerage = (a: Asset) =>
-    (a.type === "equity" || a.type === "fixed_income") &&
-    !isRetirement(a) &&
-    !isRSU(a);
-  // Cash held inside a brokerage account (e.g. Fidelity Cash Sweep) —
-  // belongs in Taxable Brokerage, not the bank savings bucket.
+    (a.type === "equity" || a.type === "fixed_income") && !isRetirement(a) && !isRSU(a);
   const isBrokerageCash = (a: Asset) =>
     a.type === "cash" &&
     ((a.description ?? "").toLowerCase().includes("fidelity") ||
      (a.description ?? "").toLowerCase().includes("sweep") ||
      (a.description ?? "").toLowerCase().includes("brokerage cash"));
+
   const checking      = assets.filter((a) => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"));
   const savingsMM     = assets.filter((a) => a.type === "cash" && !(a.description ?? "").toLowerCase().includes("checking") && !isBrokerageCash(a));
   const brokerageCash = assets.filter((a) => isBrokerageCash(a));
   const brokerage     = assets.filter((a) => isBrokerage(a));
-
-  const mkBrokerageCashGroup = (): BsGroup => {
-    const items = brokerageCash.map((a) => {
-      const desc = a.description ?? "";
-      const isFidelity = desc.toLowerCase().includes("fidelity");
-      const grossRet = lookupReturn(desc);
-      return {
-        label: isFidelity ? "Fidelity (Cash)" : desc.split("(")[0].split("—")[0].split("–")[0].trim(),
-        subtitle: lookupBsSubtitle(desc, BS_ASSET_SUBTITLES),
-        value: Number(a.value),
-        rate: extractRate(desc),
-        ret: grossRet,
-        atYield: atYieldStr(grossRet, a.type),
-        comment: assetComment(a),
-        bucket: getBucket(a),
-      };
-    });
-    return {
-      category: "Brokerage Cash",
-      items,
-      subtotal: brokerageCash.reduce((s, a) => s + Number(a.value), 0),
-      avgRate: wavgRate(brokerageCash),
-      avgAtYield: wavgAtYieldFromItems(items),
-    };
-  };
-
-  // Extract the broker/institution name from an asset description.
-  // "Cresset Capital Mgmt — Portfolio"  →  "Cresset Capital Mgmt"
-  // "E*Trade - Meta Platforms"          →  "E*Trade"
-  // "Schwab International Index (ETF)"  →  "Schwab"
-  // "Fidelity Cash Sweep"               →  "Fidelity"
-  const extractInstitution = (desc: string): string => {
-    const d = desc.trim();
-    if (d.includes(" — ")) return d.split(" — ")[0].trim();
-    if (d.includes(" - "))  return d.split(" - ")[0].trim();
-    // No delimiter — use first word
-    return d.split(" ")[0].trim();
-  };
-
-  // Build a broker-aggregated group: one line per institution.
-  const mkBrokerageGroup = (arr: Asset[]): BsGroup => {
-    const map: Record<string, { value: number; descs: string[]; primaryType: string }> = {};
-    for (const a of arr) {
-      const inst = extractInstitution(a.description ?? "");
-      if (!map[inst]) map[inst] = { value: 0, descs: [], primaryType: a.type };
-      map[inst].value += Number(a.value);
-      map[inst].descs.push(a.description ?? "");
-      // If any holding is equity, the group uses equity (LTCG) tax treatment
-      if (a.type === "equity") map[inst].primaryType = "equity";
-    }
-    const items = Object.entries(map).map(([inst, data]) => {
-      const grossRet = lookupReturn(data.descs.length === 1 ? data.descs[0] : inst);
-      // Capital Build: fixed_income, non-retirement assets earn the "capital" bucket badge
-      const bucket: LiquidBucket = data.primaryType === "fixed_income" ? "capital" : null;
-      return {
-        label: inst,
-        subtitle: lookupBsSubtitle(inst, BS_ASSET_SUBTITLES) ??
-                  lookupBsSubtitle(data.descs[0] ?? "", BS_ASSET_SUBTITLES),
-        value: data.value,
-        rate: null as string | null,
-        ret: grossRet,
-        atYield: atYieldStr(grossRet, data.primaryType),
-        comment: null as AssetComment | null,
-        bucket,
-      };
-    });
-    return {
-      category: "Taxable Brokerage",
-      items,
-      subtotal: arr.reduce((s, a) => s + Number(a.value), 0),
-      avgRate: null,
-      avgAtYield: wavgAtYieldFromItems(items),
-    };
-  };
-  const altAssets   = assets.filter((a) => a.type === "alternative" && !isCarry(a));
-  const carry       = assets.filter((a) => isCarry(a));
-  const rsus        = assets.filter((a) => isRSU(a));
-  const realEstate  = assets.filter((a) => a.type === "real_estate");
-  const retirement  = assets.filter((a) => isRetirement(a));
-
-  const ASSET_RETURNS: Array<[string, string]> = [
-    ["cresset",        "+14.2%"],
-    ["roth ira",       "+11.8%"],
-    ["401(k)",         "+10.4%"],
-    ["traditional ira","+10.4%"],
-    ["meta platforms", "+28.3%"],
-    ["schwab",         "+7.9%"],
-    ["goldman sachs",  "+18.2%"],
-    ["bank of america","+8.6%"],
-    ["citizens private bank money market", "3.65%"],
-    ["capitalon",      "3.78%"],
-    ["citizens private banking checking",  "0.01%"],
-    ["chase total",    "0.01%"],
-    ["fidelity cash sweep",                "2.50%"],
-    ["fidelity",       "+10.4%"],
-    ["us treasuries",  "3.95%"],
-    ["tribeca",        "+4.2%"],
-    ["sarasota",       "+6.1%"],
-    ["carlyle partners viii (pe",          "12.4% IRR"],
-    ["carlyle partners ix (pe",            "14.2% IRR"],
-    ["carlyle partners viii — carry",      "22.6% est."],
-    ["carlyle partners ix — carry",        "26.1% est."],
-    ["coinbase",       "+47.3%"],
-  ];
-  const lookupReturn = (desc: string | null): string | null => {
-    const d = (desc ?? "").toLowerCase();
-    for (const [key, val] of ASSET_RETURNS) {
-      if (d.includes(key)) return val;
-    }
-    return null;
-  };
-
-  // Compute after-tax yield string from a gross return string and asset type.
-  // - "+ prefix" = total equity return → LTCG tax rate (20%)
-  // - plain "X.XX%" = income yield → TREAS_TAX (35%) for fixed_income, BANK_TAX (47%) for cash
-  // - IRR / est. / negligible (≤0.01%) → null (too complex or immaterial)
-  const atYieldStr = (grossRet: string | null, assetType: string): string | null => {
-    if (!grossRet) return null;
-    if (grossRet.includes("IRR") || grossRet.includes("est.")) return null;
-    if (grossRet.startsWith("+")) {
-      const pct = parseFloat(grossRet.slice(1).replace("%", ""));
-      if (isNaN(pct)) return null;
-      return `+${(pct * (1 - LTCG_TAX)).toFixed(1)}%`;
-    }
-    const pct = parseFloat(grossRet.replace("%", ""));
-    if (isNaN(pct) || pct <= 0.01) return null;
-    const taxRate = assetType === "fixed_income" ? TREAS_TAX : BANK_TAX;
-    return `${(pct * (1 - taxRate)).toFixed(2)}%`;
-  };
-
-  const getBucket = (a: Asset): LiquidBucket => {
-    const d = (a.description ?? "").toLowerCase();
-    if (a.type === "cash" && d.includes("checking")) return "operating";
-    if (a.type === "cash") return "reserve";
-    if (a.type === "fixed_income" && !isRetirement(a)) return "capital";
-    return null;
-  };
-
-  const toItem = (a: Asset) => {
-    const grossRet = lookupReturn(a.description);
-    return {
-      label: a.description.split("(")[0].split("—")[0].split("–")[0].trim(),
-      subtitle: lookupBsSubtitle(a.description, BS_ASSET_SUBTITLES),
-      value: Number(a.value),
-      rate: extractRate(a.description),
-      ret: grossRet,
-      atYield: atYieldStr(grossRet, a.type),
-      comment: assetComment(a),
-      bucket: getBucket(a),
-    };
-  };
+  const altAssets     = assets.filter((a) => a.type === "alternative" && !isCarry(a) && !isCoinbaseAsset(a));
+  const coinbaseAssets = assets.filter(isCoinbaseAsset);
+  const carry         = assets.filter((a) => isCarry(a));
+  const rsus          = assets.filter((a) => isRSU(a));
+  const realEstate    = assets.filter((a) => a.type === "real_estate");
+  const retirement    = assets.filter((a) => isRetirement(a));
 
   const subtot = (arr: Asset[]) => arr.reduce((s, a) => s + Number(a.value), 0);
   const wavgRate = (arr: Asset[]) => {
@@ -2648,7 +2774,20 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
       const r = extractRate(a.description);
       return s + (r ? parseFloat(r) * Number(a.value) : 0);
     }, 0);
-    return weighted > 0 ? (weighted / total).toFixed(2) : null;
+    return weighted > 0 ? (weighted / total).toFixed(3) : null;
+  };
+  const toItem = (a: Asset) => {
+    const grossRet = lookupReturn(a.description);
+    return {
+      label: (a.description ?? "").split("(")[0].trim(),
+      subtitle: lookupBsSubtitle(a.description, BS_ASSET_SUBTITLES),
+      value: Number(a.value),
+      rate: extractRate(a.description),
+      ret: grossRet,
+      atYield: atYieldStr(grossRet, a.type),
+      comment: assetComment(a),
+      bucket: getBucket(a),
+    };
   };
   const mkGroup = (category: string, arr: Asset[]): BsGroup => {
     const items = arr.map(toItem);
@@ -2657,30 +2796,40 @@ function buildAssetGroups(assets: Asset[]): BsSection[] {
 
   const sections: BsSection[] = [];
 
-  // ── Cash ──────────────────────────────────────────────────────────────────
+  // ── Bank Accounts ─────────────────────────────────────────────────────────
+  // True bank deposit accounts — Chase checking, Citizens, Capital One, Goldman MM
+  // Fidelity Cash Sweep lives inside Fidelity brokerage → Taxable Brokerage below
   const cashGroups: BsGroup[] = [];
-  if (checking.length) cashGroups.push(mkGroup("Checking Bank Accounts", checking));
-  if (savingsMM.length) cashGroups.push(mkGroup("Savings & Money Market Bank Accounts", savingsMM));
-  if (brokerageCash.length) cashGroups.push(mkBrokerageCashGroup());
-  if (cashGroups.length) sections.push({ label: "Cash", groups: cashGroups, total: subtot([...checking, ...savingsMM, ...brokerageCash]) });
+  if (checking.length) cashGroups.push(mkGroup("Checking Accounts", checking));
+  if (savingsMM.length) cashGroups.push(mkGroup("Savings & Money Market Accounts", savingsMM));
+  if (cashGroups.length) sections.push({ label: "Bank Accounts", groups: cashGroups, total: subtot([...checking, ...savingsMM]) });
 
-  // ── Investments ───────────────────────────────────────────────────────────
-  const investGroups: BsGroup[] = [];
-  if (brokerage.length) investGroups.push(mkBrokerageGroup(brokerage));
-  if (altAssets.length) investGroups.push(mkGroup("Alternative Assets (PE Funds)", altAssets));
-  if (investGroups.length) sections.push({ label: "Investments", groups: investGroups, total: subtot([...brokerage, ...altAssets]) });
+  // ── Taxable Brokerage ─────────────────────────────────────────────────────
+  // One group per account — Cresset (4 sleeves), Fidelity (Total Market + Small Cap Value + T-bills + sweep), E*Trade, Coinbase
+  const taxableBrokerageAssets = [...brokerage, ...brokerageCash, ...coinbaseAssets];
+  const taxableGroups: BsGroup[] = [];
+  if (taxableBrokerageAssets.length) taxableGroups.push(...mkBrokerageGroups(taxableBrokerageAssets));
+  if (taxableGroups.length) sections.push({ label: "Taxable Brokerage", groups: taxableGroups, total: subtot(taxableBrokerageAssets) });
+
+  // ── Alternative Investments ───────────────────────────────────────────────
+  // PE fund LP interests (Carlyle Partners VIII & IX)
+  if (altAssets.length) sections.push({ label: "Alternative Investments", groups: [mkGroup("PE Funds — Carlyle Partners", altAssets)], total: subtot(altAssets) });
 
   // ── Real Estate ───────────────────────────────────────────────────────────
   if (realEstate.length) sections.push({ label: "Real Estate", groups: [mkGroup("Properties", realEstate)], total: subtot(realEstate) });
 
   // ── Carry & RSUs ──────────────────────────────────────────────────────────
   const carryRsuGroups: BsGroup[] = [];
-  if (carry.length) carryRsuGroups.push(mkGroup("Carried Interest (PE)", carry));
-  if (rsus.length)  carryRsuGroups.push(mkGroup("RSUs & Unvested Equity", rsus));
-  if (carryRsuGroups.length) sections.push({ label: "Carry and RSUs", groups: carryRsuGroups, total: subtot([...carry, ...rsus]) });
+  if (carry.length) carryRsuGroups.push(mkGroup("Carried Interest — Carlyle Partners", carry));
+  // RSU: use the actual asset description as group name (single Goldman RSU item)
+  rsus.forEach(a => {
+    const label = (a.description ?? "").split("(")[0].trim();
+    carryRsuGroups.push(mkGroup(label, [a]));
+  });
+  if (carryRsuGroups.length) sections.push({ label: "Carry & RSUs", groups: carryRsuGroups, total: subtot([...carry, ...rsus]) });
 
   // ── Retirement ────────────────────────────────────────────────────────────
-  if (retirement.length) sections.push({ label: "Retirement", groups: [mkGroup("Tax-Advantaged Accounts", retirement)], total: subtot(retirement) });
+  if (retirement.length) sections.push({ label: "Retirement", groups: mkBrokerageGroups(retirement), total: subtot(retirement) });
 
   return sections;
 }
@@ -2705,16 +2854,16 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
       (s, l) => s + parseFloat(l.interestRate) * Number(l.value),
       0,
     );
-    return weighted > 0 ? (weighted / total).toFixed(2) : null;
+    return weighted > 0 ? (weighted / total).toFixed(3) : null;
   };
 
   const toItem = (l: Liability) => ({
-    label: l.description.split("(")[0].split("—")[0].split("–")[0].trim(),
+    label: l.description.split("(")[0].trim(),
     subtitle: lookupBsSubtitle(l.description, BS_LIAB_SUBTITLES),
     value: Number(l.value),
     rate:
       parseFloat(l.interestRate) > 0
-        ? parseFloat(l.interestRate).toFixed(2)
+        ? parseFloat(l.interestRate).toFixed(3)
         : null,
     ret: null,
     atYield: null as string | null,
@@ -2746,20 +2895,14 @@ function buildLiabilityGroups(liabilities: Liability[]): BsGroup[] {
       avgRate: wavgRate(mortg),
       avgAtYield: null,
     });
-  if (profLoan.length)
+  // PE loans and capital commitments shown together — matching the advisor Balance Sheet breakout
+  const allPE = [...profLoan, ...capComm];
+  if (allPE.length)
     groups.push({
-      category: "Professional Loans (Private Equity)",
-      items: profLoan.map(toItem),
-      subtotal: subtot(profLoan),
+      category: "Private Equity — Capital Calls & Commitments",
+      items: allPE.map(toItem),
+      subtotal: subtot(allPE),
       avgRate: wavgRate(profLoan),
-      avgAtYield: null,
-    });
-  if (capComm.length)
-    groups.push({
-      category: "Remaining Capital Commitment",
-      items: capComm.map(toItem),
-      subtotal: subtot(capComm),
-      avgRate: null,
       avgAtYield: null,
     });
   return groups;
@@ -2781,13 +2924,7 @@ function BsTable({
   totalRate?: string | null;
   isLiability?: boolean;
 }) {
-  const COLS = isLiability ? "1fr 90px 72px 90px" : "minmax(100px,220px) 76px 90px 62px 62px 80px";
-  const retCls = (r: string | null) => {
-    if (!r) return "text-muted-foreground/40";
-    if (r.startsWith("+")) return "text-emerald-400 font-semibold";
-    if (r.toLowerCase().includes("irr") || r.toLowerCase().includes("est")) return "text-amber-400 font-semibold";
-    return "text-muted-foreground";
-  };
+  const COLS = isLiability ? "2fr 110px 80px 1fr" : "2fr 100px 110px 78px 78px 1fr";
 
   const MONO = "'JetBrains Mono', monospace";
   const BS_BG_BASE    = "#0f1e33";
@@ -2802,22 +2939,21 @@ function BsTable({
   const BS_TEXT       = "hsl(0,0%,88%)";
   const BS_TEXT_MUTED = "hsl(210,15%,52%)";
 
-  const retColor = (r: string | null) => {
-    if (!r) return BS_TEXT_MUTED;
-    if (r.startsWith("+")) return "hsl(152,55%,55%)";
-    if (r.toLowerCase().includes("irr") || r.toLowerCase().includes("est")) return "hsl(45,80%,56%)";
-    return BS_TEXT_MUTED;
-  };
+  // All yield/return cells use a uniform muted color — no green/amber in the rate columns.
+  const retColor = (_r: string | null) => BS_TEXT_MUTED;
 
   const cellBase: React.CSSProperties = {
     fontFamily: MONO, fontSize: 10.5, padding: "5px 8px",
     borderBottom: `1px solid ${BS_BORDER}`,
   };
 
+  // Bucket pills use exact GURU_BUCKETS colors (5-bucket system — reserve/yield/tactical/growth/alternatives)
   const BUCKET_PILL: Record<NonNullable<LiquidBucket>, { label: string; bg: string; color: string }> = {
-    operating: { label: "Operating",  bg: "rgba(91,143,204,0.15)", color: "hsl(215,65%,65%)" },
-    reserve:   { label: "Reserve",    bg: "rgba(255,200,60,0.12)",  color: "hsl(42,80%,60%)"  },
-    capital:   { label: "Capital",    bg: "rgba(180,140,80,0.15)", color: "hsl(35,65%,58%)"  },
+    reserve:      { label: "Operating Cash",    bg: "rgba(30,79,156,0.14)",  color: "#1E4F9C" },
+    yield:        { label: "Liquidity Reserve", bg: "rgba(131,88,0,0.14)",   color: "#835800" },
+    tactical:     { label: "Capital Build",     bg: "rgba(25,88,48,0.14)",   color: "#195830" },
+    growth:       { label: "Investments",       bg: "rgba(74,63,160,0.14)",  color: "#4A3FA0" },
+    alternatives: { label: "Other Assets",       bg: "rgba(92,92,110,0.14)",  color: "#5C5C6E" },
   };
 
   const renderItems = (items: BsGroup["items"], indent = "pl-8") =>
@@ -2852,7 +2988,7 @@ function BsTable({
             }
           </div>
           {!isLiability && (
-            <div style={{ ...cellBase, textAlign: "right", color: item.atYield ? (item.atYield.startsWith("+") ? "hsl(152,55%,55%)" : "hsl(152,40%,48%)") : "hsl(210,10%,30%)" }}>
+            <div style={{ ...cellBase, textAlign: "right", color: item.atYield ? BS_TEXT_MUTED : "hsl(210,10%,30%)" }}>
               {item.atYield ?? <span style={{ color: "hsl(210,10%,30%)" }}>—</span>}
             </div>
           )}
@@ -2867,49 +3003,79 @@ function BsTable({
       );
     });
 
-  const renderGroup = (group: BsGroup, showSubtotal: boolean) => (
-    <div key={group.category}>
-      {renderItems(group.items)}
-      {showSubtotal && (
-        <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRPHDR, borderTop: `1px solid ${BS_BORDER_SEC}`, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
-          <div style={{ ...cellBase, paddingLeft: 14, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: BS_GREEN_DIM, borderBottom: "none" }}>{group.category}</div>
-          {!isLiability && <div style={{ ...cellBase, borderBottom: "none" }} />}
-          <div style={{ ...cellBase, textAlign: "right", fontWeight: 700, color: BS_TEXT, borderBottom: "none" }}>{fmt(group.subtotal)}</div>
-          <div style={{ ...cellBase, textAlign: "right", color: BS_TEXT_MUTED, borderBottom: "none" }}>
-            {group.avgRate ? `${group.avgRate}%` : ""}
-          </div>
-          {!isLiability && (
-            <div style={{ ...cellBase, textAlign: "right", color: group.avgAtYield ? (group.avgAtYield.startsWith("+") ? "hsl(152,52%,52%)" : "hsl(152,38%,45%)") : "", borderBottom: "none" }}>
-              {group.avgAtYield ?? ""}
-            </div>
-          )}
-          <div style={{ ...cellBase, borderBottom: "none" }} />
+  const renderGroup = (group: BsGroup, showSubtotal: boolean) => {
+    const multiItem = group.items.length > 1;
+    // Pull single-item data for use in the combined row
+    const si = !multiItem ? group.items[0] : null;
+    const displayRate = multiItem
+      ? (group.avgRate ? `${group.avgRate}%` : "")
+      : (si?.ret ?? (si?.rate ? `${si.rate}%` : ""));
+    const displayAtYield = multiItem ? (group.avgAtYield ?? "") : (si?.atYield ?? "");
+    const atYieldColor = displayAtYield ? BS_TEXT_MUTED : "";
+
+    // A single-item group gets the same styled row as a subtotal (heavier bg, bold, full-weight)
+    // so it reads with the same visual weight as a multi-item group's subtotal line.
+    const subtotalRow = (
+      <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRPHDR, borderTop: `1px solid ${BS_BORDER_SEC}`, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
+        <div style={{ ...cellBase, paddingLeft: 14, fontWeight: 700, letterSpacing: "0.06em", color: BS_TEXT, borderBottom: "none" }}>
+          {group.category}
+          {si?.subtitle && <div style={{ fontFamily: MONO, fontSize: 9, color: "hsl(210,15%,40%)", lineHeight: 1.3, marginTop: 1 }}>{si.subtitle}</div>}
         </div>
-      )}
-    </div>
-  );
+        {!isLiability && (
+          <div style={{ ...cellBase, borderBottom: "none" }}>
+            {si?.bucket ? (() => { const pill = BUCKET_PILL[si.bucket!]; return <span style={{ display: "inline-block", fontFamily: MONO, fontSize: 8, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", padding: "1px 5px", borderRadius: 10, background: pill.bg, color: pill.color, whiteSpace: "nowrap" }}>{pill.label}</span>; })() : null}
+          </div>
+        )}
+        <div style={{ ...cellBase, textAlign: "right", fontWeight: 700, color: BS_TEXT, borderBottom: "none" }}>{fmt(group.subtotal)}</div>
+        <div style={{ ...cellBase, textAlign: "right", color: BS_TEXT_MUTED, borderBottom: "none" }}>{displayRate}</div>
+        {!isLiability && (
+          <div style={{ ...cellBase, textAlign: "right", color: atYieldColor, borderBottom: "none" }}>{displayAtYield}</div>
+        )}
+        <div style={{ ...cellBase, borderBottom: "none" }}>
+          {si?.comment && (
+            <span style={{ fontSize: 9.5, color: si.comment.color === "red" ? "hsl(0,65%,55%)" : si.comment.color === "orange" ? "hsl(38,78%,52%)" : BS_TEXT_MUTED }}>
+              {si.comment.text}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+
+    return (
+      <div key={group.category}>
+        {/* Single-item group: render only the heavy subtotal-style row (no indented sub-row) */}
+        {!multiItem && subtotalRow}
+        {/* Multi-item group: render indented item rows, then the subtotal row at bottom */}
+        {multiItem && renderItems(group.items)}
+        {multiItem && showSubtotal && subtotalRow}
+      </div>
+    );
+  };
 
   const hdrCell: React.CSSProperties = {
     fontFamily: MONO, fontSize: 10.5, fontWeight: 800,
     letterSpacing: "0.10em", textTransform: "uppercase",
     color: "hsl(210,35%,65%)", padding: "7px 8px",
-    borderBottom: `1px solid ${BS_BORDER_SEC}`,
   };
 
   return (
     <div style={{ border: `1px solid ${BS_BORDER}`, borderRadius: 10, overflow: "hidden", fontFamily: MONO }}>
-      {/* Parent "Yield / Return" label spanning Pre-Tax + After-Tax columns */}
+      {/* "Yield / Return" parent header — border only under columns 4–5 (Pre-Tax / After-Tax) */}
       {!isLiability && (
-        <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT, borderBottom: `1px solid ${BS_BORDER_SEC}`, minHeight: 20 }}>
+        <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT }}>
           <div style={{ gridColumn: "1 / 4" }} />
-          <div style={{ gridColumn: "4 / 6", textAlign: "center", fontSize: 8, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "hsl(210,35%,55%)", padding: "3px 8px 2px" }}>
+          <div style={{ gridColumn: "4 / 6", textAlign: "center", fontFamily: MONO, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "hsl(210,35%,65%)", padding: "7px 8px", borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
             Yield / Return
           </div>
           <div />
         </div>
       )}
-      {/* Header */}
-      <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT }}>
+      {/* Spacer row for liabilities — matches height of Yield/Return parent row on asset side */}
+      {isLiability && (
+        <div style={{ background: BS_BG_GRANDTOT, padding: "7px 8px", fontSize: 10.5 }} />
+      )}
+      {/* Header row — bottom border separates headers from data */}
+      <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_GRANDTOT, borderBottom: `1px solid ${BS_BORDER_SEC}` }}>
         <div style={{ ...hdrCell, paddingLeft: 12 }}>{isLiability ? "Liability Category" : "Asset Category"}</div>
         {!isLiability && <div style={{ ...hdrCell, textAlign: "center" }}>Bucket</div>}
         <div style={{ ...hdrCell, textAlign: "right" }}>Balance</div>
@@ -2920,7 +3086,7 @@ function BsTable({
       {/* Sectioned asset rows */}
       {sections && sections.map((sec) => (
         <div key={sec.label}>
-          {sec.groups.map((group) => renderGroup(group, sec.groups.length > 1 || group.items.length > 1))}
+          {sec.groups.map((group) => renderGroup(group, sec.groups.length > 1 && group.items.length > 1))}
           {/* Section total */}
           {(() => {
             const secItems = sec.groups.flatMap(g => g.items);
@@ -2929,10 +3095,10 @@ function BsTable({
               <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_SECTOT, borderTop: `2px solid ${BS_BORDER_SEC}`, borderBottom: `2px solid ${BS_BORDER_SEC}` }}>
                 <div style={{ ...cellBase, paddingLeft: 12, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: BS_GREEN_MED, borderLeft: `3px solid ${BS_GREEN_DIM}`, borderBottom: "none" }}>{sec.label}</div>
                 {!isLiability && <div style={{ ...cellBase, borderBottom: "none" }} />}
-                <div style={{ ...cellBase, textAlign: "right", fontWeight: 800, color: BS_TEXT, borderBottom: "none" }}>{fmt(sec.total)}</div>
-                <div style={{ ...cellBase, borderBottom: "none" }} />
+                <div style={{ ...cellBase, textAlign: "right", fontWeight: 800, color: BS_GREEN_MED, borderBottom: "none" }}>{fmt(sec.total)}</div>
+                <div style={{ ...cellBase, textAlign: "right", color: BS_GREEN_MED, borderBottom: "none" }} />
                 {!isLiability && (
-                  <div style={{ ...cellBase, textAlign: "right", color: secAtYield ? (secAtYield.startsWith("+") ? "hsl(152,52%,52%)" : "hsl(152,38%,45%)") : "", borderBottom: "none" }}>
+                  <div style={{ ...cellBase, textAlign: "right", color: BS_GREEN_MED, borderBottom: "none" }}>
                     {secAtYield ?? ""}
                   </div>
                 )}
@@ -2948,8 +3114,8 @@ function BsTable({
           {renderItems(group.items)}
           <div className="grid" style={{ gridTemplateColumns: COLS, background: BS_BG_SECTOT, borderTop: `2px solid ${BS_BORDER_SEC}`, borderBottom: `2px solid ${BS_BORDER_SEC}` }}>
             <div style={{ ...cellBase, paddingLeft: 12, fontWeight: 800, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: BS_GREEN_MED, borderLeft: `3px solid ${BS_GREEN_DIM}`, borderBottom: "none" }}>{group.category}</div>
-            <div style={{ ...cellBase, textAlign: "right", fontWeight: 800, color: BS_TEXT, borderBottom: "none" }}>{fmt(group.subtotal)}</div>
-            <div style={{ ...cellBase, textAlign: "right", color: BS_TEXT_MUTED, borderBottom: "none" }}>
+            <div style={{ ...cellBase, textAlign: "right", fontWeight: 800, color: BS_GREEN_MED, borderBottom: "none" }}>{fmt(group.subtotal)}</div>
+            <div style={{ ...cellBase, textAlign: "right", color: BS_GREEN_MED, borderBottom: "none" }}>
               {group.avgRate ? `${group.avgRate}%` : ""}
             </div>
             <div style={{ ...cellBase, borderBottom: "none" }} />
@@ -3210,7 +3376,7 @@ const CF_PL_ROWS: PLRowDef[] = [
   { key: "sara_mgmt",  kind: "item", label: "Property Management",        descs: ["Investment Property — Property Management"] },
   { key: "sara_mtg",   kind: "item", label: "Mortgage",                   descs: ["Investment Property — Mortgage"] },
   { key: "sara_maint", kind: "item", label: "Maintenance / HOA",          descs: ["Investment Property — Maintenance"] },
-  { key: "sara_golf",  kind: "item", label: "Golf Club Dues",             descs: ["Sarasota — Golf Club"] },
+  { key: "sara_golf",  kind: "item", label: "Golf Club Annual Dues",      descs: ["Golf Club Annual Dues", "Sarasota — Golf Club"] },
   { key: "fl_tax",     kind: "item", label: "Property Taxes (FL annual)", descs: ["Investment Property Taxes"] },
   { key: "sub_sara", kind: "subtotal", label: "Sarasota Investment Property", sumOf: ["sara_in", "sara_mgmt", "sara_mtg", "sara_maint", "sara_golf", "fl_tax"] },
   { key: "g_living", kind: "group", label: "DEPENDENT CARE & EDUCATION" },
@@ -3223,8 +3389,8 @@ const CF_PL_ROWS: PLRowDef[] = [
   {
     key: "tuition",
     kind: "item",
-    label: "Dalton Tuition",
-    descs: ["Dalton Tuition"],
+    label: "Private School Tuition (Dalton)",
+    descs: ["Private School Tuition", "Dalton Tuition"],
   },
   {
     key: "sub_living",
@@ -3242,24 +3408,6 @@ const CF_PL_ROWS: PLRowDef[] = [
   },
   { key: "g_lifestyle", kind: "group", label: "LIFESTYLE" },
   {
-    key: "memberships",
-    kind: "item",
-    label: "Annual Memberships & Fees",
-    descs: ["Annual Memberships"],
-  },
-  {
-    key: "golf",
-    kind: "item",
-    label: "Golf Club Annual Dues",
-    descs: ["NYC — Golf Club"],
-  },
-  {
-    key: "insurance",
-    kind: "item",
-    label: "Annual Insurance Premiums",
-    descs: ["Annual Insurance"],
-  },
-  {
     key: "phone_util",
     kind: "item",
     label: "Phone / Utilities",
@@ -3269,7 +3417,7 @@ const CF_PL_ROWS: PLRowDef[] = [
     key: "sub_lifestyle",
     kind: "subtotal",
     label: "Lifestyle",
-    sumOf: ["memberships", "golf", "insurance", "phone_util"],
+    sumOf: ["phone_util"],
   },
   { key: "g_debt", kind: "group", label: "DEBT SERVICE" },
   {
@@ -3312,8 +3460,25 @@ const CF_PL_ROWS: PLRowDef[] = [
     label: "Year-End Investment Distributions",
     descs: ["Year-End Investment"],
   },
-  // ── Headline totals — computed, not hardcoded ──────────────────────────────
-  { key: "total_expenses", kind: "total", label: "TOTAL CASH EXPENSES",    compute: "outflow",     accent: "green" },
+  // ── Headline totals ────────────────────────────────────────────────────────
+  // total_expenses uses sumOf so that sara_in (rental income, +$2,100/mo) offsets
+  // the Sarasota outflows — matching how Excel row 63 "Cash Expenses" nets the
+  // Florida Investment Property P&L rather than showing gross outflows.
+  {
+    key: "total_expenses", kind: "total", label: "TOTAL CASH EXPENSES",
+    sumOf: [
+      "trib_mortgage", "trib_hoa", "trib_ins", "trib_util", "nyc_tax",
+      "sara_in", "sara_mgmt", "sara_mtg", "sara_maint", "sara_golf", "fl_tax",
+      "childcare", "tuition",
+      "cc_pay",
+      "phone_util",
+      "pe_loan", "student",
+      "fed_tax",
+      "trav_all",
+      "yr_end_fees",
+    ],
+    accent: "green",
+  },
   { key: "total_net",      kind: "total", label: "TOTAL NET CASH FLOW",    compute: "net",         accent: "amber" },
   { key: "total_cum",      kind: "total", label: "CUMULATIVE NET CASH FLOW", compute: "cumulative", accent: "amber" },
 ];
@@ -3405,11 +3570,19 @@ function CashFlowForecastView({
       );
   }
 
+  // Interest income driven by asset forecast model (same as CashFlowForecastWaterfallView)
+  const monthlyBucketIntCfView = computeMonthlyBucketInterest(assets, cashFlows);
+
   const vals: Record<string, number[]> = {};
   // Pass 1: items and subtotals (totals with compute= are deferred to pass 2)
   for (const row of CF_PL_ROWS) {
     if (row.kind === "item") {
-      vals[row.key] = CF_MONTHS.map((m) => monthVal(row.descs, m.year, m.month));
+      // Reserve interest overridden by asset-forecast model so both tabs tie to the same numbers
+      if (row.key === "reserve_int") {
+        vals[row.key] = monthlyBucketIntCfView;
+      } else {
+        vals[row.key] = CF_MONTHS.map((m) => monthVal(row.descs, m.year, m.month));
+      }
     } else if (row.kind === "subtotal") {
       if (row.sumOf) {
         vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf!.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
@@ -3437,7 +3610,7 @@ function CashFlowForecastView({
       0,
     ),
   );
-  const CORE_EXPENSE_KEYS = ["trib_mortgage", "trib_hoa", "trib_ins", "trib_util", "nyc_tax", "sara_mgmt", "sara_mtg", "sara_maint", "sara_golf", "fl_tax", "childcare", "phone_util", "cc_pay", "memberships", "golf", "insurance", "pe_loan", "student"];
+  const CORE_EXPENSE_KEYS = ["trib_mortgage", "trib_hoa", "trib_ins", "trib_util", "nyc_tax", "sara_mgmt", "sara_mtg", "sara_maint", "sara_golf", "fl_tax", "childcare", "phone_util", "cc_pay", "pe_loan", "student"];
   const coreOutflowByMonth = CF_MONTHS.map((_, mi) =>
     CORE_EXPENSE_KEYS.reduce((s, k) => {
       const v = vals[k]?.[mi] ?? 0;
@@ -5365,12 +5538,11 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
             GURU INTELLIGENCE · LQ-7
           </div>
           <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
-            ASSET WATERFALL MODEL · FY 2026 · STATUS QUO (OPTIMIZER OFF)
+            ASSET FORECAST · FY 2026 · LIVE FROM TRANSACTION DATA
           </div>
         </div>
         <div style={{ fontFamily: UI, fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
-          Month-by-month balance ledger for each liquidity bucket.
-          Opening balances from live account data · Income &amp; expenses from 2026 cash flow schedule · After-Tax yields applied from GURU-recommended instruments.
+          Month-by-month balance ledger for each liquidity bucket. Opening balances from live account data. Income and expenses from the 2026 cash flow schedule with After-Tax yields applied from GURU-recommended instruments.
         </div>
       </div>
 
@@ -5647,16 +5819,22 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
     if (row.kind === "group") {
       currentGroupColor = groupColors[row.label] ?? "rgba(255,255,255,0.35)";
       return (
-        <tr key={row.key} style={{ background: rowBgs.group, borderTop: `0.5px solid ${currentGroupColor}40` }}>
-          <td colSpan={14} style={{
-            fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.13em",
-            textTransform: "uppercase" as const, color: currentGroupColor,
-            padding: "5px 14px 5px 14px", position: "sticky" as const, left: 0,
-            borderBottom: `0.5px solid ${currentGroupColor}40`,
-          }}>
-            {row.label}
-          </td>
-        </tr>
+        <React.Fragment key={row.key}>
+          {/* Small spacer row between sections */}
+          <tr style={{ background: DS_BG }}>
+            <td colSpan={14} style={{ padding: "3px 0", borderBottom: "none" }} />
+          </tr>
+          <tr style={{ background: rowBgs.group, borderTop: `0.5px solid ${currentGroupColor}40` }}>
+            <td colSpan={14} style={{
+              fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.13em",
+              textTransform: "uppercase" as const, color: currentGroupColor,
+              padding: "6px 14px 5px 14px", position: "sticky" as const, left: 0,
+              borderBottom: `0.5px solid ${currentGroupColor}40`,
+            }}>
+              {row.label}
+            </td>
+          </tr>
+        </React.Fragment>
       );
     }
 
@@ -5735,14 +5913,14 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
       <div style={{ marginBottom: 18 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 6 }}>
           <div style={{ fontFamily: UI, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: GREEN }}>
-            GURU INTELLIGENCE · CF-12
+            GURU INTELLIGENCE · CF-2
           </div>
           <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
-            CASH FLOW FORECAST · FY 2026 · KESSLER FAMILY
+            CASH FLOW MODEL · FY 2026 · LIVE FROM TRANSACTION DATA
           </div>
         </div>
         <div style={{ fontFamily: UI, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
-          Full P&amp;L ledger — every line item sourced from live cash flow schedule. All figures auditable.
+          Month-by-month inflow and outflow ledger. All figures from live account data and the 2026 cash flow schedule. Cumulative net cash flow drives the liquidity trough calculation.
         </div>
       </div>
 
@@ -5750,11 +5928,11 @@ function CashFlowForecastWaterfallView({ assets, cashFlows }: { assets: Asset[];
       <div style={{ display: "flex", gap: 12, marginBottom: 18 }}>
         {[
           { label: "Total Cash Income",    val: annualIncome,   color: GREEN },
-          { label: "Total Cash Expenses",  val: annualExpenses, color: AMBER },
+          { label: "Total Cash Expenses",  val: (vals["total_expenses"] ?? []).reduce((s,v) => s+v, 0), color: AMBER },
           { label: "Net Cash Flow (FY)",   val: annualNet,      color: annualNet >= 0 ? GREEN : AMBER },
           { label: "Trough (Nov)",         val: troughDepth,    color: troughDepth < 0 ? AMBER : GREEN, note: "lowest cumulative NCF — sizes reserve" },
         ].map(({ label, val, color, note }) => (
-          <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `0.5px solid rgba(255,255,255,0.08)`, padding: "10px 14px" }}>
+          <div key={label} style={{ flex: 1, background: "rgba(255,255,255,0.04)", border: `0.5px solid rgba(255,255,255,0.08)`, borderTop: `2px solid ${color}`, padding: "10px 14px" }}>
             <div style={{ fontFamily: UI, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>{label}</div>
             <div style={{ fontFamily: MONO, fontSize: 17, fontWeight: 400, color }}>{fmt(val)}</div>
             {note && <div style={{ fontFamily: UI, fontSize: 9, color: "rgba(255,255,255,0.28)", marginTop: 3 }}>{note}</div>}
@@ -5816,7 +5994,17 @@ function MoneyMovementView({
   pendingTransfers?: { from: string; to: string; amount: number }[];
   bucketProductSelections?: Record<string, Array<{ product: BucketProduct; alloc: number }>>;
 }) {
-  const BASE_MONTHLY_EXPENSE = 20940; // ~monthly recurring expenses from cash flow model
+  // ── Live monthly CF arrays derived from DB seed (single source of truth) ────
+  const {
+    grossOutflow: liveOutflow,
+    grossInflow:  liveInflow,
+    netExpenses:  liveNetExp,
+    netCashFlow:  liveNet,
+    baseMonthlyCFExpense,
+  } = computeLiveMonthlyCF(cashFlows);
+
+  // BASE_MONTHLY_EXPENSE: plain-month net expenses (outflows net of rental) from DB
+  const BASE_MONTHLY_EXPENSE = baseMonthlyCFExpense || 20939;
   const minOps = opsCashMonths * BASE_MONTHLY_EXPENSE;
 
   // ── Derive sub-accounts from assets (same classification as GURU Allocation tab) ──
@@ -5883,9 +6071,11 @@ function MoneyMovementView({
   const IMM_BAL            = CHASE_BAL.map((v, i) => v + CITIZENS_CHECK_BAL[i]);
   // Jan→Dec: 112424, 110299, 108173, 61048, 54922, 51797, 30171, 13045, 10920, 8794, 2668, 49759
 
-  // ── Ops Cash flow details (for hover tooltips) ────────────────────────────────
-  const INCOME_TO_IMM  = [18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,18814,38439];
-  const EXPENSES       = [-38439,-20939,-20939,-65939,-24939,-21939,-40439,-35939,-20939,-20939,-24939,-48392];
+  // ── Ops Cash flow details (for hover tooltips) — LIVE from DB via computeLiveMonthlyCF ──
+  // liveNetExp = gross outflows minus rental income, matching Excel "Cash Expenses" structure
+  const EXPENSES       = liveNetExp.map(v => -v);   // signed negative (outflows)
+  // INCOME_TO_IMM: regular monthly salaries (non-bonus months), full inflow in bonus month
+  const INCOME_TO_IMM  = liveInflow.map(v => Math.round(v));
   const FROM_ST_TO_IMM = [0,0,0,0,0,0,0,0,0,0,0,0]; // no auto-draw in baseline
   const IMM_INT        = [0,0,0,0,0,0,0,0,0,0,0,0];
 
@@ -6194,14 +6384,31 @@ function MoneyMovementView({
   const specials  = SPECIALS[sm];
   const totalExp  = Math.abs(EXPENSES[sm]);
 
-  // Fixed recurring expense buckets (sum = $20,939 base)
-  const BASE_EXP = [
-    { label: "Housing & Property",  amount: 9036,  dot: "#0284c7" },
-    { label: "Childcare",           amount: 4333,  dot: "#7c3aed" },
-    { label: "Credit Cards",         amount: 3500,  dot: "#ea580c" },
-    { label: "Debt Service",        amount: 1187,  dot: "#dc2626" },
-    { label: "Other Recurring",     amount: 2883,  dot: "#64748b" },
-  ];
+  // Expense breakdown — derived from live cashFlows for baseline month (March 2026, no specials)
+  const BASE_EXP = (() => {
+    const baseM = 3; // March 2026 — no tuition, taxes, or travel
+    const baseOut = cashFlows.filter(cf => {
+      const d = new Date(cf.date as string);
+      return cf.type === "outflow" && d.getUTCFullYear() === 2026 && d.getUTCMonth() + 1 === baseM;
+    });
+    const housing = baseOut.filter(cf => cf.category === "housing").reduce((s,cf) => s+Number(cf.amount), 0);
+    const rentalOff = cashFlows.filter(cf => {
+      const d = new Date(cf.date as string);
+      return cf.type === "inflow" && d.getUTCFullYear() === 2026 && d.getUTCMonth() + 1 === baseM
+        && (cf.description ?? "").toLowerCase().includes("rental");
+    }).reduce((s,cf) => s+Number(cf.amount), 0);
+    const childcareAmt = baseOut.filter(cf => (cf.description ?? "").toLowerCase().includes("childcare") || (cf.description ?? "").toLowerCase().includes("nanny")).reduce((s,cf) => s+Number(cf.amount), 0);
+    const ccAmt  = baseOut.filter(cf => cf.category === "lifestyle").reduce((s,cf) => s+Number(cf.amount), 0);
+    const debtAmt = baseOut.filter(cf => (cf.description ?? "").toLowerCase().includes("loan") || (cf.description ?? "").toLowerCase().includes("student")).reduce((s,cf) => s+Number(cf.amount), 0);
+    const phoneAmt = baseOut.filter(cf => (cf.description ?? "").toLowerCase().includes("phone")).reduce((s,cf) => s+Number(cf.amount), 0);
+    return [
+      { label: "Housing & Property",  amount: Math.round(housing - rentalOff), dot: "#0284c7" },
+      { label: "Childcare",           amount: Math.round(childcareAmt),         dot: "#7c3aed" },
+      { label: "Credit Cards",        amount: Math.round(ccAmt),                dot: "#ea580c" },
+      { label: "Debt Service",        amount: Math.round(debtAmt),              dot: "#dc2626" },
+      { label: "Phone / Utilities",   amount: Math.round(phoneAmt),             dot: "#64748b" },
+    ];
+  })();
 
   // ── Treasury ladder (GURU's strategic reserve structure) — shared across both views ──
   const TBILLS = [
@@ -6252,7 +6459,25 @@ function MoneyMovementView({
 
   const allZero = (arr: number[]) => arr.every(v => v === 0);
 
+  const _UI = "Inter, system-ui, sans-serif";
+  const _MONO = "'JetBrains Mono', 'Courier New', monospace";
+  const _GREEN = "#44e08a";
   return (
+    <div>
+      {/* ── GURU Intelligence Header ── */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 6 }}>
+          <div style={{ fontFamily: _UI, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: _GREEN }}>
+            GURU INTELLIGENCE · MM-1
+          </div>
+          <div style={{ fontFamily: _MONO, fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
+            MONEY MOVEMENT · FY 2026 · LIVE FROM TRANSACTION DATA
+          </div>
+        </div>
+        <div style={{ fontFamily: _UI, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+          Automated transfer schedule and account-by-account balance forecast. Inflows and expenses from the 2026 cash flow schedule with GURU-managed sweep logic applied.
+        </div>
+      </div>
     <div className="rounded-xl overflow-hidden shadow-xl border border-slate-200">
       {/* ── Title bar: title + view toggle + controls ── */}
       <div className="bg-slate-800 px-6 py-4 flex items-center gap-4 flex-wrap">
@@ -7024,6 +7249,7 @@ function MoneyMovementView({
         </>
       )}
     </div>
+    </div>
   );
 }
 
@@ -7692,11 +7918,13 @@ function DetailsView({
   liabilities,
   cashFlows,
   clientId,
+  accounts = [],
 }: {
   assets: Asset[];
   liabilities: Liability[];
   cashFlows: CashFlow[];
   clientId: number;
+  accounts?: Account[];
 }) {
   const [tab] = useState<"bs">("bs");
   const totalAssets = assets.reduce((s, a) => s + Number(a.value), 0);
@@ -7709,7 +7937,7 @@ function DetailsView({
   const dvCapBuild = assets.filter(a => assetBucketKey(a) === "tactical").reduce((s, a) => s + Number(a.value), 0);
   const dvTotalLiquid = dvOpCash + dvResCash + dvCapBuild;
 
-  const assetGroups = buildAssetGroups(assets);
+  const assetGroups = buildAssetGroups(assets, accounts);
   const liabGroups = buildLiabilityGroups(liabilities);
 
   const totalAssetRate = (() => {
@@ -7751,67 +7979,90 @@ function DetailsView({
 
       {tab === "bs" && (
         <div className="space-y-4" style={{ padding: "0" }}>
-          {/* ── GURU Detection Cards ── */}
-          <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
-            {/* Detection System header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px 7px", borderBottom: "1px solid rgba(91,143,204,0.18)" }}>
-              <div style={{ width: 3, height: 16, background: "#5ecc8a", borderRadius: 1.5, flexShrink: 0 }} />
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#5ecc8a", display: "inline-block", flexShrink: 0, animation: "pulse 2s ease-in-out infinite" }} />
-              <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.1em", color: "rgba(180,215,255,0.88)" }}>Detection System</span>
-              <span style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.28)", marginLeft: "auto", letterSpacing: "0.05em", textTransform: "uppercase" as const }}>3 Active</span>
+          {/* ── GURU Intelligence Header ── */}
+          <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 5 }}>
+              <div style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#44e08a" }}>
+                GURU INTELLIGENCE · NW-1
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(255,255,255,0.28)", letterSpacing: "0.06em" }}>
+                BALANCE SHEET TODAY · LIVE FROM TRANSACTION DATA
+              </div>
             </div>
-            {/* Detection cards row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, padding: "7px 10px 9px" }}>
-              {/* Card 1: Total Assets */}
-              <div style={{ background: "rgba(0,0,0,0.22)", borderRadius: 5, border: "1px solid rgba(91,143,204,0.18)", borderLeft: "2.5px solid rgba(91,143,204,0.55)", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(180,215,255,0.88)" }}>Total Assets</span>
-                  <span style={{ fontFamily: CF2.INTER, fontSize: 8, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>Dec 29, 2025</span>
-                </div>
-                <div style={{ fontFamily: CF2.INTER, fontSize: 22, fontWeight: 300, color: "rgba(180,215,255,0.95)", letterSpacing: "-0.015em", fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(totalAssets)}</div>
-                <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.45)", lineHeight: 1.3 }}>Across all accounts &amp; holdings · synced live</div>
-              </div>
-              {/* Card 2: Total Liabilities */}
-              <div style={{ background: "rgba(0,0,0,0.22)", borderRadius: 5, border: "1px solid rgba(155,32,32,0.22)", borderLeft: "2.5px solid rgba(155,32,32,0.55)", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(255,180,180,0.82)" }}>Total Liabilities</span>
-                  <span style={{ fontFamily: CF2.INTER, fontSize: 8, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>Dec 29, 2025</span>
-                </div>
-                <div style={{ fontFamily: CF2.INTER, fontSize: 22, fontWeight: 300, color: "rgba(255,180,180,0.90)", letterSpacing: "-0.015em", fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(totalLiab)}</div>
-                <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.45)", lineHeight: 1.3 }}>Mortgage + consumer debt · leverage ratio tracked</div>
-              </div>
-              {/* Card 3: Net Worth — hero green */}
-              <div style={{ background: "rgba(0,0,0,0.26)", borderRadius: 5, border: "1px solid rgba(94,204,138,0.28)", borderLeft: "2.5px solid rgba(94,204,138,0.55)", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(94,204,138,0.88)" }}>Net Worth</span>
-                  <span style={{ fontFamily: CF2.INTER, fontSize: 8, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase" as const, color: CF2.green, border: `1px solid rgba(94,204,138,0.35)`, borderRadius: 2, padding: "1px 6px" }}>LIVE</span>
-                </div>
-                <div style={{ fontFamily: CF2.INTER, fontSize: 22, fontWeight: 300, color: CF2.green, letterSpacing: "-0.015em", fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(netWorth)}</div>
-                <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.45)", lineHeight: 1.3 }}>Assets minus liabilities · continuously updated</div>
-              </div>
+            <div style={{ fontFamily: CF2.INTER, fontSize: 13, color: "rgba(255,255,255,0.50)", lineHeight: 1.6 }}>
+              Full balance sheet snapshot — assets, liabilities, and net worth from live account data. Positions updated as of {format(DEMO_NOW, "MMMM d, yyyy")}.
             </div>
           </div>
-
-          {/* ── Total Liquid Assets card ── */}
-          <div style={{ padding: "7px 10px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
-              <div style={{ width: 3, height: 14, background: "#44e08a", borderRadius: 1.5, flexShrink: 0 }} />
-              <span style={{ fontFamily: CF2.INTER, fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.10em", color: "rgba(180,215,255,0.75)" }}>Total Liquid Assets</span>
-              <span style={{ fontFamily: CF2.INTER, fontSize: 18, fontWeight: 300, color: "#5ecc8a", letterSpacing: "-0.015em", fontVariantNumeric: "tabular-nums" as const, marginLeft: "auto" }}>{fmt(dvTotalLiquid)}</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-              {([
-                { label: "Operating Cash",     val: dvOpCash,   color: "#1E4F9C", pill: "Checking" },
-                { label: "Liquidity Reserve",  val: dvResCash,  color: "#835800", pill: "Reserve" },
-                { label: "Capital Build",       val: dvCapBuild, color: "#195830", pill: "Capital" },
-              ] as const).map(b => (
-                <div key={b.label} style={{ background: "rgba(0,0,0,0.20)", borderRadius: 4, border: "1px solid rgba(255,255,255,0.06)", borderLeft: `2.5px solid ${b.color}`, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.45)" }}>{b.label}</span>
-                  <span style={{ fontFamily: CF2.INTER, fontSize: 16, fontWeight: 300, color: "rgba(255,255,255,0.88)", letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums" as const }}>{fmt(b.val)}</span>
+          {/* ── KPI Cards — asset forecast style ── */}
+          {(() => {
+            const MONO_F = "'JetBrains Mono', 'Courier New', monospace";
+            // Per-bucket yields
+            const opAssets  = assets.filter(a => assetBucketKey(a) === "reserve");
+            const resAssets = assets.filter(a => assetBucketKey(a) === "yield_");
+            const bldAssets = assets.filter(a => assetBucketKey(a) === "tactical");
+            const opY  = liquidAssetYields(opAssets);
+            const resY = liquidAssetYields(resAssets);
+            const bldY = liquidAssetYields(bldAssets);
+            // Blended after-tax
+            const liquidTotal = dvTotalLiquid;
+            const blendedAt = liquidTotal > 0
+              ? (opY.at * dvOpCash + resY.at * dvResCash + bldY.at * dvCapBuild) / liquidTotal
+              : 0;
+            const fmtPctKpi = (v: number) => `${(v * 100).toFixed(2)}%`;
+            const cardStyle: React.CSSProperties = {
+              flex: 1,
+              background: "rgba(255,255,255,0.04)",
+              border: "0.5px solid rgba(255,255,255,0.08)",
+              padding: "10px 14px",
+            };
+            const liqBuckets = [
+              { label: "Operating Cash",    val: dvOpCash,   color: "#1E4F9C", pretax: fmtPctKpi(opY.pretax),  at: fmtPctKpi(opY.at)  },
+              { label: "Liquidity Reserve", val: dvResCash,  color: "#835800", pretax: fmtPctKpi(resY.pretax), at: fmtPctKpi(resY.at) },
+              { label: "Capital Build",     val: dvCapBuild, color: "#195830", pretax: fmtPctKpi(bldY.pretax), at: fmtPctKpi(bldY.at) },
+            ];
+            return (
+              <div style={{ display: "flex", gap: 12, padding: "14px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                {/* Total Assets */}
+                <div style={{ ...cardStyle, borderTop: "2px solid rgba(91,143,204,0.70)" }}>
+                  <div style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 6 }}>Total Assets</div>
+                  <div style={{ fontFamily: MONO_F, fontSize: 17, fontWeight: 400, color: "rgba(255,255,255,0.92)", marginBottom: 6, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(totalAssets)}</div>
+                  <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.35)", lineHeight: 1.4 }}>All accounts &amp; holdings · Dec 29, 2025</div>
                 </div>
-              ))}
-            </div>
-          </div>
+                {/* Total Liabilities */}
+                <div style={{ ...cardStyle, borderTop: "2px solid rgba(155,32,32,0.70)" }}>
+                  <div style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 6 }}>Total Liabilities</div>
+                  <div style={{ fontFamily: MONO_F, fontSize: 17, fontWeight: 400, color: "rgba(255,120,120,0.90)", marginBottom: 6, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(totalLiab)}</div>
+                  <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.35)", lineHeight: 1.4 }}>Mortgages + consumer + investment debt</div>
+                </div>
+                {/* Net Worth */}
+                <div style={{ ...cardStyle, borderTop: "2px solid rgba(94,204,138,0.70)" }}>
+                  <div style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)", marginBottom: 6 }}>Net Worth</div>
+                  <div style={{ fontFamily: MONO_F, fontSize: 17, fontWeight: 400, color: CF2.green, marginBottom: 6, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(netWorth)}</div>
+                  <div style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.35)", lineHeight: 1.4 }}>Assets less liabilities · continuously updated</div>
+                </div>
+                {/* Liquidity Position */}
+                <div style={{ ...cardStyle, borderTop: "2px solid rgba(68,224,138,0.50)", flex: 1.4 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.38)" }}>Liquidity Position</div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontFamily: MONO_F, fontSize: 14, fontWeight: 400, color: CF2.green, fontVariantNumeric: "tabular-nums" as const }}>{fmt(dvTotalLiquid)}</span>
+                      <span style={{ fontFamily: CF2.INTER, fontSize: 9, color: "rgba(255,255,255,0.28)" }}>blended {fmtPctKpi(blendedAt)} after-tax</span>
+                    </div>
+                  </div>
+                  {liqBuckets.map(b => (
+                    <div key={b.label} style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
+                      <div style={{ width: 3, height: 28, background: b.color, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: CF2.INTER, fontSize: 9, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.45)", marginBottom: 1 }}>{b.label}</div>
+                        <div style={{ fontFamily: MONO_F, fontSize: 11, color: "rgba(255,255,255,0.35)" }}>Pre-Tax: {b.pretax} · After-Tax: <span style={{ color: CF2.green }}>{b.at}</span></div>
+                      </div>
+                      <div style={{ fontFamily: MONO_F, fontSize: 14, fontWeight: 400, color: "rgba(255,255,255,0.85)", fontVariantNumeric: "tabular-nums" as const, flexShrink: 0 }}>{fmt(b.val)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="space-y-4" style={{ padding: "0 20px 20px" }}>
           <div className="flex justify-end gap-2">
@@ -7825,7 +8076,7 @@ function DetailsView({
               totalValue={totalAssets}
               totalRate={totalAssetRate}
             />
-            <div className="space-y-3">
+            <div>
               <BsTable
                 groups={liabGroups}
                 totalLabel="Total Liabilities"
@@ -7833,20 +8084,6 @@ function DetailsView({
                 totalRate={totalLiabRate}
                 isLiability
               />
-              <div style={{ border: `1px solid ${CF2.border}`, borderRadius: "10px", overflow: "hidden", background: CF2.card }}>
-                <div
-                  className="grid"
-                  style={{ gridTemplateColumns: "1fr 90px 62px 62px 80px", background: CF2.elevated }}
-                >
-                  <div style={{ padding: "12px", fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.06em", color: CF2.green }}>Net Worth</div>
-                  <div style={{ padding: "12px", textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: "13px", fontWeight: 900, color: CF2.green }}>
-                    {fmt(netWorth)}
-                  </div>
-                  <div style={{ padding: "12px" }} />
-                  <div style={{ padding: "12px" }} />
-                  <div style={{ padding: "12px" }} />
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -8587,30 +8824,50 @@ function AdvisorBriefView({
       `}</style>
 
       {/* Page header */}
-      <div style={{ padding: "28px 32px 0", background: BG }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+      <div style={{ padding: "28px 32px 20px", background: BG, borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 32, justifyContent: "space-between" }}>
 
           {/* Left — editorial */}
-          <div>
+          <div style={{ flex: "0 0 auto" }}>
             <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: "rgba(0,0,0,0.38)", letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: 6, whiteSpace: "nowrap" }}>
               Good morning, Tara
             </div>
-            <div style={{ fontFamily: SERIF, fontSize: 36, fontWeight: 400, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1.1, whiteSpace: "nowrap" }}>
+            <div style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 400, letterSpacing: "-0.025em", color: "hsl(222,45%,12%)", lineHeight: 1.1 }}>
               Three capital allocation decisions for the Kesslers
+            </div>
+            {/* Status line */}
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 14 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3a9e6a", display: "inline-block", flexShrink: 0, animation: "phBlink 1.8s ease infinite" }} />
+              <span style={{ fontFamily: FONT, fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap" }}>GURU analysis complete · Ready to execute · Updated {format(DEMO_NOW, "MMM d, yyyy")}</span>
             </div>
           </div>
 
-          {/* Right — system status */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0, paddingTop: 4 }}>
-            {/* Line 1 — with blink dot */}
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3a9e6a", display: "inline-block", flexShrink: 0, animation: "phBlink 1.8s ease infinite" }} />
-              <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap" }}>GURU analysis complete</span>
+          {/* Right — 2×2 KPI grid */}
+          <div style={{ flex: "0 0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "rgba(0,0,0,0.07)", border: "1px solid rgba(0,0,0,0.07)", minWidth: 380 }}>
+            {/* Net Worth */}
+            <div style={{ background: "#fff", padding: "12px 16px" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Net Worth</div>
+              <div style={{ fontFamily: FONT, fontSize: 20, fontWeight: 300, letterSpacing: "-0.03em", color: "hsl(222,45%,12%)", fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(netWorthTotal)}</div>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)", marginTop: 3 }}>assets less liabilities</div>
             </div>
-            {/* Line 2 */}
-            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap", paddingLeft: 13 }}>Ready to execute</div>
-            {/* Line 3 — timestamp */}
-            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 400, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap", paddingLeft: 13, marginTop: 1 }}>Updated 2026-03-06 · 09:42:17</div>
+            {/* Excess Liquidity */}
+            <div style={{ background: "#fff", padding: "12px 16px" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Excess Liquidity</div>
+              <div style={{ fontFamily: FONT, fontSize: 20, fontWeight: 300, letterSpacing: "-0.03em", color: accentColor.liquidity, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>{fmt(excessLiquidity)}</div>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)", marginTop: 3 }}>{daysIdle} days idle · 0.8% avg</div>
+            </div>
+            {/* Potential Income Increase */}
+            <div style={{ background: "#fff", padding: "12px 16px" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Potential After-Tax Income Increase</div>
+              <div style={{ fontFamily: FONT, fontSize: 20, fontWeight: 300, letterSpacing: "-0.03em", color: accentColor.liquidity, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>+{fmt(annualReturnPickup)}<span style={{ fontSize: 12, fontWeight: 400 }}>/yr</span></div>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)", marginTop: 3 }}>if deployed today</div>
+            </div>
+            {/* Rate Lock Window */}
+            <div style={{ background: "#fff", padding: "12px 16px" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.38)", marginBottom: 4 }}>Rate Lock Window Closes</div>
+              <div style={{ fontFamily: FONT, fontSize: 20, fontWeight: 300, letterSpacing: "-0.03em", color: accentColor.rates, fontVariantNumeric: "tabular-nums" as const, lineHeight: 1 }}>May 5</div>
+              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)", marginTop: 3 }}>{daysUntilFed} days · Fed meets May 7</div>
+            </div>
           </div>
 
         </div>
@@ -11044,8 +11301,13 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
     if (d.includes("capitalOne 360") || d.includes("360 performance") || d.includes("capital one 360")) return { name: "Capital One 360 Performance Savings",         inst: "Capital One, N.A.",               last4: "·1482", insight: "3.78% APY",               yield_: "3.78%",     comment: "",                       collateral: "" };
     if (d.includes("cash sweep") || (d.includes("fidelity") && d.includes("money market")))             return { name: "Fidelity Government Money Market Fund (SPAXX)", inst: "Fidelity Investments",            last4: "·4976", insight: "2.50% 7-day yield",       yield_: "2.50%",     comment: "Below potential",        collateral: "" };
     if (d.includes("us treasuries") || d.includes("t-bill") || d.includes("treasur"))                  return { name: "U.S. Treasury Bills — 3-Month",                inst: "Fidelity Investments (custodian)", last4: "·1142", insight: "Matures Apr 2026",        yield_: "3.95%",     comment: "Maturing Apr '26",       collateral: "" };
+    if (d.includes("cresset") && d.includes("us large cap core"))            return { name: "Cresset — US Large Cap Core (ETF sleeve)",       inst: "Cresset Asset Management, LLC",    last4: "·3391", insight: "Advisor managed",          yield_: "+16.4%",    comment: "",                       collateral: "" };
+    if (d.includes("cresset") && d.includes("international developed"))      return { name: "Cresset — International Developed Markets",       inst: "Cresset Asset Management, LLC",    last4: "·3391", insight: "Advisor managed",          yield_: "+11.2%",    comment: "",                       collateral: "" };
+    if (d.includes("cresset") && d.includes("small cap value"))              return { name: "Cresset — US Small Cap Value (ETF sleeve)",       inst: "Cresset Asset Management, LLC",    last4: "·3391", insight: "Advisor managed",          yield_: "+14.8%",    comment: "",                       collateral: "" };
+    if (d.includes("cresset") && d.includes("equity income"))                return { name: "Cresset — Equity Income Active (JP Morgan)",      inst: "Cresset Asset Management, LLC",    last4: "·3391", insight: "Advisor managed",          yield_: "+12.6%",    comment: "",                       collateral: "" };
     if (d.includes("cresset"))                                               return { name: "Cresset Capital — Managed Portfolio (US)",       inst: "Cresset Asset Management, LLC",    last4: "·3391", insight: "Advisor managed",          yield_: "—",         comment: "",                       collateral: "" };
-    if (d.includes("schwab"))                                                return { name: "Schwab International Index Fund (SWISX)",         inst: "Charles Schwab & Co., Inc.",       last4: "·7678", insight: "",                        yield_: "+7.9%",     comment: "",                       collateral: "" };
+    if (d.includes("vti") || (d.includes("fidelity") && d.includes("total market"))) return { name: "Fidelity — Total Market Index Fund (VTI ETF)", inst: "Fidelity Investments",            last4: "·3314", insight: "Self-directed · index",   yield_: "+9.8%",     comment: "Self-directed",          collateral: "" };
+    if (d.includes("small cap value"))                                       return { name: "Fidelity Small Cap Value Index Fund (FISVX)",     inst: "Fidelity Investments",             last4: "·3314", insight: "Self-directed · index",   yield_: "+14.8%",    comment: "Self-directed",          collateral: "" };
     if (d.includes("meta platforms") || (d.includes("meta") && d.includes("e*trade"))) return { name: "E*Trade Brokerage — Meta Platforms, Inc. (META)", inst: "Morgan Stanley (E*Trade)", last4: "·9782", insight: "Concentration", yield_: "+68.3%",  comment: "Concentration",          collateral: "" };
     if (d.includes("bank of america") && d.includes("single stock"))        return { name: "E*Trade Brokerage — Bank of America Corp. (BAC)", inst: "Morgan Stanley (E*Trade)",        last4: "·9782", insight: "Concentration", yield_: "+12.0%",  comment: "Concentration",          collateral: "" };
     if (d.includes("401"))                                                   return { name: "Fidelity Workplace 401(k) — Traditional",         inst: "Fidelity Investments · 401(k)",   last4: "·8821", insight: "Tax-deferred · pre-tax",  yield_: "+10.4%",    comment: "",                       collateral: "" };
@@ -11059,8 +11321,8 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
     if (d.includes("tribeca") && d.includes("mortgage"))                    return { name: "Tribeca Condo Mortgage — 50 Warren St, Apt 12F",  inst: "Wells Fargo Bank, N.A.",          last4: "·4421", insight: "30-yr fixed · 3.25%",     yield_: "",          comment: "",                       collateral: "Tribeca Condo (50 Warren St)" };
     if (d.includes("sarasota") && d.includes("mortgage"))                   return { name: "Sarasota Investment Property Mortgage",           inst: "Bank of America, N.A.",           last4: "·8863", insight: "30-yr fixed · 4.10%",     yield_: "",          comment: "",                       collateral: "1847 Siesta Dr · Sarasota, FL" };
     if (d.includes("sapphire") || (d.includes("chase") && d.includes("amex"))) return { name: "Chase Sapphire Reserve & Amex Platinum",      inst: "JPMorgan Chase / Amex",           last4: "·6411 + ·3009", insight: "Paid monthly",    yield_: "",          comment: "",                       collateral: "None — unsecured" };
-    if (d.includes("student loan") && d.includes("sarah"))                   return { name: "Federal Student Loan — Sarah Kessler",           inst: "U.S. Dept. of Education",         last4: "·2214", insight: "Income-driven repayment", yield_: "",          comment: "",                       collateral: "None — unsecured" };
-    if (d.includes("student loan") && d.includes("michael"))                 return { name: "Private Student Loan — Michael Kessler",         inst: "Sallie Mae Bank",                 last4: "·5589", insight: "Fixed rate · private",    yield_: "",          comment: "",                       collateral: "None — unsecured" };
+    if (d.includes("student loan") && d.includes("sarah"))                   return { name: "Private Student Loan — Sarah Kessler",           inst: "SoFi Bank and Trust",             last4: "·2214", insight: "Fixed rate · private",    yield_: "",          comment: "",                       collateral: "None — unsecured" };
+    if (d.includes("student loan") && d.includes("michael"))                 return { name: "Federal Student Loan — Michael Kessler",         inst: "Nelnet, Inc.",                    last4: "·5589", insight: "Income-driven repayment", yield_: "",          comment: "",                       collateral: "None — unsecured" };
     if (d.includes("student loan"))                                          return { name: "Student Loan",                                   inst: "Federal / Private",               last4: "·2214", insight: "",                        yield_: "",          comment: "",                       collateral: "None — unsecured" };
     if (d.includes("professional loan") || (d.includes("pe fund") && d.includes("capital call"))) return { name: "Professional Capital Call Line of Credit", inst: "First Republic Bank",  last4: "·7731", insight: "Variable rate · SOFR+",   yield_: "", comment: "Secured by LP interest", collateral: "Carlyle Partners LP Interest" };
     if (d.includes("remaining capital") || (d.includes("commitment") && d.includes("unfunded"))) return { name: "Unfunded Capital Commitment",              inst: "The Carlyle Group",    last4: "",      insight: "Carlyle IX · Unfunded",   yield_: "", comment: "Call anticipated 2026",  collateral: "Carlyle Partners IX" };
@@ -11135,9 +11397,10 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
 
   // Zillow estimates (demo hardcoded)
   function zillowVal(a: Asset): number {
+    // Values match the Excel prototype — treated as current Zillow estimates
     const d = (a.description ?? "").toLowerCase();
-    if (d.includes("tribeca")) return 1875000;
-    if (d.includes("sarasota")) return 415000;
+    if (d.includes("tribeca")) return 1525000;
+    if (d.includes("sarasota")) return 290000;
     return Number(a.value);
   }
   function reAddr(a: Asset): string {
@@ -11351,49 +11614,37 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
     <div style={{ flex: 1, overflowY: "auto", minHeight: 0, background: "hsl(220,5%,93%)" }}>
       <div style={{ padding: "36px 48px 80px" }}>
 
-        {/* ── PAGE HEADER — standard format matching Advisor Brief ── */}
+        {/* ── PAGE HEADER: editorial left + 2×2 KPI grid right ── */}
         <style>{`@keyframes bsPhBlink { 0%,100%{opacity:1} 50%{opacity:0.15} }`}</style>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 40, marginBottom: 32, paddingBottom: 28, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+
           {/* Left — editorial */}
-          <div>
+          <div style={{ flex: "0 0 auto" }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.35)", marginBottom: 6 }}>Financial Model</div>
-            <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 36, fontWeight: 400, color: "hsl(222,45%,12%)", lineHeight: 1.1, letterSpacing: "-0.025em" }}>Sarah &amp; Michael Kessler</div>
-          </div>
-          {/* Right — GURU system status (matches Advisor Brief) */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0, paddingTop: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 30, fontWeight: 400, color: "hsl(222,45%,12%)", lineHeight: 1.15, letterSpacing: "-0.025em", whiteSpace: "nowrap" as const }}>The Kessler&#8217;s Balance Sheet and Liquidity Allocation</div>
+            {/* Status line */}
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 14 }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3a9e6a", display: "inline-block", flexShrink: 0, animation: "bsPhBlink 1.8s ease infinite" }} />
-              <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap" }}>GURU System Update</span>
+              <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap" }}>GURU System Update · All accounts refreshed · {format(DEMO_NOW, "MMM d, yyyy")} · 09:42:17</span>
             </div>
-            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap", paddingLeft: 13 }}>All accounts refreshed</div>
-            <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 9, fontWeight: 400, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#3a9e6a", whiteSpace: "nowrap", paddingLeft: 13, marginTop: 1 }}>Updated {format(DEMO_NOW, "yyyy-MM-dd")} · 09:42:17</div>
           </div>
-        </div>
 
-        {/* ── 2×2 KPI GRID ── */}
-        {/* ALIGNMENT RULE: numbers in the same row share the same top baseline.
-            Any cell with extra content above its number (e.g. GURU eyebrow) must
-            have an invisible spacer of equal height in its paired cell. */}
-        <div style={{ marginBottom: 32, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto 1fr 1fr" }}>
+          {/* Right — 2×2 KPI grid */}
+          {/* ALIGNMENT RULE: numbers in the same row share the same top baseline.
+              Any cell with extra content above its number (e.g. GURU eyebrow) must
+              have an invisible spacer of equal height in its paired cell. */}
+          <div style={{ flex: "0 0 auto", border: "1px solid rgba(0,0,0,0.07)", background: "hsl(220,5%,93%)", display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 380 }}>
 
-            {/* Date bar */}
-            <div style={{ gridColumn: "1 / -1", padding: "4px 18px", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-              <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)", letterSpacing: "0.03em" }}>As of {format(DEMO_NOW, "MMMM d, yyyy")}</div>
-            </div>
-
-            {/* TOP LEFT: Net Worth — 26px, primary stat */}
+            {/* TOP LEFT: Net Worth */}
             <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column" as const, justifyContent: "center", borderBottom: "1px solid rgba(0,0,0,0.07)", borderRight: "1px solid rgba(0,0,0,0.08)" }}>
-              {/* spacer matches GURU eyebrow height — keeps numbers on same horizontal line */}
               <div style={{ height: 13, marginBottom: 6 }} />
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.40)", marginBottom: 2 }}>Net Worth</div>
               <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.030em", lineHeight: 1, color: "hsl(222,45%,12%)", marginBottom: 3 }}>{fmt(netWorth)}</div>
               <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)" }}>incl. real estate at Zillow estimates</div>
             </div>
 
-            {/* TOP RIGHT: GURU Excess Liquidity — 20px, same tier as assets */}
+            {/* TOP RIGHT: GURU Excess Liquidity */}
             <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column" as const, justifyContent: "center", borderBottom: "1px solid rgba(91,143,204,0.18)", background: "rgba(91,143,204,0.06)", borderLeft: "3px solid rgba(91,143,204,0.30)" }}>
-              {/* GURU eyebrow — height 13px + mb 6px matches spacer in Net Worth cell */}
               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6, height: 13 }}>
                 <div style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(91,143,204,0.75)", flexShrink: 0 }} />
                 <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.13em", textTransform: "uppercase" as const, color: "rgba(71,113,174,0.65)" }}>GURU Intelligence</div>
@@ -11403,14 +11654,14 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
               <div style={{ fontSize: 9.5, color: "rgba(71,113,174,0.52)", lineHeight: 1.3 }}>Above reserve floor · deployable now</div>
             </div>
 
-            {/* BOTTOM LEFT: Total Assets — 20px, secondary */}
+            {/* BOTTOM LEFT: Total Assets */}
             <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column" as const, justifyContent: "center", borderRight: "1px solid rgba(0,0,0,0.08)" }}>
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.40)", marginBottom: 2 }}>Total Assets</div>
               <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", lineHeight: 1, color: "hsl(222,45%,12%)", marginBottom: 3 }}>{fmt(totalAssetsZillow)}</div>
               <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.30)" }}>{assets.length} positions across all accounts</div>
             </div>
 
-            {/* BOTTOM RIGHT: Total Liabilities — 20px, secondary */}
+            {/* BOTTOM RIGHT: Total Liabilities */}
             <div style={{ padding: "10px 18px", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
               <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "rgba(0,0,0,0.40)", marginBottom: 2 }}>Total Liabilities</div>
               <div style={{ fontSize: 20, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.025em", lineHeight: 1, color: "#9b2020", marginBottom: 3 }}>−{fmt(totalLiab)}</div>
@@ -11418,12 +11669,12 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
             </div>
 
           </div>
-          </div>
         </div>
 
         {/* ── BUCKET CARDS — 5 buckets full width ── */}
         {(() => {
-          const monthlyExp   = 20939;
+          const { baseMonthlyCFExpense } = computeLiveMonthlyCF(cashFlows);
+          const monthlyExp   = baseMonthlyCFExpense || 20939;
           const opFloor      = monthlyExp * 2;
           const resFloor     = monthlyExp * 12;
           const opCoverage   = (opTotal / monthlyExp).toFixed(1);
@@ -12094,10 +12345,72 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
                   <C3Band title="Investments" netLabel="Net Investments" net={lt2Net} tc={TC.inv} />
                   <C3Header g={C3B} />
                   {growthEquity.length > 0 && <C3SubLabel text="Taxable Brokerage" />}
-                  {growthEquity.map((a, i) => <C3Row key={i} a={a} tc={TC.inv} instMode g={C3B} />)}
+                  {growthEquity.length > 0 && (() => {
+                    // Group taxable brokerage assets by institution — one row per institution
+                    const groups: { name: string; total: number; assets: Asset[] }[] = [];
+                    const idx: Record<string, number> = {};
+                    for (const a of growthEquity) {
+                      const meta = acctMeta(a.description ?? "");
+                      const instName = meta.inst?.includes("Cresset") ? "Cresset Capital"
+                        : meta.inst?.includes("Fidelity") ? "Fidelity"
+                        : (meta.inst?.includes("E*Trade") || meta.inst?.includes("Morgan Stanley")) ? "E*Trade"
+                        : meta.inst ?? "Other";
+                      if (idx[instName] === undefined) { idx[instName] = groups.length; groups.push({ name: instName, total: 0, assets: [] }); }
+                      groups[idx[instName]].total += Number(a.value);
+                      groups[idx[instName]].assets.push(a);
+                    }
+                    return groups.map(g => {
+                      const wtdY = calcWtdYield(g.assets);
+                      const noteColor = g.name === "Cresset Capital" ? "#1a5c8f" : g.name === "E*Trade" ? "#9b2020" : "#6B6860";
+                      const noteText  = g.name === "Cresset Capital" ? "Advisor managed" : g.name === "E*Trade" ? "Concentration" : "Self-directed";
+                      return (
+                        <div key={g.name} style={{ display: "grid", gridTemplateColumns: C3B, padding: "5px 0", minHeight: 30, background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+                          <div style={{ minWidth: 0, paddingLeft: 20 }}>
+                            <div style={{ fontSize: 10.5, color: "#1A1915", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                              {g.name}<span style={{ fontSize: 8.5, color: "#B0AEA8", marginLeft: 4 }}>{g.assets.length} positions</span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 11.5, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "#1A1915" }}>{fmt(g.total)}</div>
+                          <div style={{ fontSize: 10, textAlign: "right" as const, color: wtdY ? "#4a7a5a" : "#9B9890", fontVariantNumeric: "tabular-nums" as const }}>{wtdY}</div>
+                          <div style={{ paddingLeft: 6, paddingRight: 8, textAlign: "right" as const }}>
+                            <span style={{ fontSize: 9, fontWeight: 600, color: noteColor }}>{noteText}</span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                   {growthEquity.length > 0 && <C3Total tc={TC.inv} label="Taxable Brokerage" total={growthEqAmt} wtdYield={calcWtdYield(growthEquity)} g={C3B} />}
                   {growthRetirement.length > 0 && <C3SubLabel text="Retirement Accounts" />}
-                  {growthRetirement.map((a, i) => <C3Row key={i} a={a} tc={TC.inv} instMode g={C3B} />)}
+                  {growthRetirement.length > 0 && (() => {
+                    // Group retirement assets by institution — one row per institution
+                    const groups: { name: string; total: number; assets: Asset[] }[] = [];
+                    const idx: Record<string, number> = {};
+                    for (const a of growthRetirement) {
+                      const meta = acctMeta(a.description ?? "");
+                      const instName = meta.inst?.includes("Fidelity") ? "Fidelity" : meta.inst ?? "Other";
+                      if (idx[instName] === undefined) { idx[instName] = groups.length; groups.push({ name: instName, total: 0, assets: [] }); }
+                      groups[idx[instName]].total += Number(a.value);
+                      groups[idx[instName]].assets.push(a);
+                    }
+                    return groups.map(g => {
+                      const wtdY = calcWtdYield(g.assets);
+                      const noteText = `${g.assets.length} accounts`;
+                      return (
+                        <div key={g.name} style={{ display: "grid", gridTemplateColumns: C3B, padding: "5px 0", minHeight: 30, background: "#fff", borderBottom: "1px solid rgba(0,0,0,0.04)", alignItems: "center" }}>
+                          <div style={{ minWidth: 0, paddingLeft: 20 }}>
+                            <div style={{ fontSize: 10.5, color: "#1A1915", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                              {g.name}<span style={{ fontSize: 8.5, color: "#B0AEA8", marginLeft: 4 }}>{noteText}</span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 11.5, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" as const, color: "#1A1915" }}>{fmt(g.total)}</div>
+                          <div style={{ fontSize: 10, textAlign: "right" as const, color: wtdY ? "#4a7a5a" : "#9B9890", fontVariantNumeric: "tabular-nums" as const }}>{wtdY}</div>
+                          <div style={{ paddingLeft: 6, paddingRight: 8, textAlign: "right" as const }}>
+                            <span style={{ fontSize: 9, fontWeight: 600, color: "#1a5c8f" }}>Tax-advantaged</span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                   {growthRetirement.length > 0 && <C3Total tc={TC.inv} label="Retirement Accounts" total={growthRetAmt} wtdYield={calcWtdYield(growthRetirement)} g={C3B} />}
                   {cryptoAssets.length > 0 && <>
                     <C3SubLabel text="Digital Assets" />
@@ -12165,7 +12478,7 @@ function BalanceSheetView({ assets, liabilities, cashFlows = [] }: { assets: Ass
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 11, color: "rgba(0,0,0,0.50)", lineHeight: 1.4 }}>
-                  <span>· Pledged against taxable brokerage holdings (Cresset, Schwab, E*Trade)</span>
+                  <span>· Pledged against taxable brokerage holdings (Cresset, Fidelity, E*Trade)</span>
                   <span>· Typically 50% advance rate on diversified equity</span>
                   <span>· No credit check · same-day availability · rate ~SOFR + 1.5%</span>
                 </div>
@@ -12250,21 +12563,18 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   const { annualPickup, currentAnnualIncome, proformaAnnualIncome, accounts: optAccounts } =
     computeReturnOptimization(assets, cashFlows);
 
-  // ── Cash flow model — same source as CashFlowForecastView ─────────────────
-  const forecastData   = buildForecast(cashFlows);
-  const annualInflows  = forecastData.reduce((s, d) => s + d.inflow,  0);
-  const annualOutflows = forecastData.reduce((s, d) => s + d.outflow, 0);
-  const annualNetCF    = annualInflows - annualOutflows;
-  const monthlyBurn    = Math.round(annualOutflows / 12);
-  const coverageRatio  = annualOutflows > 0 ? Math.round((annualInflows / annualOutflows) * 100) : 0;
-  const cashRunway     = monthlyBurn > 0 ? (totalLiquid / monthlyBurn).toFixed(1) : "—";
+  // ── Cash flow KPIs — single source of truth via computeCashFlowKPIs ─────────
+  const { annualInflows, annualOutflows, annualNetCF, monthlyBurn,
+          coverageRatio, cashRunway, medianMonthly } =
+    computeCashFlowKPIs(cashFlows, totalLiquid);
 
-  // netByMonth & cumulative — from the same CF_PL_ROWS model used by the forecast tab
-  const { cumulativeByMonth, troughIdx, netByMonth } = computeCumulativeNCF(cashFlows);
+  // forecastData used by quarterly walk and monthly summary table below
+  const forecastData = buildForecast(cashFlows);
+
+  // ── Cumulative & trough — computeCumulativeNCF is the master for monthly data
+  const { cumulativeByMonth, troughIdx } = computeCumulativeNCF(cashFlows);
   const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const troughMonth  = MONTH_NAMES[troughIdx] ?? "Nov";
-  const sortedNet    = [...netByMonth].sort((a, b) => a - b);
-  const medianMonthly = sortedNet[Math.floor(sortedNet.length / 2)] ?? 0;
 
   // ── Account groupings (mirror computeLiquidityTargets classification) ──────
   const opAccts  = assets.filter(a => a.type === "cash" && (a.description ?? "").toLowerCase().includes("checking"));
@@ -12314,6 +12624,48 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
     const d = new Date(cf.date as string);
     return cf.type === "outflow" && d.getFullYear() === 2026 && d.getMonth() === 3;
   }).reduce((s, cf) => s + Number(cf.amount), 0);
+
+  // ── SVG chart calculations (computed once, used in render) ─────────────────
+  const MNMS = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+  const CW = 400, CH = 178, CPX = 32, CPY = 18;
+  const cPlotW = CW - 2 * CPX, cPlotH = CH - 2 * CPY;
+  // Chart 1: Cumulative CF
+  const cumChartMin   = Math.min(0, ...cumulativeByMonth);
+  const cumChartMax   = Math.max(0, ...cumulativeByMonth);
+  const cumChartRange = (cumChartMax - cumChartMin) || 1;
+  const ccx = (i: number) => CPX + (i / 11) * cPlotW;
+  const ccy = (v: number) => CPY + (1 - (v - cumChartMin) / cumChartRange) * cPlotH;
+  const cumChartPath = cumulativeByMonth.map((v, i) => `${i === 0 ? "M" : "L"}${ccx(i).toFixed(1)},${ccy(v).toFixed(1)}`).join(" ");
+  const cumChartFill = cumulativeByMonth.map((v, i) => `${i === 0 ? "M" : "L"}${ccx(i).toFixed(1)},${ccy(v).toFixed(1)}`).join(" ")
+    + ` L${ccx(11).toFixed(1)},${ccy(0).toFixed(1)} L${ccx(0).toFixed(1)},${ccy(0).toFixed(1)} Z`;
+  const cumZeroY = ccy(0);
+  // Chart 2: Liquidity Runway
+  const runwayVals   = cumulativeByMonth.map(cum => totalLiquid + cum);
+  const runChartMin  = Math.min(liquidityReserve * 0.8, ...runwayVals);
+  const runChartMax  = Math.max(...runwayVals) * 1.06;
+  const runChartRange = (runChartMax - runChartMin) || 1;
+  const rcx = (i: number) => CPX + (i / 11) * cPlotW;
+  const rcy = (v: number) => CPY + (1 - (v - runChartMin) / runChartRange) * cPlotH;
+  const runChartPath = runwayVals.map((v, i) => `${i === 0 ? "M" : "L"}${rcx(i).toFixed(1)},${rcy(v).toFixed(1)}`).join(" ");
+  const runChartFill = runwayVals.map((v, i) => `${i === 0 ? "M" : "L"}${rcx(i).toFixed(1)},${rcy(v).toFixed(1)}`).join(" ")
+    + ` L${rcx(11).toFixed(1)},${rcy(runChartMin).toFixed(1)} L${rcx(0).toFixed(1)},${rcy(runChartMin).toFixed(1)} Z`;
+  const runFloorY    = rcy(liquidityReserve);
+  // Quarterly Cash Balance Walk
+  const qDefs = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]] as const;
+  const quarters = qDefs.map((months, qi) => {
+    const qIn      = months.reduce((s, mi) => s + (forecastData[mi]?.inflow  ?? 0), 0);
+    const qOut     = months.reduce((s, mi) => s + (forecastData[mi]?.outflow ?? 0), 0);
+    const startBal = qi === 0 ? totalLiquid : totalLiquid + (cumulativeByMonth[qDefs[qi - 1][2]] ?? 0);
+    const endBal   = totalLiquid + (cumulativeByMonth[months[2]] ?? 0);
+    const isWarn   = endBal < startBal;
+    return { qIn, qOut, startBal, endBal, isWarn };
+  });
+  const qLabels = ["Q1","Q2","Q3","Q4"];
+  const qColors = ["rgba(255,255,255,0.92)","rgba(255,200,60,0.9)","rgba(255,255,255,0.92)","rgba(255,255,255,0.92)"];
+  const qTdStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
+    padding: "6px 10px", fontSize: 11, textAlign: "right", fontVariantNumeric: "tabular-nums",
+    color: "rgba(255,255,255,0.72)", borderLeft: "1px solid rgba(91,143,204,0.18)", ...extra,
+  });
 
   return (
     <div style={{ background: DS_BG, color: "rgba(255,255,255,0.88)", fontFamily: INTER, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", fontSize: 13 }}>
@@ -12567,54 +12919,6 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
         </div>
 
         {/* ── Forecast: KPIs+Payments (left) + Charts+Walk (right) ── */}
-        {(() => {
-          // ── SVG chart helpers ──────────────────────────────────────────────
-          const W = 400, H = 178, PX = 32, PY = 18;
-          const plotW = W - 2 * PX, plotH = H - 2 * PY;
-          const mnms  = ["J","F","M","A","M","J","J","A","S","O","N","D"];
-
-          // Chart 1: Cumulative CF
-          const cumMin   = Math.min(0, ...cumulativeByMonth);
-          const cumMax   = Math.max(0, ...cumulativeByMonth);
-          const cumRange = (cumMax - cumMin) || 1;
-          const cx = (i: number) => PX + (i / 11) * plotW;
-          const cy = (v: number) => PY + (1 - (v - cumMin) / cumRange) * plotH;
-          const cumPath = cumulativeByMonth.map((v, i) => `${i === 0 ? "M" : "L"}${cx(i).toFixed(1)},${cy(v).toFixed(1)}`).join(" ");
-          const cumFill = cumulativeByMonth.map((v, i) => `${i === 0 ? "M" : "L"}${cx(i).toFixed(1)},${cy(v).toFixed(1)}`).join(" ")
-            + ` L${cx(11).toFixed(1)},${cy(0).toFixed(1)} L${cx(0).toFixed(1)},${cy(0).toFixed(1)} Z`;
-          const cumZeroY = cy(0);
-
-          // Chart 2: Liquidity Runway
-          const runwayVals = cumulativeByMonth.map(cum => totalLiquid + cum);
-          const runMin     = Math.min(liquidityReserve * 0.8, ...runwayVals);
-          const runMax     = Math.max(...runwayVals) * 1.06;
-          const runRange   = (runMax - runMin) || 1;
-          const rx = (i: number) => PX + (i / 11) * plotW;
-          const ry = (v: number) => PY + (1 - (v - runMin) / runRange) * plotH;
-          const runPath    = runwayVals.map((v, i) => `${i === 0 ? "M" : "L"}${rx(i).toFixed(1)},${ry(v).toFixed(1)}`).join(" ");
-          const runFill    = runwayVals.map((v, i) => `${i === 0 ? "M" : "L"}${rx(i).toFixed(1)},${ry(v).toFixed(1)}`).join(" ")
-            + ` L${rx(11).toFixed(1)},${ry(runMin).toFixed(1)} L${rx(0).toFixed(1)},${ry(runMin).toFixed(1)} Z`;
-          const floorY     = ry(liquidityReserve);
-
-          // Quarterly Cash Balance Walk
-          const qDefs = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
-          const quarters = qDefs.map((months, qi) => {
-            const qIn  = months.reduce((s, mi) => s + (forecastData[mi]?.inflow  ?? 0), 0);
-            const qOut = months.reduce((s, mi) => s + (forecastData[mi]?.outflow ?? 0), 0);
-            const startBal = qi === 0 ? totalLiquid : totalLiquid + (cumulativeByMonth[qDefs[qi-1][2]] ?? 0);
-            const endBal   = totalLiquid + (cumulativeByMonth[months[2]] ?? 0);
-            const isWarn   = qi === 1 && endBal < startBal; // Q2 often has big outflows
-            return { qIn, qOut, startBal, endBal, isWarn };
-          });
-
-          const tdS = (extra?: React.CSSProperties): React.CSSProperties => ({
-            padding: "6px 10px", fontSize: 11, textAlign: "right", fontVariantNumeric: "tabular-nums",
-            color: "rgba(255,255,255,0.72)", borderLeft: "1px solid rgba(91,143,204,0.18)", ...extra,
-          });
-          const qLabels = ["Q1","Q2","Q3","Q4"];
-          const qColors = ["rgba(255,255,255,0.92)","rgba(255,200,60,0.9)","rgba(255,255,255,0.92)","rgba(255,255,255,0.92)"];
-
-          return (
         <div style={{ display: "grid", gridTemplateColumns: "480px 1fr", gap: 12, alignItems: "start" }}>
 
           {/* LEFT: Annual hero + KPI + Upcoming payments */}
@@ -12710,26 +13014,26 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                 </div>
               </div>
               <div style={{ padding: "8px 0 4px" }}>
-                <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+                <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", height: "auto", display: "block" }}>
                   {/* Zero baseline */}
-                  <line x1={PX} y1={cumZeroY} x2={W - PX} y2={cumZeroY} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+                  <line x1={CPX} y1={cumZeroY} x2={CW - CPX} y2={cumZeroY} stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
                   {/* Fill area */}
-                  <path d={cumFill} fill="rgba(94,204,138,0.1)" />
+                  <path d={cumChartFill} fill="rgba(94,204,138,0.1)" />
                   {/* Line */}
-                  <path d={cumPath} fill="none" stroke={GREEN} strokeWidth={2} strokeLinejoin="round" />
+                  <path d={cumChartPath} fill="none" stroke={GREEN} strokeWidth={2} strokeLinejoin="round" />
                   {/* Trough vertical marker */}
-                  <line x1={cx(troughIdx)} y1={PY} x2={cx(troughIdx)} y2={H - PY} stroke={AMBER} strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
+                  <line x1={ccx(troughIdx)} y1={CPY} x2={ccx(troughIdx)} y2={CH - CPY} stroke={AMBER} strokeWidth={1} strokeDasharray="4 3" opacity={0.6} />
                   {/* Data points */}
                   {cumulativeByMonth.map((v, i) => (
-                    <circle key={i} cx={cx(i)} cy={cy(v)} r={3} fill={v >= 0 ? GREEN : AMBER} opacity={0.85} />
+                    <circle key={i} cx={ccx(i)} cy={ccy(v)} r={3} fill={v >= 0 ? GREEN : AMBER} opacity={0.85} />
                   ))}
                   {/* X-axis labels */}
-                  {mnms.map((m, i) => (
-                    <text key={i} x={cx(i)} y={H - 2} textAnchor="middle" fill={i === troughIdx ? AMBER : "rgba(255,255,255,0.3)"} fontSize={9} fontFamily="Inter,system-ui">{m}</text>
+                  {MNMS.map((m, i) => (
+                    <text key={i} x={ccx(i)} y={CH - 2} textAnchor="middle" fill={i === troughIdx ? AMBER : "rgba(255,255,255,0.3)"} fontSize={9} fontFamily="Inter,system-ui">{m}</text>
                   ))}
                   {/* Y-axis: min, 0, max */}
-                  {[cumMin, 0, cumMax].map((v, i) => (
-                    <text key={i} x={PX - 4} y={cy(v) + 4} textAnchor="end" fill="rgba(255,255,255,0.28)" fontSize={8} fontFamily="Inter,system-ui">{v >= 0 ? `$${Math.round(v/1000)}k` : `(${Math.round(Math.abs(v)/1000)}k)`}</text>
+                  {[cumChartMin, 0, cumChartMax].map((v, i) => (
+                    <text key={i} x={CPX - 4} y={ccy(v) + 4} textAnchor="end" fill="rgba(255,255,255,0.28)" fontSize={8} fontFamily="Inter,system-ui">{v >= 0 ? `$${Math.round(v/1000)}k` : `(${Math.round(Math.abs(v)/1000)}k)`}</text>
                   ))}
                 </svg>
               </div>
@@ -12745,24 +13049,24 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                 </div>
               </div>
               <div style={{ padding: "8px 0 4px" }}>
-                <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
+                <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", height: "auto", display: "block" }}>
                   {/* Floor dashed line */}
-                  <line x1={PX} y1={floorY} x2={W - PX} y2={floorY} stroke="rgba(94,204,138,0.5)" strokeWidth={1.5} strokeDasharray="6 4" />
+                  <line x1={CPX} y1={runFloorY} x2={CW - CPX} y2={runFloorY} stroke="rgba(94,204,138,0.5)" strokeWidth={1.5} strokeDasharray="6 4" />
                   {/* Fill */}
-                  <path d={runFill} fill="rgba(91,143,204,0.08)" />
+                  <path d={runChartFill} fill="rgba(91,143,204,0.08)" />
                   {/* Line */}
-                  <path d={runPath} fill="none" stroke={BLUE} strokeWidth={2} strokeLinejoin="round" />
+                  <path d={runChartPath} fill="none" stroke={BLUE} strokeWidth={2} strokeLinejoin="round" />
                   {/* Data points */}
                   {runwayVals.map((v, i) => (
-                    <circle key={i} cx={rx(i)} cy={ry(v)} r={3} fill={v < liquidityReserve ? "#ff6464" : BLUE} opacity={0.85} />
+                    <circle key={i} cx={rcx(i)} cy={rcy(v)} r={3} fill={v < liquidityReserve ? "#ff6464" : BLUE} opacity={0.85} />
                   ))}
                   {/* X-axis labels */}
-                  {mnms.map((m, i) => (
-                    <text key={i} x={rx(i)} y={H - 2} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize={9} fontFamily="Inter,system-ui">{m}</text>
+                  {MNMS.map((m, i) => (
+                    <text key={i} x={rcx(i)} y={CH - 2} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize={9} fontFamily="Inter,system-ui">{m}</text>
                   ))}
                   {/* Y-axis */}
-                  {[runMin, liquidityReserve, runMax].map((v, i) => (
-                    <text key={i} x={PX - 4} y={ry(v) + 4} textAnchor="end" fill={i === 1 ? "rgba(94,204,138,0.55)" : "rgba(255,255,255,0.28)"} fontSize={8} fontFamily="Inter,system-ui">{`$${Math.round(v/1000)}k`}</text>
+                  {[runChartMin, liquidityReserve, runChartMax].map((v, i) => (
+                    <text key={i} x={CPX - 4} y={rcy(v) + 4} textAnchor="end" fill={i === 1 ? "rgba(94,204,138,0.55)" : "rgba(255,255,255,0.28)"} fontSize={8} fontFamily="Inter,system-ui">{`$${Math.round(v/1000)}k`}</text>
                   ))}
                 </svg>
                 <div style={{ padding: "4px 14px 8px", display: "flex", alignItems: "center", gap: 8 }}>
@@ -12784,7 +13088,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                     <tr style={{ background: "rgba(91,143,204,0.13)", borderBottom: "1px solid rgba(91,143,204,0.22)" }}>
                       <th style={{ textAlign: "left" as const, padding: "7px 14px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)", width: 140 }}></th>
                       {qLabels.map((q, qi) => (
-                        <th key={q} style={tdS({ padding: "7px 14px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: qColors[qi], fontSize: 11, textAlign: "right" as const })}>{q}{quarters[qi].isWarn ? " ⚠" : ""}</th>
+                        <th key={q} style={qTdStyle({ padding: "7px 14px", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: qColors[qi], fontSize: 11, textAlign: "right" as const })}>{q}{quarters[qi].isWarn ? " ⚠" : ""}</th>
                       ))}
                     </tr>
                   </thead>
@@ -12798,7 +13102,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                       <tr key={row.label} style={{ borderBottom: ri < rows.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: row.bold ? "rgba(255,255,255,0.03)" : "transparent" }}>
                         <td style={{ padding: "7px 14px", fontSize: 11, fontWeight: row.bold ? 700 : 400, color: "rgba(255,255,255,0.55)", borderTop: row.bold ? "1px solid rgba(255,255,255,0.12)" : "none" }}>{row.label}</td>
                         {quarters.map((q, qi) => (
-                          <td key={qi} style={tdS({ color: row.bold ? qColors[qi] : row.color, fontWeight: row.bold ? 700 : 300, borderTop: row.bold ? "1px solid rgba(255,255,255,0.12)" : "none" })}>{row.fn(q)}</td>
+                          <td key={qi} style={qTdStyle({ color: row.bold ? qColors[qi] : row.color, fontWeight: row.bold ? 700 : 300, borderTop: row.bold ? "1px solid rgba(255,255,255,0.12)" : "none" })}>{row.fn(q)}</td>
                         ))}
                       </tr>
                     ))}
@@ -12809,8 +13113,6 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
 
           </div>
         </div>
-          );
-        })()}
 
         {/* ── Section: Monthly Summary Model ── */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, padding: "8px 0 2px" }}>
@@ -12970,7 +13272,7 @@ export default function ClientDashboard() {
     );
   }
 
-  const { client, assets, liabilities, cashFlows } = data;
+  const { client, accounts = [] as Account[], assets, liabilities, cashFlows } = data;
 
   // ── Onboarding gate: onboarding not complete → show upload flow ──────────────
   if (!client.onboardingComplete) {
@@ -13570,7 +13872,7 @@ export default function ClientDashboard() {
 
           {guruIntelTab === "networth" && (
             <div style={{ flex: 1, overflowY: "auto", minHeight: 0, marginTop: 24 }}>
-              <DetailsView assets={assets} liabilities={liabilities} cashFlows={cashFlows} clientId={clientId} />
+              <DetailsView assets={assets} liabilities={liabilities} cashFlows={cashFlows} clientId={clientId} accounts={accounts} />
             </div>
           )}
           {guruIntelTab === "cashflow" && (
@@ -13617,7 +13919,7 @@ export default function ClientDashboard() {
       {activeView === "financials" && (
         <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
           {financialsTab === "balancesheet" && (
-            <DetailsView assets={assets} liabilities={liabilities} cashFlows={cashFlows} clientId={clientId} />
+            <DetailsView assets={assets} liabilities={liabilities} cashFlows={cashFlows} clientId={clientId} accounts={accounts} />
           )}
           {financialsTab === "cashflow" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
