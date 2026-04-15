@@ -10935,7 +10935,7 @@ function liquidAssetYields(bucketAssets: Asset[]): { pretax: number; at: number 
 // Returns array of length 12 (Jan–Dec). Used to feed both Asset Forecast and CF Forecast tabs.
 function computeMonthlyBucketInterest(assets: Asset[], cashFlows: CashFlow[]): number[] {
   // ── Use cashBuckets() instead of computeLiquidityTargets() to avoid circular dependency ──
-  const { operatingCash, liquidityReserve, capitalBuild } = cashBuckets(assets);
+  const { reserve: operatingCash, yieldBucket: liquidityReserve, tactical: capitalBuild } = cashBuckets(assets);
   const opYields  = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "reserve"));
   const rsvYields = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "yield_"));
   const bldYields = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "tactical"));
