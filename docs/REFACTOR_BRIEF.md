@@ -208,4 +208,6 @@ The refactor is done when:
 
 1. `guru-engine.ts` exists as a standalone module with all compute functions and constants
 2. Bucket classification has ONE code path (`classifyAsset`)
-3. Every view imports from the engine — no v
+3. Every view imports from the engine — no view recomputes metrics locally
+4. The app runs and all Kessler reference values from `GURU_METRICS.md` match
+5. Claude (in any Cowork session) can work on a single view without loading the entire 14K-line file

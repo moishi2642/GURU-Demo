@@ -11,4 +11,9 @@ Read these files at the start of every session before touching any code:
    card structure, font size table, and rules that must never change.
 5. `docs/GI_TABLE_RULES.md` — **master design rules for all GURU Intelligence (dark) tables**.
    Read before building or modifying any GI tab table. Covers the four-tier row hierarchy,
-   design tokens, section headers, green accent rules, grand totals, and rules that must n
+   design tokens, section headers, green accent rules, grand totals, and rules that must never change.
+
+## Active Reminders
+- **DO NOT touch the allocation/reallocation tool in client-dashboard.tsx or income-optimization.html.**
+  A major refactor is in progress on another branch. Design work for the allocation tool
+  should ONLY happen in the standalone mockup file: `client/public/allocation-mockup.html`.
