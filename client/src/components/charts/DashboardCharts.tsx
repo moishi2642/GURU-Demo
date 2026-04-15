@@ -131,9 +131,4 @@ export function CashFlowChart({ cashFlows }: { cashFlows: CashFlow[] }) {
           dataKey="net" 
           stroke="hsl(var(--accent))" 
           strokeWidth={3} 
-          dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 4 }} 
-          activeDot={{ r: 6, strokeWidth: 0 }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  )
+          dot={{ fill: 'hsl(var(--accent))', str

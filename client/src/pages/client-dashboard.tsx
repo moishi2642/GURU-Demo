@@ -898,8 +898,8 @@ function computeLiquidityTargets(
       })
       .reduce((s, cf) => s + Number(cf.amount), 0);
 
-  // ── Trough — single source of truth from CF tab computation (with asset forecast model) ──
-  const { troughIdx, troughDepth } = computeCumulativeNCF(cashFlows, assets);
+  // ── Trough — use raw CF (no assets) to avoid circular dependency with computeMonthlyBucketInterest ──
+  const { troughIdx, troughDepth } = computeCumulativeNCF(cashFlows);
 
   // ── Operating floor AT the trough ────────────────────────────────────────
   // 2 months forward from the trough month (not from today).

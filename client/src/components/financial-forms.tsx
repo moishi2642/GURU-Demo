@@ -205,14 +205,4 @@ export function AddCashFlowModal({ clientId }: { clientId: number }) {
             <Input id="date" name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input id="description" name="description" required placeholder="e.g. Monthly Salary" />
-          </div>
-          <Button type="submit" className="w-full" disabled={mutation.isPending}>
-            {mutation.isPending ? "Logging..." : "Log Cash Flow"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+            <Label htmlFor="description"

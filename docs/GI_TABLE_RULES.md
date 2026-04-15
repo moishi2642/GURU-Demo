@@ -277,11 +277,4 @@ Footnotes sit outside and below the table container. They document assumptions a
 | `.row-beginning` | 3 | Beginning Balance (section total, no green) |
 | `.row-ending` | 3 | Ending Balance (section total, green label + left border) |
 | `.row-interest` | 3 | After-Tax Interest Income (section total, no green) |
-| `.row-subtotal` | 3 | Generic subtotal (if needed) |
-| `.grand-total` | 4 | Grand total row (green text, green left border) |
-| `.row-sep` | — | 18px spacer between sections |
-
----
-
-*Derived from: NW-1 Balance Sheet (BsTable) + LQ-7 Asset Forecast mockup iterations*
-*Last updated: 2026-04-13*
+| `.row-subtotal` |
