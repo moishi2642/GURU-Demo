@@ -5419,7 +5419,7 @@ function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFl
   // ── Design tokens (GI Table Rules) ────────────────────────────────────────
   const MONO  = "'JetBrains Mono', 'Courier New', monospace";
   const UI    = "Inter, system-ui, sans-serif";
-  const BG_PAGE    = "#141c2b";
+  const BG_PAGE    = "#0f1e33";
   const BS_BG_BASE = "#0f1e33";
   const BS_BG_ALT  = "#122038";
   const BS_BG_GRPHDR   = "#162843";
@@ -5853,7 +5853,7 @@ function CashFlowForecastWaterfallView({ assets, cashFlows, clientId }: { assets
   // ── Design tokens (GI Table Rules) ────────────────────────────────────────
   const MONO  = "'JetBrains Mono', 'Courier New', monospace";
   const UI    = "Inter, system-ui, sans-serif";
-  const BG_PAGE    = "#141c2b";
+  const BG_PAGE    = "#0f1e33";
   const BS_BG_BASE = "#0f1e33";
   const BS_BG_ALT  = "#122038";
   const BS_BG_GRPHDR   = "#162843";
@@ -8102,7 +8102,7 @@ function DetailsView({
 
   // CF2 design tokens (from CashFlowForecastView)
   const CF2 = {
-    bg:       "#141c2b",
+    bg:       "#0f1e33",
     card:     "#1e2838",
     elevated: "#1a2433",
     border:   "rgba(255,255,255,0.08)",
@@ -10447,14 +10447,19 @@ function GuruLandingView({
         .guru-landing-bucket:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
       `}</style>
 
-      {/* Slim header */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 28px", height:46, background:"rgba(240,236,229,0.97)", borderBottom:"1px solid rgba(0,0,0,0.08)", position:"sticky", top:0, zIndex:100, backdropFilter:"blur(4px)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-          <span style={{ fontSize:13, fontWeight:500, color:"#1a1a1a" }}>Kessler Family</span>
-          <span style={{ color:"rgba(0,0,0,0.18)" }}>·</span>
-          <span style={{ fontSize:13, color:"rgba(0,0,0,0.55)" }}>Asset Allocation</span>
+      {/* GI standard header */}
+      <div style={{ background:"#0f1e33", padding:"18px 28px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ display:"flex", alignItems:"baseline", gap:16, marginBottom:6 }}>
+          <div style={{ fontFamily:"Inter, system-ui", fontSize:10, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"#44e08a" }}>
+            GURU INTELLIGENCE · RC-1
+          </div>
+          <div style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:10, color:"rgba(255,255,255,0.28)", letterSpacing:"0.06em" }}>
+            REALLOCATION CALCULATOR · DEC 2025 · LIVE FROM TRANSACTION DATA
+          </div>
         </div>
-        <span style={{ fontSize:10, color:"rgba(0,0,0,0.38)" }}>GURU flagged 2 items · last checked 4 hours ago</span>
+        <div style={{ fontFamily:"Inter, system-ui", fontSize:13, fontWeight:400, color:"rgba(255,255,255,0.50)", lineHeight:1.6 }}>
+          Interactive liquidity rebalancing tool. Reviews current bucket allocations against GURU targets, identifies excess liquidity, and generates transfer recommendations.
+        </div>
       </div>
 
       {/* Main layout — full-width before Step 1, 2-col after */}
@@ -12661,7 +12666,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
 }) {
   const INTER = "Inter, system-ui, sans-serif";
   const MONO  = "'JetBrains Mono', 'Courier New', monospace";
-  const DS_BG   = "#141c2b";
+  const DS_BG   = "#0f1e33";
   const DS_CARD = "#1e2838";
   const GREEN   = "#5ecc8a";
   const GI_GREEN = "#44e08a";
@@ -14102,7 +14107,7 @@ export default function ClientDashboard() {
 
       {/* ── GURU INTELLIGENCE VIEW ─────────────────────────────────────────────── */}
       {activeView === "guruintelligence" && (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "#141c2b" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: "#0f1e33" }}>
 
           {/* ── Bloomberg-style ticker strip ── */}
           <div style={{ background: "rgba(10,18,32,0.7)", borderBottom: "1px solid rgba(42,74,110,0.35)", padding: "0 40px", height: 27, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, overflow: "hidden", position: "relative" }}>

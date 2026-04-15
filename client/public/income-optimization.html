@@ -32,9 +32,14 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--mono); background: var(--bs-base); padding: 20px 24px 40px; color: var(--bs-text); font-size: 10.5px; }
 
-  h1 { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bs-green-med); margin-bottom: 3px; }
+  h1 { display: none; }
+  .gi-eyebrow { margin-bottom: 20px; }
+  .gi-eyebrow-row { display: flex; align-items: baseline; gap: 16px; margin-bottom: 6px; }
+  .gi-eyebrow-label { font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #44e08a; }
+  .gi-eyebrow-mono { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,0.28); letter-spacing: 0.06em; }
+  .gi-eyebrow-desc { font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.50); line-height: 1.6; }
   h2 { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bs-text-sub); margin: 22px 0 7px; border-left: 3px solid var(--bs-green-dim); padding-left: 8px; }
-  .subtitle { font-size: 10px; color: var(--bs-text-sub); margin-bottom: 12px; }
+  .subtitle { display: none; }
 
   /* Legend */
   .legend { display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap; }
@@ -212,8 +217,13 @@
 </head>
 <body>
 
-<h1>Reallocation Calculator — Kessler Family</h1>
-<p class="subtitle">After-tax portfolio income · current vs. pro-forma (target-sized buckets, best product per bucket)</p>
+<div class="gi-eyebrow">
+  <div class="gi-eyebrow-row">
+    <div class="gi-eyebrow-label">GURU INTELLIGENCE · RC-1</div>
+    <div class="gi-eyebrow-mono">REALLOCATION CALCULATOR · DEC 2025 · LIVE FROM TRANSACTION DATA</div>
+  </div>
+  <div class="gi-eyebrow-desc">Interactive liquidity rebalancing tool — compare current after-tax portfolio income against pro-forma allocations using target-sized buckets and best-fit products per bucket.</div>
+</div>
 
 <!-- ══ KPI strip ══ -->
 <div class="kpi-strip" style="margin-bottom:20px">
