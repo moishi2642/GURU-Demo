@@ -13847,7 +13847,7 @@ export default function ClientDashboard() {
       {/* ── IDENTITY BAR ── */}
       {(()=>{
         const isGI = activeView === "guruintelligence";
-        const GI_BG = "hsl(218,12%,24%)";
+        const GI_BG = "#0f1e33";
         return (
           <div style={{
             background: isGI ? GI_BG : "#fff",
@@ -13873,7 +13873,7 @@ export default function ClientDashboard() {
       {/* ── NAV BAR ── */}
       {(()=>{
         const isGI = activeView === "guruintelligence";
-        const GI_BG = "hsl(218,12%,24%)";
+        const GI_BG = "#0f1e33";
         return (
           <div style={{
             background: isGI ? GI_BG : "#fff",
