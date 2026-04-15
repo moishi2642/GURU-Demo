@@ -695,7 +695,7 @@ function cashBuckets(assets: Asset[]) {
 //  • troughIdx         — 0-based index of the minimum cumulative value (Nov → 10)
 //  • troughDepth       — absolute cash deficit at the trough (e.g. $125,096 for Kesslers)
 //  • netByMonth        — 12-element array of monthly NCF
-function computeCumulativeNCF(cashFlows: CashFlow[]): {
+function computeCumulativeNCF(cashFlows: CashFlow[], assets?: Asset[]): {
   cumulativeByMonth: number[];
   troughIdx:   number;
   troughDepth: number;
@@ -714,10 +714,18 @@ function computeCumulativeNCF(cashFlows: CashFlow[]): {
       })
       .reduce((s, cf) => s + (cf.type === "inflow" ? Number(cf.amount) : -Number(cf.amount)), 0);
 
+  // ── Use asset forecast model for reserve interest (same as CashFlowForecastView) ──
+  const monthlyBucketInt = assets ? computeMonthlyBucketInterest(assets, cashFlows) : [];
+
   const vals: Record<string, number[]> = {};
   for (const row of CF_PL_ROWS) {
     if (row.kind === "item") {
-      vals[row.key] = CF_MONTHS.map((m) => mvCF(row.descs, m.year, m.month));
+      // Reserve interest overridden by asset-forecast model for consistency
+      if (row.key === "reserve_int" && assets && monthlyBucketInt.length > 0) {
+        vals[row.key] = monthlyBucketInt;
+      } else {
+        vals[row.key] = CF_MONTHS.map((m) => mvCF(row.descs, m.year, m.month));
+      }
     } else if (row.kind === "subtotal") {
       if (row.sumOf) {
         vals[row.key] = CF_MONTHS.map((_, mi) => row.sumOf!.reduce((s, k) => s + (vals[k]?.[mi] ?? 0), 0));
@@ -764,6 +772,7 @@ function computeCumulativeNCF(cashFlows: CashFlow[]): {
 function computeCashFlowKPIs(
   cashFlows: CashFlow[],
   totalLiquid: number,
+  assets?: Asset[],
 ): {
   annualInflows:      number;  // sum of all 2026 forecast inflows
   annualOutflows:     number;  // sum of all 2026 forecast outflows
@@ -784,7 +793,7 @@ function computeCashFlowKPIs(
   const liquidityCoverage = annualOutflows > 0 ? (totalLiquid / annualOutflows) * 100 : 999;
   const cashRunwayMonths  = monthlyBurn > 0 ? totalLiquid / monthlyBurn : 0;
   const cashRunway        = monthlyBurn > 0 ? cashRunwayMonths.toFixed(1) : "—";
-  const { netByMonth }    = computeCumulativeNCF(cashFlows);
+  const { netByMonth }    = computeCumulativeNCF(cashFlows, assets);
   const sortedNet         = [...netByMonth].sort((a, b) => a - b);
   const medianMonthly     = sortedNet[Math.floor(sortedNet.length / 2)] ?? 0;
   return { annualInflows, annualOutflows, annualNetCF, monthlyBurn, coverageRatio,
@@ -889,8 +898,8 @@ function computeLiquidityTargets(
       })
       .reduce((s, cf) => s + Number(cf.amount), 0);
 
-  // ── Trough — single source of truth from CF tab computation ──────────────
-  const { troughIdx, troughDepth } = computeCumulativeNCF(cashFlows);
+  // ── Trough — single source of truth from CF tab computation (with asset forecast model) ──
+  const { troughIdx, troughDepth } = computeCumulativeNCF(cashFlows, assets);
 
   // ── Operating floor AT the trough ────────────────────────────────────────
   // 2 months forward from the trough month (not from today).
@@ -3628,14 +3637,8 @@ function CashFlowForecastView({
   );
   const annualNet = netByMonth.reduce((s, v) => s + v, 0);
 
-  const cumulativeByMonth = netByMonth.reduce<number[]>((acc, v, i) => {
-    acc.push((acc[i - 1] ?? 0) + v);
-    return acc;
-  }, []);
-  const troughIdx = cumulativeByMonth.reduce(
-    (minI, v, i) => (v < cumulativeByMonth[minI] ? i : minI),
-    0,
-  );
+  // ── Canonical cumulative net cash flow — single source of truth (same as ReallocationCalculator) ──
+  const { cumulativeByMonth, troughIdx, troughDepth: _canonicalTrough } = computeCumulativeNCF(cashFlows, assets);
 
   // ── Quarterly card data (component scope) ─────────────────────────────────
   const CF_Q_DEFS = [
@@ -7562,6 +7565,42 @@ const BUCKET_PRODUCTS: Record<string, BucketProduct[]> = {
   ],
 };
 
+// ── Live Reallocation Calculator — wired to computeLiquidityTargets ──
+function ReallocationCalculatorLive({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+  const { troughDepth, operatingFloorAtTrough, totalLiquidityTarget } = computeLiquidityTargets(assets, cashFlows);
+  const fmt = (v: number): string => {
+    if (Math.round(v) === 0) return "—";
+    const abs = Math.abs(Math.round(v));
+    const s = abs.toLocaleString("en-US");
+    return v < 0 ? `(${s})` : s;
+  };
+
+  return (
+    <div style={{ background:"#f5f1ec", color:"#1a1a1a", fontFamily:"Inter, system-ui, sans-serif", fontSize:13, padding:"20px", overflowY:"auto", flex:1 }}>
+      <h3 style={{ fontSize:14, fontWeight:700, marginBottom:16, letterSpacing:"0.1em", textTransform:"uppercase" }}>Liquidity Requirement Calculation</h3>
+      <div style={{ background:"#fff", border:"1px solid rgba(0,0,0,0.09)", borderRadius:6, padding:16 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:20 }}>
+          <div>
+            <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"rgba(0,0,0,0.45)", marginBottom:4 }}>Trough Depth (November 2026)</div>
+            <div style={{ fontSize:24, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>${fmt(troughDepth)}</div>
+            <div style={{ fontSize:9, color:"rgba(0,0,0,0.38)", marginTop:4 }}>Maximum cumulative cash deficit</div>
+          </div>
+          <div>
+            <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"rgba(0,0,0,0.45)", marginBottom:4 }}>Operating Floor at Trough</div>
+            <div style={{ fontSize:24, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em" }}>${fmt(operatingFloorAtTrough)}</div>
+            <div style={{ fontSize:9, color:"rgba(0,0,0,0.38)", marginTop:4 }}>Dec + Jan outflows from trough</div>
+          </div>
+        </div>
+        <div style={{ borderTop:"1px solid rgba(0,0,0,0.06)", paddingTop:16 }}>
+          <div style={{ fontSize:10, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"rgba(0,0,0,0.45)", marginBottom:4 }}>Total Liquidity Target (12 months)</div>
+          <div style={{ fontSize:28, fontWeight:300, fontVariantNumeric:"tabular-nums", letterSpacing:"-0.02em", color:"#1e4d30" }}>${fmt(totalLiquidityTarget)}</div>
+          <div style={{ fontSize:9, color:"rgba(0,0,0,0.38)", marginTop:4 }}>Trough + Operating Floor = full 12-month requirement</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GuruAllocationView({
   assets,
   liabilities,
@@ -10614,11 +10653,7 @@ function GuruLandingView({
             </div>
           ) : (
             <div style={{ flex:1, minHeight:0, overflow:"hidden", display:"flex", flexDirection:"column" }}>
-              <iframe
-                src="/allocation-tab-mockup.html?embedded=1"
-                style={{ flex:1, width:"100%", border:"none", display:"block", minHeight:0 }}
-                title="Allocation Workflow"
-              />
+              <ReallocationCalculatorLive assets={assets} cashFlows={cashFlows} />
             </div>
           )}
         </div>
@@ -12639,7 +12674,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   const RES_COL = "#835800";
   const CAP_COL = "#195830";
   // GI card style (Asset Forecast glass cards)
-  const GI_CARD: React.CSSProperties = { background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)", overflow: "hidden" };
+  const GI_CARD: React.CSSProperties = { background: "#0f1e33", border: "0.5px solid rgba(255,255,255,0.08)", overflow: "hidden" };
   // Consistent section header style (matches chart headers)
   const sectionHdr: React.CSSProperties = { padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontFamily: INTER, fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(0,0%,88%)" };
   const TAX_RATE       = 0.47;  // NYC combined for bank interest
@@ -12662,8 +12697,8 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
   // forecastData used by quarterly walk and monthly summary table below
   const forecastData = buildForecast(cashFlows);
 
-  // ── Cumulative & trough — computeCumulativeNCF is the master for monthly data
-  const { cumulativeByMonth, troughIdx, netByMonth: dsNetByMonth } = computeCumulativeNCF(cashFlows);
+  // ── Cumulative & trough — computeCumulativeNCF is the master for monthly data (with asset forecast model)
+  const { cumulativeByMonth, troughIdx, netByMonth: dsNetByMonth } = computeCumulativeNCF(cashFlows, assets);
   const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const troughMonth  = MONTH_NAMES[troughIdx] ?? "Nov";
 
@@ -12728,7 +12763,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
 
   // ── SVG chart calculations (computed once, used in render) ─────────────────
   const MNMS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const CW = 560, CH = 210, CPX = 42, CPY = 24;
+  const CW = 750, CH = 210, CPX = 56, CPY = 24;
   const cPlotW = CW - 2 * CPX, cPlotH = CH - 2 * CPY;
   // Chart 1: Cumulative CF
   const cumChartMin   = Math.min(0, ...cumulativeByMonth);
@@ -12835,18 +12870,6 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
         @keyframes ds-dot      { 0%,100%{box-shadow:0 0 8px rgba(94,204,138,0.4)} 50%{box-shadow:0 0 14px rgba(94,204,138,0.7)} }
       `}</style>
 
-      {/* ── Scan bar ── */}
-      <div style={{ position: "relative", background: "rgba(20,28,43,0.95)", borderBottom: "1px solid rgba(42,74,110,0.35)", padding: "5px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", overflow: "hidden", flexShrink: 0 }}>
-        <div style={{ position: "absolute", top: 0, left: "-60%", width: "35%", height: "100%", background: "linear-gradient(90deg,transparent,rgba(180,210,255,0.06),transparent)", animation: "ds-scan 3.5s linear infinite", pointerEvents: "none" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(180,210,255,0.75)" }}>▶ GURU AI · Detection System Active</span>
-          <div style={{ width: 1, height: 10, background: "rgba(255,255,255,0.1)" }} />
-          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "1px 7px", borderRadius: 2, background: "rgba(94,204,138,0.09)", border: "1px solid rgba(94,204,138,0.35)", color: GREEN }}>● LIVE</span>
-          <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "1px 7px", borderRadius: 2, background: "rgba(255,200,60,0.09)", border: "1px solid rgba(255,200,60,0.35)", color: AMBER }}>4 Active</span>
-        </div>
-        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.22)", letterSpacing: "0.05em", textTransform: "uppercase" as const, position: "relative" }}>{format(DEMO_NOW, "MMM d, yyyy")} · 9:42 AM</span>
-      </div>
-
       {/* ── Scrollable body ── */}
       <div style={{ flex: 1, overflowY: "auto" as const, padding: "14px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
 
@@ -12862,7 +12885,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
         </div>
 
         {/* ── TOP ROW: Detection (left) + KPIs (center) + Liquidity (right) ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "480px 320px 1fr", gap: 12, alignItems: "stretch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "455px 1fr", gap: 12, alignItems: "stretch" }}>
 
           {/* ── LEFT: Detection System panel ── */}
           <div style={{ background: "linear-gradient(160deg,#1a3a6b 0%,#163060 55%,#0f2248 100%)", border: "1px solid rgba(91,143,204,0.32)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column", position: "relative" }}>
@@ -12956,56 +12979,9 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
             </div>
           </div>
 
-          {/* ── CENTER: Cash Flow KPIs (single GI card with section header) ── */}
-          <div style={{ ...GI_CARD, borderTop: `2px solid ${GI_GREEN}`, display: "flex", flexDirection: "column" }}>
-            <div style={sectionHdr}>Cash Flow KPIs</div>
-
-            {/* Annual Net CF hero */}
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ fontFamily: INTER, fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.12em", color: "rgba(255,255,255,0.38)", marginBottom: 6 }}>Annual Net Cash Flow</div>
-              <div style={{ fontFamily: MONO, fontSize: 32, fontWeight: 300, lineHeight: 1, color: annualNetCF >= 0 ? GI_GREEN : "#ff6464", fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.02em", marginBottom: 8 }}>
-                {annualNetCF >= 0 ? "+" : ""}{fmtD(annualNetCF)}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 3, background: annualNetCF >= 0 ? "rgba(68,224,138,0.12)" : "rgba(255,100,100,0.12)", border: `1px solid ${annualNetCF >= 0 ? "rgba(68,224,138,0.4)" : "rgba(255,100,100,0.4)"}`, color: annualNetCF >= 0 ? GI_GREEN : "#ff6464" }}>
-                  {annualNetCF >= 0 ? "▲ Cash positive" : "▼ Cash negative"}
-                </span>
-                <div style={{ textAlign: "right" as const }}>
-                  <div style={{ fontFamily: INTER, fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.07em", color: "rgba(255,255,255,0.35)" }}>Income / Expenses</div>
-                  <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 300, color: "rgba(255,255,255,0.42)", fontVariantNumeric: "tabular-nums" as const }}>{fmtD(annualInflows)} / {fmtD(annualOutflows)}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* KPI table rows */}
-            <div style={{ flex: 1 }}>
-              {([
-                { label: "Annual Income (Pre-Tax)",   sub: "Gross earned income + distributions",    val: fmtD(annualInflows),   color: "rgba(255,255,255,0.82)", indent: false },
-                { label: "Total Annual Expenses",     sub: "Core living + taxes + one-time",         val: `(${fmtD(annualOutflows)})`, color: "rgba(255,255,255,0.82)", indent: false },
-                { label: "Coverage Ratio",            sub: "Annual income ÷ expenses",               val: `${coverageRatio}%`,   color: coverageRatio >= 100 ? GI_GREEN : "#ff6464", indent: true },
-                { label: "Monthly Burn Rate",         sub: "Average monthly outflows",               val: fmtD(monthlyBurn),     color: "#ff6464", indent: false },
-                { label: "Cash Runway",               sub: "Total liquidity ÷ monthly burn",         val: `${cashRunway} months`, color: "rgba(255,255,255,0.65)", indent: true },
-                { label: "Cash Flow Trough",          sub: "Cumulative low point",                   val: `(${fmtD(troughDepth)})`, sub2: troughMonth.toUpperCase(), color: AMBER, indent: false },
-                { label: "Median Monthly Cash Flow",  sub: "50th percentile, monthly",               val: medianMonthly >= 0 ? fmtD(medianMonthly) : `(${fmtD(Math.abs(medianMonthly))})`, color: AMBER, indent: false },
-              ] as const).map((row, i, arr) => (
-                <div key={row.label} style={{ display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", padding: `8px ${row.indent ? 28 : 14}px`, borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: row.indent ? "rgba(68,224,138,0.04)" : "transparent" }}>
-                  <div>
-                    <div style={{ fontFamily: INTER, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>{row.label}</div>
-                    <div style={{ fontFamily: INTER, fontSize: 10, color: "rgba(255,255,255,0.38)", marginTop: 1 }}>{row.sub}</div>
-                  </div>
-                  <div style={{ textAlign: "right" as const }}>
-                    <div style={{ fontFamily: MONO, fontSize: row.indent ? 16 : 14, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: row.color }}>{row.val}</div>
-                    {"sub2" in row && row.sub2 && <div style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: AMBER }}>{row.sub2}</div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* ── RIGHT: Today's Liquidity Position ── */}
-          <div style={{ ...GI_CARD, borderTop: `2px solid ${BLUE}`, display: "flex", flexDirection: "column", overflow: "visible" }}>
+          <div style={{ background: "#0f1e33", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: `2px solid ${BLUE}`, display: "flex", flexDirection: "column", overflow: "visible" }}>
             <div style={sectionHdr}>Today's Liquidity Position</div>
-            <div style={{ padding: "4px 16px 6px", borderBottom: "1px solid rgba(255,255,255,0.06)", fontFamily: INTER, fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.04em" }}>{[...opAccts,...resAccts,...capAccts].length} accounts · {format(DEMO_NOW, "MMM d, yyyy")}</div>
             <div style={{ display: "flex", flexDirection: "row" as const, flex: 1 }}>
 
               {/* Donut sidebar */}
@@ -13047,7 +13023,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
               </div>
 
               {/* Account table (GI four-tier styling) */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden", padding: "0 10px 10px 0" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" as const }}>
                   <thead>
                     <tr style={{ background: "#0d1b2e", borderBottom: "1px solid #2a4a6e" }}>
@@ -13136,11 +13112,83 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
         {/* ── Forecast: Charts + Walk table (full width) ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
-            {/* Charts row — side by side */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {/* 2×2 grid: KPI+Payments left, Charts right */}
+            <div style={{ display: "grid", gridTemplateColumns: "455px 1fr", gap: 10, alignItems: "start" }}>
+
+            {/* Left column: KPI card + Upcoming Payments */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+            {/* KPI card: Cash Flow KPIs — Next 12 Months */}
+            <div style={{ ...GI_CARD, borderTop: `2px solid ${GI_GREEN}`, display: "flex", flexDirection: "column" }}>
+              <div style={sectionHdr}>Cash Flow KPIs — Next 12 Months</div>
+              {/* Annual Net CF hero */}
+              <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <div style={{ fontFamily: INTER, fontSize: 9, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.12em", color: "rgba(255,255,255,0.38)", marginBottom: 4 }}>Annual Net Cash Flow</div>
+                <div style={{ fontFamily: MONO, fontSize: 26, fontWeight: 300, lineHeight: 1, color: annualNetCF >= 0 ? GI_GREEN : "#ff6464", fontVariantNumeric: "tabular-nums" as const, letterSpacing: "-0.02em", marginBottom: 6 }}>
+                  {annualNetCF >= 0 ? "+" : ""}{fmtD(annualNetCF)}
+                </div>
+                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 3, background: annualNetCF >= 0 ? "rgba(68,224,138,0.12)" : "rgba(255,100,100,0.12)", border: `1px solid ${annualNetCF >= 0 ? "rgba(68,224,138,0.4)" : "rgba(255,100,100,0.4)"}`, color: annualNetCF >= 0 ? GI_GREEN : "#ff6464" }}>
+                  {annualNetCF >= 0 ? "▲ Cash positive" : "▼ Cash negative"}
+                </span>
+              </div>
+              {/* KPI rows */}
+              <div style={{ flex: 1 }}>
+                {([
+                  { label: "Annual Income (Pre-Tax)",   val: fmtD(annualInflows),   color: "rgba(255,255,255,0.82)" },
+                  { label: "Total Annual Expenses",     val: `(${fmtD(annualOutflows)})`, color: "rgba(255,255,255,0.82)" },
+                  { label: "Coverage Ratio",            val: `${coverageRatio}%`,   color: coverageRatio >= 100 ? GI_GREEN : "#ff6464" },
+                  { label: "Monthly Burn Rate",         val: fmtD(monthlyBurn),     color: "#ff6464" },
+                  { label: "Cash Runway",               val: `${cashRunway} months`, color: "rgba(255,255,255,0.65)" },
+                  { label: "Cash Flow Trough",          val: `(${fmtD(troughDepth)})`, color: AMBER },
+                  { label: "Median Monthly Cash Flow",  val: medianMonthly >= 0 ? fmtD(medianMonthly) : `(${fmtD(Math.abs(medianMonthly))})`, color: AMBER },
+                ] as const).map((row, i, arr) => (
+                  <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 14px", borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                    <span style={{ fontFamily: INTER, fontSize: 11, color: "rgba(255,255,255,0.60)" }}>{row.label}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 300, fontVariantNumeric: "tabular-nums" as const, color: row.color }}>{row.val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Upcoming Large Payments — below KPI in left column */}
+            <div style={{ ...GI_CARD, borderTop: `2px solid ${AMBER}`, display: "flex", flexDirection: "column" }}>
+              <div style={{ ...sectionHdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span>Upcoming Large Payments</span>
+                <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(255,200,60,0.55)", border: "1px solid rgba(255,200,60,0.2)", borderRadius: 3, padding: "2px 7px" }}>{upcomingPayments.length} scheduled</span>
+              </div>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                {upcomingPayments.map((pmt, i) => {
+                  const d = new Date(pmt.date as string);
+                  const daysAway = Math.round((d.getTime() - DEMO_NOW.getTime()) / 86400000);
+                  const urgent = daysAway <= 20;
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: urgent ? "rgba(255,200,60,0.04)" : "transparent" }}>
+                      <div style={{ flexShrink: 0, width: 32, textAlign: "center" as const }}>
+                        <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: `rgba(255,200,60,${urgent ? 0.8 : 0.5})` }}>{format(d, "MMM")}</div>
+                        <div style={{ fontSize: 16, fontWeight: 300, lineHeight: 1.1, color: `rgba(255,200,60,${urgent ? 0.9 : 0.6})` }}>{format(d, "d")}</div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: `rgba(255,255,255,${urgent ? 0.85 : 0.6})`, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{pmt.description}</div>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.38)", marginTop: 2 }}>{pmt.category ?? "outflow"}</div>
+                      </div>
+                      <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 300, color: `rgba(255,200,60,${urgent ? 0.9 : 0.7})`, fontVariantNumeric: "tabular-nums" as const }}>{fmtD(Number(pmt.amount))}</div>
+                        <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: urgent ? "rgba(255,200,60,0.65)" : "rgba(255,255,255,0.25)", marginTop: 1 }}>{daysAway > 0 ? `${daysAway} DAYS` : "DUE TODAY"}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {upcomingPayments.length === 0 && <div style={{ padding: "20px 16px", fontSize: 12, color: "rgba(255,255,255,0.38)", textAlign: "center" as const }}>No large payments scheduled</div>}
+            </div>
+
+            </div>{/* /left-column */}
+
+            {/* Right column: stacked charts */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
             {/* Chart 1: Cumulative Cash Flow */}
-            <div style={{ ...GI_CARD }}>
+            <div style={{ ...GI_CARD, display: "flex", flexDirection: "column" }}>
               <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontFamily: INTER, fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(0,0%,88%)" }}>Cumulative Net Cash Flow</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -13148,51 +13196,61 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ display: "inline-block", width: 12, borderTop: `1.5px dashed ${AMBER}` }} /><span style={{ fontSize: 9, color: MUTED }}>{troughMonth} trough</span></div>
                 </div>
               </div>
-              <div style={{ padding: "4px 0 2px", position: "relative" }}>
-                <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", height: "auto", display: "block" }}>
-                  {/* Grid lines */}
-                  <line x1={CPX} y1={cumZeroY} x2={CW - CPX} y2={cumZeroY} stroke="rgba(255,255,255,0.25)" strokeWidth={1} />
-                  {[cumChartMin, cumChartMax].map((v, i) => (
-                    <line key={i} x1={CPX} y1={ccy(v)} x2={CW - CPX} y2={ccy(v)} stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+              <div style={{ padding: "4px 8px 2px", position: "relative" }}>
+                <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", display: "block" }}>
+                  {/* Horizontal grid lines — 5 evenly spaced */}
+                  {[0, 1, 2, 3, 4].map(i => {
+                    const gv = cumChartMin + (cumChartRange / 4) * i;
+                    return <line key={`g${i}`} x1={CPX} y1={ccy(gv)} x2={CW - CPX} y2={ccy(gv)} stroke="rgba(255,255,255,0.06)" strokeWidth={0.7} />;
+                  })}
+                  {/* Zero line — prominent */}
+                  <line x1={CPX} y1={cumZeroY} x2={CW - CPX} y2={cumZeroY} stroke="rgba(255,255,255,0.22)" strokeWidth={1} />
+                  {/* Vertical month guides (subtle) */}
+                  {MNMS.map((_, i) => (
+                    <line key={`vm${i}`} x1={ccx(i)} y1={CPY} x2={ccx(i)} y2={CH - CPY} stroke="rgba(255,255,255,0.03)" strokeWidth={0.5} />
                   ))}
                   {/* Dual fills: green above zero, red below zero */}
-                  <path d={cumFillAbove} fill="rgba(94,204,138,0.09)" />
-                  <path d={cumFillBelow} fill="rgba(255,80,80,0.18)" />
+                  <path d={cumFillAbove} fill="rgba(94,204,138,0.10)" />
+                  <path d={cumFillBelow} fill="rgba(255,80,80,0.16)" />
                   {/* TODAY vertical line at March */}
-                  <line x1={ccx(TODAY_IDX)} y1={CPY} x2={ccx(TODAY_IDX)} y2={CH - CPY} stroke="rgba(255,255,255,0.18)" strokeWidth={1} strokeDasharray="3 4" />
-                  <text x={ccx(TODAY_IDX)} y={CPY - 4} textAnchor="middle" fill="rgba(255,255,255,0.28)" fontSize={6} fontWeight={600} fontFamily="Inter,system-ui">TODAY</text>
+                  <line x1={ccx(TODAY_IDX)} y1={CPY} x2={ccx(TODAY_IDX)} y2={CH - CPY} stroke="rgba(255,255,255,0.20)" strokeWidth={1} strokeDasharray="3 4" />
+                  <text x={ccx(TODAY_IDX)} y={CPY - 5} textAnchor="middle" fill="rgba(255,255,255,0.32)" fontSize={8} fontWeight={700} letterSpacing="0.10em" fontFamily="Inter,system-ui">TODAY</text>
                   {/* Solid green line before today */}
-                  <path d={cumLineSolid} fill="none" stroke={GREEN} strokeWidth={1.5} strokeLinejoin="round" />
+                  <path d={cumLineSolid} fill="none" stroke={GREEN} strokeWidth={2} strokeLinejoin="round" />
                   {/* Dashed segments after today, colored by pos/neg */}
                   {cumLineSegments.map((seg, i) => (
-                    <path key={i} d={seg.d} fill="none" stroke={seg.color} strokeWidth={1.5} strokeDasharray="4 2" strokeLinejoin="round" />
+                    <path key={i} d={seg.d} fill="none" stroke={seg.color} strokeWidth={2} strokeDasharray="5 3" strokeLinejoin="round" />
                   ))}
                   {/* Data point markers + hover targets */}
                   {cumulativeByMonth.map((v, i) => (
                     <g key={i} onMouseEnter={e => showTip("cf", i, e)} onMouseLeave={hideTip} style={{ cursor: "crosshair" }}>
-                      <circle cx={ccx(i)} cy={ccy(v)} r={10} fill="transparent" />
-                      <circle cx={ccx(i)} cy={ccy(v)} r={i === troughIdx ? 3.5 : 2}
+                      <circle cx={ccx(i)} cy={ccy(v)} r={14} fill="transparent" />
+                      <circle cx={ccx(i)} cy={ccy(v)} r={i === troughIdx ? 5 : 3.5}
                         fill={i === troughIdx ? AMBER : v >= 0 ? GREEN : "rgba(255,100,100,0.85)"}
-                        stroke="#141c2b" strokeWidth={0.7} opacity={0.85} />
+                        stroke="#0f1e33" strokeWidth={1.2} opacity={0.9} />
                     </g>
                   ))}
                   {/* Trough annotation callout */}
-                  <line x1={troughAnnX} y1={troughAnnY - 5} x2={troughAnnX} y2={troughAnnY - 22} stroke="rgba(255,200,60,0.5)" strokeWidth={1} strokeDasharray="3 2" />
-                  <rect x={troughAnnX - 38} y={troughAnnY - 42} width={76} height={20} rx={3} fill="rgba(6,14,28,0.97)" stroke="rgba(255,200,60,0.55)" strokeWidth={1} />
-                  <text x={troughAnnX} y={troughAnnY - 28} textAnchor="middle" fill={AMBER} fontSize={9} fontWeight={700} fontFamily="Inter,system-ui">{troughValFmt}</text>
-                  <text x={troughAnnX} y={troughAnnY - 22.5} textAnchor="middle" fill="rgba(255,255,255,0.42)" fontSize={5} fontWeight={700} fontFamily="Inter,system-ui">{troughMonth.toUpperCase()} TROUGH</text>
+                  <line x1={troughAnnX} y1={troughAnnY - 8} x2={troughAnnX} y2={troughAnnY - 32} stroke="rgba(255,200,60,0.5)" strokeWidth={1} strokeDasharray="5 3" />
+                  <rect x={troughAnnX - 52} y={troughAnnY - 58} width={104} height={27} rx={4} fill="rgba(6,14,28,0.97)" stroke="rgba(255,200,60,0.55)" strokeWidth={1} />
+                  <text x={troughAnnX} y={troughAnnY - 40} textAnchor="middle" fill={AMBER} fontSize={12} fontWeight={700} fontFamily="'JetBrains Mono',monospace">{troughValFmt}</text>
+                  <text x={troughAnnX} y={troughAnnY - 32} textAnchor="middle" fill="rgba(255,255,255,0.42)" fontSize={7} fontWeight={700} letterSpacing="0.08em" fontFamily="Inter,system-ui">{troughMonth.toUpperCase()} TROUGH</text>
                   {/* Month labels */}
                   {MNMS.map((m, i) => (
-                    <text key={i} x={ccx(i)} y={CH - 1} textAnchor="middle"
-                      fill={i === troughIdx ? AMBER : i === TODAY_IDX ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.35)"}
-                      fontSize={7} fontFamily="Inter,system-ui">{m}</text>
+                    <text key={i} x={ccx(i)} y={CH - 2} textAnchor="middle"
+                      fill={i === troughIdx ? AMBER : i === TODAY_IDX ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.38)"}
+                      fontSize={9} fontWeight={500} fontFamily="Inter,system-ui">{m}</text>
                   ))}
-                  {/* Y-axis labels */}
-                  {[cumChartMin, 0, cumChartMax].map((v, i) => (
-                    <text key={i} x={CPX - 3} y={ccy(v) + 3} textAnchor="end" fill="rgba(255,255,255,0.28)" fontSize={6.5} fontFamily="Inter,system-ui">
-                      {v >= 0 ? `+$${Math.round(v/1000)}K` : `($${Math.round(Math.abs(v)/1000)}K)`}
-                    </text>
-                  ))}
+                  {/* Y-axis labels — 5 ticks */}
+                  {[0, 1, 2, 3, 4].map(i => {
+                    const gv = cumChartMin + (cumChartRange / 4) * i;
+                    const rounded = Math.round(gv / 1000);
+                    return (
+                      <text key={`ya${i}`} x={CPX - 4} y={ccy(gv) + 3} textAnchor="end" fill="rgba(255,255,255,0.30)" fontSize={8} fontWeight={400} fontFamily="'JetBrains Mono',monospace">
+                        {gv >= 0 ? `+$${rounded}K` : `($${Math.abs(rounded)}K)`}
+                      </text>
+                    );
+                  })}
                 </svg>
                 {chartTip?.chart === "cf" && (() => {
                   const i = chartTip.idx;
@@ -13216,7 +13274,7 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
             </div>
 
             {/* Chart 2: Liquidity Runway */}
-            <div style={{ ...GI_CARD }}>
+            <div style={{ ...GI_CARD, display: "flex", flexDirection: "column" }}>
               <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontFamily: INTER, fontSize: 13, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(0,0%,88%)" }}>Liquidity Runway</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -13224,19 +13282,23 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ display: "inline-block", width: 12, borderTop: `1.5px dashed rgba(94,204,138,0.6)` }} /><span style={{ fontSize: 9, color: MUTED }}>Reserve floor</span></div>
                 </div>
               </div>
-              <div style={{ padding: "4px 0 2px", position: "relative" }}>
-                <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", height: "auto", display: "block" }}>
+              <div style={{ padding: "4px 8px 2px", position: "relative" }}>
+                <svg viewBox={`0 0 ${CW} ${CH}`} style={{ width: "100%", display: "block" }}>
                   <defs>
                     <linearGradient id="runBarGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="rgba(91,143,204,0.85)" />
                       <stop offset="100%" stopColor="rgba(40,72,130,0.4)" />
                     </linearGradient>
                   </defs>
-                  {/* Y-axis grid */}
+                  {/* Y-axis grid — 5 evenly spaced */}
                   {[0, 1, 2, 3, 4].map(i => {
                     const v = runChartMin + (runChartRange / 4) * i;
-                    return <line key={i} x1={CPX} y1={rcy(v)} x2={CW - CPX} y2={rcy(v)} stroke="rgba(255,255,255,0.05)" strokeWidth={1} />;
+                    return <line key={i} x1={CPX} y1={rcy(v)} x2={CW - CPX} y2={rcy(v)} stroke="rgba(255,255,255,0.06)" strokeWidth={0.7} />;
                   })}
+                  {/* Vertical month guides (subtle) */}
+                  {MNMS.map((_, i) => (
+                    <line key={`vm${i}`} x1={rcx(i)} y1={CPY} x2={rcx(i)} y2={CH - CPY} stroke="rgba(255,255,255,0.03)" strokeWidth={0.5} />
+                  ))}
                   {/* Reserve floor fill (subtle green below floor line) */}
                   <rect x={CPX} y={runFloorY} width={cPlotW} height={rcy(0) - runFloorY} fill="rgba(94,204,138,0.06)" />
                   {/* Bars + hover targets */}
@@ -13256,21 +13318,24 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
                   {/* Reserve floor dashed line */}
                   <line x1={CPX} y1={runFloorY} x2={CW - CPX} y2={runFloorY} stroke="rgba(94,204,138,0.55)" strokeWidth={1.5} strokeDasharray="8 5" />
                   {/* Low-point annotation callout */}
-                  <line x1={rcx(runLowIdx)} y1={rcy(runLowVal) - 3} x2={rcx(runLowIdx)} y2={rcy(runLowVal) - 20} stroke="rgba(255,200,60,0.45)" strokeWidth={1} strokeDasharray="3 2" />
-                  <rect x={rcx(runLowIdx) - 34} y={rcy(runLowVal) - 38} width={68} height={18} rx={3} fill="rgba(6,14,28,0.97)" stroke="rgba(255,200,60,0.5)" strokeWidth={1} />
-                  <text x={rcx(runLowIdx)} y={rcy(runLowVal) - 25} textAnchor="middle" fill={AMBER} fontSize={9} fontWeight={700} fontFamily="Inter,system-ui">{runLowFmt}</text>
+                  <line x1={rcx(runLowIdx)} y1={rcy(runLowVal) - 5} x2={rcx(runLowIdx)} y2={rcy(runLowVal) - 30} stroke="rgba(255,200,60,0.45)" strokeWidth={1} strokeDasharray="5 3" />
+                  <rect x={rcx(runLowIdx) - 48} y={rcy(runLowVal) - 55} width={96} height={25} rx={4} fill="rgba(6,14,28,0.97)" stroke="rgba(255,200,60,0.5)" strokeWidth={1} />
+                  <text x={rcx(runLowIdx)} y={rcy(runLowVal) - 37} textAnchor="middle" fill={AMBER} fontSize={12} fontWeight={700} fontFamily="'JetBrains Mono',monospace">{runLowFmt}</text>
                   {/* Month labels */}
                   {MNMS.map((m, i) => (
-                    <text key={i} x={rcx(i)} y={CH - 1} textAnchor="middle"
+                    <text key={i} x={rcx(i)} y={CH - 2} textAnchor="middle"
                       fill={i === runLowIdx ? AMBER : "rgba(255,255,255,0.38)"}
-                      fontSize={7} fontFamily="Inter,system-ui">{m}</text>
+                      fontSize={9} fontWeight={500} fontFamily="Inter,system-ui">{m}</text>
                   ))}
-                  {/* Y-axis labels */}
-                  {[0, Math.round(runChartMax / 2), Math.round(runChartMax)].map((v, i) => (
-                    <text key={i} x={CPX - 3} y={rcy(v) + 3} textAnchor="end" fill="rgba(255,255,255,0.28)" fontSize={6.5} fontFamily="Inter,system-ui">{`$${Math.round(v/1000)}K`}</text>
-                  ))}
+                  {/* Y-axis labels — 5 ticks */}
+                  {[0, 1, 2, 3, 4].map(i => {
+                    const gv = runChartMin + (runChartRange / 4) * i;
+                    return (
+                      <text key={`ya${i}`} x={CPX - 4} y={rcy(gv) + 3} textAnchor="end" fill="rgba(255,255,255,0.30)" fontSize={8} fontWeight={400} fontFamily="'JetBrains Mono',monospace">{`$${Math.round(gv/1000)}K`}</text>
+                    );
+                  })}
                   {/* Reserve floor label */}
-                  <text x={CPX - 3} y={runFloorY + 3} textAnchor="end" fill="rgba(94,204,138,0.55)" fontSize={6.5} fontFamily="Inter,system-ui">{`$${Math.round(liquidityReserve/1000)}K`}</text>
+                  <text x={CPX - 4} y={runFloorY + 3} textAnchor="end" fill="rgba(94,204,138,0.55)" fontSize={8} fontWeight={400} fontFamily="'JetBrains Mono',monospace">{`$${Math.round(liquidityReserve/1000)}K`}</text>
                 </svg>
                 {chartTip?.chart === "run" && (() => {
                   const i = chartTip.idx;
@@ -13297,7 +13362,8 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
               </div>
             </div>
 
-            </div>{/* /charts-row */}
+            </div>{/* /right-column */}
+            </div>{/* /2x2-grid */}
 
             {/* Quarterly Cash Balance Walk */}
             <div style={{ ...GI_CARD }}>
@@ -13331,38 +13397,6 @@ function DetectionSystemView({ assets, cashFlows, onNavigate }: {
               </div>
             </div>
 
-        </div>
-
-        {/* ── Upcoming Large Payments ── */}
-        <div style={{ ...GI_CARD, borderTop: `2px solid ${AMBER}` }}>
-          <div style={{ ...sectionHdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>Upcoming Large Payments</span>
-            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(255,200,60,0.55)", border: "1px solid rgba(255,200,60,0.2)", borderRadius: 3, padding: "2px 7px" }}>{upcomingPayments.length} scheduled</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 0 }}>
-            {upcomingPayments.map((pmt, i) => {
-              const d = new Date(pmt.date as string);
-              const daysAway = Math.round((d.getTime() - DEMO_NOW.getTime()) / 86400000);
-              const urgent = daysAway <= 20;
-              return (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", borderRight: "1px solid rgba(255,255,255,0.05)", background: urgent ? "rgba(255,200,60,0.04)" : "transparent" }}>
-                  <div style={{ flexShrink: 0, width: 32, textAlign: "center" as const }}>
-                    <div style={{ fontSize: 8, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em", color: `rgba(255,200,60,${urgent ? 0.8 : 0.5})` }}>{format(d, "MMM")}</div>
-                    <div style={{ fontSize: 16, fontWeight: 300, lineHeight: 1.1, color: `rgba(255,200,60,${urgent ? 0.9 : 0.6})` }}>{format(d, "d")}</div>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: `rgba(255,255,255,${urgent ? 0.85 : 0.6})`, whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>{pmt.description}</div>
-                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.38)", marginTop: 2 }}>{pmt.category ?? "outflow"}</div>
-                  </div>
-                  <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 300, color: `rgba(255,200,60,${urgent ? 0.9 : 0.7})`, fontVariantNumeric: "tabular-nums" as const }}>{fmtD(Number(pmt.amount))}</div>
-                    <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: urgent ? "rgba(255,200,60,0.65)" : "rgba(255,255,255,0.25)", marginTop: 1 }}>{daysAway > 0 ? `${daysAway} DAYS` : "DUE TODAY"}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {upcomingPayments.length === 0 && <div style={{ padding: "20px 16px", fontSize: 12, color: "rgba(255,255,255,0.38)", textAlign: "center" as const }}>No large payments scheduled</div>}
         </div>
 
         {/* ── Section: Monthly Summary Model ── */}
@@ -13810,39 +13844,6 @@ export default function ClientDashboard() {
         @keyframes guru-scan { 0%,100%{opacity:0.7} 50%{opacity:1} }
       `}</style>
 
-      {/* ── GURU AI STATUS BAR ── */}
-      <div style={{
-        background: "#0c1828",
-        height: 28,
-        padding: "0 40px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        flexShrink: 0,
-      }}>
-        {/* Left cluster */}
-        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.50)", animation: "guru-scan 3s ease infinite" }}>▶ GURU AI</span>
-          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.15)", margin: "0 10px" }}>·</span>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.35)" }}>SCAN ACTIVE</span>
-          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.12)", margin: "0 10px" }}>|</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#44e08a", animation: "guru-live-pulse 2s ease infinite", flexShrink: 0 }} />
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "#44e08a" }}>LIVE</span>
-          </div>
-          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.12)", margin: "0 10px" }}>|</span>
-          <span style={{ fontSize: 9, fontWeight: 400, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.28)" }}>6 ACCOUNTS SYNCED · DEC 29, 2025 · 9:42 AM</span>
-        </div>
-        {/* Centre badges */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "#ffc83c", border: "1px solid rgba(255,200,60,0.35)", padding: "1px 8px", borderRadius: 2 }}>2 ACTIONS PENDING</span>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(68,224,138,0.80)", border: "1px solid rgba(68,224,138,0.25)", padding: "1px 8px", borderRadius: 2 }}>1 OPPORTUNITY</span>
-        </div>
-        {/* Right */}
-        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase" as const, color: "rgba(255,255,255,0.18)" }}>GURU AI · DETECTION SYSTEM</span>
-      </div>
-
       {/* ── IDENTITY BAR ── */}
       {(()=>{
         const isGI = activeView === "guruintelligence";
@@ -14005,7 +14006,7 @@ export default function ClientDashboard() {
       {/* ── GURU INTELLIGENCE subtab row — flat chrome surface ── */}
       {activeView === "guruintelligence" && (
         <div style={{
-          background: "hsl(218,12%,24%)",
+          background: "#0f1e33",
           borderBottom: "none",
           padding: "0 40px",
           display: "flex",
