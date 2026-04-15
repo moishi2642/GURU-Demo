@@ -898,8 +898,9 @@ function computeLiquidityTargets(
       })
       .reduce((s, cf) => s + Number(cf.amount), 0);
 
-  // ── Trough — use raw CF (no assets) to avoid circular dependency with computeMonthlyBucketInterest ──
-  const { troughIdx, troughDepth } = computeCumulativeNCF(cashFlows);
+  // ── Trough — single source of truth from CF tab computation (with asset forecast model) ──
+  // Note: circular dependency fixed by using cashBuckets() in computeMonthlyBucketInterest()
+  const { troughIdx, troughDepth } = computeCumulativeNCF(cashFlows, assets);
 
   // ── Operating floor AT the trough ────────────────────────────────────────
   // 2 months forward from the trough month (not from today).
@@ -10933,7 +10934,8 @@ function liquidAssetYields(bucketAssets: Asset[]): { pretax: number; at: number 
 // Compute 12 monthly After-Tax interest amounts for all three liquid buckets combined.
 // Returns array of length 12 (Jan–Dec). Used to feed both Asset Forecast and CF Forecast tabs.
 function computeMonthlyBucketInterest(assets: Asset[], cashFlows: CashFlow[]): number[] {
-  const { operatingCash, liquidityReserve, capitalBuild } = computeLiquidityTargets(assets, cashFlows);
+  // ── Use cashBuckets() instead of computeLiquidityTargets() to avoid circular dependency ──
+  const { operatingCash, liquidityReserve, capitalBuild } = cashBuckets(assets);
   const opYields  = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "reserve"));
   const rsvYields = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "yield_"));
   const bldYields = liquidAssetYields(assets.filter(a => assetBucketKey(a) === "tactical"));
