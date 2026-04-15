@@ -5315,7 +5315,7 @@ const MM_GURU_ACTIONS = [
 // Full row-by-row asset waterfall: Operating Cash → Liquidity Reserve → Capital Build
 // Mirrors Excel Cash Flow tab rows 75–107. Financial model formatting.
 // ─────────────────────────────────────────────────────────────────────────────
-function LiquidityWaterfallView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
+function LiquidityForecastView({ assets, cashFlows }: { assets: Asset[]; cashFlows: CashFlow[] }) {
   const MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
   // ── Opening balances from single source of truth ───────────────────────────
@@ -14024,7 +14024,7 @@ export default function ClientDashboard() {
             { label: "Detection System",    key: "cashflow" },
             { label: "Balance Sheet Today", key: "networth" },
             { label: "Money movement",      key: "moneymovement" },
-            { label: "Asset forecast",      key: "liquiditymodel" },
+            { label: "Liquidity forecast",      key: "liquiditymodel" },
             { label: "Cash flow forecast",  key: "cfforecast" },
           ] as const).map(t => {
             const isA = guruIntelTab === t.key;
@@ -14157,7 +14157,7 @@ export default function ClientDashboard() {
           )}
           {guruIntelTab === "liquiditymodel" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden", marginTop: 24 }}>
-              <LiquidityWaterfallView assets={assets} cashFlows={cashFlows} />
+              <LiquidityForecastView assets={assets} cashFlows={cashFlows} />
             </div>
           )}
           {guruIntelTab === "cfforecast" && (
