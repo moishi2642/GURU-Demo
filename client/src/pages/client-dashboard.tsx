@@ -13826,12 +13826,13 @@ export default function ClientDashboard() {
   const topNavActive = (view: ActiveView) => activeView === view;
 
   // ── Inline tab hover helper (onMouseEnter/Leave) ────────────────────────────
+  const isGINav = activeView === "guruintelligence";
   const tabHover = (isActive: boolean) => ({
     onMouseEnter: (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.50)";
+      if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = isGINav ? "rgba(255,255,255,0.60)" : "rgba(0,0,0,0.50)";
     },
     onMouseLeave: (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.30)";
+      if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = isGINav ? "rgba(255,255,255,0.30)" : "rgba(0,0,0,0.30)";
     },
   });
 
@@ -13859,12 +13860,12 @@ export default function ClientDashboard() {
             alignItems: "center",
           }}>
             {/* Left: client name */}
-            <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.50)" : "rgba(0,0,0,0.45)" }}>Kessler Family</span>
+            <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.45)" }}>Kessler Family</span>
             {/* Right: date */}
             {activeView === "advisorbrief" ? (
-              <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.30)" : "rgba(0,0,0,0.28)" }}>Tara Williams · March 6, 2026</span>
+              <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.50)" : "rgba(0,0,0,0.28)" }}>Tara Williams · March 6, 2026</span>
             ) : (
-              <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.30)" : "rgba(0,0,0,0.28)" }}>December 29, 2025</span>
+              <span style={{ ...CHROME, color: isGI ? "rgba(255,255,255,0.50)" : "rgba(0,0,0,0.28)" }}>December 29, 2025</span>
             )}
           </div>
         );
