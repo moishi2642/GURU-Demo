@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Allocation Tool — Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page-bg: hsl(220,5%,93%);
+    --card-bg: #FFFFFF;
+    --card-border: rgba(0,0,0,0.07);
+    --footer-bg: hsl(220,5%,97%);
+    --navy: hsl(222,45%,12%);
+    --gold: #9a7b3c;
+    --green: #2e7a52;
+    --green-light: #e8f5ee;
+    --amber: #c47c2b;
+    --text: hsl(222,45%,12%);
+    --text-sub: rgba(0,0,0,0.55);
+    --text-dim: rgba(0,0,0,0.35);
+
+    /* Bucket colors */
+    --ops: #1E4F9C;
+    --res: #835800;
+    --cap: #195830;
+    --inv: #4A3FA0;
+    --alt: #5C5C6E;
+
+    --ui: 'Inter', system-ui, sans-serif;
+    --headline: 'Playfair Display', Georgia, serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--ui); background: var(--page-bg); color: var(--text); font-size: 13px; line-height: 1.5; }
+
+  /* ── Top chrome ── */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 40px; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; }
+  .topbar-left { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--text-sub); letter-spacing: 0.04em; }
+  .topbar-left .family { color: var(--text); font-weight: 600; }
+  .topbar-right { font-size: 11px; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* ── Nav ── */
+  .nav { display: flex; gap: 28px; padding: 0 40px; border-bottom: 1px solid rgba(0,0,0,0.08); background: #fff; }
+  .nav button { font-family: var(--ui); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); border: none; background: none; padding: 10px 0; cursor: pointer; border-bottom: 2px solid transparent; }
+  .nav button.active { color: var(--text); border-bottom-color: var(--navy); }
+
+  /* ── Content area ── */
+  .content { max-width: 1200px; margin: 0 auto; padding: 32px 40px 80px; }
+
+  /* ── Section headers ── */
+  .section-eyebrow { font-family: var(--ui); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+  .section-headline { font-family: var(--headline); font-size: 26px; font-weight: 400; color: var(--text); margin-bottom: 6px; line-height: 1.25; }
+  .section-desc { font-size: 13px; color: var(--text-sub); max-width: 600px; margin-bottom: 24px; }
+
+  /* ── Cards ── */
+  .card { background: var(--card-bg); border: 0.5px solid var(--card-border); border-radius: 0; box-shadow: none; overflow: hidden; }
+
+  /* ── Bucket cards ── */
+  .bucket-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 28px; }
+  .bucket-card { background: var(--card-bg); border: 0.5px solid var(--card-border); border-radius: 0; box-shadow: none; overflow: hidden; }
+  .bucket-stripe { height: 4px; }
+  .bucket-header { padding: 14px 16px 10px; border-bottom: 0.5px solid rgba(0,0,0,0.06); }
+  .bucket-name { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; }
+  .bucket-balance { font-family: var(--ui); font-size: 20px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; color: var(--navy); margin-top: 2px; }
+
+  .bucket-accounts { padding: 0; }
+  .acct-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.05); }
+  .acct-row:last-child { border-bottom: none; }
+  .acct-name { font-size: 11px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+  .acct-bal { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--text); }
+
+  .bucket-stats { padding: 0 16px; }
+  .stat-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 0.5px solid rgba(0,0,0,0.04); font-size: 11px; }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--text-dim); }
+  .stat-value { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .bucket-footer { background: var(--footer-bg); border-top: 0.5px solid var(--card-border); padding: 8px 16px; }
+  .bucket-footer-label { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 2px; }
+  .bucket-footer-text { font-size: 11px; color: var(--text-sub); line-height: 1.45; }
+
+  /* ── KPI strip ── */
+  .kpi-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .kpi-card { background: var(--card-bg); border: 0.5px solid var(--card-border); border-radius: 0; box-shadow: none; padding: 14px 16px; }
+  .kpi-card.interactive { border-left: 3px solid var(--green); }
+  .kpi-label { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+  .kpi-value { font-family: var(--ui); font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; color: var(--navy); }
+  .kpi-value.green { color: var(--green); }
+  .kpi-sub { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ── Roadmap ── */
+  .roadmap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .roadmap-card { background: var(--card-bg); border: 0.5px solid var(--card-border); border-radius: 0; box-shadow: none; padding: 20px; display: flex; gap: 14px; align-items: flex-start; }
+  .roadmap-num { width: 32px; height: 32px; min-width: 32px; background: var(--navy); color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .roadmap-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .roadmap-desc { font-size: 12px; color: var(--text-sub); line-height: 1.45; }
+  .roadmap-tag { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 2px; }
+  .tag-review { background: #e8f0fe; color: #1a56db; }
+  .tag-confirm { background: #fef3e2; color: #b45309; }
+  .tag-execute { background: var(--green-light); color: var(--green); }
+
+  /* ── CTA ── */
+  .cta-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--navy); color: #fff; font-family: var(--ui); font-size: 13px; font-weight: 600; letter-spacing: 0.03em; padding: 12px 28px; border: none; cursor: pointer; border-radius: 4px; }
+  .cta-btn:hover { opacity: 0.9; }
+  .cta-btn svg { width: 16px; height: 16px; }
+  .cta-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+
+  /* ── Step progress ── */
+  .step-bar { display: flex; align-items: center; gap: 0; margin-bottom: 28px; }
+  .step-item { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border: 0.5px solid var(--card-border); background: var(--card-bg); font-size: 12px; font-weight: 500; color: var(--text-dim); position: relative; }
+  .step-item:first-child { border-right: none; }
+  .step-item:last-child { border-left: none; }
+  .step-item.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .step-item.done { background: var(--green-light); color: var(--green); border-color: rgba(46,122,82,0.2); }
+  .step-dot { width: 22px; height: 22px; min-width: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .step-item.active .step-dot { background: rgba(255,255,255,0.2); color: #fff; }
+  .step-item.done .step-dot { background: var(--green); color: #fff; }
+  .step-item:not(.active):not(.done) .step-dot { background: rgba(0,0,0,0.08); color: var(--text-dim); }
+  .step-connector { width: 28px; height: 2px; background: rgba(0,0,0,0.1); }
+
+  /* ── Target cards (Step 1) ── */
+  .target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .target-card { background: var(--card-bg); border: 0.5px solid var(--card-border); border-radius: 0; box-shadow: none; overflow: hidden; }
+  .target-card-stripe { height: 4px; }
+  .target-card-body { padding: 18px; }
+  .target-card-name { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 12px; }
+  .target-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid rgba(0,0,0,0.05); font-size: 12px; }
+  .target-row:last-child { border-bottom: none; }
+  .target-label { color: var(--text-sub); }
+  .target-val { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .target-excess { font-weight: 600; }
+  .target-excess.positive { color: var(--green); }
+  .target-control { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 0; border-top: 0.5px solid rgba(0,0,0,0.06); }
+  .target-control label { font-size: 11px; color: var(--text-sub); }
+  .stepper { display: flex; align-items: center; border: 0.5px solid rgba(0,0,0,0.15); }
+  .stepper button { width: 28px; height: 28px; border: none; background: var(--footer-bg); cursor: pointer; font-size: 14px; color: var(--text-sub); display: flex; align-items: center; justify-content: center; }
+  .stepper span { padding: 0 12px; font-size: 13px; font-weight: 500; min-width: 36px; text-align: center; }
+
+  /* ── Harvest / summary strip ── */
+  .harvest-strip { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 0.5px solid var(--card-border); border-left: 4px solid var(--green); padding: 14px 20px; margin-bottom: 28px; }
+  .harvest-label { font-size: 12px; font-weight: 600; color: var(--text); }
+  .harvest-value { font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; color: var(--green); }
+  .harvest-sub { font-size: 11px; color: var(--text-sub); }
+
+  /* ── Ledger ── */
+  .ledger { background: var(--card-bg); border: 0.5px solid var(--card-border); margin-bottom: 28px; overflow: hidden; }
+  .ledger-title { padding: 12px 18px; border-bottom: 0.5px solid rgba(0,0,0,0.06); font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-dim); }
+  .ledger-head { display: grid; grid-template-columns: 3fr 1.5fr 1.5fr 1.5fr; padding: 8px 18px; border-bottom: 0.5px solid rgba(0,0,0,0.08); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+  .ledger-row { display: grid; grid-template-columns: 3fr 1.5fr 1.5fr 1.5fr; padding: 8px 18px; border-bottom: 0.5px solid rgba(0,0,0,0.04); font-size: 12px; align-items: center; }
+  .ledger-row:last-child { border-bottom: none; }
+  .ledger-row .acct { display: flex; align-items: center; gap: 6px; }
+  .ledger-row .bucket-dot { width: 8px; height: 8px; border-radius: 50%; min-width: 8px; }
+  .ledger-row .strike { text-decoration: line-through; color: var(--text-dim); }
+  .ledger-row .new-val { color: var(--green); font-weight: 500; }
+  .ledger-row .delta { font-size: 11px; }
+  .ledger-row .delta.neg { color: #c53030; }
+  .ledger-row .delta.pos { color: var(--green); }
+  .ledger-row .new-badge { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); background: var(--green-light); padding: 1px 6px; margin-left: 6px; }
+  .ledger-total { display: grid; grid-template-columns: 3fr 1.5fr 1.5fr 1.5fr; padding: 10px 18px; border-top: 1px solid rgba(0,0,0,0.10); font-size: 12px; font-weight: 600; background: var(--footer-bg); }
+
+  /* ── Deploy cards (Step 2) ── */
+  .deploy-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+  .deploy-card { background: var(--card-bg); border: 0.5px solid var(--card-border); border-radius: 0; overflow: hidden; }
+  .deploy-card-stripe { height: 4px; }
+  .deploy-card-body { padding: 18px; }
+  .deploy-card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .deploy-card-name { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; }
+  .deploy-card-amount { font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; color: var(--navy); }
+  .deploy-reason { font-size: 12px; color: var(--text-sub); line-height: 1.5; margin-bottom: 10px; }
+  .deploy-badge { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; background: var(--green-light); color: var(--green); }
+
+  .undeployed-tracker { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 0.5px solid var(--card-border); padding: 12px 20px; margin-bottom: 28px; }
+  .undeployed-label { font-size: 12px; color: var(--text-sub); }
+  .undeployed-value { font-size: 18px; font-weight: 300; font-variant-numeric: tabular-nums; color: var(--navy); }
+  .undeployed-value.zero { color: var(--green); }
+
+  /* ── Product cards (Step 3) ── */
+  .product-section { margin-bottom: 24px; }
+  .product-section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .product-section-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .product-card { background: var(--card-bg); border: 0.5px solid var(--card-border); border-radius: 0; padding: 16px; cursor: pointer; transition: border-color 0.15s; }
+  .product-card:hover { border-color: rgba(0,0,0,0.2); }
+  .product-card.selected { border-left: 3px solid var(--green); }
+  .product-card.optional { border-style: dashed; }
+  .product-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .product-type { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .product-stats { display: flex; gap: 16px; }
+  .product-stat { font-size: 11px; }
+  .product-stat-label { color: var(--text-dim); }
+  .product-stat-val { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  /* ── Page visibility ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Utilities ── */
+  .mb-12 { margin-bottom: 12px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mb-28 { margin-bottom: 28px; }
+  .mb-32 { margin-bottom: 32px; }
+  .mt-16 { margin-top: 16px; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ Top Chrome ═══════════════ -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="family">Kessler Family</span>
+    <span>· Sarah &amp; Michael · Wealth Management</span>
+  </div>
+  <div class="topbar-right">Advisor Layer · Live from Transaction Data · December 2025</div>
+</div>
+
+<div class="nav">
+  <button>Advisor Brief</button>
+  <button>Balance Sheet</button>
+  <button>Investments</button>
+  <button class="active">Allocation</button>
+</div>
+
+<!-- ═══════════════ PAGE 0 — Landing ═══════════════ -->
+<div class="page active" id="page-0">
+<div class="content">
+
+  <div class="section-eyebrow">ALLOCATION TOOL</div>
+  <div class="section-headline"><i>How GURU organizes your money</i></div>
+  <div class="section-desc">Every dollar sits in one of five purpose-driven buckets. GURU sizes each bucket from your live cash flows and goals, then identifies capital that could work harder.</div>
+
+  <!-- ── Bucket cards ── -->
+  <div class="bucket-grid">
+
+    <!-- Operating Cash -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background:var(--ops)"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color:var(--ops)">Operating Cash</div>
+        <div class="bucket-balance">$126,148</div>
+      </div>
+      <div class="bucket-accounts">
+        <div class="acct-row"><span class="acct-name">Chase Total Checking</span><span class="acct-bal">$89,217</span></div>
+        <div class="acct-row"><span class="acct-name">Chase Premier Checking</span><span class="acct-bal">$36,931</span></div>
+      </div>
+      <div class="bucket-stats">
+        <div class="stat-row"><span class="stat-label">Target</span><span class="stat-value">$63,574</span></div>
+        <div class="stat-row"><span class="stat-label">Coverage</span><span class="stat-value">2.0 months</span></div>
+        <div class="stat-row"><span class="stat-label">Weighted Yield</span><span class="stat-value">0.01%</span></div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-label">GURU Insight</div>
+        <div class="bucket-footer-text">$62,574 over target. Earning near-zero in checking — strong reallocation candidate.</div>
+      </div>
+    </div>
+
+    <!-- Liquidity Reserve -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background:var(--res)"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color:var(--res)">Liquidity Reserve</div>
+        <div class="bucket-balance">$449,119</div>
+      </div>
+      <div class="bucket-accounts">
+        <div class="acct-row"><span class="acct-name">Marcus High-Yield Savings</span><span class="acct-bal">$299,966</span></div>
+        <div class="acct-row"><span class="acct-name">Ally Savings</span><span class="acct-bal">$89,153</span></div>
+        <div class="acct-row"><span class="acct-name">Discover Money Market</span><span class="acct-bal">$60,000</span></div>
+      </div>
+      <div class="bucket-stats">
+        <div class="stat-row"><span class="stat-label">Target</span><span class="stat-value">$173,527</span></div>
+        <div class="stat-row"><span class="stat-label">Trough Depth</span><span class="stat-value">$129,385</span></div>
+        <div class="stat-row"><span class="stat-label">Weighted Yield</span><span class="stat-value">4.25%</span></div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-label">GURU Insight</div>
+        <div class="bucket-footer-text">$275,592 over target. Reserve is over-funded relative to trough — excess can deploy safely.</div>
+      </div>
+    </div>
+
+    <!-- Capital Build -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background:var(--cap)"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color:var(--cap)">Capital Build</div>
+        <div class="bucket-balance">$142,000</div>
+      </div>
+      <div class="bucket-accounts">
+        <div class="acct-row"><span class="acct-name">Vanguard Treasury Fund</span><span class="acct-bal">$85,000</span></div>
+        <div class="acct-row"><span class="acct-name">Fidelity Short-Term Bond</span><span class="acct-bal">$57,000</span></div>
+      </div>
+      <div class="bucket-stats">
+        <div class="stat-row"><span class="stat-label">Target</span><span class="stat-value">$135,000</span></div>
+        <div class="stat-row"><span class="stat-label">Goal</span><span class="stat-value">Home · June 2027</span></div>
+        <div class="stat-row"><span class="stat-label">Weighted Yield</span><span class="stat-value">4.85%</span></div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-label">GURU Insight</div>
+        <div class="bucket-footer-text">$7,000 over target. On track for $548,000 down payment. Net cash flow will bridge the gap by May 2027.</div>
+      </div>
+    </div>
+
+    <!-- Investments -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background:var(--inv)"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color:var(--inv)">Investments</div>
+        <div class="bucket-balance">$3,214,500</div>
+      </div>
+      <div class="bucket-accounts">
+        <div class="acct-row"><span class="acct-name">Schwab Brokerage</span><span class="acct-bal">$1,842,000</span></div>
+        <div class="acct-row"><span class="acct-name">Fidelity 401(k)</span><span class="acct-bal">$956,000</span></div>
+        <div class="acct-row"><span class="acct-name">Vanguard Roth IRA</span><span class="acct-bal">$416,500</span></div>
+      </div>
+      <div class="bucket-stats">
+        <div class="stat-row"><span class="stat-label">Allocation</span><span class="stat-value">70/25/5</span></div>
+        <div class="stat-row"><span class="stat-label">After-Tax Yield</span><span class="stat-value">5.2%</span></div>
+        <div class="stat-row"><span class="stat-label">Weighted Yield</span><span class="stat-value">7.8%</span></div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-label">GURU Insight</div>
+        <div class="bucket-footer-text">Primary growth engine. Reallocation will add capital from excess buckets to increase total return.</div>
+      </div>
+    </div>
+
+    <!-- Other Assets -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background:var(--alt)"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color:var(--alt)">Other Assets</div>
+        <div class="bucket-balance">$632,929</div>
+      </div>
+      <div class="bucket-accounts">
+        <div class="acct-row"><span class="acct-name">Real Estate (Primary)</span><span class="acct-bal">$580,000</span></div>
+        <div class="acct-row"><span class="acct-name">Crypto (Coinbase)</span><span class="acct-bal">$52,929</span></div>
+      </div>
+      <div class="bucket-stats">
+        <div class="stat-row"><span class="stat-label">Type</span><span class="stat-value">Illiquid</span></div>
+        <div class="stat-row"><span class="stat-label">Appreciation</span><span class="stat-value">Varies</span></div>
+        <div class="stat-row"><span class="stat-label">Weighted Yield</span><span class="stat-value">N/A</span></div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-label">GURU Insight</div>
+        <div class="bucket-footer-text">Illiquid positions. Not included in reallocation analysis. Monitored for net-worth reporting only.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Calculator KPI strip ── -->
+  <div class="section-eyebrow mb-12">REALLOCATION OPPORTUNITY</div>
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <div class="kpi-label">Potential Excess Liquidity</div>
+      <div class="kpi-value green">$345,267</div>
+      <div class="kpi-sub">Capital sitting idle beyond targets</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">After-Tax Income Increase</div>
+      <div class="kpi-value green">+$29,686 / year</div>
+      <div class="kpi-sub">Pro-forma vs. current yield</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Days Sitting Idle</div>
+      <div class="kpi-value">47</div>
+      <div class="kpi-sub">Since year-end bonus deposited</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Cash Runway</div>
+      <div class="kpi-value">21.8 months</div>
+      <div class="kpi-sub">At current burn rate</div>
+    </div>
+  </div>
+
+  <!-- ── Roadmap ── -->
+  <div class="section-eyebrow mb-12">THE PROCESS</div>
+  <div class="section-headline mb-16" style="font-size:20px;"><i>Three steps to put your capital to work</i></div>
+  <div class="roadmap">
+    <div class="roadmap-card">
+      <div class="roadmap-num">1</div>
+      <div>
+        <div class="roadmap-title">Quantify Excess</div>
+        <div class="roadmap-desc">Review GURU's targets for each bucket. Adjust coverage months or goal parameters if needed. See exactly how much capital can be harvested.</div>
+        <span class="roadmap-tag tag-review">Review</span>
+      </div>
+    </div>
+    <div class="roadmap-card">
+      <div class="roadmap-num">2</div>
+      <div>
+        <div class="roadmap-title">Deploy Capital</div>
+        <div class="roadmap-desc">Direct harvested funds to buckets that need capital or can generate higher returns. GURU recommends, you confirm.</div>
+        <span class="roadmap-tag tag-confirm">Confirm</span>
+      </div>
+    </div>
+    <div class="roadmap-card">
+      <div class="roadmap-num">3</div>
+      <div>
+        <div class="roadmap-title">Select Products</div>
+        <div class="roadmap-desc">Choose specific investment products for each deployment. Compare yields, durations, and tax treatment before executing.</div>
+        <span class="roadmap-tag tag-execute">Execute</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <button class="cta-btn" onclick="goPage(1)">Start the Review <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════ PAGE 1 — Step 1: Quantify Excess ═══════════════ -->
+<div class="page" id="page-1">
+<div class="content">
+
+  <!-- Step bar -->
+  <div class="step-bar">
+    <div class="step-item active"><div class="step-dot">1</div> Quantify Excess</div>
+    <div class="step-connector"></div>
+    <div class="step-item"><div class="step-dot">2</div> Deploy Capital</div>
+    <div class="step-connector"></div>
+    <div class="step-item"><div class="step-dot">3</div> Select Products</div>
+  </div>
+
+  <div class="section-headline mb-16"><i>How much capital is sitting idle?</i></div>
+  <div class="section-desc">GURU has sized each bucket from your live cash flows and goals. Review targets below — adjust if needed — and see how much excess can be harvested for deployment.</div>
+
+  <!-- ── Interactive KPI strip ── -->
+  <div class="kpi-strip">
+    <div class="kpi-card interactive">
+      <div class="kpi-label">Excess Liquidity</div>
+      <div class="kpi-value green" id="kpi-excess">$345,267</div>
+      <div class="kpi-sub">Updates as you adjust targets</div>
+    </div>
+    <div class="kpi-card interactive">
+      <div class="kpi-label">After-Tax Income Pickup</div>
+      <div class="kpi-value green">+$29,686 / year</div>
+      <div class="kpi-sub">If excess fully deployed</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Liquid Assets</div>
+      <div class="kpi-value">$717,267</div>
+      <div class="kpi-sub">Operating + Reserve + Capital Build</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Liquidity Requirement</div>
+      <div class="kpi-value">$372,101</div>
+      <div class="kpi-sub">Targets + Goal Savings</div>
+    </div>
+  </div>
+
+  <!-- ── Target cards ── -->
+  <div class="section-eyebrow mb-12">BUCKET TARGETS</div>
+  <div class="target-grid">
+
+    <!-- Operating Cash target -->
+    <div class="target-card">
+      <div class="target-card-stripe" style="background:var(--ops)"></div>
+      <div class="target-card-body">
+        <div class="target-card-name" style="color:var(--ops)">Operating Cash</div>
+        <div class="target-row"><span class="target-label">Current Balance</span><span class="target-val">$126,148</span></div>
+        <div class="target-row"><span class="target-label">Target</span><span class="target-val">$63,574</span></div>
+        <div class="target-row"><span class="target-label">Excess</span><span class="target-val target-excess positive">+$62,574</span></div>
+        <div class="target-control">
+          <label>Coverage Months</label>
+          <div class="stepper">
+            <button>−</button>
+            <span>2</span>
+            <button>+</button>
+          </div>
+        </div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:6px;">Target = Monthly Outflows × Coverage Months. Set to 2 months (January + February post-bonus).</div>
+      </div>
+    </div>
+
+    <!-- Liquidity Reserve target -->
+    <div class="target-card">
+      <div class="target-card-stripe" style="background:var(--res)"></div>
+      <div class="target-card-body">
+        <div class="target-card-name" style="color:var(--res)">Liquidity Reserve</div>
+        <div class="target-row"><span class="target-label">Current Balance</span><span class="target-val">$449,119</span></div>
+        <div class="target-row"><span class="target-label">Target</span><span class="target-val">$173,527</span></div>
+        <div class="target-row"><span class="target-label">Excess</span><span class="target-val target-excess positive">+$275,592</span></div>
+        <div style="background:var(--footer-bg); border:0.5px solid rgba(0,0,0,0.06); padding:10px 12px; margin-top:10px;">
+          <div style="font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:4px;">Trough Analysis</div>
+          <div style="font-size:11px; color:var(--text-sub); line-height:1.5;">
+            Trough month: <b>November 2026</b><br>
+            Trough depth: <b>$129,385</b><br>
+            Operating floor at trough: <b>$107,716</b><br>
+            Reserve target = Trough + Floor − Operating Target
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Capital Build target -->
+    <div class="target-card">
+      <div class="target-card-stripe" style="background:var(--cap)"></div>
+      <div class="target-card-body">
+        <div class="target-card-name" style="color:var(--cap)">Capital Build</div>
+        <div class="target-row"><span class="target-label">Current Balance</span><span class="target-val">$142,000</span></div>
+        <div class="target-row"><span class="target-label">Target</span><span class="target-val">$135,000</span></div>
+        <div class="target-row"><span class="target-label">Excess</span><span class="target-val target-excess positive">+$7,000</span></div>
+        <div style="background:var(--footer-bg); border:0.5px solid rgba(0,0,0,0.06); padding:10px 12px; margin-top:10px;">
+          <div style="font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); margin-bottom:4px;">Goal Bridge</div>
+          <div style="font-size:11px; color:var(--text-sub); line-height:1.5;">
+            Goal: <b>Home Purchase · June 2027</b><br>
+            Down payment: <b>$548,000</b><br>
+            Earmarked: <b>$135,000</b><br>
+            Projected net cash flow will bridge the remaining $413,000 by May 2027.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Harvest summary ── -->
+  <div class="harvest-strip">
+    <div>
+      <div class="harvest-label">Total Deployable Capital</div>
+      <div class="harvest-sub">Excess from Operating Cash ($62,574) + Liquidity Reserve ($275,592) + Capital Build ($7,000)</div>
+    </div>
+    <div class="harvest-value">$345,166</div>
+  </div>
+
+  <!-- ── Pro-forma ledger ── -->
+  <div class="section-eyebrow mb-12">PRO-FORMA ACCOUNT STRUCTURE</div>
+  <div class="ledger">
+    <div class="ledger-title">After Harvesting Excess</div>
+    <div class="ledger-head">
+      <div>Account</div>
+      <div style="text-align:right">Current</div>
+      <div style="text-align:right">Pro-Forma</div>
+      <div style="text-align:right">Change</div>
+    </div>
+    <!-- Operating Cash -->
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--ops)"></div> Chase Total Checking</div>
+      <div style="text-align:right" class="strike">$89,217</div>
+      <div style="text-align:right; font-weight:500;">$47,357</div>
+      <div style="text-align:right" class="delta neg">−$41,860</div>
+    </div>
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--ops)"></div> Chase Premier Checking</div>
+      <div style="text-align:right" class="strike">$36,931</div>
+      <div style="text-align:right; font-weight:500;">$16,217</div>
+      <div style="text-align:right" class="delta neg">−$20,714</div>
+    </div>
+    <!-- Liquidity Reserve -->
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--res)"></div> Marcus High-Yield Savings</div>
+      <div style="text-align:right" class="strike">$299,966</div>
+      <div style="text-align:right; font-weight:500;">$89,374</div>
+      <div style="text-align:right" class="delta neg">−$210,592</div>
+    </div>
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--res)"></div> Ally Savings</div>
+      <div style="text-align:right">$89,153</div>
+      <div style="text-align:right">$89,153</div>
+      <div style="text-align:right" class="delta">—</div>
+    </div>
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--res)"></div> Discover Money Market</div>
+      <div style="text-align:right" class="strike">$60,000</div>
+      <div style="text-align:right; font-weight:500;">$-5,000</div>
+      <div style="text-align:right" class="delta neg">−$65,000</div>
+    </div>
+    <!-- Capital Build -->
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--cap)"></div> Vanguard Treasury Fund</div>
+      <div style="text-align:right">$85,000</div>
+      <div style="text-align:right">$85,000</div>
+      <div style="text-align:right" class="delta">—</div>
+    </div>
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--cap)"></div> Fidelity Short-Term Bond</div>
+      <div style="text-align:right" class="strike">$57,000</div>
+      <div style="text-align:right; font-weight:500;">$50,000</div>
+      <div style="text-align:right" class="delta neg">−$7,000</div>
+    </div>
+    <div class="ledger-total">
+      <div>Total Liquid Assets</div>
+      <div style="text-align:right">$717,267</div>
+      <div style="text-align:right">$372,101</div>
+      <div style="text-align:right; color:var(--green);">Harvested: $345,166</div>
+    </div>
+  </div>
+
+  <div class="flex-between">
+    <button class="cta-btn" style="background:transparent; color:var(--text-sub); border:0.5px solid var(--card-border);" onclick="goPage(0)">← Back</button>
+    <button class="cta-btn" onclick="goPage(2)">Proceed to Deploy <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════ PAGE 2 — Step 2: Deploy Capital ═══════════════ -->
+<div class="page" id="page-2">
+<div class="content">
+
+  <!-- Step bar -->
+  <div class="step-bar">
+    <div class="step-item done"><div class="step-dot">✓</div> Quantify Excess</div>
+    <div class="step-connector"></div>
+    <div class="step-item active"><div class="step-dot">2</div> Deploy Capital</div>
+    <div class="step-connector"></div>
+    <div class="step-item"><div class="step-dot">3</div> Select Products</div>
+  </div>
+
+  <div class="section-headline mb-16"><i>Where should the capital go?</i></div>
+  <div class="section-desc">GURU recommends deployments based on target gaps and return optimization. All three liquid-asset buckets are on target — excess flows to Investments for maximum return.</div>
+
+  <!-- ── Deploy cards ── -->
+  <div class="section-eyebrow mb-12">DEPLOYMENT PLAN</div>
+  <div class="deploy-grid">
+
+    <div class="deploy-card">
+      <div class="deploy-card-stripe" style="background:var(--cap)"></div>
+      <div class="deploy-card-body">
+        <div class="deploy-card-head">
+          <div>
+            <div class="deploy-card-name" style="color:var(--cap)">Capital Build</div>
+            <div style="font-size:11px; color:var(--text-sub);">Home Purchase · June 2027</div>
+          </div>
+          <div class="deploy-card-amount">$0</div>
+        </div>
+        <div class="deploy-reason">Target already met at $135,000. Net cash flow is projected to bridge the remaining $413,000 by May 2027. No additional capital needed today.</div>
+        <div class="deploy-badge">Target Met</div>
+      </div>
+    </div>
+
+    <div class="deploy-card" style="border-left: 3px solid var(--green);">
+      <div class="deploy-card-stripe" style="background:var(--inv)"></div>
+      <div class="deploy-card-body">
+        <div class="deploy-card-head">
+          <div>
+            <div class="deploy-card-name" style="color:var(--inv)">Investments</div>
+            <div style="font-size:11px; color:var(--text-sub);">Long-Term Growth Engine</div>
+          </div>
+          <div class="deploy-card-amount" style="color:var(--green);">$345,166</div>
+        </div>
+        <div class="deploy-reason">All three liquid buckets are at or above target. GURU recommends deploying the entire harvest to the investment portfolio for maximum long-term return. At the current weighted yield of 7.8%, this could generate approximately $26,923 in annual pre-tax returns.</div>
+        <div class="deploy-badge">GURU Recommended</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Undeployed tracker ── -->
+  <div class="undeployed-tracker">
+    <div class="undeployed-label">Remaining Undeployed Capital</div>
+    <div class="undeployed-value zero">$0</div>
+  </div>
+
+  <!-- ── Pro-forma ledger with new positions ── -->
+  <div class="section-eyebrow mb-12">PRO-FORMA ACCOUNT STRUCTURE</div>
+  <div class="ledger">
+    <div class="ledger-title">After Deployment</div>
+    <div class="ledger-head">
+      <div>Account</div>
+      <div style="text-align:right">Before Deploy</div>
+      <div style="text-align:right">After Deploy</div>
+      <div style="text-align:right">Change</div>
+    </div>
+    <!-- Operating -->
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--ops)"></div> Chase Total Checking</div>
+      <div style="text-align:right">$47,357</div>
+      <div style="text-align:right">$47,357</div>
+      <div style="text-align:right" class="delta">—</div>
+    </div>
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--ops)"></div> Chase Premier Checking</div>
+      <div style="text-align:right">$16,217</div>
+      <div style="text-align:right">$16,217</div>
+      <div style="text-align:right" class="delta">—</div>
+    </div>
+    <!-- Reserve -->
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--res)"></div> Marcus High-Yield Savings</div>
+      <div style="text-align:right">$89,374</div>
+      <div style="text-align:right">$89,374</div>
+      <div style="text-align:right" class="delta">—</div>
+    </div>
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--res)"></div> Ally Savings</div>
+      <div style="text-align:right">$89,153</div>
+      <div style="text-align:right">$89,153</div>
+      <div style="text-align:right" class="delta">—</div>
+    </div>
+    <!-- Capital Build -->
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--cap)"></div> Vanguard Treasury Fund</div>
+      <div style="text-align:right">$85,000</div>
+      <div style="text-align:right">$85,000</div>
+      <div style="text-align:right" class="delta">—</div>
+    </div>
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--cap)"></div> Fidelity Short-Term Bond</div>
+      <div style="text-align:right">$50,000</div>
+      <div style="text-align:right">$50,000</div>
+      <div style="text-align:right" class="delta">—</div>
+    </div>
+    <!-- Investments — new -->
+    <div class="ledger-row">
+      <div class="acct"><div class="bucket-dot" style="background:var(--inv)"></div> Schwab Brokerage</div>
+      <div style="text-align:right">$1,842,000</div>
+      <div style="text-align:right; font-weight:500;">$2,187,166</div>
+      <div style="text-align:right" class="delta pos">+$345,166 <span class="new-badge">New Capital</span></div>
+    </div>
+    <div class="ledger-total">
+      <div>Total Deployed</div>
+      <div style="text-align:right">$2,219,101</div>
+      <div style="text-align:right">$2,564,267</div>
+      <div style="text-align:right; color:var(--green);">+$345,166</div>
+    </div>
+  </div>
+
+  <div class="flex-between">
+    <button class="cta-btn" style="background:transparent; color:var(--text-sub); border:0.5px solid var(--card-border);" onclick="goPage(1)">← Back</button>
+    <button class="cta-btn" onclick="goPage(3)">Select Products <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════ PAGE 3 — Step 3: Select Products ═══════════════ -->
+<div class="page" id="page-3">
+<div class="content">
+
+  <!-- Step bar -->
+  <div class="step-bar">
+    <div class="step-item done"><div class="step-dot">✓</div> Quantify Excess</div>
+    <div class="step-connector"></div>
+    <div class="step-item done"><div class="step-dot">✓</div> Deploy Capital</div>
+    <div class="step-connector"></div>
+    <div class="step-item active"><div class="step-dot">3</div> Select Products</div>
+  </div>
+
+  <div class="section-headline mb-16"><i>Choose how to invest $345,166</i></div>
+  <div class="section-desc">Select investment products for the new capital being deployed to your Investments bucket. Compare yields, durations, and tax treatment. You can also optionally swap existing products in other buckets.</div>
+
+  <!-- ── Investment deployment products ── -->
+  <div class="product-section">
+    <div class="product-section-title"><div class="product-section-dot" style="background:var(--inv)"></div> Investments — $345,166 to Deploy</div>
+    <div class="product-grid">
+      <div class="product-card selected">
+        <div class="product-name">Vanguard Total Stock Market Index</div>
+        <div class="product-type">Equity Index Fund</div>
+        <div class="product-stats">
+          <div class="product-stat"><div class="product-stat-label">Yield</div><div class="product-stat-val">1.4%</div></div>
+          <div class="product-stat"><div class="product-stat-label">Expense Ratio</div><div class="product-stat-val">0.03%</div></div>
+          <div class="product-stat"><div class="product-stat-label">10-Year Return</div><div class="product-stat-val">12.1%</div></div>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-name">iShares Core US Aggregate Bond</div>
+        <div class="product-type">Fixed Income ETF</div>
+        <div class="product-stats">
+          <div class="product-stat"><div class="product-stat-label">Yield</div><div class="product-stat-val">4.6%</div></div>
+          <div class="product-stat"><div class="product-stat-label">Duration</div><div class="product-stat-val">6.2 years</div></div>
+          <div class="product-stat"><div class="product-stat-label">Expense Ratio</div><div class="product-stat-val">0.03%</div></div>
+        </div>
+      </div>
+      <div class="product-card">
+        <div class="product-name">Schwab US Dividend Equity</div>
+        <div class="product-type">Dividend ETF</div>
+        <div class="product-stats">
+          <div class="product-stat"><div class="product-stat-label">Yield</div><div class="product-stat-val">3.4%</div></div>
+          <div class="product-stat"><div class="product-stat-label">Expense Ratio</div><div class="product-stat-val">0.06%</div></div>
+          <div class="product-stat"><div class="product-stat-label">10-Year Return</div><div class="product-stat-val">10.8%</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Optional: Liquidity Reserve product swap ── -->
+  <div class="product-section">
+    <div class="product-section-title"><div class="product-section-dot" style="background:var(--res)"></div> Liquidity Reserve — Optional Product Swap</div>
+    <div class="product-grid">
+      <div class="product-card optional">
+        <div class="product-name">Vanguard Federal Money Market</div>
+        <div class="product-type">Money Market Fund</div>
+        <div class="product-stats">
+          <div class="product-stat"><div class="product-stat-label">Yield</div><div class="product-stat-val">5.28%</div></div>
+          <div class="product-stat"><div class="product-stat-label">Liquidity</div><div class="product-stat-val">T+1</div></div>
+          <div class="product-stat"><div class="product-stat-label">Min Investment</div><div class="product-stat-val">$3,000</div></div>
+        </div>
+      </div>
+      <div class="product-card optional">
+        <div class="product-name">Schwab Value Advantage Money Fund</div>
+        <div class="product-type">Money Market Fund</div>
+        <div class="product-stats">
+          <div class="product-stat"><div class="product-stat-label">Yield</div><div class="product-stat-val">5.17%</div></div>
+          <div class="product-stat"><div class="product-stat-label">Liquidity</div><div class="product-stat-val">T+0</div></div>
+          <div class="product-stat"><div class="product-stat-label">Min Investment</div><div class="product-stat-val">$0</div></div>
+        </div>
+      </div>
+      <div class="product-card optional">
+        <div class="product-name">Fidelity Government Money Market</div>
+        <div class="product-type">Money Market Fund</div>
+        <div class="product-stats">
+          <div class="product-stat"><div class="product-stat-label">Yield</div><div class="product-stat-val">4.98%</div></div>
+          <div class="product-stat"><div class="product-stat-label">Liquidity</div><div class="product-stat-val">T+0</div></div>
+          <div class="product-stat"><div class="product-stat-label">Min Investment</div><div class="product-stat-val">$0</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px; color:var(--text-dim); margin-top:8px; font-style:italic;">Optional: Swap existing savings accounts for higher-yielding money market products without changing allocation.</div>
+  </div>
+
+  <!-- ── Summary ── -->
+  <div class="card" style="padding:20px; margin-bottom:28px;">
+    <div class="section-eyebrow mb-12">EXECUTION SUMMARY</div>
+    <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:20px;">
+      <div>
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">Capital to Move</div>
+        <div style="font-size:20px; font-weight:300; font-variant-numeric:tabular-nums; color:var(--navy);">$345,166</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">Accounts Affected</div>
+        <div style="font-size:20px; font-weight:300; font-variant-numeric:tabular-nums; color:var(--navy);">4</div>
+      </div>
+      <div>
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">Projected Annual Income Gain</div>
+        <div style="font-size:20px; font-weight:300; font-variant-numeric:tabular-nums; color:var(--green);">+$29,686</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-between">
+    <button class="cta-btn" style="background:transparent; color:var(--text-sub); border:0.5px solid var(--card-border);" onclick="goPage(2)">← Back</button>
+    <button class="cta-btn" style="background:var(--green);">Confirm &amp; Execute <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M5 12l5 5L20 7"/></svg></button>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════ Navigation JS ═══════════════ -->
+<script>
+function goPage(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + n).classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>

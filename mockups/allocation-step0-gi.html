@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Allocation — How GURU Organizes Your Money (GI Layer)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;700;800&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:           #0d1829;
+  --surface:      #0f1e33;
+  --surface-alt:  #122038;
+  --grphdr:       #162843;
+  --sectot:       #1a2d47;
+  --grandtot:     #0d1b2e;
+  --border:       #1e3352;
+  --border-sec:   #2a4a6e;
+  --gi-green:     #44e08a;
+  --green-dim:    hsl(152,45%,42%);
+  --green-med:    hsl(152,52%,55%);
+  --amber:        #ffc83c;
+  --text:         hsl(0,0%,88%);
+  --text-sub:     rgba(255,255,255,0.82);
+  --text-muted:   rgba(255,255,255,0.45);
+  --text-dim:     rgba(255,255,255,0.28);
+
+  /* Bucket accent colors */
+  --bk-ops:   #1E4F9C;
+  --bk-liq:   #835800;
+  --bk-cap:   #195830;
+  --bk-inv:   #4A3FA0;
+  --bk-alt:   #5C5C6E;
+
+  /* Bucket display colors */
+  --bc-ops:   #5a85b8;
+  --bc-liq:   #b8943f;
+  --bc-cap:   #3da870;
+  --bc-inv:   #5585ae;
+  --bc-alt:   #888888;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Topbar ── */
+.topbar {
+  height: 44px; padding: 0 28px;
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: rgba(13,24,41,0.95);
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-back {
+  font-size: 12px; color: var(--text-muted); cursor: pointer;
+  text-decoration: none; margin-right: 16px;
+  transition: color 0.2s;
+}
+.topbar-back:hover { color: var(--gi-green); }
+.topbar-name { font-size: 12px; font-weight: 600; color: var(--text); letter-spacing: 0.02em; }
+.topbar-sep  { margin: 0 8px; color: var(--text-dim); }
+.topbar-sect { font-size: 12px; color: var(--text-muted); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.topbar-dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--gi-green); animation: pulse 2.5s infinite; }
+.step-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+  color: var(--text-dim); text-transform: uppercase;
+}
+
+/* ── Page ── */
+.page { padding: 28px 32px 48px; max-width: 1400px; margin: 0 auto; }
+
+/* ── GI Header ── */
+.gi-header { margin-bottom: 28px; }
+.gi-header-row {
+  display: flex; align-items: baseline; gap: 16px; margin-bottom: 6px;
+}
+.gi-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--gi-green);
+}
+.gi-sublabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em;
+}
+.gi-headline {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 30px; font-weight: 400; font-style: italic;
+  color: rgba(255,255,255,0.90); margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+.gi-desc {
+  font-size: 13px; color: var(--text-muted); line-height: 1.6;
+  max-width: 640px;
+}
+
+/* ── KPI Strip ── */
+.kpi-strip {
+  display: flex; gap: 0; margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+.kpi-item {
+  flex: 1; padding: 14px 18px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+.kpi-item:last-child { border-right: none; }
+.kpi-item-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;
+}
+.kpi-item-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px; font-weight: 400; color: white;
+  letter-spacing: -0.02em;
+}
+.kpi-item-val.green { color: var(--gi-green); }
+.kpi-item-val.amber { color: var(--amber); }
+.kpi-item-sub {
+  font-size: 10px; color: var(--text-dim); margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* ── Bucket Grid ── */
+.bucket-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+/* ── Bucket Card ── */
+.bucket-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.bucket-stripe { height: 4px; }
+
+.bucket-header {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.bucket-name {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.10em;
+  text-transform: uppercase; margin-bottom: 2px;
+}
+.bucket-desc {
+  font-size: 11px; color: var(--text-muted); line-height: 1.4;
+}
+.bucket-amount-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.bucket-total {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px; font-weight: 400; color: white;
+}
+.bucket-total-sub {
+  font-size: 10px; color: var(--text-dim);
+}
+
+/* GURU's Approach section */
+.guru-approach {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(68,224,138,0.03);
+}
+.guru-approach-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--gi-green); margin-bottom: 6px;
+  opacity: 0.7;
+}
+.guru-approach-text {
+  font-size: 11px; color: var(--text-sub); line-height: 1.55;
+}
+
+/* Accounts section */
+.accounts-section {
+  flex: 1;
+  padding: 0;
+}
+.accounts-header {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--text-dim);
+  padding: 10px 14px 6px;
+}
+.account-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 7px 14px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.account-row:first-child { border-top: none; }
+.account-name {
+  font-size: 11px; font-weight: 500; color: var(--text-sub);
+}
+.account-sub {
+  font-size: 10px; color: var(--text-dim); margin-top: 1px;
+}
+.account-right {
+  text-align: right; flex-shrink: 0; margin-left: 12px;
+}
+.account-bal {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; font-weight: 400; color: var(--text-sub);
+}
+.account-tag {
+  display: inline-block; margin-top: 2px;
+  font-size: 8px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 1px 5px;
+  border: 1px solid; border-radius: 2px;
+}
+.tag-excess { color: var(--gi-green); border-color: rgba(68,224,138,0.3); }
+.tag-target { color: var(--bc-liq); border-color: rgba(184,148,63,0.3); }
+.tag-idle   { color: var(--amber); border-color: rgba(255,200,60,0.3); }
+.tag-goal   { color: var(--bc-cap); border-color: rgba(61,168,112,0.3); }
+
+/* ── Bucket footer insight ── */
+.bucket-footer {
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--grandtot);
+}
+.bucket-footer-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; line-height: 1.5;
+}
+
+/* ── Bottom bar ── */
+.bottom-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+}
+.bottom-left {
+  font-size: 11px; color: var(--text-dim); line-height: 1.5;
+}
+.bottom-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--gi-green); color: var(--bg);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; padding: 12px 32px;
+  border: none; cursor: pointer;
+  transition: all 0.2s;
+}
+.bottom-cta:hover { background: #5aeea0; }
+
+/* ── Proportional bar ── */
+.prop-bar {
+  display: flex; height: 5px; margin-bottom: 6px;
+  overflow: hidden;
+}
+.prop-bar div { transition: width 0.8s ease; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+</style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<div class="topbar">
+  <a class="topbar-back">‹ Back</a>
+  <span class="topbar-name">Kessler Family</span>
+  <span class="topbar-sep">·</span>
+  <span class="topbar-sect">Asset Allocation</span>
+  <div class="topbar-right">
+    <div class="topbar-dot"></div>
+    <span class="step-badge">Before You Begin</span>
+  </div>
+</div>
+
+<!-- ── Page ── -->
+<div class="page">
+
+  <!-- GI Header -->
+  <div class="gi-header">
+    <div class="gi-header-row">
+      <div class="gi-label">GURU Intelligence · Capital Allocation</div>
+      <div class="gi-sublabel">KESSLER FAMILY · FY 2026 · LIVE FROM TRANSACTION DATA</div>
+    </div>
+    <div class="gi-headline">How GURU organizes your money</div>
+    <div class="gi-desc">
+      Current allocation across five strategic buckets. Each bucket is sized by GURU's cash flow
+      forecast and liquidity model. Review the board before making changes.
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip">
+    <div class="kpi-item">
+      <div class="kpi-item-label">Total Organized Capital</div>
+      <div class="kpi-item-val">$5,996,150</div>
+      <div class="kpi-item-sub">Across all 5 buckets</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-item-label">Liquid Capital</div>
+      <div class="kpi-item-val">$693,636</div>
+      <div class="kpi-item-sub">Operating + Reserve + Capital Build</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-item-label">Excess Liquidity</div>
+      <div class="kpi-item-val green">$321,535</div>
+      <div class="kpi-item-sub">Above 12-month requirement</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-item-label">Liquidity Coverage</div>
+      <div class="kpi-item-val green">186%</div>
+      <div class="kpi-item-sub">Trough coverage ratio</div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-item-label">Blended After-Tax Yield</div>
+      <div class="kpi-item-val amber">2.41%</div>
+      <div class="kpi-item-sub">Weighted across liquid buckets</div>
+    </div>
+  </div>
+
+  <!-- Proportional bar -->
+  <div class="prop-bar">
+    <div style="width:2.2%; background: var(--bc-ops);"></div>
+    <div style="width:7.1%; background: var(--bc-liq);"></div>
+    <div style="width:5.2%; background: var(--bc-cap);"></div>
+    <div style="width:38.6%; background: var(--bc-inv);"></div>
+    <div style="width:46.9%; background: var(--bc-alt);"></div>
+  </div>
+  <div style="display:flex; justify-content:space-between; margin-bottom:24px;">
+    <span style="font-size:10px; color:var(--text-dim);">Operating Cash 2.2%</span>
+    <span style="font-size:10px; color:var(--text-dim);">Liquidity Reserve 7.1%</span>
+    <span style="font-size:10px; color:var(--text-dim);">Capital Build 5.2%</span>
+    <span style="font-size:10px; color:var(--text-dim);">Investments 38.6%</span>
+    <span style="font-size:10px; color:var(--text-dim);">Other Assets 46.9%</span>
+  </div>
+
+  <!-- ── Bucket Grid ── -->
+  <div class="bucket-grid">
+
+    <!-- ─── 1. Operating Cash ─── -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background: var(--bk-ops);"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color: var(--bc-ops);">Operating Cash</div>
+        <div class="bucket-desc">Daily liquidity &amp; upcoming expenditures</div>
+      </div>
+      <div class="bucket-amount-row">
+        <div class="bucket-total">$132,050</div>
+        <div class="bucket-total-sub">5.7 months covered</div>
+      </div>
+      <div class="guru-approach">
+        <div class="guru-approach-label">GURU's Approach</div>
+        <div class="guru-approach-text">
+          Covers 2–3 months of core expenses. Instantly accessible. No rate optimization — pure safety net. Current balance exceeds 2-month target by $68,476.
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-header">Accounts in This Bucket</div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Citizens Private Checking</div>
+            <div class="account-sub">– 2847 · FDIC insured</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$82,050</div>
+          </div>
+        </div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">SoFi High-Yield Checking</div>
+            <div class="account-sub">– 3391 · FDIC insured</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$50,000</div>
+          </div>
+        </div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-text" style="color: var(--gi-green);">
+          ● $68,476 above 2-month target — deployable to Reserve
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 2. Liquidity Reserve ─── -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background: var(--bk-liq);"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color: var(--bc-liq);">Liquidity Reserve</div>
+        <div class="bucket-desc">Active cash management with full liquidity</div>
+      </div>
+      <div class="bucket-amount-row">
+        <div class="bucket-total">$426,586</div>
+        <div class="bucket-total-sub">12-month reserve target</div>
+      </div>
+      <div class="guru-approach">
+        <div class="guru-approach-label">GURU's Approach</div>
+        <div class="guru-approach-text">
+          Targets 12 months of anticipated outflows. Deployed in high-yield products — money market, T-bills — that can be liquidated same-day. Currently $253,059 above trough target.
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-header">Accounts in This Bucket</div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Citizens Bank Money Market</div>
+            <div class="account-sub">– 7204 · 3.65% · FDIC</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$225,000</div>
+            <span class="account-tag tag-excess">Excess</span>
+          </div>
+        </div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Citizens High Yield Savings</div>
+            <div class="account-sub">– 1482 · 4.15% · FDIC</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$100,440</div>
+            <span class="account-tag tag-excess">Excess</span>
+          </div>
+        </div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">JPMorgan 100% Treasury Money Market Fund</div>
+            <div class="account-sub">– 4976 · 4.52% · T+1</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$101,146</div>
+          </div>
+        </div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-text" style="color: var(--amber);">
+          ▲ Weighted yield 3.98% — rate-vulnerable if Fed cuts
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 3. Capital Build ─── -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background: var(--bk-cap);"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color: var(--bc-cap);">Capital Build</div>
+        <div class="bucket-desc">Disciplined saving for near-term goals</div>
+      </div>
+      <div class="bucket-amount-row">
+        <div class="bucket-total">$135,000</div>
+        <div class="bucket-total-sub">Goal-directed · 1–3 year horizon</div>
+      </div>
+      <div class="guru-approach">
+        <div class="guru-approach-label">GURU's Approach</div>
+        <div class="guru-approach-text">
+          Holds capital earmarked for goals 1–3 years out: home purchase June 2027. Deployed in short-duration ladders to protect principal while earning yield. Target: $548,000 down payment.
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-header">Accounts in This Bucket</div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Fidelity Cash Sweep</div>
+            <div class="account-sub">– 8821 · idle · 2.50%</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$174,000</div>
+            <span class="account-tag tag-idle">Idle</span>
+          </div>
+        </div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">3-Month T-Bill Ladder</div>
+            <div class="account-sub">– 1142 · matures March 31</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$135,000</div>
+            <span class="account-tag tag-goal">Goal</span>
+          </div>
+        </div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-text" style="color: var(--amber);">
+          ▲ $413,000 gap to home purchase target — needs acceleration
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 4. Investments ─── -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background: var(--bk-inv);"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color: var(--bc-inv);">Investments</div>
+        <div class="bucket-desc">Long-term compounded growth</div>
+      </div>
+      <div class="bucket-amount-row">
+        <div class="bucket-total">$2,313,414</div>
+        <div class="bucket-total-sub">5+ year horizon</div>
+      </div>
+      <div class="guru-approach">
+        <div class="guru-approach-label">GURU's Approach</div>
+        <div class="guru-approach-text">
+          Capital with a 5+ year horizon managed through CIO-led strategies. Not touched for liquidity needs — this bucket compounds. Target 6–8% gross return.
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-header">Accounts in This Bucket</div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">CIO Sector Rotation Fund</div>
+            <div class="account-sub">Fidelity · Growth equity</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$1,250,000</div>
+          </div>
+        </div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Small Cap Sleeve</div>
+            <div class="account-sub">Fidelity · High growth</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$875,000</div>
+          </div>
+        </div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Cresset Short Duration</div>
+            <div class="account-sub">Fixed income anchor</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$384,500</div>
+          </div>
+        </div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-text" style="color: var(--green-med);">
+          ● Fully allocated — no excess, no shortfall
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 5. Other Assets ─── -->
+    <div class="bucket-card">
+      <div class="bucket-stripe" style="background: var(--bk-alt);"></div>
+      <div class="bucket-header">
+        <div class="bucket-name" style="color: var(--bc-alt);">Other Assets</div>
+        <div class="bucket-desc">Real estate, private equity &amp; alternatives</div>
+      </div>
+      <div class="bucket-amount-row">
+        <div class="bucket-total">$2,989,500</div>
+        <div class="bucket-total-sub">Tracked · not actively managed</div>
+      </div>
+      <div class="guru-approach">
+        <div class="guru-approach-label">GURU's Approach</div>
+        <div class="guru-approach-text">
+          Illiquid or hard-to-rebalance holdings. Tracked for net worth context but excluded from liquidity planning. No GURU optimization applied.
+        </div>
+      </div>
+      <div class="accounts-section">
+        <div class="accounts-header">Accounts in This Bucket</div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Primary Residence</div>
+            <div class="account-sub">Westchester, NY</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$1,800,000</div>
+          </div>
+        </div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Investment Property</div>
+            <div class="account-sub">Palm Beach, FL</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$750,000</div>
+          </div>
+        </div>
+        <div class="account-row">
+          <div>
+            <div class="account-name">Unvested RSUs</div>
+            <div class="account-sub">Vesting 2025–2027</div>
+          </div>
+          <div class="account-right">
+            <div class="account-bal">$395,100</div>
+          </div>
+        </div>
+      </div>
+      <div class="bucket-footer">
+        <div class="bucket-footer-text" style="color: var(--text-dim);">
+          — Outside GURU active management
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /bucket-grid -->
+
+  <!-- ── Bottom Bar ── -->
+  <div class="bottom-bar">
+    <div class="bottom-left">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em;">
+        MODEL: CFO-7.2 · CONFIDENCE: 94% · DATA AS OF APR 15, 2026
+      </span>
+    </div>
+    <button class="bottom-cta" onclick="alert('Navigate to Step 1: GURU Recommendation')">
+      Continue to GURU's Recommendation →
+    </button>
+  </div>
+
+</div><!-- /page -->
+
+</body>
+</html>
